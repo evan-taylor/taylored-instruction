@@ -91,7 +91,7 @@ const FirstAidCprAedPageContent: React.FC = () => {
         <div className="bg-gray-50 p-6 rounded-lg shadow-sm mb-8">
           <h3 className="text-xl lg:text-2xl font-bold mb-3">Interested in taking a course?</h3>
           <p className="text-gray-700">
-            Search for open class on our <Link href="/classes/" className="text-primary hover:underline font-medium">classes page</Link>!
+            Search for open class on our <Link href="https://www.hovn.app/service-providers/tayloredinstruction/offerings/cm408sfgn0000ggkzk66s7no4" className="text-primary hover:underline font-medium">registration page</Link>!
           </p>
         </div>
 
