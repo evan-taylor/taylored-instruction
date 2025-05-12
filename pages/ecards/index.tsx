@@ -46,10 +46,8 @@ const ECardsPage: NextPage = () => {
     if (loading) return; // Wait for useProfile to finish loading
 
     if (!session) {
-      console.log("ECardsPage: No session, redirecting to /login");
       router.push('/login');
     } else if (!isInstructor) {
-      console.log("ECardsPage: Session exists, but not an instructor, redirecting to /my-account");
       router.push('/my-account');
     }
     // If session && isInstructor, do nothing, allow page to render and fetch data.
@@ -59,13 +57,11 @@ const ECardsPage: NextPage = () => {
   useEffect(() => {
     const fetchECardsAndPrices = async () => {
       if (!session || !session.user || !isInstructor) {
-        console.log("fetchECardsAndPrices: Pre-condition fail. No session/user or not instructor.");
         setIsLoading(false);
         setProducts([]);
         return;
       }
 
-      console.log("fetchECardsAndPrices: Authorized. Fetching eCards for instructor:", session.user.id);
       setIsLoading(true);
       setError(null);
 
@@ -81,7 +77,6 @@ const ECardsPage: NextPage = () => {
           throw fetchError;
         }
         if (!supabaseProducts || supabaseProducts.length === 0) {
-          console.log("fetchECardsAndPrices: No eCard products found in Supabase.");
           setProducts([]);
           setIsLoading(false);
           return;
@@ -90,7 +85,6 @@ const ECardsPage: NextPage = () => {
         // 2. Extract Stripe Price IDs
         const priceIds = supabaseProducts.map(p => p.stripe_price_id).filter(id => id != null) as string[];
         if (priceIds.length === 0) {
-          console.log("fetchECardsAndPrices: No Stripe Price IDs found for Supabase products.");
           // Set products without price info, or handle as error - for now, show them without prices
           // Or, more strictly, consider it an error if price IDs are expected but missing.
           setProducts(supabaseProducts.map(p => ({ ...p, display_price: 0, currency: 'USD' }))); // Fallback, ideally handle better
@@ -107,7 +101,6 @@ const ECardsPage: NextPage = () => {
 
         if (!priceResponse.ok) {
           const errorData = await priceResponse.json();
-          console.error('fetchECardsAndPrices: Error fetching Stripe prices from API:', errorData.error);
           throw new Error(errorData.error || 'Failed to fetch Stripe prices.');
         }
 
@@ -152,7 +145,6 @@ const ECardsPage: NextPage = () => {
     } else if (!loading && (!session || !isInstructor)) {
       setIsLoading(false);
       setProducts([]);
-      console.log("ECardsPage: Not fetching products, user not authorized or not logged in post-profile-load.");
     }
   }, [loading, session, isInstructor, supabase]); // supabase client as dependency
 
@@ -201,7 +193,6 @@ const ECardsPage: NextPage = () => {
         window.location.href = data.url;
       } else if (data.sessionId) {
         // Fallback or if you decide to use Stripe.js to redirect on client
-        console.log("Received session ID, but no URL. Potentially use Stripe.js to redirect or check backend response.");
         // For now, log an error if URL is missing, as backend should provide it.
         console.error('Checkout session created, but no redirect URL was provided.', data);
         setError('Could not redirect to checkout. Please try again.');

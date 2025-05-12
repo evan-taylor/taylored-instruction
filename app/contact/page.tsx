@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image-contact.png', // To be created - consider a general contact/branded image
+        url: '/og-image.png', // To be created - consider a general contact/branded image
         width: 1200,
         height: 630,
         alt: 'Contact Taylored Instruction',
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Contact Taylored Instruction | CPR & Safety Training Vancouver WA',
     description: 'Contact Taylored Instruction in Vancouver, WA for inquiries about CPR, Lifeguard, BLS, First Aid, and other safety training courses.',
-    images: ['/twitter-image-contact.png'], // To be created
+    images: ['/twitter-image.png'], // To be created
   },
   alternates: {
     canonical: 'https://tayloredinstruction.com/contact',

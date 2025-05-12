@@ -13,10 +13,8 @@ const InstructorResourcesPage: NextPage = () => {
     if (loading) return; // Wait for loading to complete
 
     if (!session) {
-      console.log("InstructorResourcesPage: No session, redirecting to /login");
       router.push('/login');
     } else if (!isInstructor) {
-      console.log("InstructorResourcesPage: Session exists, but not an instructor, redirecting to /my-account");
       router.push('/my-account');
     }
     // If session exists and isInstructor is true, do nothing and allow page to render

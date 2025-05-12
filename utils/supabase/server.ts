@@ -87,7 +87,6 @@ export function createApiClientPagesRouter(
           } else {
             cookies = [existing as string, cookieString];
           }
-          console.log(`[createApiClientPagesRouter] Setting cookie header array:`, cookies);
           res.setHeader('Set-Cookie', cookies);
         },
         remove(name: string, options: CookieOptions) {
@@ -102,7 +101,6 @@ export function createApiClientPagesRouter(
           } else {
             cookies = [existing as string, cookieString];
           }
-          console.log(`[createApiClientPagesRouter] Removing cookie header array:`, cookies);
           res.setHeader('Set-Cookie', cookies);
         },
       },
@@ -122,9 +120,6 @@ function serializeOptions(options: CookieOptions, override: Partial<CookieOption
   // Only set Secure flag if not in development (localhost)
   // Forcing secure to false in dev if NODE_ENV is 'development' to be safe.
   if (process.env.NODE_ENV === 'development') {
-    // In development (e.g., http://localhost), browsers might ignore Secure cookies.
-    // So, we explicitly do not add the Secure flag.
-    // console.log('[serializeOptions] Development mode, omitting Secure flag for cookie.');
   } else if (mergedOptions.secure) {
     // In production or other environments, respect the secure flag from options.
     parts.push('Secure');

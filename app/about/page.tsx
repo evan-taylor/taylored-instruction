@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/og-image-about.png', // To be created - consider a team/founder image or branded graphic
+        url: '/og-image.png', // To be created - consider a team/founder image or branded graphic
         width: 1200,
         height: 630,
         alt: 'About Taylored Instruction - Lifesaving Training',
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'About Taylored Instruction | CPR, Lifeguard & Safety Training Vancouver WA',
     description: 'Learn about Taylored Instruction, our mission, and founder Evan Taylor. We provide expert CPR, Lifeguard, First Aid, and BLS training in Vancouver, WA, and seasonally in San Luis Obispo, CA.',
-    images: ['/twitter-image-about.png'], // To be created
+    images: ['/twitter-image.png'], // To be created
   },
   alternates: {
     canonical: 'https://tayloredinstruction.com/about',

@@ -117,34 +117,15 @@ export const Header = () => {
 
   const isLoggedIn = !!session; // Simple boolean check
 
-  // Log auth state for debugging - improved with more details
-  useEffect(() => {
-    console.log('Auth State:', { 
-      isLoggedIn, 
-      session: !!session, 
-      isInstructor, 
-      loading: profileLoading,
-      userId: session?.user?.id,
-      hasSession: !!session,
-      details: session ? {
-        providerId: session.user?.app_metadata?.provider,
-        userMetadata: session.user?.user_metadata,
-        email: session.user?.email
-      } : null
-    });
-  }, [isLoggedIn, session, isInstructor, profileLoading]);
-
   const handleLogout = async () => {
       setActiveDesktopDropdown(null); // Close any open dropdowns
       closeMobileMenu();
-      console.log("Attempting sign out..."); // Log start
       try {
         const { error } = await supabase.auth.signOut();
         if (error) {
            console.error("Error signing out:", error);
            // Optionally show an error message to the user
         } else {
-           console.log("Sign out successful, redirecting...");
            router.push('/'); // Redirect only on successful logout
         }
       } catch (err) {

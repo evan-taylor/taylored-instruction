@@ -84,7 +84,6 @@ export async function POST(req: NextRequest) {
             console.error("Resend User Confirmation Error:", userEmailData.error);
         }
 
-        console.log("Alignment emails sent successfully:", { admin: adminEmailData.data?.id, user: userEmailData.data?.id });
         return NextResponse.json({ success: true }, { status: 200 });
 
     } catch (error) {

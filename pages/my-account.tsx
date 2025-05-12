@@ -28,8 +28,6 @@ const MyAccountPage: NextPage<MyAccountPageProps> = ({ user }) => {
 
   useEffect(() => {
     const userEmail = user?.email;
-    console.log('my-account Page (Client): User prop:', user);
-    console.log('my-account Page (Client): User email for admin check:', userEmail);
     if (userEmail) {
       const adminEmails = [
           'admin@tayloredinstruction.com',
@@ -56,7 +54,6 @@ const MyAccountPage: NextPage<MyAccountPageProps> = ({ user }) => {
   }
 
   if (!user) {
-    console.log('my-account Page (Client): No user prop, redirecting to login (should have been caught by GSSP).');
     if (typeof window !== 'undefined') router.push('/login');
     return <p>Redirecting to login...</p>;
   }
@@ -138,16 +135,13 @@ const MyAccountPage: NextPage<MyAccountPageProps> = ({ user }) => {
 
 export const getServerSideProps: GetServerSideProps = async (ctx: GetServerSidePropsContext) => {
   const supabase = createServerClientPagesRouter(ctx);
-  console.log('my-account GSSP: Attempting to fetch user server-side...');
   const { data: { user }, error: gsspUserError } = await supabase.auth.getUser();
   
   if (gsspUserError) {
     console.error('my-account GSSP: Error fetching user server-side:', gsspUserError.message);
   }
-  console.log('my-account GSSP: User fetched server-side:', user ? user.id : null);
 
   if (!user) {
-    console.log('my-account GSSP: No user found server-side, redirecting to /login.');
     return { redirect: { destination: '/login', permanent: false } };
   }
 

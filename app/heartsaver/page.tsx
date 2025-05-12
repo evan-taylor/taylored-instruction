@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     type: 'article',
     images: [
       {
-        url: '/og-image-heartsaver.png', // To be created
+        url: '/og-image.png', // To be created
         width: 1200,
         height: 630,
         alt: 'AHA Heartsaver CPR AED Training Session',
@@ -37,7 +37,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "AHA Heartsaver First Aid CPR AED | Vancouver WA - Taylored Instruction",
     description: "Taylored Instruction offers AHA Heartsaver® First Aid, CPR, and AED courses in Vancouver, WA, for individuals needing certification for work or personal preparedness. Learn life-saving skills.",
-    images: ['/twitter-image-heartsaver.png'], // To be created
+    images: ['/twitter-image.png'], // To be created
   },
   alternates: {
     canonical: 'https://tayloredinstruction.com/heartsaver',

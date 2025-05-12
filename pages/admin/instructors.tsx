@@ -43,7 +43,6 @@ const AdminInstructorsPage: NextPage = () => {
 
     const determineAdminStatus = async () => {
       if (profileLoading) {
-        console.log("Admin Check: Waiting for profile/session loading to complete.");
         // setAdminAccessCheckInProgress(true) is initial state, so no need to set here
         return;
       }
@@ -57,7 +56,6 @@ const AdminInstructorsPage: NextPage = () => {
 
       try {
         if (!session) {
-          console.log("Admin Check: No session found after profile load. User is not admin.");
           // isAdmin is already false. Access check will complete in finally.
         } else {
           // Session exists, try to get user email for admin check
@@ -90,13 +88,10 @@ const AdminInstructorsPage: NextPage = () => {
 
             if (forceAdmin || (emailToCheck && adminEmails.includes(emailToCheck))) {
               if(isMounted) setIsAdmin(true);
-              console.log("Admin Check: Access GRANTED.", { email: emailToCheck, forceAdmin });
             } else {
-              console.log("Admin Check: Access DENIED.", { email: emailToCheck, isAdmin: false, forceAdmin });
               // isAdmin is already false
             }
           } else {
-            console.log("Admin Check: No user object returned by supabase.auth.getUser(), though session exists.");
             // isAdmin remains false
           }
         }
@@ -117,7 +112,6 @@ const AdminInstructorsPage: NextPage = () => {
   useEffect(() => {
     let isMounted = true;
     const fetchAdminData = async () => {
-      console.log("Admin Data Fetch: Attempting with isAdmin:", isAdmin, "and access check in progress:", adminAccessCheckInProgress);
       if (isMounted) setAdminDataLoading(true);
       setError(null);
       try {
@@ -168,14 +162,12 @@ const AdminInstructorsPage: NextPage = () => {
         }
 
         if (isMounted) setProfiles(profilesWithEmail);
-        console.log("Admin Data Fetch: Fetched profiles data count:", profilesData?.length || 0);
 
       } catch (err: any) {
         console.error('Admin Data Fetch: Error fetching profiles:', err);
         if (isMounted) setError(`Failed to fetch instructor profiles: ${err.message}`);
       } finally {
         if (isMounted) setAdminDataLoading(false);
-        console.log("Admin Data Fetch: Finished.");
       }
     };
 
@@ -185,7 +177,6 @@ const AdminInstructorsPage: NextPage = () => {
     } else if (!adminAccessCheckInProgress && !isAdmin) {
       // If admin check is done and user is NOT admin, no need to load admin data.
       if(isMounted) setAdminDataLoading(false); 
-      console.log("Admin Data Fetch: Skipping, user is not admin or access check incomplete.");
     }
     // If adminAccessCheckInProgress is true, wait for it to complete.
 
@@ -200,7 +191,6 @@ const AdminInstructorsPage: NextPage = () => {
         return;
     }
     try {
-      console.log(`Toggling instructor status for ${profileId} from ${currentStatus} to ${!currentStatus}`);
       const now = new Date().toISOString();
       
       const { data, error } = await supabase
@@ -212,7 +202,6 @@ const AdminInstructorsPage: NextPage = () => {
         
       if (error) throw error;
       
-      console.log("Updated instructor status response:", data);
       
       // Update the local state
       setProfiles(profiles.map(p => 
@@ -220,7 +209,6 @@ const AdminInstructorsPage: NextPage = () => {
           ? { ...p, is_instructor: !currentStatus, updated_at: now } 
           : p
       ));
-      console.log("Updated local profile state successfully");
     } catch (err: any) {
       console.error('Error updating instructor status:', err);
       setError(`Failed to update status: ${err.message}`);
@@ -251,7 +239,6 @@ const AdminInstructorsPage: NextPage = () => {
                                  // Correct logic: if !isAdmin (which considers forceAdmin already) then deny.
     if (typeof window !== 'undefined') {
         // Redirect non-admins away. Redirect to home or /my-account if they are logged in.
-        console.log("Admin Page: Access Denied. User is not admin. Redirecting to /my-account.");
         router.push(session ? '/my-account' : '/'); // Go to my-account if logged in, else home.
         return null; // Prevent flash of content by returning null during redirect
     }

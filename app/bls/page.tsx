@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     type: 'article',
     images: [
       {
-        url: '/og-image-aha-bls.png', // To be created
+        url: '/og-image.png', // To be created
         width: 1200,
         height: 630,
         alt: 'AHA BLS Training Session for Healthcare Professionals',
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: "AHA BLS Course | Vancouver WA for Healthcare Professionals - Taylored Instruction",
     description: "Taylored Instruction offers American Heart Association (AHA) BLS courses in Vancouver, WA, for healthcare professionals and first responders.",
-    images: ['/twitter-image-aha-bls.png'], // To be created
+    images: ['/twitter-image.png'], // To be created
   },
   alternates: {
     canonical: 'https://tayloredinstruction.com/bls',

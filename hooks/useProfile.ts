@@ -50,14 +50,12 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
                 setUser(currentSession.user);
                 setCurrentUserId(currentSession.user.id);
                 setEmail(currentSession.user.email ?? null);
-                console.log("useProfile (Client): Fetched session for user:", currentSession.user.id);
                 // Loading remains true, waits for profile fetch
             } else { // No session
                 setSession(null);
                 setUser(null);
                 setCurrentUserId(undefined);
                 setEmail(null);
-                console.log("useProfile (Client): No session found.");
                 if (isMounted) setLoading(false); // Stop loading if no session
             }
         }
@@ -82,8 +80,6 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
                 // The primary setLoading(false) for "no user" cases should be handled by the first effect.
                 if (isMounted) {
                     setProfile(null);
-                    // DO NOT set loading false here; let the first effect or loadProfile's finally block handle it.
-                    console.log("useProfile (Client): No currentUserId for loadProfile. Profile set to null.");
                 }
                 return;
             }
@@ -92,8 +88,6 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
             // This is a safeguard, as the first effect should keep it true if a session was found.
             if (isMounted && !loading) setLoading(true); 
 
-            console.log("useProfile (Client): Attempting to load profile for currentUserId:", currentUserId);
-
             try {
                 const { data, error: profileError } = await supabaseClient
                     .from('profiles')
@@ -101,11 +95,9 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
                     .eq('id', currentUserId)
                     .single();
                 if (!isMounted) return;
-                console.log("useProfile (Client): Profile fetch response for", currentUserId, { data, profileError });
 
                 if (profileError) {
                     if (profileError.code === 'PGRST116') { 
-                        console.log('useProfile (Client): Creating new profile for user:', currentUserId);
                         const now = new Date().toISOString();
                         const newProfile = { id: currentUserId, is_instructor: false, updated_at: now };
                         const { data: insertedProfile, error: insertError } = await supabaseClient
@@ -153,7 +145,6 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
              if (isMounted) {
                 setProfile(null);
                 setLoading(false); 
-                console.log("useProfile (Client): initialUserId provided but no currentUserId, setting loading false.");
              }
         }
 

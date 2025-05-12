@@ -25,16 +25,23 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Lifeguarding Certification in Vancouver, WA',
     description: 'Explore Red Cross lifeguarding classes for certification. Become a certified lifeguard with us today with our experienced instructors!',
-    url: 'https://www.tayloredinstruction.com/lifeguarding/', // Use your actual URL
+    url: 'https://tayloredinstruction.com/lifeguarding/', // Use your actual URL
     siteName: 'Taylored Instruction',
     type: 'article',
-    // You might want to add an image here as well
+    images: [
+      {
+        url: '/og-image.png', // To be created
+        width: 1200,
+        height: 630,
+        alt: 'Lifeguarding Certification Training Session',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Lifeguarding Certification in Vancouver, WA',
     description: 'Explore Red Cross lifeguarding classes for certification. Become a certified lifeguard with us today with our experienced instructors!',
-    // Add image if applicable
+    images: ['/twitter-image.png'], // To be created
   },
   alternates: {
     canonical: 'https://www.tayloredinstruction.com/lifeguarding/', // Use your actual URL

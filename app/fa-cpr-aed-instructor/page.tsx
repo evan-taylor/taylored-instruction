@@ -22,16 +22,23 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'Red Cross First Aid/CPR/AED Instructor Course | Vancouver WA - Taylored Instruction', // From og:title
     description: 'Become a certified American Red Cross First Aid/CPR/AED Instructor with Taylored Instruction in Vancouver, WA. Train to teach others lifesaving skills.', // From og:description
-    url: 'https://www.tayloredinstruction.com/fa-cpr-aed-instructor/', // From og:url
+    url: 'https://tayloredinstruction.com/fa-cpr-aed-instructor/', // From og:url, ensured full path
     siteName: 'Taylored Instruction', // From og:site_name
     type: 'article', // From og:type
-    // You might want to add an image here as well
+    images: [
+      {
+        url: '/og-image.png', // To be created
+        width: 1200,
+        height: 630,
+        alt: 'Red Cross First Aid/CPR/AED Instructor Training',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image', // From twitter:card
-    title: 'First Aid/CPR/AED Instructor Course - Taylored Instruction', // From twitter:title
-    description: 'Become a certified CPR instructor with Taylored Instruction\'s Red Cross course in Vancouver, WA. Sign up today for expert training.', // From twitter:description
-    // Add image if applicable
+    title: 'Red Cross First Aid/CPR/AED Instructor Course | Vancouver WA - Taylored Instruction', // From twitter:title, corrected for consistency
+    description: 'Become a certified American Red Cross First Aid/CPR/AED Instructor with Taylored Instruction in Vancouver, WA. Train to teach others lifesaving skills.', // From twitter:description, corrected for consistency
+    images: ['/twitter-image-fa-cpr-aed-instructor.png'], // To be created
   },
   alternates: {
     canonical: 'https://www.tayloredinstruction.com/fa-cpr-aed-instructor/', // From <link rel="canonical">

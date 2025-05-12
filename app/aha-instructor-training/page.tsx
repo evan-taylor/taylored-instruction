@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     type: 'article',
     images: [
       {
-        url: '/og-image-aha-instructor.png', // To be created
+        url: '/og-image.png', // To be created
         width: 1200,
         height: 630,
         alt: 'AHA CPR Instructor Training Session',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'AHA Instructor Training | Become a Certified CPR Instructor - Vancouver WA',
     description: 'Join Taylored Instruction in Vancouver, WA to teach lifesaving skills as an American Heart Association (AHA) instructor for BLS or Heartsaver® courses.',
-    images: ['/twitter-image-aha-instructor.png'], // To be created
+    images: ['/twitter-image.png'], // To be created
   },
   alternates: {
     canonical: 'https://tayloredinstruction.com/aha-instructor-training',

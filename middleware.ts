@@ -38,7 +38,6 @@ export async function middleware(request: NextRequest) {
   if (userErrorInMiddleware) {
     console.error('Middleware: Error from getUser() after updateSession:', userErrorInMiddleware);
   }
-  console.log('Middleware: User from getUser() after updateSession:', user ? user.id : 'No user');
 
   const { pathname } = request.nextUrl
 
@@ -63,7 +62,6 @@ export async function middleware(request: NextRequest) {
 
   const isIgnoredPath = ignoredPaths.some(path => pathname.startsWith(path))
   if (isIgnoredPath) {
-    console.log(`Middleware: Path ${pathname} is ignored.`)
     return response // Return the response from updateSession
   }
 
@@ -77,7 +75,6 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     // And the route is not public, redirect to login
     if (!isPublicRoute) {
-      console.log(`Middleware: Redirecting unauthenticated user from ${pathname} to /login`);
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirectedFrom', pathname)
       return NextResponse.redirect(loginUrl) // Create a new redirect response
@@ -86,15 +83,12 @@ export async function middleware(request: NextRequest) {
     // If the user is authenticated
     // And they are trying to access login or signup, redirect to my-account
     if (pathname === '/login' || pathname === '/signup') {
-      console.log(`Middleware: Redirecting authenticated user from ${pathname} to /my-account`);
       return NextResponse.redirect(new URL('/my-account', request.url)) // Create new redirect
     }
     // If accessing a specifically protected route (redundant if default is deny, but good for clarity)
     // This part of the logic might be optional if your default behavior is to protect all non-public routes.
     // For now, we'll rely on the !user && !isPublicRoute check for protection.
   }
-
-  console.log(`Middleware: Allowing access to ${pathname} for user: ${user ? user.id : 'Guest'}`);
   return response // Return the response from updateSession (contains session cookies)
 }
 

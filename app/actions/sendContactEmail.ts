@@ -108,7 +108,6 @@ export async function sendContactEmail(formData: FormData): Promise<SendEmailRes
             // return { success: false, error: 'Failed to send confirmation email.' };
         }
 
-        console.log("Emails sent successfully:", { admin: adminEmailData.data?.id, user: userEmailData.data?.id });
         return { success: true };
 
     } catch (error) {
