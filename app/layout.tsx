@@ -16,19 +16,18 @@ export const metadata: Metadata = {
     description: 'Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.',
     images: [
       {
-        url: '/og-image.png', // Replace with your actual Open Graph image URL
+        url: '/og-image.png',
         width: 1200,
         height: 630,
         alt: 'Taylored Instruction Logo',
       },
     ],
   },
-  // It's also good practice to add Twitter card metadata
   twitter: {
     card: 'summary_large_image',
     title: 'Taylored Instruction | BLS/CPR Training in Vancouver WA',
     description: 'Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.',
-    images: ['/twitter-image.png'], // Replace with your actual Twitter image URL
+    images: ['/twitter-image.png'],
   },
 }
 

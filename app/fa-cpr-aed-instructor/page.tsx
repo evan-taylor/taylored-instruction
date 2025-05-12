@@ -4,7 +4,7 @@ import FaCprAedInstructorPageContent from '@/components/FaCprAedInstructorPageCo
 
 // Extract metadata from the provided HTML
 export const metadata: Metadata = {
-  title: 'Red Cross First Aid/CPR/AED Instructor Course | Vancouver WA - Taylored Instruction', // From <title>
+  title: 'Red Cross First Aid/CPR/AED Instructor Course | Vancouver WA - Taylored Instruction',
   description: 'Become a certified American Red Cross First Aid/CPR/AED Instructor with Taylored Instruction in Vancouver, WA. Train to teach others lifesaving skills.', // From <meta name="description">
   keywords: [
     'Red Cross CPR instructor course Vancouver WA',
