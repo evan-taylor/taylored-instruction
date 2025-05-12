@@ -72,7 +72,7 @@ export function ContactForm() {
       </div>
 
       <div>
-        <Label htmlFor="phone">Phone (Optional)</Label>
+        <Label htmlFor="phone">Phone</Label>
         <Input id="phone" name="phone" type="tel" disabled={status.loading} />
       </div>
 
@@ -119,7 +119,7 @@ export function ContactForm() {
               SMS Opt-In (optional)
            </Label>
            <p className="text-xs text-muted-foreground">
-             By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our Privacy Policy at https://tayloredinstruction.com/privacy-policy. Standard message and data rates may apply. You can unsubscribe at any time by replying "STOP" to any of our messages.
+             By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our <a href="/privacy-policy" className="text-blue-500">Privacy Policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying "STOP" to any of our messages.
            </p>
         </div>
       </div>

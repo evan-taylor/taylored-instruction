@@ -34,12 +34,14 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl font-semibold mb-6 text-text mt-8">2. Information We Collect</h2>
           <h3 className="text-xl font-semibold mb-3 text-text">Personal Information</h3>
-          <p>We collect personal information you provide to us, such as:</p>
+          <p>We collect personal information you provide to us directly or through account creation, such as:</p>
           <ul className="list-disc list-inside mb-4 text-text-light">
-            <li>Name</li>
-            <li>Email address</li>
-            <li>Phone number</li>
-            <li>Any other information you voluntarily submit through our website or during training sessions</li>
+            <li>Name (if provided)</li>
+            <li>Email address (required for account creation and login)</li>
+            <li>Phone number (if provided for SMS notifications or other services)</li>
+            <li>User account credentials (managed securely via our authentication provider, Supabase)</li>
+            <li>Profile information, such as instructor status (managed within your account)</li>
+            <li>Any other information you voluntarily submit through our website or during interactions with our services</li>
           </ul>
 
           <h3 className="text-xl font-semibold mb-3 text-text mt-4">Automatically Collected Information</h3>
@@ -58,8 +60,11 @@ export default function PrivacyPolicyPage() {
           <h3 className="text-xl font-semibold mb-3 text-text">To Provide Services</h3>
           <p>We use your information to:</p>
           <ul className="list-disc list-inside mb-4 text-text-light">
-            <li>Enroll you in training courses</li>
-            <li>Send updates about our services</li>
+            <li>Create and manage your user account</li>
+            <li>Authenticate you when you log in</li>
+            <li>Determine your access level based on your role (e.g., instructor status)</li>
+            <li>Enroll you in training courses or provide access to specific resources</li>
+            <li>Send updates about our services, account status, or important notices</li>
             <li>Facilitate communication, including responding to inquiries or requests</li>
           </ul>
 
@@ -87,6 +92,7 @@ export default function PrivacyPolicyPage() {
 
           <h2 className="text-2xl font-semibold mb-6 text-text mt-8">6. Sharing and Selling of Information</h2>
           <p>We do not share, sell, rent, or trade your personal information, including your phone number, with third parties for their marketing purposes.</p>
+          <p>Your personal information, including email address and profile data, may be accessible to authorized administrators for the purpose of managing instructor status, providing support, or maintaining the service.</p>
           <p>All categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</p>
 
           <h2 className="text-2xl font-semibold mb-6 text-text mt-8">7. Data Retention</h2>
@@ -96,7 +102,7 @@ export default function PrivacyPolicyPage() {
           <p>You have the right to:</p>
           <ul className="list-disc list-inside mb-4 text-text-light">
             <li>Request access to the personal data we hold about you</li>
-            <li>Request correction or deletion of your personal data, except where we are required to retain it for administrative, legal, or security purposes</li>
+            <li>Request correction or deletion of your personal data, except where we are required to retain it for administrative, legal, security purposes, or for the basic functioning of your account (e.g., your user ID).</li>
           </ul>
           <p>To exercise these rights, please contact us using the information below.</p>
 
