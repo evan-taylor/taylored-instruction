@@ -24,10 +24,18 @@ export async function middleware(request: NextRequest) {
         // we only need to update request.cookies for its internal consistency.
         // The main `response` object (from updateSession) already has session cookies handled.
         set(name: string, value: string, options: CookieOptions) {
+          // Update request cookies for Supabase client internal consistency
           request.cookies.set({ name, value, ...options })
+          // The main response object (response) is already handled by updateSession
+          // and will contain the latest session cookies.
+          // We might need to ensure that `response` is correctly passed along or its headers merged
+          // if `updateSession` itself doesn't return `NextResponse.next()` and we are modifying cookies here.
+          // For now, assuming `updateSession` sets cookies on the response it returns.
         },
         remove(name: string, options: CookieOptions) {
+          // Update request cookies for Supabase client internal consistency
           request.cookies.set({ name, value: '', ...options })
+          // Similar to set, updateSession's response is the source of truth for browser cookies.
         },
       },
     }
@@ -41,17 +49,6 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  const publicRoutes = [
-    '/',
-    '/login',
-    '/signup',
-    '/api/auth/callback',
-    '/products',
-    '/about',
-    '/contact',
-    '/sitemap.xml',
-    // Add other public paths as needed
-  ]
   // Add paths that should be explicitly protected if not covered by the default deny
   const protectedRoutes = [
     '/my-account',
@@ -63,34 +60,32 @@ export async function middleware(request: NextRequest) {
 
   const isIgnoredPath = ignoredPaths.some(path => pathname.startsWith(path))
   if (isIgnoredPath) {
-    return response // Return the response from updateSession
+    return response // Use the response from updateSession
   }
 
-  const isPublicRoute = publicRoutes.some((route) =>
-    pathname === route || 
-    (route !== '/' && pathname.startsWith(route + '/')) || // Matches /route/*
-    (route !== '/' && pathname === route) // Matches /route exactly
+  const isProtectedRoute = protectedRoutes.some((route) =>
+    pathname === route || pathname.startsWith(route + '/')
   )
 
   // If the user is not authenticated
   if (!user) {
-    // And the route is not public, redirect to login
-    if (!isPublicRoute) {
+    // And the route is protected, redirect to login
+    if (isProtectedRoute) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirectedFrom', pathname)
-      return NextResponse.redirect(loginUrl) // Create a new redirect response
+      // Return a new redirect response, not modifying the one from updateSession directly here
+      return NextResponse.redirect(loginUrl)
     }
   } else {
     // If the user is authenticated
     // And they are trying to access login or signup, redirect to my-account
     if (pathname === '/login' || pathname === '/signup') {
-      return NextResponse.redirect(new URL('/my-account', request.url)) // Create new redirect
+      // Return a new redirect response
+      return NextResponse.redirect(new URL('/my-account', request.url))
     }
-    // If accessing a specifically protected route (redundant if default is deny, but good for clarity)
-    // This part of the logic might be optional if your default behavior is to protect all non-public routes.
-    // For now, we'll rely on the !user && !isPublicRoute check for protection.
   }
-  return response // Return the response from updateSession (contains session cookies)
+  // If no redirects occurred, return the response from updateSession (which contains session cookies)
+  return response
 }
 
 // Matcher config remains the same
