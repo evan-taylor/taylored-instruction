@@ -1,6 +1,6 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "Taylored Instruction",
+  "short_name": "TayloredInst",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -15,7 +15,9 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#ffffff",
+  "theme_color": "#007bff",
   "background_color": "#ffffff",
-  "display": "standalone"
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
 }

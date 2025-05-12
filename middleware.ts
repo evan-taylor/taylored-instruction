@@ -49,6 +49,7 @@ export async function middleware(request: NextRequest) {
     '/products',
     '/about',
     '/contact',
+    '/sitemap.xml',
     // Add other public paths as needed
   ]
   // Add paths that should be explicitly protected if not covered by the default deny
