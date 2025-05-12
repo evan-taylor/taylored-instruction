@@ -6,8 +6,8 @@ export const Footer = () => {
   return (
     <footer className="bg-gray-100 text-text-light pt-16 pb-8">
       <div className="container mx-auto px-4">
-        {/* Main Footer Content - Back to 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12"> 
+        {/* Main Footer Content - Adjusted to 2 columns, content centered in columns on md+ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 md:justify-items-center gap-10 mb-12">
           
           {/* About Us & Badge Column */}
           <div>
@@ -16,22 +16,9 @@ export const Footer = () => {
               At Taylored Instruction, we are dedicated to providing the highest quality health and safety training. 
               Our goal is to equip every individual and organization with the skills they need to respond to emergencies with confidence.
             </p>
-            <div className="mt-6">
+            <div className="mt-6 flex justify-center">
               <ChamberBadge />
             </div>
-          </div>
-
-          {/* Quick Links Column */}
-          <div>
-            <h3 className="text-lg font-semibold text-text mb-4">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
-              <li><Link href="/" className="hover:text-primary transition-colors duration-200">Home</Link></li>
-              <li><Link href="/classes" className="hover:text-primary transition-colors duration-200">Classes</Link></li>
-              <li><Link href="/about" className="hover:text-primary transition-colors duration-200">About</Link></li>
-              <li><Link href="/contact" className="hover:text-primary transition-colors duration-200">Contact</Link></li>
-              <li><Link href="/shop" className="hover:text-primary transition-colors duration-200">Shop</Link></li>
-              <li><Link href="/my-account" className="hover:text-primary transition-colors duration-200">My Account</Link></li>
-            </ul>
           </div>
 
           {/* Information & Help Column */}

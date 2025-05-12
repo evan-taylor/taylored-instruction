@@ -81,11 +81,12 @@ const LoginPage: NextPage = () => {
                                         boxShadow: 'none'
                                     },
                                     button: {
-                                        border: 'none'
+                                        border: 'none',
+                                        backgroundColor: 'hsl(var(--primary))',
+                                        color: 'hsl(var(--primary-foreground))'
                                     }
                                 }
                             }}
-                            theme="light"
                             providers={['google']}
                             redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/api/auth/callback` : '/api/auth/callback'}
                             localization={{
