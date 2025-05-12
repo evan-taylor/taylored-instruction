@@ -15,16 +15,23 @@ export default async function handler(
     return;
   }
 
-  const { priceId, email, quantity, metadata } = req.body;
-  if (!priceId || !email || !quantity) {
-    res.status(400).json({ error: 'Missing priceId, email, or quantity in request body' });
+  const { lineItems, email, metadata } = req.body;
+
+  if (!lineItems || !Array.isArray(lineItems) || lineItems.length === 0 || !email) {
+    res.status(400).json({ error: 'Missing or invalid lineItems or email in request body' });
     return;
   }
 
-  const numQuantity = Number(quantity);
-  if (isNaN(numQuantity) || numQuantity < 1 || numQuantity > 100) {
-    res.status(400).json({ error: 'Invalid quantity. Must be between 1 and 100.' });
-    return;
+  // Validate line items
+  for (const item of lineItems) {
+    if (!item.price || !item.quantity || item.quantity < 1) {
+      res.status(400).json({ error: 'Each line item must have a valid price ID and quantity' });
+      return;
+    }
+    if (item.quantity > 100) {
+      res.status(400).json({ error: 'Quantity for any item cannot exceed 100' });
+      return;
+    }
   }
 
   try {
@@ -34,14 +41,8 @@ export default async function handler(
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
       customer_email: email,
-      line_items: [{ 
-        price: priceId, 
-        quantity: numQuantity 
-      }],
-      metadata: {
-        ...metadata,
-        quantity: numQuantity.toString(),
-      },
+      line_items: lineItems,
+      metadata: metadata,
       automatic_tax: {
         enabled: true,
       },
@@ -58,7 +59,7 @@ export default async function handler(
       res.status(500).json({ error: 'Checkout session created, but no redirect URL was provided.' });
     }
   } catch (err: any) {
-    console.error('Error creating Stripe checkout session:', err);
+    console.error('Error creating Stripe cart checkout session:', err);
     const errorMessage = err.raw?.message || err.message || 'Internal Server Error';
     res.status(500).json({ error: errorMessage });
   }

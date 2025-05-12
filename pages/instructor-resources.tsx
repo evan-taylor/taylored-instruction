@@ -71,12 +71,17 @@ const InstructorResourcesPage: NextPage = () => {
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-full mx-auto">
-          {/* Embed Notion Page */}
-          <iframe 
-            src="https://tayloredinstruction.notion.site/ebd/1b93d13e0dfd8008ba75c20b52611ce5" 
-            style={{ width: '100%', height: '80vh', border: 'none' }} 
-            allowFullScreen
-          />
+          <h1 className="text-2xl font-bold mb-4 text-text">Instructor Resources</h1>
+          <p className="mb-6 text-text-light">Access all instructor-related documentation and materials below.</p>
+          
+          {/* Styled iframe container */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 overflow-hidden">
+            <iframe 
+              src="https://tayloredinstruction.notion.site/ebd/1b93d13e0dfd8008ba75c20b52611ce5?theme=light" 
+              style={{ width: '100%', height: '80vh', border: 'none' }} 
+              allowFullScreen
+            />
+          </div>
         </div>
       </main>
       <Footer />

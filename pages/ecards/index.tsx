@@ -6,7 +6,7 @@ import { Footer } from '../../components/layout/Footer';
 import { useProfile } from '../../hooks/useProfile';
 import { createClient } from '../../utils/supabase/client';
 import Link from 'next/link';
-import { FaShoppingCart } from 'react-icons/fa';
+import { FaShoppingCart, FaTrash, FaPlus, FaMinus } from 'react-icons/fa';
 
 const supabase = createClient();
 
@@ -31,6 +31,12 @@ interface ProductWithPrice extends Product {
   stripe_product_description?: string | null;
 }
 
+// Define cart item interface
+interface CartItem {
+  product: ProductWithPrice;
+  quantity: number;
+}
+
 const ECardsPage: NextPage = () => {
   const router = useRouter();
   const { isInstructor, loading, session } = useProfile();
@@ -39,7 +45,30 @@ const ECardsPage: NextPage = () => {
   const [isLoading, setIsLoading] = useState(true); // Combined loading state for Supabase & Stripe data
   const [error, setError] = useState<string | null>(null);
   const [selectedQuantities, setSelectedQuantities] = useState<Record<string, number>>({});
-  const [checkoutLoading, setCheckoutLoading] = useState<boolean>(false);
+  const [loadingProductIds, setLoadingProductIds] = useState<string[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
+  // Load cart from localStorage on initial render
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedCart = localStorage.getItem('ecardsCart');
+      if (savedCart) {
+        try {
+          setCartItems(JSON.parse(savedCart));
+        } catch (e) {
+          console.error('Failed to parse cart from localStorage', e);
+        }
+      }
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && cartItems.length > 0) {
+      localStorage.setItem('ecardsCart', JSON.stringify(cartItems));
+    }
+  }, [cartItems]);
 
   // Effect for handling redirection
   useEffect(() => {
@@ -164,47 +193,94 @@ const ECardsPage: NextPage = () => {
     }));
   };
 
-  const handlePurchase = async (product: ProductWithPrice) => {
+  const addToCart = (product: ProductWithPrice) => {
     const quantity = selectedQuantities[product.id] || 1;
     if (quantity < 1) return;
-    setCheckoutLoading(true);
+
+    // Check if product already exists in cart
+    const existingItemIndex = cartItems.findIndex(item => item.product.id === product.id);
+    
+    if (existingItemIndex >= 0) {
+      // Update quantity if already in cart
+      const updatedCart = [...cartItems];
+      updatedCart[existingItemIndex].quantity += quantity;
+      setCartItems(updatedCart);
+    } else {
+      // Add new item to cart
+      setCartItems([...cartItems, { product, quantity }]);
+    }
+    
+    // Reset quantity input
+    setSelectedQuantities(prev => ({
+      ...prev,
+      [product.id]: 1,
+    }));
+    
+    // Show cart
+    setIsCartOpen(true);
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCartItems(cartItems.filter(item => item.product.id !== productId));
+  };
+
+  const updateCartItemQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    
+    setCartItems(cartItems.map(item => 
+      item.product.id === productId 
+        ? { ...item, quantity: newQuantity } 
+        : item
+    ));
+  };
+
+  const calculateTotal = () => {
+    return cartItems.reduce((total, item) => 
+      total + (item.product.display_price * item.quantity), 0);
+  };
+
+  const handleCartCheckout = async () => {
+    if (cartItems.length === 0) return;
+    
     try {
-      const response = await fetch('/api/create-checkout-session', {
+      // Create line items for all cart products
+      const lineItems = cartItems.map(item => ({
+        price: item.product.stripe_price_id,
+        quantity: item.quantity,
+      }));
+      
+      // Set all products to loading
+      setLoadingProductIds(cartItems.map(item => item.product.id));
+      
+      const response = await fetch('/api/create-cart-checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          priceId: product.stripe_price_id,
           email: session?.user?.email,
-          quantity,
+          lineItems,
           metadata: { 
-            productName: product.stripe_product_name || product.name,
-            description: product.stripe_product_description || product.description,
-            imageUrl: getImageUrl(product.image_urls),
             userId: session?.user?.id,
-            supabaseProductId: product.id
+            cartItems: JSON.stringify(cartItems.map(item => ({
+              productId: item.product.id,
+              productName: item.product.name,
+              quantity: item.quantity
+            })))
           }
         }),
       });
 
       const data = await response.json();
-      // The backend returns `sessionId`, and Stripe redirects via `session.url`
-      // Let's make sure the backend actually sends the `url` from the Stripe session object
-      if (data.url) { // Stripe session object has a `url` property
+      if (data.url) {
         window.location.href = data.url;
-      } else if (data.sessionId) {
-        // Fallback or if you decide to use Stripe.js to redirect on client
-        // For now, log an error if URL is missing, as backend should provide it.
-        console.error('Checkout session created, but no redirect URL was provided.', data);
-        setError('Could not redirect to checkout. Please try again.');
       } else {
         console.error('Error creating checkout session:', data.error || 'Unknown error');
         setError(data.error || 'Could not initiate checkout. Please try again.');
       }
     } catch (err) {
-      console.error('Error in purchase flow', err);
+      console.error('Error in cart checkout flow', err);
       setError('An unexpected error occurred. Please try again.');
     } finally {
-      setCheckoutLoading(false);
+      setLoadingProductIds([]);
     }
   };
 
@@ -267,70 +343,173 @@ const ECardsPage: NextPage = () => {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4">eCards</h1>
-          <p className="text-gray-600 mb-8">
-            Purchase eCards for your certification courses. As an approved instructor, you can distribute these to your students upon completion of your training courses.
-          </p>
-          
-          {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+        {/* Shopping Cart Button */}
+        <div className="flex justify-end mb-4">
+          <button 
+            onClick={() => setIsCartOpen(!isCartOpen)}
+            className="relative flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors"
+          >
+            <FaShoppingCart className="mr-2" />
+            <span>Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)})</span>
+            {cartItems.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+                {cartItems.length}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Shopping Cart Dropdown */}
+        {isCartOpen && (
+          <div className="fixed top-0 right-0 h-full w-full md:w-96 bg-white border-l border-gray-200 shadow-xl z-50 overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Your Cart</h2>
+              <button 
+                onClick={() => setIsCartOpen(false)} 
+                className="p-1 rounded-full hover:bg-gray-100"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-          )}
-          
-          {products.length === 0 && !isLoading ? (
-            <div className="text-center py-8">
-              <p className="text-lg">No eCard products are currently available.</p>
-              <p className="mt-2 text-gray-600">Please check back soon or contact support for assistance.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {products.map((product) => (
-                <div key={product.id} className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col">
-                  <div className="h-48 overflow-hidden">
-                    <img 
-                      src={getImageUrl(product.image_urls)}
-                      alt={product.stripe_product_name || product.name} 
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4 flex flex-col flex-grow">
-                    <h2 className="text-xl font-semibold mb-2">{product.stripe_product_name || product.name}</h2>
-                    <p className="text-gray-600 mb-4 line-clamp-2">{product.stripe_product_description || product.description}</p>
-                    
-                    {/* This new div will group quantity, price, and button, and be pushed to the bottom */}
-                    <div className="mt-auto pt-4"> {/* pt-4 to add some space above the quantity if title/desc is short */}
-                      <div className="flex items-center mb-4">
-                        <label htmlFor={`quantity-${product.id}`} className="mr-2">Quantity:</label>
-                        <input
-                          id={`quantity-${product.id}`}
-                          type="number"
-                          min={1}
-                          value={selectedQuantities[product.id] || 1}
-                          onChange={e => handleQuantityChange(product.id, parseInt(e.target.value, 10))}
-                          className="border rounded w-16 p-1"
+            <div className="flex-1 overflow-y-auto p-4">
+              {cartItems.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center">
+                  <FaShoppingCart size={48} className="text-gray-300 mb-4" />
+                  <p className="text-gray-500">Your cart is empty</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {cartItems.map((item) => (
+                    <div key={item.product.id} className="flex border rounded-lg p-3 shadow-sm">
+                      <div className="w-16 h-16 overflow-hidden rounded mr-3 flex-shrink-0">
+                        <img 
+                          src={getImageUrl(item.product.image_urls)} 
+                          alt={item.product.name} 
+                          className="w-full h-full object-cover"
                         />
                       </div>
-                      <div className="flex justify-between items-baseline">
-                        <span className="text-xl font-bold text-primary">
-                          {product.display_price > 0 ? `$${product.display_price.toFixed(2)} ${product.currency}` : 'Price unavailable'}
-                        </span>
-                        <button
-                          onClick={() => handlePurchase(product)}
-                          disabled={checkoutLoading || product.display_price <= 0}
-                          className="btn btn-primary inline-flex items-center"
-                        >
-                          <FaShoppingCart className="mr-2" />
-                          {checkoutLoading ? 'Processing...' : 'Purchase'}
-                        </button>
+                      <div className="flex-1">
+                        <h3 className="font-medium">{item.product.name}</h3>
+                        <p className="text-sm text-gray-500">
+                          ${item.product.display_price.toFixed(2)} each
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center border rounded">
+                            <button 
+                              onClick={() => updateCartItemQuantity(item.product.id, item.quantity - 1)}
+                              className="px-2 py-1 text-gray-500 hover:text-gray-700"
+                            >
+                              <FaMinus size={12} />
+                            </button>
+                            <span className="px-2">{item.quantity}</span>
+                            <button 
+                              onClick={() => updateCartItemQuantity(item.product.id, item.quantity + 1)}
+                              className="px-2 py-1 text-gray-500 hover:text-gray-700"
+                            >
+                              <FaPlus size={12} />
+                            </button>
+                          </div>
+                          <button 
+                            onClick={() => removeFromCart(item.product.id)}
+                            className="p-1 text-red-500 hover:text-red-700"
+                          >
+                            <FaTrash size={14} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+            
+            <div className="p-4 border-t border-gray-200">
+              {cartItems.length > 0 && (
+                <button 
+                  onClick={() => setCartItems([])} 
+                  className="text-sm text-red-500 hover:underline mb-4 inline-block"
+                >
+                  Clear Cart
+                </button>
+              )}
+              
+              <div className="flex justify-between font-semibold mb-4">
+                <span>Total:</span>
+                <span>${calculateTotal().toFixed(2)}</span>
+              </div>
+              
+              <button
+                onClick={handleCartCheckout}
+                disabled={cartItems.length === 0 || loadingProductIds.length > 0}
+                className="w-full bg-primary text-white px-4 py-3 rounded-lg shadow-sm hover:bg-primary-dark transition-colors disabled:opacity-50 font-medium"
+              >
+                {loadingProductIds.length > 0 ? 'Processing...' : 'Proceed to Checkout'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <h1 className="text-3xl font-bold mb-8 text-center">eCards</h1>
+        
+        {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {products.map((product) => (
+            <div key={product.id} className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow flex flex-col h-full">
+              <div className="h-48 overflow-hidden">
+                <img 
+                  src={getImageUrl(product.image_urls)}
+                  alt={product.stripe_product_name || product.name} 
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="p-4 flex flex-col flex-grow">
+                <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  {product.description}
+                </p>
+                <div className="text-lg font-semibold text-primary mt-auto">
+                  ${product.display_price.toFixed(2)} each
+                </div>
+              </div>
+              
+              <div className="p-4 pt-0 border-t mt-auto">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center border rounded overflow-hidden">
+                    <button 
+                      onClick={() => handleQuantityChange(product.id, Math.max(1, (selectedQuantities[product.id] || 1) - 1))}
+                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    >
+                      <FaMinus size={10} />
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      value={selectedQuantities[product.id] || 1}
+                      onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
+                      className="w-12 border-0 py-1 text-center focus:ring-0"
+                    />
+                    <button 
+                      onClick={() => handleQuantityChange(product.id, (selectedQuantities[product.id] || 1) + 1)}
+                      className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    >
+                      <FaPlus size={10} />
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={() => addToCart(product)}
+                    className="flex-1 bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors flex items-center justify-center"
+                  >
+                    <FaShoppingCart className="mr-2" />
+                    Add to Cart
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </main>
       <Footer />
