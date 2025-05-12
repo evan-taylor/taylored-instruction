@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { FaFacebook, FaInstagram } from 'react-icons/fa'
-import { ChamberBadge } from '@/components/ui/ChamberBadge'
 
 export const Footer = () => {
   return (
@@ -42,15 +41,6 @@ export const Footer = () => {
               <a href="https://www.facebook.com/tayloredinstruction.us" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-gray-500 hover:text-primary transition-colors"><FaFacebook size={20} /></a>
               <a href="https://www.instagram.com/taylored.instruction/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-500 hover:text-primary transition-colors"><FaInstagram size={20} /></a>
             </div>
-          </div>
-        </div>
-
-        {/* Proud Member Section */}
-        <div className="mt-8 flex flex-col items-center space-y-2">
-          <span className="font-semibold text-text">Taylored Instruction</span>
-          <span className="text-sm text-gray-600">Proud Member of</span>
-          <div>
-            <ChamberBadge />
           </div>
         </div>
 

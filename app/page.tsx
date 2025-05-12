@@ -3,6 +3,7 @@ import { Hero } from '@/components/home/Hero'
 import { ServicesSection } from '@/components/home/ServicesSection'
 import { CertificationsSection } from '@/components/home/CertificationsSection'
 import { AboutSection } from '@/components/home/AboutSection'
+import { ChamberBadge } from '@/components/ui/ChamberBadge'
 
 export const metadata: Metadata = {
   keywords: [
@@ -26,6 +27,9 @@ export default function Home() {
       <ServicesSection />
       <CertificationsSection />
       <AboutSection />
+      <div className="py-12 flex justify-center">
+        <ChamberBadge />
+      </div>
     </>
   )
 } 

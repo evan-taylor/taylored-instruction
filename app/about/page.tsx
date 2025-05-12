@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { FaEnvelope, FaPhone } from 'react-icons/fa' // Import icons
 import { Button } from '@/components/ui/Button' // Import the Button component
 import type { Metadata } from 'next'
+import { ChamberBadge } from '@/components/ui/ChamberBadge'
 
 // --- Page Metadata ---
 export const metadata: Metadata = {
@@ -154,7 +155,7 @@ export default function AboutPage() {
           
           {/* Logos Section - Full Width */}
           <div className="mt-8 mb-16">
-            <div className="grid grid-cols-1 sm:grid-cols-3 items-center justify-items-center gap-8 md:gap-12 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 items-center justify-items-center gap-8 md:gap-12 max-w-4xl mx-auto">
               <div className="flex justify-center p-4 bg-gray-50 rounded-lg w-full sm:w-auto max-w-[370px]">
                 <Image
                   src="/licensed-training-provider.jpeg"
@@ -184,6 +185,9 @@ export default function AboutPage() {
                   height={127}
                   className="h-auto w-full object-contain"
                 />
+              </div>
+              <div className="flex justify-center p-4 bg-gray-50 rounded-lg w-full sm:w-auto max-w-[370px]">
+                <ChamberBadge />
               </div>
             </div>
           </div>
