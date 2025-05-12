@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
+import { ChamberBadge } from '@/components/ui/ChamberBadge'
 
 export const AboutSection = () => {
   return (
@@ -46,14 +47,15 @@ export const AboutSection = () => {
             Red Cross instructor at age 17.
           </p>
           
-          <div className="text-center mt-12">
-             <h3 className="text-2xl font-semibold mb-4 text-text">Have a question?</h3>
-             <p className="mb-6 text-text-light">
-               Let us know how we can help you by contacting us today!
-             </p>
-             <Button href="/contact" variant="primary" size="lg">
-               Contact Us
-             </Button>
+          <div className="mt-12 grid grid-cols-1 md:grid-cols-2 items-center gap-8">
+            <div className="text-center md:text-left">
+              <h3 className="text-2xl font-semibold mb-4 text-text">Have a question?</h3>
+              <p className="mb-6 text-text-light">Let us know how we can help you by contacting us today!</p>
+              <Button href="/contact" variant="primary" size="lg">Contact Us</Button>
+            </div>
+            <div className="flex justify-center md:justify-end">
+              <ChamberBadge />
+            </div>
           </div>
         </div>
       </div>
