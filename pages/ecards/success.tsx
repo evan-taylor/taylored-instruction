@@ -19,6 +19,11 @@ const EcardSuccessPage: NextPage = () => {
       return;
     }
 
+    // Clear the cart from localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ecardsCart');
+    }
+
     // Call API to send eCard purchase emails
     fetch('/api/send-ecard-emails', {
       method: 'POST',
