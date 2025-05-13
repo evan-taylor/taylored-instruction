@@ -82,6 +82,13 @@ const generateNavLinks = (isLoggedIn: boolean, isInstructor: boolean): NavTopLev
     ]
   },
   {
+    label: "Products",
+    dropdown: [
+      { label: "AEDs", href: "/aeds" },
+      // Add more product categories here as needed
+    ]
+  },
+  {
     label: "Instructors",
     dropdown: [
       { label: "Alignment", href: "/alignment" },

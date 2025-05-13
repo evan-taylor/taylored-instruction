@@ -88,18 +88,18 @@ const LoginPage: NextPage = () => {
                                 }
                             }}
                             providers={['google']}
+                            view="magic_link"
+                            showLinks={false}
+                            magicLink={true}
                             redirectTo={typeof window !== 'undefined' ? `${window.location.origin}/api/auth/callback` : '/api/auth/callback'}
                             localization={{
                                 variables: {
-                                    sign_up: {
-                                        email_label: 'Email',
-                                        password_label: 'Password',
-                                        button_label: 'Sign up as Instructor',
-                                    },
-                                    sign_in: {
-                                        email_label: 'Email',
-                                        password_label: 'Password',
-                                        button_label: 'Sign in',
+                                    magic_link: {
+                                        email_input_label: 'Email',
+                                        email_input_placeholder: 'Your email address',
+                                        button_label: 'Send Magic Link',
+                                        loading_button_label: 'Sending Magic Link...',
+                                        confirmation_text: 'Check your email for a magic link to sign in!',
                                     }
                                 }
                             }}
