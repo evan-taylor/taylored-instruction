@@ -29,6 +29,7 @@ const AdminInstructorsPage: NextPage = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [userEmailForDisplay, setUserEmailForDisplay] = useState<string | null>(null); // For display purposes
+  const [actionMessage, setActionMessage] = useState<string | null>(null); // For success/error messages from actions
   
   // New state to manage the admin access check process specifically
   const [adminAccessCheckInProgress, setAdminAccessCheckInProgress] = useState(true);
@@ -184,34 +185,118 @@ const AdminInstructorsPage: NextPage = () => {
   }, [adminAccessCheckInProgress, isAdmin, supabase]); // Dependencies for data fetching
 
   // Function to approve or revoke instructor status
-  const toggleInstructorStatus = async (profileId: string, currentStatus: boolean) => {
+  const toggleInstructorStatus = async (profileId: string, currentStatus: boolean, userEmail: string | null) => {
     if (!supabase) {
         console.error("Supabase client not available for toggling status.");
         setError("Action failed: client unavailable.");
         return;
     }
+    setActionMessage(null); // Clear previous messages
+    setError(null);
+
     try {
       const now = new Date().toISOString();
       
-      const { data, error } = await supabase
+      const { data, error: updateError } = await supabase
         .from('profiles')
         .update({ is_instructor: !currentStatus, updated_at: now })
         .eq('id', profileId)
         .select()
         .single();
         
-      if (error) throw error;
+      if (updateError) throw updateError;
       
-      
-      // Update the local state
       setProfiles(profiles.map(p => 
         p.id === profileId 
           ? { ...p, is_instructor: !currentStatus, updated_at: now } 
           : p
       ));
+      setActionMessage(`Instructor status successfully ${!currentStatus ? 'approved' : 'revoked'}.`);
+
+      // If user is being approved, send them an email
+      if (!currentStatus && userEmail) { // !currentStatus means they are being set to is_instructor = true
+        try {
+          console.log("[AdminInstructorsPage] Attempting to invoke send-approval-email function for:", userEmail);
+          const { data: responseData, error: invokeError } = await supabase.functions.invoke('send-approval-email', {
+            body: { email: userEmail, name: userEmail.split('@')[0] }, 
+          });
+
+          console.log("[AdminInstructorsPage] send-approval-email responseData:", responseData);
+          console.log("[AdminInstructorsPage] send-approval-email invokeError:", invokeError);
+
+          if (invokeError) {
+            // Case 1: The function invocation itself failed (network, function threw unhandled 5xx, etc.)
+            console.error('[AdminInstructorsPage] Supabase function invocation failed:', invokeError);
+            if ('isRelayError' in invokeError) {
+              console.error('[AdminInstructorsPage] Supabase Relay Error:', (invokeError as any).isRelayError);
+            }
+            setActionMessage(prev => prev + ` (Approval email failed to send. Client/Invoke Error: ${invokeError.message})`);
+          } else {
+            // Case 2: Function invocation was successful (e.g., function returned 2xx)
+            // Now, check the content of 'responseData'
+            if (responseData && responseData.message && responseData.message.includes('Approval email sent successfully')) {
+              // Case 2a: Email explicitly reported as sent by the function
+              console.log("[AdminInstructorsPage] Approval email reported as sent successfully by function.");
+              setActionMessage(prev => prev + " (Approval email sent.)");
+            } else if (responseData && responseData.message && responseData.message.includes('could not be sent due to server config')) {
+              // Case 2b: Function reported server config issue for email
+              console.warn('[AdminInstructorsPage] Email server configuration issue reported by function:', responseData.message);
+              setActionMessage(prev => prev + " (Email server configuration issue.)");
+            } else if (responseData && responseData.error) {
+              // Case 2c: Function returned a 2xx but included an 'error' field in its JSON response
+              console.error('[AdminInstructorsPage] Error message in function response data:', responseData.error);
+              setActionMessage(prev => prev + ` (Approval email process reported an error: ${responseData.error})`);
+            } else {
+              // Case 2d: Function returned 2xx, but response is not one of the expected success/known-issue messages.
+              console.warn('[AdminInstructorsPage] Unexpected response from send-approval-email function:', responseData);
+              setActionMessage(prev => prev + " (Approval email status uncertain.)");
+            }
+          }
+        } catch (exceptionDuringInvoke: any) { // Catch for truly unexpected exceptions during the email sending try block
+          console.error('[AdminInstructorsPage] Critical exception during email approval process:', exceptionDuringInvoke);
+          setActionMessage(prev => prev + ` (Approval email failed due to an unexpected error: ${exceptionDuringInvoke.message})`);
+        }
+      }
+
     } catch (err: any) {
       console.error('Error updating instructor status:', err);
       setError(`Failed to update status: ${err.message}`);
+    }
+  };
+
+  // Function to reject and delete a user
+  const handleRejectUser = async (profileId: string, userEmail: string | null) => {
+    if (!supabase) {
+      console.error("Supabase client not available for rejecting user.");
+      setError("Action failed: client unavailable.");
+      return;
+    }
+    setActionMessage(null);
+    setError(null);
+
+    // Confirm before deleting
+    if (!window.confirm(`Are you sure you want to reject and delete user ${userEmail || profileId}? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      // Call a Supabase function to delete the user's auth entry and profile.
+      // The function should handle this atomically if possible, or at least ensure both are attempted.
+      const { error: functionError } = await supabase.functions.invoke('delete-user-and-profile', {
+        body: { userId: profileId },
+      });
+
+      if (functionError) {
+        throw functionError;
+      }
+
+      // If successful, remove the user from the local state
+      setProfiles(profiles.filter(p => p.id !== profileId));
+      setActionMessage(`User ${userEmail || profileId} successfully rejected and deleted.`);
+
+    } catch (err: any) {
+      console.error('Error rejecting user:', err);
+      setError(`Failed to reject user: ${err.message}`);
     }
   };
 
@@ -290,8 +375,16 @@ const AdminInstructorsPage: NextPage = () => {
           )}
           
           {error && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              {error}
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
+              <strong className="font-bold">Error:</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          )}
+
+          {actionMessage && (
+            <div className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4" role="alert">
+              <strong className="font-bold">Info:</strong>
+              <span className="block sm:inline"> {actionMessage}</span>
             </div>
           )}
           
@@ -327,37 +420,38 @@ const AdminInstructorsPage: NextPage = () => {
                   ) : (
                     profiles.map((profile) => (
                       <tr key={profile.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {profile.short_id}...
-                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profile.short_id}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profile.user_email || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {profile.user_email || "N/A"}
+                          {profile.is_instructor ? (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                              Instructor
+                            </span>
+                          ) : (
+                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                              Not Instructor
+                            </span>
+                          )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            profile.is_instructor 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {profile.is_instructor ? 'Approved' : 'Pending'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {profile.updated_at 
-                            ? new Date(profile.updated_at).toLocaleString()
-                            : 'Never'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
-                            onClick={() => toggleInstructorStatus(profile.id, profile.is_instructor)}
-                            className={`px-3 py-1 rounded text-white text-xs font-semibold ${
+                            onClick={() => toggleInstructorStatus(profile.id, profile.is_instructor, profile.user_email)}
+                            className={`ml-2 px-3 py-1.5 text-xs font-medium rounded-md ${
                               profile.is_instructor 
-                                ? 'bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50' 
-                                : 'bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50'
+                                ? 'bg-red-500 hover:bg-red-600 text-white' 
+                                : 'bg-green-500 hover:bg-green-600 text-white'
                             }`}
                           >
-                            {profile.is_instructor ? 'Revoke Access' : 'Approve'}
+                            {profile.is_instructor ? 'Revoke Approval' : 'Approve Instructor'}
                           </button>
+                          {!profile.is_instructor && (
+                            <button
+                              onClick={() => handleRejectUser(profile.id, profile.user_email)}
+                              className="ml-2 px-3 py-1.5 text-xs font-medium rounded-md bg-red-700 hover:bg-red-800 text-white"
+                            >
+                              Reject User
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))

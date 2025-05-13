@@ -7,6 +7,9 @@ const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 const ADMIN_EMAIL = Deno.env.get('ADMIN_NOTIF_EMAIL')
 const FROM_EMAIL = Deno.env.get('FROM_EMAIL')
 
+console.log('new-user-admin-notification: Edge function loaded');
+console.log(`new-user-admin-notification: Environment configured - RESEND_API_KEY: ${RESEND_API_KEY ? 'Set' : 'Not set'}, ADMIN_EMAIL: ${ADMIN_EMAIL || 'Not set'}, FROM_EMAIL: ${FROM_EMAIL || 'Not set'}`);
+
 interface NewUserPayload {
   record: {
     id: string;
@@ -15,6 +18,8 @@ interface NewUserPayload {
 }
 
 serve(async (req: Request) => {
+  console.log(`new-user-admin-notification: Received ${req.method} request`);
+  
   // Only handle POST requests; skip others without error
   if (req.method !== 'POST') {
     console.warn('new-user-admin-notification: Non-POST request, skipping');
@@ -24,8 +29,9 @@ serve(async (req: Request) => {
   let payload: NewUserPayload
   try {
     payload = await req.json() as NewUserPayload
-  } catch {
-    console.warn('new-user-admin-notification: Invalid JSON payload');
+    console.log(`new-user-admin-notification: Parsed payload for user ID: ${payload.record?.id}, email: ${payload.record?.email}`);
+  } catch (err) {
+    console.warn('new-user-admin-notification: Invalid JSON payload', err);
     return new Response('OK', { status: 200 })
   }
 
@@ -39,6 +45,8 @@ serve(async (req: Request) => {
   // Send email notification if configuration is present
   if (RESEND_API_KEY && ADMIN_EMAIL && FROM_EMAIL) {
     try {
+      console.log(`new-user-admin-notification: Sending email for user ${newUserId} (${newUserEmail}) to admin at ${ADMIN_EMAIL}`);
+      
       const resend = new Resend(RESEND_API_KEY)
       const subject = 'New Instructor Signup'
       const htmlBody = `
@@ -48,19 +56,22 @@ serve(async (req: Request) => {
           <li><strong>User ID:</strong> ${newUserId}</li>
           <li><strong>Email:</strong> ${newUserEmail}</li>
         </ul>
+        <p>You can manage this instructor and others by visiting the <a href="https://www.tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
       `
 
-      await resend.emails.send({
+      const result = await resend.emails.send({
         from: `Taylored Instruction <${FROM_EMAIL}>`,
         to: [ADMIN_EMAIL],
         subject,
         html: htmlBody,
       })
+      
+      console.log('new-user-admin-notification: Email successfully sent', result);
     } catch (emailError) {
       console.error('new-user-admin-notification: Error sending email', emailError)
     }
   } else {
-    console.warn('new-user-admin-notification: Email config not set, skipping send')
+    console.warn(`new-user-admin-notification: Email config not set, skipping send. RESEND_API_KEY: ${RESEND_API_KEY ? 'Set' : 'Not set'}, ADMIN_EMAIL: ${ADMIN_EMAIL || 'Not set'}, FROM_EMAIL: ${FROM_EMAIL || 'Not set'}`);
   }
 
   // Always return 200 OK so as not to block user signup
