@@ -69,13 +69,14 @@ const InstructorResourcesPage: NextPage = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Header />
-      <main className="flex-grow px-4 py-8">
+      {/* Use flex-1 and min-h-0 for main to ensure it takes available space and can shrink if needed */}
+      <main className="flex-1 flex flex-col min-h-0"> 
           
-        {/* Styled iframe container - now outside the text container */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 overflow-hidden">
+        {/* iframe container: use flex-1 and min-h-0, remove rounded corners and shadow for max space */}
+        <div className="bg-white dark:bg-gray-800 overflow-hidden flex-1 min-h-0"> 
           <iframe 
-            src="https://tayloredinstruction.notion.site/ebd/1b93d13e0dfd8008ba75c20b52611ce5?theme=light" 
-            style={{ width: '100%', height: '75vh', border: 'none' }} 
+            src="https://tayloredinstruction.notion.site/ebd/1b93d13e0dfd8008ba75c20b52611ce5" 
+            style={{ width: '100%', height: '85vh', border: 'none' }} 
             allowFullScreen
           />
         </div>
