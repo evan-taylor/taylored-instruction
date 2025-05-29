@@ -12,8 +12,8 @@ interface ProfileWithUser {
   is_instructor: boolean;
   updated_at: string | null;
   user_email: string | null;
-  // Include the first part of the UUID as identifier for display
-  short_id?: string;
+  last_sign_in_at: string | null;
+  // Placeholder for potential future display fields
 }
 
 const AdminInstructorsPage: NextPage = () => {
@@ -124,38 +124,39 @@ const AdminInstructorsPage: NextPage = () => {
         
         if (profilesError) throw profilesError;
 
-        // Initialize the profiles array with null emails
+        // Initialize the profiles array with null user info
         let profilesWithEmail: ProfileWithUser[] = (profilesData || []).map((p: any) => ({
           id: p.id,
           is_instructor: p.is_instructor,
           updated_at: p.updated_at,
           user_email: null,
-          short_id: p.id.substring(0, 8),
+          last_sign_in_at: null,
         }));
 
         // For admin users with appropriate permissions, directly query
         // This uses the SQL function we deployed to Supabase
         const profileIds = profilesWithEmail.map(p => p.id);
         const { data: usersData, error: usersError } = await supabase
-          .rpc('get_users_with_emails', { 
+          .rpc('get_users_with_emails', {
             profile_ids: profileIds
           });
 
         if (!usersError && usersData) {
           // Create a map of id -> email for quick lookup
-          const userEmailMap = new Map();
+          const userInfoMap = new Map();
           usersData.forEach((user: any) => {
             if (user && user.id) {
-              userEmailMap.set(user.id, user.email || null);
+              userInfoMap.set(user.id, { email: user.email || null, last_sign_in_at: user.last_sign_in_at || null });
             }
           });
 
           // Update profiles with emails
           profilesWithEmail = profilesWithEmail.map(profile => {
-            const email = userEmailMap.get(profile.id);
+            const info = userInfoMap.get(profile.id) || {};
             return {
               ...profile,
-              user_email: email || null
+              user_email: info.email ?? null,
+              last_sign_in_at: info.last_sign_in_at ?? null,
             };
           });
         } else {
@@ -394,16 +395,13 @@ const AdminInstructorsPage: NextPage = () => {
                 <thead className="bg-gray-50">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      User ID
-                    </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Email
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Last Updated
+                      Last Login
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -413,14 +411,13 @@ const AdminInstructorsPage: NextPage = () => {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {profiles.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                      <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
                         No users found or access denied by RLS.
                       </td>
                     </tr>
                   ) : (
                     profiles.map((profile) => (
                       <tr key={profile.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profile.short_id}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{profile.user_email || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {profile.is_instructor ? (
@@ -433,12 +430,15 @@ const AdminInstructorsPage: NextPage = () => {
                             </span>
                           )}
                         </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {profile.last_sign_in_at ? new Date(profile.last_sign_in_at).toLocaleString() : 'N/A'}
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button
                             onClick={() => toggleInstructorStatus(profile.id, profile.is_instructor, profile.user_email)}
                             className={`ml-2 px-3 py-1.5 text-xs font-medium rounded-md ${
-                              profile.is_instructor 
-                                ? 'bg-red-500 hover:bg-red-600 text-white' 
+                              profile.is_instructor
+                                ? 'bg-red-500 hover:bg-red-600 text-white'
                                 : 'bg-green-500 hover:bg-green-600 text-white'
                             }`}
                           >
