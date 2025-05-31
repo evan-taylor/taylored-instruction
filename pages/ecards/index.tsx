@@ -65,8 +65,12 @@ const ECardsPage: NextPage = () => {
 
   // Save cart to localStorage whenever it changes
   useEffect(() => {
-    if (typeof window !== 'undefined' && cartItems.length > 0) {
-      localStorage.setItem('ecardsCart', JSON.stringify(cartItems));
+    if (typeof window !== 'undefined') {
+      if (cartItems.length > 0) {
+        localStorage.setItem('ecardsCart', JSON.stringify(cartItems));
+      } else {
+        localStorage.removeItem('ecardsCart');
+      }
     }
   }, [cartItems]);
 
@@ -226,12 +230,19 @@ const ECardsPage: NextPage = () => {
 
   const updateCartItemQuantity = (productId: string, newQuantity: number) => {
     if (newQuantity < 1) return;
-    
-    setCartItems(cartItems.map(item => 
-      item.product.id === productId 
-        ? { ...item, quantity: newQuantity } 
+
+    setCartItems(cartItems.map(item =>
+      item.product.id === productId
+        ? { ...item, quantity: newQuantity }
         : item
     ));
+  };
+
+  const clearCart = () => {
+    setCartItems([]);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('ecardsCart');
+    }
   };
 
   const calculateTotal = () => {
@@ -427,8 +438,8 @@ const ECardsPage: NextPage = () => {
             
             <div className="p-4 border-t border-gray-200">
               {cartItems.length > 0 && (
-                <button 
-                  onClick={() => setCartItems([])} 
+                <button
+                  onClick={clearCart}
                   className="text-sm text-red-500 hover:underline mb-4 inline-block"
                 >
                   Clear Cart
