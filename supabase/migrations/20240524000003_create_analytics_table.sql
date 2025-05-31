@@ -24,5 +24,8 @@ FOR INSERT WITH CHECK (true);
 -- Allow select only for admins
 CREATE POLICY "Analytics admin select" ON public.analytics
 FOR SELECT USING (
-  (SELECT email FROM auth.users WHERE id = auth.uid()) IN ('admin@tayloredinstruction.com','evan@tayloredinstruction.com')
+  current_setting('request.jwt.claim.email', true) IN (
+    'admin@tayloredinstruction.com',
+    'evan@tayloredinstruction.com'
+  )
 );

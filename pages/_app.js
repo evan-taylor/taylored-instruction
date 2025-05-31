@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { createClient } from '@/utils/supabase/client';
+import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 // Assuming you have a global CSS file
 // Try importing from the app directory structure
