@@ -143,7 +143,7 @@ export default function AboutPage() {
                   <li>American Red Cross First Aid/CPR/AED Instructor Trainer</li>
                   <li>American Red Cross Water Safety Instructor™</li>
                   <li>American Red Cross Basic Life Support Instructor</li>
-                  <li>American Red Cross Babysitter's Training Instructor</li>
+                  <li>American Red Cross Babysitter&apos;s Training Instructor</li>
                   <li>Swim Angelfish® Adaptive Swim Whisperer</li>
                 </ul>
                 <p className="text-text-light">

@@ -31,7 +31,7 @@ const AlignmentPageContent: React.FC = () => {
         {/* Introductory Paragraph */}
         <div className="mb-12 p-6 rounded-lg shadow-sm bg-white">
           <p className="text-gray-700 leading-relaxed text-center">
-            Are you passionate about saving lives and empowering others? At Taylored Instruction, we believe in the power of health and safety education and the critical role that instructors play in building safer communities. As an American Red Cross Licensed Training Provider and an American Heart Association (AHA) Training Site, we deliver top-quality training in CPR, First Aid, Lifeguarding, and other essential life-saving skills. We're looking for motivated instructors to join us on this mission!
+            Are you passionate about saving lives and empowering others? At Taylored Instruction, we believe in the power of health and safety education and the critical role that instructors play in building safer communities. As an American Red Cross Licensed Training Provider and an American Heart Association (AHA) Training Site, we deliver top-quality training in CPR, First Aid, Lifeguarding, and other essential life-saving skills. We&apos;re looking for motivated instructors to join us on this mission!
           </p>
         </div>
 
@@ -46,7 +46,7 @@ const AlignmentPageContent: React.FC = () => {
         <div className="p-6 rounded-lg shadow-sm mb-12 bg-gray-50">
           <h3 className="text-xl lg:text-2xl font-semibold mb-3 text-gray-800">A Mission with Impact</h3>
           <p className="text-gray-700 leading-relaxed">
-            By joining us, you become part of a team dedicated to making a genuine difference. We don't just teach—we inspire and equip individuals with vital health and safety skills.
+            By joining us, you become part of a team dedicated to making a genuine difference. We don&apos;t just teach—we inspire and equip individuals with vital health and safety skills.
           </p>
         </div>
 
@@ -54,12 +54,12 @@ const AlignmentPageContent: React.FC = () => {
         <div className="p-6 rounded-lg shadow-sm mb-12 bg-gray-50">
           <h3 className="text-xl lg:text-2xl font-semibold mb-3 text-gray-800">Unmatched Support, Every Step of the Way</h3>
           <p className="text-gray-700 leading-relaxed mb-4">
-            At Taylored Instruction, support isn't just a promise—it's our priority.
+            At Taylored Instruction, support isn&apos;t just a promise—it&apos;s our priority.
           </p>
           <ul className="list-disc pl-6 space-y-2 text-gray-700 leading-relaxed">
             <li><strong>Rapid Response:</strong> Have a question or need assistance? We respond quickly—often within an hour, during the day—to ensure you never feel stuck or unsupported. You may contact us via email, phone, or text, whatever is easiest for you.</li>
-            <li><strong>Comprehensive Help:</strong> Whether it's guidance, troubleshooting, or connecting you with the right resources, we're here to assist you to the fullest of our ability.</li>
-            <li><strong>Ongoing Growth:</strong> We'll help you expand your skillset, advance your career, and achieve your goals.</li>
+              <li><strong>Comprehensive Help:</strong> Whether it&apos;s guidance, troubleshooting, or connecting you with the right resources, we&apos;re here to assist you to the fullest of our ability.</li>
+              <li><strong>Ongoing Growth:</strong> We&apos;ll help you expand your skillset, advance your career, and achieve your goals.</li>
             <li><strong>Low Fees:</strong> We are here to help! We do not charge any alignment fees. We do charge a fee to recertify your instructor card, and that is it!</li>
           </ul>
            <p className="text-gray-700 leading-relaxed mt-4">

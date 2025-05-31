@@ -37,7 +37,7 @@ export default function HeartsaverPageContent() {
           <section>
             <h2 className="text-3xl font-semibold mb-4">Course Overview</h2>
             <p>
-              The American Heart Association (AHA) Heartsaver® courses are designed for anyone with little or no medical training who needs CPR, AED, and first aid knowledge to meet job, regulatory, or personal requirements. This user-friendly course covers essential lifesaving skills and is perfect for workplace training or personal preparedness. You'll learn CPR for adults, children, and infants, proper AED use, and how to manage common first aid scenarios.
+              The American Heart Association (AHA) Heartsaver® courses are designed for anyone with little or no medical training who needs CPR, AED, and first aid knowledge to meet job, regulatory, or personal requirements. This user-friendly course covers essential lifesaving skills and is perfect for workplace training or personal preparedness. You&apos;ll learn CPR for adults, children, and infants, proper AED use, and how to manage common first aid scenarios.
             </p>
             <p><strong className="font-semibold">Duration:</strong> Approximately 4 hours for in-person, or 1-2 hours for blended learning.</p>
             <p><strong className="font-semibold">Audience:</strong> Ideal for teachers, coaches, daycare providers, construction workers, fitness trainers, and anyone who wants to be prepared for an emergency.</p>
@@ -67,7 +67,7 @@ export default function HeartsaverPageContent() {
             <p>We offer the following formats:</p>
             <ul className="list-disc pl-6 space-y-2">
               <li><strong className="font-semibold">In-person Training:</strong> A single, comprehensive session that includes all components of the course.</li>
-              <li><strong className="font-semibold">Blended Learning:</strong> Complete the knowledge portion online at your own pace, followed by an in-person skills session to practice and demonstrate what you've learned.</li>
+              <li><strong className="font-semibold">Blended Learning:</strong> Complete the knowledge portion online at your own pace, followed by an in-person skills session to practice and demonstrate what you&apos;ve learned.</li>
             </ul>
              {/* Found button link in HTML */}
              <div className="mt-8 text-center">

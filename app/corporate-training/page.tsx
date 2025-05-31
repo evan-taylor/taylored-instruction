@@ -73,7 +73,7 @@ export default function CorporateTrainingPage() {
           <div className="mb-16 md:mb-24">
             <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Why Choose Corporate CPR Training?</h2>
-              <p className="text-lg text-text-light max-w-3xl mx-auto">Professional training that adapts to your organization's unique needs and schedule.</p>
+                <p className="text-lg text-text-light max-w-3xl mx-auto">Professional training that adapts to your organization&apos;s unique needs and schedule.</p>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
               <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100 text-center hover:shadow-lg transition-shadow">
@@ -105,7 +105,7 @@ export default function CorporateTrainingPage() {
                   <LifeBuoy size={28} />
                 </div>
                 <h3 className="text-xl font-semibold mb-3">Customized Training</h3>
-                <p className="text-text-light">Select courses that fit your organization's specific needs and scenarios.</p>
+                  <p className="text-text-light">Select courses that fit your organization&apos;s specific needs and scenarios.</p>
               </div>
             </div>
           </div>
@@ -222,7 +222,7 @@ export default function CorporateTrainingPage() {
                 <Building size={30} />
               </div>
               <h2 className="text-2xl md:text-3xl font-bold mb-4">Customization for Your Workplace</h2>
-              <p className="text-text-light mb-6">We understand that every workplace is unique. That's why we offer:</p>
+              <p className="text-text-light mb-6">We understand that every workplace is unique. That&apos;s why we offer:</p>
               <ul className="space-y-3">
                 <li className="flex items-start">
                   <span className="text-primary mr-3 mt-1"><CheckCircle size={18} /></span>
@@ -244,7 +244,7 @@ export default function CorporateTrainingPage() {
               <div className="inline-flex items-center justify-center h-16 w-16 bg-white/20 text-white rounded-full mb-6">
                 <Award size={30} />
               </div>
-              <h2 className="text-2xl md:text-3xl font-bold mb-4">What's Included in Our Training?</h2>
+              <h2 className="text-2xl md:text-3xl font-bold mb-4">What&apos;s Included in Our Training?</h2>
               <ul className="space-y-3">
                 <li className="flex items-start">
                   <span className="text-white mr-3 mt-1"><CheckCircle size={18} /></span>
@@ -278,7 +278,7 @@ export default function CorporateTrainingPage() {
                   <span className="text-primary mr-3"><Users size={20} /></span>
                   How many people can be trained at once?
                 </h4>
-                <p className="mt-3 text-text-light pl-8">Depending on the course, we can train groups of up to 20 participants in a single session. For larger groups, we'll divide sessions to ensure quality instruction.</p>
+                <p className="mt-3 text-text-light pl-8">Depending on the course, we can train groups of up to 20 participants in a single session. For larger groups, we&apos;ll divide sessions to ensure quality instruction.</p>
               </div>
               
               <div className="p-6 hover:bg-gray-50 transition-colors">
@@ -286,7 +286,7 @@ export default function CorporateTrainingPage() {
                   <span className="text-primary mr-3"><LifeBuoy size={20} /></span>
                   Do we need any equipment for the training?
                 </h4>
-                <p className="mt-3 text-text-light pl-8">No, we'll bring everything needed, including manikins, AED trainers, and course materials.</p>
+                <p className="mt-3 text-text-light pl-8">No, we&apos;ll bring everything needed, including manikins, AED trainers, and course materials.</p>
               </div>
               
               <div className="p-6 hover:bg-gray-50 transition-colors">
@@ -302,7 +302,7 @@ export default function CorporateTrainingPage() {
                   <span className="text-primary mr-3"><Building size={20} /></span>
                   Can the training be tailored to our industry?
                 </h4>
-                <p className="mt-3 text-text-light pl-8">Yes! We'll incorporate scenarios relevant to your workplace to maximize engagement.</p>
+                <p className="mt-3 text-text-light pl-8">Yes! We&apos;ll incorporate scenarios relevant to your workplace to maximize engagement.</p>
               </div>
             </div>
           </div>
@@ -311,7 +311,7 @@ export default function CorporateTrainingPage() {
           <div className="bg-gradient-to-r from-primary to-primary-800 text-white p-10 md:p-16 rounded-2xl shadow-xl text-center">
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Train Your Team?</h2>
             <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
-              Contact us today to schedule a session or learn more about our Corporate CPR Training options. Let's create a safer workplace together!
+              Contact us today to schedule a session or learn more about our Corporate CPR Training options. Let&apos;s create a safer workplace together!
             </p>
             <Link href="/contact">
               <Button variant="primary" size="lg" className="bg-white text-primary hover:bg-white/90 shadow-lg px-8 py-6 text-lg">
