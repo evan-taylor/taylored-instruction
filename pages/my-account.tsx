@@ -25,6 +25,7 @@ const MyAccountPage: NextPage<MyAccountPageProps> = ({ user }) => {
   } = useProfile(user?.id);
   
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     const userEmail = user?.email;
@@ -105,9 +106,24 @@ const MyAccountPage: NextPage<MyAccountPageProps> = ({ user }) => {
                 </>
               )}
               {isAdmin && (
-                <Link href="/admin/instructors" className="text-primary hover:underline block">
-                  Manage Instructors (Admin)
-                </Link>
+                <div>
+                  <button
+                    onClick={() => setShowAdmin(!showAdmin)}
+                    className="text-primary hover:underline block"
+                  >
+                    Admin
+                  </button>
+                  {showAdmin && (
+                    <div className="ml-4 mt-2 space-y-1">
+                      <Link href="/admin/instructors" className="text-primary hover:underline block">
+                        Manage Instructors
+                      </Link>
+                      <Link href="/admin/analytics" className="text-primary hover:underline block">
+                        Analytics
+                      </Link>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
