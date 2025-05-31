@@ -36,7 +36,7 @@ export default function BlsPageContent() {
           <section>
             <h2 className="text-3xl font-semibold mb-4">Course Overview</h2>
             <p>
-              Our American Heart Association (AHA) Basic Life Support (BLS) course is designed for healthcare professionals and first responders (though anyone is welcome!) who need to know how to perform CPR and other basic cardiovascular life support skills. In this comprehensive training, you'll learn high-quality CPR for adults, children, and infants, how to use an AED effectively, and essential skills for recognizing and responding to life-threatening emergencies.
+              Our American Heart Association (AHA) Basic Life Support (BLS) course is designed for healthcare professionals and first responders (though anyone is welcome!) who need to know how to perform CPR and other basic cardiovascular life support skills. In this comprehensive training, you&apos;ll learn high-quality CPR for adults, children, and infants, how to use an AED effectively, and essential skills for recognizing and responding to life-threatening emergencies.
             </p>
             <p><strong className="font-semibold">Duration:</strong> Approximately 4 hours for in-person, or 2 hours for blended learning</p>
             <p><strong className="font-semibold">Audience:</strong> Healthcare providers, first responders, and anyone required to have BLS certification as part of their job or studies.</p>

@@ -51,7 +51,7 @@ export function ContactForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Status Messages - Moved to top */}
-       {status.success === true && <p className="p-3 mb-4 rounded bg-green-100 text-green-800 border border-green-200 text-center">Message sent successfully! We'll be in touch soon.</p>}
+        {status.success === true && <p className="p-3 mb-4 rounded bg-green-100 text-green-800 border border-green-200 text-center">Message sent successfully! We&apos;ll be in touch soon.</p>}
        {status.success === false && status.error && <p className="p-3 mb-4 rounded bg-red-100 text-red-800 border border-red-200 text-center">Error: {status.error}</p>}
        {status.loading && <p className="p-3 mb-4 rounded bg-blue-100 text-blue-800 border border-blue-200 text-center">Sending message...</p>}
 
@@ -118,9 +118,9 @@ export function ContactForm() {
            <Label htmlFor="smsOptIn" className="font-normal text-sm">
               SMS Opt-In (optional)
            </Label>
-           <p className="text-xs text-muted-foreground">
-             By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our <a href="/privacy-policy" className="text-blue-500">Privacy Policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying "STOP" to any of our messages.
-           </p>
+             <p className="text-xs text-muted-foreground">
+              By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our <a href="/privacy-policy" className="text-blue-500">Privacy Policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying &quot;STOP&quot; to any of our messages.
+             </p>
         </div>
       </div>
       

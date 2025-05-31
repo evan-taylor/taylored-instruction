@@ -67,9 +67,9 @@ export default function ContactPage() {
         <div className="relative z-20 container mx-auto px-6 py-20 text-center">
           <div className="bg-black/30 backdrop-blur-sm p-8 md:p-10 rounded-xl max-w-4xl mx-auto">
             <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">Contact Us</h1>
-            <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-              Have a question, or want to learn more? We're here to help!
-            </p>
+              <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
+                Have a question, or want to learn more? We&apos;re here to help!
+              </p>
           </div>
         </div>
       </section>
