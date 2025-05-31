@@ -34,7 +34,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
       <div className="container mx-auto px-4 py-12 max-w-4xl">
         <h2 className="text-2xl lg:text-3xl font-bold mb-6 text-center">Become an American Heart Association Instructor</h2>
         <p className="mb-6 text-lg text-center text-gray-700">
-          Are you passionate about saving lives and teaching others critical lifesaving skills? The American Heart Association (AHA) Instructor courses for Basic Life Support (BLS) and Heartsaver® certifications will equip you with the knowledge and skills to lead AHA courses in your community, workplace, or organization. As an AHA Instructor, you'll be part of a network dedicated to improving survival rates and providing lifesaving training.
+            Are you passionate about saving lives and teaching others critical lifesaving skills? The American Heart Association (AHA) Instructor courses for Basic Life Support (BLS) and Heartsaver® certifications will equip you with the knowledge and skills to lead AHA courses in your community, workplace, or organization. As an AHA Instructor, you&apos;ll be part of a network dedicated to improving survival rates and providing lifesaving training.
         </p>
 
         <div className="text-center mb-10">
@@ -48,9 +48,9 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
         </div>
 
         <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Overview</h3>
-        <p className="mb-4 text-gray-700">
-          The AHA Instructor Course is designed to train individuals to effectively teach BLS or Heartsaver® courses. Through a combination of online and in-person training, you'll learn instructional techniques, gain hands-on experience, and receive mentorship to ensure your success as a certified AHA Instructor.
-        </p>
+          <p className="mb-4 text-gray-700">
+            The AHA Instructor Course is designed to train individuals to effectively teach BLS or Heartsaver® courses. Through a combination of online and in-person training, you&apos;ll learn instructional techniques, gain hands-on experience, and receive mentorship to ensure your success as a certified AHA Instructor.
+          </p>
 
         <h3 className="text-xl lg:text-2xl font-bold mb-3">Duration:</h3>
         <ul className="list-disc list-inside mb-6 text-gray-700 space-y-2">
@@ -81,11 +81,11 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
 
         <h4 className="text-lg lg:text-xl font-semibold mb-2">3. Complete Online Instructor Essentials</h4>
         <p className="mb-4 text-gray-700">
-          After registration, you'll receive access to the AHA Instructor Essentials online module. This self-paced training introduces you to AHA's teaching philosophy and course administration processes. You must complete this module before attending the in-person session.
+          After registration, you&apos;ll receive access to the AHA Instructor Essentials online module. This self-paced training introduces you to AHA&apos;s teaching philosophy and course administration processes. You must complete this module before attending the in-person session.
         </p>
 
         <h4 className="text-lg lg:text-xl font-semibold mb-2">4. Attend the In-Person Instructor Training</h4>
-        <p className="mb-2 text-gray-700">During the in-person session, you'll:</p>
+        <p className="mb-2 text-gray-700">During the in-person session, you&apos;ll:</p>
         <ul className="list-disc list-inside mb-4 text-gray-700 space-y-2">
           <li>Learn to manage a classroom and conduct hands-on skills sessions.</li>
           <li>Practice teaching and receive feedback from experienced AHA Training Faculty.</li>
@@ -94,12 +94,12 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
 
         <h4 className="text-lg lg:text-xl font-semibold mb-2">5. Complete Monitoring Session</h4>
         <p className="mb-4 text-gray-700">
-          After your instructor training, you'll teach your first class under the supervision of an AHA Training Faculty member. This ensures you are confident and prepared to lead AHA courses independently.
+          After your instructor training, you&apos;ll teach your first class under the supervision of an AHA Training Faculty member. This ensures you are confident and prepared to lead AHA courses independently.
         </p>
 
         <h4 className="text-lg lg:text-xl font-semibold mb-2">6. Receive Your Instructor Certification</h4>
         <p className="mb-6 text-gray-700">
-          Once all steps are complete, you'll receive your AHA Instructor eCard, valid for two years. You can now teach AHA BLS or Heartsaver® courses as part of a Training Site or Training Center.
+          Once all steps are complete, you&apos;ll receive your AHA Instructor eCard, valid for two years. You can now teach AHA BLS or Heartsaver® courses as part of a Training Site or Training Center.
         </p>
 
         <h3 className="text-xl lg:text-2xl font-bold mb-3">Certification Details</h3>
@@ -127,7 +127,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
 
         <h4 className="text-lg lg:text-xl font-semibold mb-2">What materials will I need as an Instructor?</h4>
         <p className="mb-4 text-gray-700">
-          You'll need an AHA Instructor Manual for your chosen discipline, and access to AHA course materials.
+          You&apos;ll need an AHA Instructor Manual for your chosen discipline, and access to AHA course materials.
         </p>
 
         <h4 className="text-lg lg:text-xl font-semibold mb-2">Can I teach independently?</h4>

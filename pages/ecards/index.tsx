@@ -175,7 +175,7 @@ const ECardsPage: NextPage = () => {
       setIsLoading(false);
       setProducts([]);
     }
-  }, [loading, session, isInstructor, supabase]); // supabase client as dependency
+  }, [loading, session, isInstructor]);
 
   // Helper function to get the image URL or a placeholder
   const getImageUrl = (imageUrl: string | null): string => {

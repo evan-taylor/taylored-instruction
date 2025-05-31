@@ -211,7 +211,7 @@ const AlignmentInterestForm: React.FC = () => {
                 SMS Opt-In (optional)
             </Label>
             <p className="text-xs text-gray-500">
-                By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our Privacy Policy at <a href="/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://tayloredinstruction.com/privacy-policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying "STOP" to any of our messages.
+                By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our Privacy Policy at <a href="/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://tayloredinstruction.com/privacy-policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying &quot;STOP&quot; to any of our messages.
             </p>
         </div>
       </div>
