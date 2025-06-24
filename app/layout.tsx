@@ -1,9 +1,17 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import { Readex_Pro } from 'next/font/google'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+
+const readexPro = Readex_Pro({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-readex'
+})
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://tayloredinstruction.com'),
@@ -40,7 +48,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className={readexPro.variable}>
         <div className="flex flex-col min-h-screen">
           <Header />
           <main className="flex-grow">

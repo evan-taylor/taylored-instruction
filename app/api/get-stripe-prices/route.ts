@@ -58,7 +58,11 @@ export async function POST(req: NextRequest) {
     });
 
     const results = await Promise.all(priceDetailsPromises);
-    return NextResponse.json(results);
+    return NextResponse.json(results, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=3600'
+      }
+    });
 
   } catch (err: any) {
     console.error('Error fetching Stripe prices:', err);

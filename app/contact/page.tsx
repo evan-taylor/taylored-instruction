@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { FaPhone, FaEnvelope } from 'react-icons/fa'
+import { Phone, Mail } from 'lucide-react'
 import type { Metadata } from 'next'
 import { ContactForm } from '@/components/ContactForm' // Placeholder for the form component
 
@@ -103,11 +103,11 @@ export default function ContactPage() {
 
                  <div className="space-y-3 text-left text-text-light">
                    <p className="flex items-center justify-center">
-                     <FaPhone className="mr-2 text-primary" />
+                     <Phone className="mr-2 text-primary" />
                      <a href="tel:3602071844" className="hover:text-primary">(360) 207-1844</a>
                    </p>
                     <p className="flex items-center justify-center">
-                     <FaEnvelope className="mr-2 text-primary" />
+                     <Mail className="mr-2 text-primary" />
                      <a href="mailto:evan@tayloredinstruction.com" className="hover:text-primary break-all">evan@tayloredinstruction.com</a>
                    </p>
                  </div>

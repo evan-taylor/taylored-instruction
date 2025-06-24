@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import Image from 'next/image'
-import { FaQuoteLeft, FaChevronLeft, FaChevronRight } from 'react-icons/fa'
+import { Quote, ChevronLeft, ChevronRight } from 'lucide-react'
 
 type Testimonial = {
   id: number
@@ -74,7 +74,7 @@ export const TestimonialsSection = () => {
               </div>
               
               <div className="flex-1">
-                <FaQuoteLeft className="text-primary-500 text-3xl mb-4" />
+                <Quote className="text-primary-500 text-3xl mb-4" />
                 <p className="text-gray-600 italic mb-6">{testimonials[activeIndex].quote}</p>
                 
                 <div>
@@ -91,7 +91,7 @@ export const TestimonialsSection = () => {
               className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
               aria-label="Previous testimonial"
             >
-              <FaChevronLeft className="text-gray-600" />
+              <ChevronLeft className="text-gray-600" />
             </button>
             
             <div className="flex space-x-2">
@@ -112,7 +112,7 @@ export const TestimonialsSection = () => {
               className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
               aria-label="Next testimonial"
             >
-              <FaChevronRight className="text-gray-600" />
+              <ChevronRight className="text-gray-600" />
             </button>
           </div>
         </div>

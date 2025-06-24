@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { FaEnvelope, FaPhone } from 'react-icons/fa' // Import icons
+import { Mail, Phone } from 'lucide-react' // Import icons
 import { Button } from '@/components/ui/Button' // Import the Button component
 import type { Metadata } from 'next'
 import { ChamberBadge } from '@/components/ui/ChamberBadge'
@@ -113,10 +113,10 @@ export default function AboutPage() {
                   <p className="text-text-light mb-3">Owner, Instructor Trainer</p>
                   <div className="flex justify-center space-x-4">
                     <a href="mailto:evan@tayloredinstruction.com" aria-label="Email Evan Taylor" className="text-gray-500 hover:text-primary transition-colors duration-200">
-                      <FaEnvelope size={20} />
+                      <Mail size={20} />
                     </a>
                     <a href="tel:3602071844" aria-label="Call Evan Taylor" className="text-gray-500 hover:text-primary transition-colors duration-200">
-                      <FaPhone size={20} />
+                      <Phone size={20} />
                     </a>
                   </div>
                 </div>

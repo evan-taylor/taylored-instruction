@@ -3,7 +3,6 @@ module.exports = {
 	darkMode: ["class"],
 	content: [
 		"./app/**/*.{js,ts,jsx,tsx,mdx}",
-		"./pages/**/*.{js,ts,jsx,tsx,mdx}",
 		"./components/**/*.{js,ts,jsx,tsx,mdx}",
 	],
 	theme: {
@@ -56,10 +55,7 @@ module.exports = {
 				}
 			},
 			fontFamily: {
-				readex: [
-					'Readex Pro',
-					'sans-serif'
-				]
+				readex: ['var(--font-readex)', 'ui-sans-serif', 'system-ui', 'sans-serif']
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

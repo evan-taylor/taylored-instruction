@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { FaHeartbeat, FaLifeRing, FaUserTie } from 'react-icons/fa'
+import { Heart, LifeBuoy, UserCheck } from 'lucide-react'
 
 type ServiceCardProps = {
   icon: React.ReactNode
@@ -37,21 +37,21 @@ export const ServicesSection = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <ServiceCard 
-            icon={<FaHeartbeat />}
+            icon={<Heart />}
             title="CPR Training"
             description="We offer American Heart Association or American Red Cross CPR training for both laypersons and professional rescuers. Need to train your staff? We would love to work with you."
             link="/classes"
           />
           
           <ServiceCard 
-            icon={<FaLifeRing />}
+            icon={<LifeBuoy />}
             title="Lifeguard Training"
             description="We utilize the American Red Cross Lifeguarding curriculum to train Lifeguards. We are always happy to travel to your facility to train your staff, or you can take a class we host!"
             link="/lifeguarding"
           />
           
           <ServiceCard 
-            icon={<FaUserTie />}
+            icon={<UserCheck />}
             title="Instructor Training"
             description="Want to become a CPR Instructor? We can help! We offer both American Heart Association and American Red Cross Instructor Training, as well as Alignment with our Training Site."
             link="/aha-instructor-training"

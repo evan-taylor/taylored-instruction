@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { FaBars, FaTimes, FaChevronDown, FaShoppingCart, FaSearch } from 'react-icons/fa'
+import { Menu, X, ChevronDown } from 'lucide-react'
 import { useSupabaseClient, useSession } from '@supabase/auth-helpers-react'
 import { useProfile } from '../../hooks/useProfile'
 
@@ -207,11 +207,11 @@ export const Header = () => {
             <div className="flex items-center ml-4 space-x-4">
               {/* Search button REMOVED */}
               {/* <button className="text-text-light hover:text-primary transition-colors duration-200" aria-label="Search">
-                <FaSearch size={18} />
+                <Search size={18} />
               </button> */}
               {/* Cart link REMOVED */}
               {/* <Link href="/cart" className="text-text-light hover:text-primary transition-colors duration-200" aria-label="Cart">
-                <FaShoppingCart size={20} />
+                <ShoppingCart size={20} />
               </Link> */}
               <Link 
                 href="https://www.hovn.app/tayloredinstruction" 
@@ -229,7 +229,7 @@ export const Header = () => {
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
-            {isMenuOpen ? <FaTimes size={24} /> : <FaBars size={24} />}
+            {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
@@ -246,10 +246,10 @@ export const Header = () => {
           <div className="mt-6 flex flex-col items-center space-y-4">
             {/* Mobile Search & Cart - REMOVED */}
             {/* <button className="flex items-center space-x-2 text-text hover:text-primary" aria-label="Search">
-              <FaSearch size={18} /> <span>Search</span>
+              <Search size={18} /> <span>Search</span>
             </button> */}
             {/* <Link href="/cart" className="flex items-center space-x-2 text-text hover:text-primary" onClick={closeMobileMenu}>
-              <FaShoppingCart size={20} /> <span>Cart</span>
+              <ShoppingCart size={20} /> <span>Cart</span>
             </Link> */}
             <Link 
               href="https://www.hovn.app/tayloredinstruction" 
@@ -305,7 +305,7 @@ const NavMenu = ({
                 }`}
               >
                 {link.label} 
-                <FaChevronDown 
+                <ChevronDown 
                   size={12} 
                   className={`ml-1 transition-transform duration-200 ${activeDropdown === link.label ? 'rotate-180' : ''}`}
                 />
@@ -388,7 +388,7 @@ const MobileNavMenu = ({
                   className="w-full flex justify-between items-center py-2 text-left text-text hover:text-primary transition-colors duration-200"
                 >
                   <span>{link.label}</span>
-                  <FaChevronDown className={`ml-1 h-3 w-3 transition-transform duration-200 ${openMobileDropdown === link.label ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`ml-1 h-3 w-3 transition-transform duration-200 ${openMobileDropdown === link.label ? 'rotate-180' : ''}`} />
                 </button>
                 {openMobileDropdown === link.label && (
                   <div className="pl-4 pt-1 pb-2 space-y-1 border-l border-gray-200 ml-2">

@@ -74,27 +74,25 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
         let isMounted = true;
         async function loadProfile() {
             if (!currentUserId) {
-                // This condition should ideally not be met if the first useEffect determined there's no session and set loading to false.
-                // If initialUserId was provided but is invalid, or if session flow is complex, this ensures profile isn't fetched.
-                // However, setLoading(false) here can be problematic if session is still being fetched by the first effect.
-                // The primary setLoading(false) for "no user" cases should be handled by the first effect.
                 if (isMounted) {
                     setProfile(null);
+                    setLoading(false);
                 }
                 return;
             }
             
-            // Ensure loading is true before starting the fetch if it wasn't already.
-            // This is a safeguard, as the first effect should keep it true if a session was found.
             if (isMounted && !loading) setLoading(true); 
 
             try {
+                
                 const { data, error: profileError } = await supabaseClient
                     .from('profiles')
                     .select('id, is_instructor, updated_at')
                     .eq('id', currentUserId)
                     .single();
+                
                 if (!isMounted) return;
+
 
                 if (profileError) {
                     if (profileError.code === 'PGRST116') { 
@@ -116,14 +114,11 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
                     if (isMounted) setProfile(data as Profile);
                 }
             } catch (err: any) {
-                // Errors from profileError or insertError are caught here again if re-thrown
-                // Ensure setError is only called if not already set, or update if more specific.
                 if (isMounted && !error) {
                      setError(err.message || "An unexpected error occurred during profile loading.");
                 }
-                console.error("useProfile (Client): Catch block error for profile load:", currentUserId, err);
             } finally {
-                if (isMounted) setLoading(false); // Final loading state change for profile fetch path
+                if (isMounted) setLoading(false);
             }
         }
 

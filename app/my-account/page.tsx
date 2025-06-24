@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -13,7 +13,7 @@ export default function MyAccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [userLoading, setUserLoading] = useState(true);
 
-  const { profile, loading, isInstructor, email } = useProfile(user?.id);
+  const { profile, loading, isInstructor, error } = useProfile(user?.id);
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -21,7 +21,9 @@ export default function MyAccountPage() {
   // Get user on mount
   useEffect(() => {
     const getUser = async () => {
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
       setUser(user);
       setUserLoading(false);
     };
@@ -48,11 +50,31 @@ export default function MyAccountPage() {
     }
   }, [userLoading, user, router]);
 
-  if (userLoading || loading || (!profile && user)) {
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-lg text-red-600">Error loading account: {error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (userLoading || loading) {
     return (
       <div className="container mx-auto px-4 py-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg">Loading account information...</p>
+          <p className="text-sm text-gray-500 mt-2">
+            User: {user ? "Loaded" : "Loading"} | Profile:{" "}
+            {profile ? "Loaded" : loading ? "Loading" : "Not found"}
+          </p>
         </div>
       </div>
     );
@@ -134,12 +156,6 @@ export default function MyAccountPage() {
                       className="text-primary hover:underline block"
                     >
                       Manage Instructors
-                    </Link>
-                    <Link
-                      href="/admin/analytics"
-                      className="text-primary hover:underline block"
-                    >
-                      Analytics
                     </Link>
                   </div>
                 )}

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { FaFacebook, FaInstagram } from 'react-icons/fa'
+import { Facebook, Instagram } from 'lucide-react'
 
 export const Footer = () => {
   return (
@@ -38,8 +38,8 @@ export const Footer = () => {
           <div className="space-y-4">
             <h3 className="text-sm font-semibold uppercase text-text mb-2">Follow Us</h3>
             <div className="flex space-x-4">
-              <a href="https://www.facebook.com/tayloredinstruction.us" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-gray-500 hover:text-primary transition-colors"><FaFacebook size={20} /></a>
-              <a href="https://www.instagram.com/taylored.instruction/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-500 hover:text-primary transition-colors"><FaInstagram size={20} /></a>
+              <a href="https://www.facebook.com/tayloredinstruction.us" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-gray-500 hover:text-primary transition-colors"><Facebook size={20} /></a>
+              <a href="https://www.instagram.com/taylored.instruction/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-gray-500 hover:text-primary transition-colors"><Instagram size={20} /></a>
             </div>
           </div>
         </div>
