@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { NextPage } from "next";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
 import { useProfile } from "../hooks/useProfile";
@@ -57,6 +58,16 @@ const InstructorResourcesPage: NextPage = () => {
       setCurrentPageId(router.query.page as string);
     }
   }, [router.isReady, router.query.page]);
+
+  // Scroll to top when currentPageId changes or when content loads
+  useEffect(() => {
+    // Use setTimeout to ensure scroll happens after DOM update
+    const timer = setTimeout(() => {
+      window.scrollTo(0, 0);
+    }, 0);
+
+    return () => clearTimeout(timer);
+  }, [currentPageId, notionContent]);
 
   // Fetch Notion content when user is authenticated and is instructor
   useEffect(() => {
@@ -650,6 +661,13 @@ const InstructorResourcesPage: NextPage = () => {
   if (loading) {
     return (
       <div className="flex flex-col min-h-screen">
+        <Head>
+          <title>
+            {currentPageId && pageTitle
+              ? `${pageTitle} - Instructor Resources | Taylored Instruction`
+              : "Instructor Resources | Taylored Instruction"}
+          </title>
+        </Head>
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
@@ -668,6 +686,13 @@ const InstructorResourcesPage: NextPage = () => {
   if (!session) {
     return (
       <div className="flex flex-col min-h-screen">
+        <Head>
+          <title>
+            {currentPageId && pageTitle
+              ? `${pageTitle} - Instructor Resources | Taylored Instruction`
+              : "Instructor Resources | Taylored Instruction"}
+          </title>
+        </Head>
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
@@ -682,6 +707,13 @@ const InstructorResourcesPage: NextPage = () => {
   if (!isInstructor) {
     return (
       <div className="flex flex-col min-h-screen">
+        <Head>
+          <title>
+            {currentPageId && pageTitle
+              ? `${pageTitle} - Instructor Resources | Taylored Instruction`
+              : "Instructor Resources | Taylored Instruction"}
+          </title>
+        </Head>
         <Header />
         <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
           <div className="text-center">
@@ -699,6 +731,13 @@ const InstructorResourcesPage: NextPage = () => {
   // If all checks pass, render the page content
   return (
     <div className="flex flex-col min-h-screen">
+      <Head>
+        <title>
+          {currentPageId && pageTitle
+            ? `${pageTitle} - Instructor Resources | Taylored Instruction`
+            : "Instructor Resources | Taylored Instruction"}
+        </title>
+      </Head>
       <Header />
       <main className="flex-grow container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

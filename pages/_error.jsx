@@ -1,8 +1,20 @@
 import * as Sentry from "@sentry/nextjs";
 import Error from "next/error";
+import Head from "next/head";
 
 const CustomErrorComponent = (props) => {
-  return <Error statusCode={props.statusCode} />;
+  return (
+    <>
+      <Head>
+        <title>Error | Taylored Instruction</title>
+        <meta
+          name="description"
+          content="An error occurred. Please try again."
+        />
+      </Head>
+      <Error statusCode={props.statusCode} />
+    </>
+  );
 };
 
 CustomErrorComponent.getInitialProps = async (contextData) => {
