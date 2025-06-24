@@ -1,52 +1,49 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import { NextRequest, NextResponse } from "next/server";
 import { Client } from "@notionhq/client";
-
-// Extend the default timeout for Vercel functions
-export const config = {
-  maxDuration: 30, // 30 seconds for Pro plan, 10 seconds for Hobby
-};
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-export default async function handler(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+export const dynamic = 'force-dynamic'
 
+export async function GET(req: NextRequest) {
   try {
-    // Check environment variables
     if (!process.env.NOTION_API_KEY) {
       console.error("NOTION_API_KEY is not set");
-      return res.status(500).json({ error: "Notion API key not configured" });
+      return NextResponse.json(
+        { error: "Notion API key not configured" },
+        { status: 500 }
+      );
     }
 
-    const { pageId: requestedPageId } = req.query;
+    const { searchParams } = new URL(req.url);
+    const requestedPageId = searchParams.get('pageId');
     const pageId = requestedPageId || process.env.NOTION_INSTRUCTOR_PAGE_ID;
 
     if (!pageId) {
       console.error("No page ID available");
-      return res.status(500).json({ error: "Notion page ID not configured" });
+      return NextResponse.json(
+        { error: "Notion page ID not configured" },
+        { status: 500 }
+      );
     }
 
-    // Get the page content with error handling
     let page;
     try {
       page = await notion.pages.retrieve({ page_id: pageId.toString() });
     } catch (pageError: any) {
       console.error("Error retrieving page:", pageError);
-      return res.status(500).json({
-        error: "Failed to retrieve page",
-        details: pageError.message,
-        code: pageError.code,
-      });
+      return NextResponse.json(
+        {
+          error: "Failed to retrieve page",
+          details: pageError.message,
+          code: pageError.code,
+        },
+        { status: 500 }
+      );
     }
 
-    // Get the page blocks (content) with error handling
     let blocks;
     try {
       blocks = await notion.blocks.children.list({
@@ -55,24 +52,24 @@ export default async function handler(
       });
     } catch (blocksError: any) {
       console.error("Error retrieving blocks:", blocksError);
-      return res.status(500).json({
-        error: "Failed to retrieve blocks",
-        details: blocksError.message,
-        code: blocksError.code,
-      });
+      return NextResponse.json(
+        {
+          error: "Failed to retrieve blocks",
+          details: blocksError.message,
+          code: blocksError.code,
+        },
+        { status: 500 }
+      );
     }
 
-    // Helper function to extract page title
     const extractPageTitle = (pageData: any): string => {
       if (pageData.properties) {
-        // Try different title property names
         if (pageData.properties.title?.title?.[0]?.plain_text) {
           return pageData.properties.title.title[0].plain_text;
         }
         if (pageData.properties.Name?.title?.[0]?.plain_text) {
           return pageData.properties.Name.title[0].plain_text;
         }
-        // Try other common property names
         for (const [key, value] of Object.entries(pageData.properties)) {
           if (
             value &&
@@ -86,7 +83,6 @@ export default async function handler(
         }
       }
 
-      // Fallback to child_page title if available
       if (pageData.child_page?.title) {
         return pageData.child_page.title;
       }
@@ -94,28 +90,23 @@ export default async function handler(
       return "";
     };
 
-    // Process blocks with limited recursion to prevent timeouts
     const processBlocks = async (
       blockList: any[],
       depth = 0
     ): Promise<any[]> => {
-      // Limit recursion depth to prevent timeouts
       const MAX_DEPTH = 3;
 
       return Promise.all(
         blockList.map(async (block: any) => {
           try {
-            // For child pages in the main view, only get metadata, not full content
             if (block.type === "child_page" && !requestedPageId) {
               return {
                 id: block.id,
                 type: "child_page",
                 title: block.child_page?.title || "Untitled",
-                // Don't fetch content for overview
               };
             }
 
-            // Handle link_to_page blocks by fetching the linked page title
             if (
               block.type === "link_to_page" &&
               block.link_to_page?.type === "page_id"
@@ -132,7 +123,6 @@ export default async function handler(
               }
             }
 
-            // Handle blocks with children (with depth limit)
             if (block.has_children && depth < MAX_DEPTH) {
               try {
                 const childBlocks = await notion.blocks.children.list({
@@ -152,17 +142,16 @@ export default async function handler(
             return block;
           } catch (blockError) {
             console.error("Error processing block:", blockError);
-            return block; // Return block without processing on error
+            return block;
           }
         })
       );
     };
 
     const processedContent = await processBlocks(blocks.results);
-
     const extractedTitle = extractPageTitle(page);
 
-    res.status(200).json({
+    return NextResponse.json({
       page,
       content: processedContent,
       isChildPage: !!requestedPageId,
@@ -170,10 +159,13 @@ export default async function handler(
     });
   } catch (error: any) {
     console.error("Unexpected error in Notion API:", error);
-    res.status(500).json({
-      error: "Failed to fetch content",
-      message: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    return NextResponse.json(
+      {
+        error: "Failed to fetch content",
+        message: error.message,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      },
+      { status: 500 }
+    );
   }
 }

@@ -1,14 +1,12 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { Resend } from 'resend';
 import EcardPurchaseAdminEmail from '@/emails/EcardPurchaseAdminEmail';
 import EcardPurchaseUserEmail from '@/emails/EcardPurchaseUserEmail';
 
-// Initialize Stripe and Resend
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2023-10-16' });
 const resend = new Resend(process.env.RESEND_API_KEY!);
 
-// Configure from and admin email addresses
 const fromEmail = process.env.FROM_EMAIL || 'info@tayloredinstruction.com';
 const adminEmail = process.env.ADMIN_EMAIL || 'info@tayloredinstruction.com';
 
@@ -18,34 +16,36 @@ interface CartItem {
   quantity: number;
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
-    return res.status(405).end('Method Not Allowed');
-  }
-
-  const { sessionId } = req.body;
+export async function POST(req: NextRequest) {
+  const { sessionId } = await req.json();
+  
   if (!sessionId) {
-    return res.status(400).json({ error: 'Missing sessionId in request body.' });
+    return NextResponse.json(
+      { error: 'Missing sessionId in request body.' },
+      { status: 400 }
+    );
   }
 
   try {
-    // Retrieve checkout session from Stripe
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const customerEmail = session.customer_email;
 
     if (!customerEmail) {
-      // This case should be rare if customer_email is passed to session create
       console.error('Customer email not found in Stripe session or metadata:', session);
-      return res.status(400).json({ error: 'Customer email not found in session.' });
+      return NextResponse.json(
+        { error: 'Customer email not found in session.' },
+        { status: 400 }
+      );
     }
 
     const totalPrice = session.amount_total ? (session.amount_total / 100).toFixed(2) : '0.00';
 
-    // Determine if this is a cart checkout or a single product checkout
     if (!session.metadata) {
       console.error('Stripe session metadata is missing:', session);
-      return res.status(400).json({ error: 'Stripe session metadata is missing.' });
+      return NextResponse.json(
+        { error: 'Stripe session metadata is missing.' },
+        { status: 400 }
+      );
     }
 
     // Handle cart-based checkout (multiple products)
@@ -56,7 +56,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           throw new Error('Invalid cart items format');
         }
 
-        // Generate a summary of items for the email
         const itemSummary = cartItems.map(item => 
           `${item.productName} (Qty: ${item.quantity})`
         ).join(', ');
@@ -105,7 +104,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       } catch (error) {
         console.error('Error processing cart items:', error, session.metadata);
-        return res.status(400).json({ error: 'Invalid cart items format.' });
+        return NextResponse.json(
+          { error: 'Invalid cart items format.' },
+          { status: 400 }
+        );
       }
     }
     // Handle single product checkout
@@ -151,12 +153,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } 
     else {
       console.error('Stripe session metadata is invalid format:', session.metadata);
-      return res.status(400).json({ error: 'Stripe session metadata has invalid format.' });
+      return NextResponse.json(
+        { error: 'Stripe session metadata has invalid format.' },
+        { status: 400 }
+      );
     }
 
-    return res.status(200).json({ success: true });
+    return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Error in send-ecard-emails API:', error);
-    return res.status(500).json({ error: error.message || 'Internal Server Error' });
+    return NextResponse.json(
+      { error: error.message || 'Internal Server Error' },
+      { status: 500 }
+    );
   }
-} 
+}
