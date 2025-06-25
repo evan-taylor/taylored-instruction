@@ -93,7 +93,7 @@ export default function AboutPage() {
             {/* Left Column */}
             <div>
               {/* Where did we come from? Section */}
-              <div className="mb-12 bg-white p-8 rounded-lg shadow-sm">
+              <div className="mb-12 bg-white p-8 rounded-lg">
                 <h2 className="text-3xl font-semibold mb-6 text-text">
                   Where Did We Come From?
                 </h2>
@@ -120,7 +120,7 @@ export default function AboutPage() {
               </div>
 
               {/* Meet Our Instructors Section */}
-              <div className="mb-12 bg-white p-8 rounded-lg shadow-sm">
+              <div className="mb-12 bg-white p-8 rounded-lg">
                 <h2 className="text-3xl font-semibold mb-6 text-text text-center">
                   Meet Our Instructors
                 </h2>
@@ -163,7 +163,7 @@ export default function AboutPage() {
             {/* Right Column */}
             <div>
               {/* Our Mission Section */}
-              <div className="mb-12 bg-white p-8 rounded-lg shadow-sm">
+              <div className="mb-12 bg-white p-8 rounded-lg">
                 <h2 className="text-3xl font-semibold mb-4 text-text">
                   Our Mission
                 </h2>
@@ -177,7 +177,7 @@ export default function AboutPage() {
               </div>
 
               {/* What We Teach Section */}
-              <div className="mb-12 bg-white p-8 rounded-lg shadow-sm">
+              <div className="mb-12 bg-white p-8 rounded-lg">
                 <h2 className="text-3xl font-semibold mb-6 text-text">
                   What We Teach
                 </h2>
