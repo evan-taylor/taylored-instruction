@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -21,7 +21,9 @@ function InstructorResourcesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isInstructor, loading, session, error } = useProfile();
-  const [notionContent, setNotionContent] = useState<NotionContent | null>(null);
+  const [notionContent, setNotionContent] = useState<NotionContent | null>(
+    null
+  );
   const [contentLoading, setContentLoading] = useState(true);
   const [currentPageId, setCurrentPageId] = useState<string | null>(null);
   const [pageTitle, setPageTitle] = useState<string>("");
@@ -48,7 +50,7 @@ function InstructorResourcesContent() {
 
   // Handle URL query parameters for direct links
   useEffect(() => {
-    const page = searchParams?.get('page');
+    const page = searchParams?.get("page");
     if (page) {
       setCurrentPageId(page);
     }
@@ -162,7 +164,7 @@ function InstructorResourcesContent() {
 
     const listBreakingBlocks = [
       "heading_1",
-      "heading_2", 
+      "heading_2",
       "heading_3",
       "divider",
       "column_list",
@@ -170,6 +172,8 @@ function InstructorResourcesContent() {
       "callout",
       "child_page",
       "link_to_page",
+      "embed",
+      "video",
     ];
 
     return blocks.map((block, index) => {
@@ -194,7 +198,8 @@ function InstructorResourcesContent() {
   const renderNotionBlock = (block: NotionBlock, listNumber?: number) => {
     switch (block.type) {
       case "child_page":
-        const pageTitle = block.child_page?.title || block.title || "Untitled Page";
+        const pageTitle =
+          block.child_page?.title || block.title || "Untitled Page";
         return (
           <div
             key={block.id}
@@ -292,6 +297,41 @@ function InstructorResourcesContent() {
         ) : (
           <div key={block.id} className="mb-4"></div>
         );
+      case "embed":
+        // Transform Loom URLs to embed format
+        let embedUrl = block.embed?.url;
+        if (embedUrl && embedUrl.includes("loom.com")) {
+          // Convert share URL to embed URL
+          // From: https://www.loom.com/share/VIDEO_ID
+          // To: https://www.loom.com/embed/VIDEO_ID
+          embedUrl = embedUrl.replace("/share/", "/embed/");
+        }
+        return (
+          <div key={block.id} className="mb-8">
+            <iframe
+              src={embedUrl}
+              className="w-full aspect-video rounded-lg shadow-lg"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            />
+          </div>
+        );
+      case "video":
+        // Get video URL and transform Loom URLs to embed format
+        let videoUrl = block.video?.external?.url || block.video?.file?.url;
+        if (videoUrl && videoUrl.includes("loom.com")) {
+          videoUrl = videoUrl.replace("/share/", "/embed/");
+        }
+        return (
+          <div key={block.id} className="mb-8">
+            <iframe
+              src={videoUrl}
+              className="w-full aspect-video rounded-lg shadow-lg"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            />
+          </div>
+        );
       // Add other block types as needed...
       default:
         return null;
@@ -303,9 +343,7 @@ function InstructorResourcesContent() {
       <div className="container mx-auto px-4 py-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg">Loading instructor resources...</p>
-          {error && (
-            <p className="text-red-500 text-sm mt-2">Error: {error}</p>
-          )}
+          {error && <p className="text-red-500 text-sm mt-2">Error: {error}</p>}
         </div>
       </div>
     );
@@ -326,7 +364,8 @@ function InstructorResourcesContent() {
       <div className="container mx-auto px-4 py-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-lg">
-            Access Denied. Instructor status required. Redirecting to My Account...
+            Access Denied. Instructor status required. Redirecting to My
+            Account...
           </p>
         </div>
       </div>
@@ -429,11 +468,13 @@ function InstructorResourcesContent() {
 
 export default function InstructorResourcesPage() {
   return (
-    <Suspense fallback={
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-        <p className="text-lg">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
       <InstructorResourcesContent />
     </Suspense>
   );
