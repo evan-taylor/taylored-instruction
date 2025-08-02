@@ -127,10 +127,10 @@ export default function PrivacyPolicyPage() {
           </h3>
           <p>
             If you opt in to receive SMS messages from us, you will receive
-            promotional, course notifications/reminders, and account-related
-            texts. Consent is not a condition of purchase. Message frequency
-            varies. Message and data rates may apply. We may also send you
-            messages about training opportunities and important updates.
+            account alerts and promotional messages. Consent is not a condition
+            of purchase. Message frequency varies. Message and data rates may
+            apply. We may also send you messages about training opportunities
+            and important updates.
           </p>
           <p className="mb-4">
             To stop receiving messages, text <strong>STOP</strong> or{" "}
