@@ -21,6 +21,7 @@ interface AlignmentInterestEmailProps {
   agencies?: string[];
   message?: string;
   smsOptIn?: boolean;
+  smsOptOut?: boolean;
 }
 
 export default function AlignmentInterestEmail({
@@ -32,6 +33,7 @@ export default function AlignmentInterestEmail({
   agencies,
   message,
   smsOptIn,
+  smsOptOut,
 }: AlignmentInterestEmailProps) {
   return (
     <Html>
@@ -69,7 +71,7 @@ export default function AlignmentInterestEmail({
                 </Text>
               )}
               <Text>
-                <strong>SMS Opt-In:</strong> {smsOptIn ? 'Yes' : 'No'}
+                <strong>SMS Opt-In:</strong> {smsOptIn ? 'Yes' : smsOptOut ? 'No (opted out)' : 'No'}
               </Text>
             </Section>
           </Container>
