@@ -63,6 +63,7 @@ export default function TermsPage() {
           <p>Physical goods are eligible for a refund within 30 days of purchase, provided they are returned in their original, unopened packaging. To initiate a return, please contact us with your order details at <a href="mailto:info@tayloredinstruction.com" className="text-primary hover:underline">info@tayloredinstruction.com</a>. Return shipping costs may apply and are the responsibility of the customer unless the product is defective or incorrect. Refunds will be processed once the returned item is received and inspected.</p>
 
           <h2 className="text-2xl font-semibold mb-6 text-text mt-12">Messaging Terms and Conditions</h2>
+
           <p>By providing your phone number and agreeing to receive texts, you consent to receive promotional and account-related SMS messages from Taylored Instruction at 360-685-8199. You will receive account alerts and promotional messages. Message frequency varies, but you can expect up to 4 messages per month. Message and data rates may apply. Consent is not a condition of purchase.</p>
           <p>To stop receiving messages, text <strong>STOP</strong>. For help, text <strong>HELP</strong>.</p>
 
