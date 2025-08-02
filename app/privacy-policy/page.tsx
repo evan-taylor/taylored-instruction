@@ -69,11 +69,12 @@ export default function PrivacyPolicyPage() {
           </ul>
 
           <h3 className="text-xl font-semibold mb-3 text-text mt-4">SMS Notifications</h3>
-          <p>If you opt-in for SMS notifications, we use your phone number to:</p>
+          <p>If you opt in to receive SMS messages from us, we will send promotional and account-related texts. Message frequency varies, but you can expect up to 4 messages per month. Message and data rates may apply.</p>
           <ul className="list-disc list-inside mb-4 text-text-light">
             <li>Send messages about training opportunities</li>
             <li>Provide important updates and course reminders</li>
           </ul>
+          <p className="mb-4">To stop receiving messages, text <strong>STOP</strong> or <strong>UNSUBSCRIBE</strong>. For help, text <strong>HELP</strong>.</p>
 
           <h3 className="text-xl font-semibold mb-3 text-text mt-4">Improving Our Services</h3>
           <p>We use information to understand how our services are used, improve our offerings, and enhance your experience on our website.</p>
@@ -95,10 +96,22 @@ export default function PrivacyPolicyPage() {
           <p>Your personal information, including email address and profile data, may be accessible to authorized administrators for the purpose of managing instructor status, providing support, or maintaining the service.</p>
           <p>All categories exclude text messaging originator opt-in data and consent; this information will not be shared with any third parties.</p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">7. Data Retention</h2>
+          <h3 className="text-xl font-semibold mb-3 text-text mt-4">Data Sharing</h3>
+          <ul className="list-disc list-inside mb-4 text-text-light">
+            <li>Customer data is not shared with 3rd parties for promotional or marketing purposes.</li>
+            <li>Mobile opt-in and consent are never shared with anyone for any purpose. Any information sharing that may be mentioned elsewhere in this policy excludes mobile opt-in data.</li>
+          </ul>
+
+          <h3 className="text-xl font-semibold mb-3 text-text mt-4">Messaging Terms and Conditions</h3>
+          <p>By providing your phone number and agreeing to receive texts, you consent to receive text messages from Taylored Instruction, from 360-685-8199 regarding account notification and customer care. Consent is not a condition of purchase. Message frequency varies. Message &amp; data rates may apply. You can reply STOP to unsubscribe at any time or HELP for assistance. You can also contact us at 360-685-8199 or <a href="mailto:info@tayloredinstruction.com" className="text-primary hover:underline">info@tayloredinstruction.com</a>. Mobile opt-in information is never shared with third parties.</p>
+
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">7. Data Transfer Policy</h2>
+          <p>We do not transfer your personal information to any external organizations under any circumstances, even with your consent.</p>
+
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">8. Data Retention</h2>
           <p>We retain your personal information only as long as necessary to fulfill the purposes outlined in this policy, unless a longer retention period is required or permitted by law.</p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">8. Your Rights</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">9. Your Rights</h2>
           <p>You have the right to:</p>
           <ul className="list-disc list-inside mb-4 text-text-light">
             <li>Request access to the personal data we hold about you</li>
@@ -106,22 +119,22 @@ export default function PrivacyPolicyPage() {
           </ul>
           <p>To exercise these rights, please contact us using the information below.</p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">9. Data Security</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">10. Data Security</h2>
           <p>We take appropriate measures to protect your information from unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet or electronic storage is completely secure.</p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">10. Your Choices</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">11. Your Choices</h2>
           <ul className="list-disc list-inside mb-4 text-text-light">
-            <li><strong>Opt-Out:</strong> You can opt-out of marketing emails or SMS notifications at any time by following unsubscribe instructions or contacting us directly.</li>
+            <li><strong>Opt-Out:</strong> You can opt-out of marketing emails or SMS notifications at any time by replying <strong>STOP</strong> or <strong>UNSUBSCRIBE</strong> to any message or contacting us directly. For help, reply <strong>HELP</strong>.</li>
             <li><strong>Access and Correction:</strong> Contact us to request access to or correction of your personal information.</li>
           </ul>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">11. Automated Detection</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">12. Automated Detection</h2>
           <p>We may use automated tools to detect spam or abuse on our website.</p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">12. Changes to This Privacy Policy</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">13. Changes to This Privacy Policy</h2>
           <p>We may update this policy periodically. Changes will be posted on this page, and significant updates will be communicated via email or a website notice.</p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">13. Contact Us</h2>
+          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">14. Contact Us</h2>
           <p>If you have questions or concerns about this Privacy Policy or our practices, please contact us.</p>
         </div>
       </section>
