@@ -21,6 +21,7 @@ import {
     otherLocation?: string;
     message: string;
     smsOptIn?: boolean;
+    smsOptOut?: boolean;
     contactMethods?: string[];
   }
   
@@ -33,6 +34,7 @@ import {
     otherLocation,
     message,
     smsOptIn,
+    smsOptOut,
     contactMethods = []
   }) => (
     <Html>
@@ -73,10 +75,12 @@ import {
              <Row>
                 <Column style={messageValueColumn}>{message}</Column>
              </Row>
-             <Row>
-                <Column style={labelColumn}>SMS Opt-In:</Column>
-                <Column style={valueColumn}>{smsOptIn ? 'Yes' : 'No'}</Column>
-             </Row>
+            <Row>
+               <Column style={labelColumn}>SMS Opt-In:</Column>
+                <Column style={valueColumn}>
+                  {smsOptIn ? 'Yes' : smsOptOut ? 'No (opted out)' : 'No'}
+                </Column>
+            </Row>
              <Row>
                 <Column style={labelColumn}>Preferred Contact Method(s):</Column>
                 <Column style={valueColumn}>{contactMethods.join(', ') || 'Not specified'}</Column>

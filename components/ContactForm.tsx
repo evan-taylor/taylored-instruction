@@ -115,12 +115,20 @@ export function ContactForm() {
       <div className="flex items-start space-x-2">
         <Checkbox id="smsOptIn" name="smsOptIn" disabled={status.loading} />
         <div className="grid gap-1.5 leading-none">
-           <Label htmlFor="smsOptIn" className="font-normal text-sm">
-              SMS Opt-In (optional)
-           </Label>
-             <p className="text-xs text-muted-foreground">
-              By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our <a href="/privacy-policy" className="text-blue-500">Privacy Policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying &quot;STOP&quot; to any of our messages.
-             </p>
+          <Label htmlFor="smsOptIn" className="font-normal text-sm">
+            Yes, I agree to receive text messages from Taylored Instruction sent from 360-685-8199.
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Message frequency varies and may include appointment reminders, course information, or promotional messages. Message and data rates may apply. Reply STOP at any time to unsubscribe or HELP for assistance. Contact support at 360-685-8199. See our <a href="/privacy-policy" className="text-blue-500">Privacy Policy</a> for details on how we handle your information.
+          </p>
+        </div>
+      </div>
+      <div className="flex items-start space-x-2 mt-2">
+        <Checkbox id="smsOptOut" name="smsOptOut" disabled={status.loading} />
+        <div className="grid gap-1.5 leading-none">
+          <Label htmlFor="smsOptOut" className="font-normal text-sm">
+            No, I do not want to receive text messages from Taylored Instruction.
+          </Label>
         </div>
       </div>
       

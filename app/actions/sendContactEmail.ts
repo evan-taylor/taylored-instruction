@@ -20,6 +20,7 @@ const ContactFormSchema = z.object({
     otherLocation: z.string().optional(),
     message: z.string().min(5, 'Message must be at least 5 characters'),
     smsOptIn: z.preprocess((val) => val === 'on', z.boolean()).optional(),
+    smsOptOut: z.preprocess((val) => val === 'on', z.boolean()).optional(),
     contactMethod: z.preprocess((val) => {
         if (typeof val === 'string') return [val];
         if (Array.isArray(val)) return val;
@@ -63,6 +64,7 @@ export async function sendContactEmail(formData: FormData): Promise<SendEmailRes
         otherLocation,
         message,
         smsOptIn,
+        smsOptOut,
         // contactMethod is already destructured via validatedFields.data
     } = validatedFields.data;
     
@@ -84,6 +86,7 @@ export async function sendContactEmail(formData: FormData): Promise<SendEmailRes
                 otherLocation,
                 message,
                 smsOptIn,
+                smsOptOut,
                 contactMethods: contactMethodList
              }),
         });

@@ -19,6 +19,7 @@ const AlignmentInterestSchema = z.object({
     agencies: z.array(z.string()).optional(), // Optional array of strings
     message: z.string().optional(),
     smsOptIn: z.boolean().optional(),
+    smsOptOut: z.boolean().optional(),
 }).refine(data => {
     // If hasCertification is 'Yes', agencies array must not be empty (or null/undefined)
     if (data.hasCertification === 'Yes') {
@@ -53,8 +54,9 @@ export async function POST(req: NextRequest) {
             phone, 
             hasCertification, 
             agencies, 
-            message, 
-            smsOptIn 
+            message,
+            smsOptIn,
+            smsOptOut
         } = validatedFields.data; // RESTORED destructuring
 
         // Send email to admin

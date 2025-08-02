@@ -18,6 +18,7 @@ const AlignmentInterestForm: React.FC = () => {
     agencies: [] as string[],
     message: '',
     smsOptIn: false,
+    smsOptOut: false,
   });
   const [status, setStatus] = useState('');
 
@@ -30,6 +31,11 @@ const AlignmentInterestForm: React.FC = () => {
         setFormData(prevState => ({
           ...prevState,
           smsOptIn: checked,
+        }));
+      } else if (name === 'smsOptOut') {
+        setFormData(prevState => ({
+          ...prevState,
+          smsOptOut: checked,
         }));
       } else {
         // Handle agency checkboxes
@@ -83,6 +89,7 @@ const AlignmentInterestForm: React.FC = () => {
           agencies: [],
           message: '',
           smsOptIn: false,
+          smsOptOut: false,
         });
       } else {
         setStatus(`Submission failed: ${result.error || 'Unknown error. Please check your input and try again.'}`);
@@ -200,19 +207,32 @@ const AlignmentInterestForm: React.FC = () => {
       </div>
 
       <div className="flex items-start space-x-2">
-        <Checkbox 
-            id="smsOptIn" 
-            name="smsOptIn" 
+        <Checkbox
+            id="smsOptIn"
+            name="smsOptIn"
             checked={formData.smsOptIn}
-            onCheckedChange={(checked) => handleChange({ target: { name: 'smsOptIn', value: '', type: 'checkbox', checked } } as any)} 
+            onCheckedChange={(checked) => handleChange({ target: { name: 'smsOptIn', value: '', type: 'checkbox', checked } } as any)}
         />
         <div className="grid gap-1.5 leading-none">
             <Label htmlFor="smsOptIn" className="text-sm font-normal text-gray-600">
-                SMS Opt-In (optional)
+                Yes, I agree to receive text messages from Taylored Instruction sent from 360-685-8199.
             </Label>
             <p className="text-xs text-gray-500">
-                By subscribing, you agree to receive SMS notifications from Taylored Instruction. We value your privacy and will never share or sell your phone number. For more details, please review our Privacy Policy at <a href="/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">https://tayloredinstruction.com/privacy-policy</a>. Standard message and data rates may apply. You can unsubscribe at any time by replying &quot;STOP&quot; to any of our messages.
+                Message frequency varies and may include appointment reminders, course information, or promotional messages. Message and data rates may apply. Reply STOP at any time to unsubscribe or HELP for assistance. Contact support at 360-685-8199. Please review our <a href="/privacy-policy/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Privacy Policy</a> for details on how we handle your information.
             </p>
+        </div>
+      </div>
+      <div className="flex items-start space-x-2 mt-2">
+        <Checkbox
+            id="smsOptOut"
+            name="smsOptOut"
+            checked={formData.smsOptOut}
+            onCheckedChange={(checked) => handleChange({ target: { name: 'smsOptOut', value: '', type: 'checkbox', checked } } as any)}
+        />
+        <div className="grid gap-1.5 leading-none">
+            <Label htmlFor="smsOptOut" className="text-sm font-normal text-gray-600">
+                No, I do not want to receive text messages from Taylored Instruction.
+            </Label>
         </div>
       </div>
 
