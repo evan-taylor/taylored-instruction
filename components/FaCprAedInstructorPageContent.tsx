@@ -1,9 +1,9 @@
-'use client'
+"use client";
 
-import React from 'react';
-import Image from 'next/image';
-import { Button } from '@/components/ui/Button';
-import Link from 'next/link';
+import React from "react";
+import Image from "next/image";
+import { Button } from "@/components/ui/Button";
+import Link from "next/link";
 
 const FaCprAedInstructorPageContent: React.FC = () => {
   return (
@@ -16,7 +16,7 @@ const FaCprAedInstructorPageContent: React.FC = () => {
             alt="CPR Instructor Training Session"
             fill
             sizes="100vw"
-            style={{objectFit: 'cover', objectPosition: 'center'}}
+            style={{ objectFit: "cover", objectPosition: "center" }}
             className="brightness-[0.85]"
             priority
           />
@@ -33,7 +33,6 @@ const FaCprAedInstructorPageContent: React.FC = () => {
 
       {/* Main Content Section */}
       <div className="container mx-auto px-4 py-12 max-w-4xl">
-
         {/* Resource Links */}
         <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8 text-center">
           <Link
@@ -65,7 +64,7 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         {/* Registration Button */}
         <div className="text-center mb-12">
           <Button
-            href="https://www.hovn.app/service-providers/tayloredinstruction/offerings/cm4lyuefl000013m00k5rnnlq" // Extracted from HTML
+            href="https://www.hovn.app/tayloredinstruction/courses/arc-first-aid-cpr-aed-instructor" // Extracted from HTML
             target="_blank"
             size="lg"
           >
@@ -77,50 +76,91 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         <div className="p-6 rounded-lg shadow-sm mb-8">
           <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Purpose</h3>
           <p className="text-gray-700">
-            The purpose of the American Red Cross FA/CPR/AED Instructor course is to train instructor candidates to teach the basic-level American Red Cross FA/CPR/AED course.
+            The purpose of the American Red Cross FA/CPR/AED Instructor course
+            is to train instructor candidates to teach the basic-level American
+            Red Cross FA/CPR/AED course.
           </p>
         </div>
 
         {/* Course Prerequisites Section */}
         <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Prerequisites</h3>
+          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+            Course Prerequisites
+          </h3>
           <p className="text-gray-700">
-            FA/CPR/AED Instructor candidates must possess a current basic-level certification in FA/CPR/AED or equivalent.
+            FA/CPR/AED Instructor candidates must possess a current basic-level
+            certification in FA/CPR/AED or equivalent.
           </p>
         </div>
 
         {/* Course Length Section */}
         <div className="p-6 rounded-lg shadow-sm mb-8">
           <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Length</h3>
-          <p className="mb-2 text-gray-700">The FA/CPR/AED Instructor Course is offered in a blended learning format that includes:</p>
+          <p className="mb-2 text-gray-700">
+            The FA/CPR/AED Instructor Course is offered in a blended learning
+            format that includes:
+          </p>
           <ul className="list-disc pl-5 space-y-1 text-gray-700">
-            <li>FA/CPR/AED Instructor Course online session—designed to be completed in approximately 2 hours.</li>
-            <li>FA/CPR/AED Instructor Course in-person session—designed to be completed in approximately 8 hours</li>
+            <li>
+              FA/CPR/AED Instructor Course online session—designed to be
+              completed in approximately 2 hours.
+            </li>
+            <li>
+              FA/CPR/AED Instructor Course in-person session—designed to be
+              completed in approximately 8 hours
+            </li>
           </ul>
         </div>
 
         {/* Course Preparation Section */}
         <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Preparation</h3>
+          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+            Course Preparation
+          </h3>
           <p className="mb-4 text-gray-700">
-            To prepare for the American Red Cross First Aid/CPR/AED Instructor course, please ensure that you have a strong familiarity with the base skills taught in the Red Cross CPR curriculum. Instructor candidates should be confident performing these skills for others, so that they may teach them themselves. In addition, each participant must have a copy of the American Red Cross First Aid/CPR/AED Instructor&#8217;s Manual. This can be printed using the PDF linked at the top of this page, or purchased from the Red Cross store.
+            To prepare for the American Red Cross First Aid/CPR/AED Instructor
+            course, please ensure that you have a strong familiarity with the
+            base skills taught in the Red Cross CPR curriculum. Instructor
+            candidates should be confident performing these skills for others,
+            so that they may teach them themselves. In addition, each
+            participant must have a copy of the American Red Cross First
+            Aid/CPR/AED Instructor&#8217;s Manual. This can be printed using the
+            PDF linked at the top of this page, or purchased from the Red Cross
+            store.
           </p>
           <p className="text-gray-700">
-            You may view all instructor candidate resources on the <Link href="https://www.redcrosslearningcenter.org/s/candidate-resources-first-aid-cpr-aed-21" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">Red Cross Learning Center</Link>.
+            You may view all instructor candidate resources on the{" "}
+            <Link
+              href="https://www.redcrosslearningcenter.org/s/candidate-resources-first-aid-cpr-aed-21"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-medium"
+            >
+              Red Cross Learning Center
+            </Link>
+            .
           </p>
         </div>
 
         {/* Interested Section */}
         <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">Interested in taking a course?</h3>
+          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+            Interested in taking a course?
+          </h3>
           <p className="text-gray-700">
-            Register for a course on our <Link href="https://www.hovn.app/service-providers/tayloredinstruction/offerings/cm4lyuefl000013m00k5rnnlq" className="text-primary hover:underline font-medium">registration page</Link>!
+            Register for a course on our{" "}
+            <Link
+              href="https://www.hovn.app/tayloredinstruction/courses/arc-first-aid-cpr-aed-instructor"
+              className="text-primary hover:underline font-medium"
+            >
+              registration page
+            </Link>
+            !
           </p>
         </div>
-
       </div>
     </div>
   );
 };
 
-export default FaCprAedInstructorPageContent; 
+export default FaCprAedInstructorPageContent;
