@@ -187,6 +187,10 @@ export default function PrivacyPolicyPage() {
             purposes.
           </p>
           <p>
+            No mobile information will be shared with third parties/affiliates
+            for marketing/promotional purposes.
+          </p>
+          <p>
             Your personal information, including email address and profile data,
             may be accessible to authorized administrators for the purpose of
             managing instructor status, providing support, or maintaining the
