@@ -123,10 +123,13 @@ const generateNavLinks = (
   {
     label: "Instructors",
     dropdown: [
-      { label: "Alignment", href: "/alignment" },
+      // Hide Alignment if logged in as an instructor
+      ...(isInstructor
+        ? ([] as NavLinkItem[])
+        : ([{ label: "Alignment", href: "/alignment" }] as NavLinkItem[])),
       {
         label: "Instructor Resources",
-        href: "/instructor-resources",
+        href: "https://docs.tayloredinstruction.com/",
         requiresInstructor: true,
       },
       // Conditionally add eCards if instructor
