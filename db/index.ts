@@ -2,9 +2,15 @@ import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
 // Use the Supabase Postgres connection string.
-// Prefer DIRECT_URL if present (no pgbouncer), otherwise DATABASE_URL (often with pgbouncer=true).
+// Prefer pooled connection (DATABASE_URL/POSTGRES_URL/POSTGRES_PRISMA_URL) at runtime,
+// and fall back to DIRECT_URL for non-pooled/direct connections (e.g., migrations).
 const connectionString =
-  process.env.DIRECT_URL || process.env.DATABASE_URL || "";
+  process.env.DATABASE_URL ||
+  process.env.POSTGRES_PRISMA_URL ||
+  process.env.POSTGRES_URL ||
+  process.env.SUPABASE_DB_URL ||
+  process.env.DIRECT_URL ||
+  "";
 
 if (!connectionString) {
   throw new Error(

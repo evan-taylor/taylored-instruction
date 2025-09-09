@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
