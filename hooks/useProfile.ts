@@ -95,56 +95,38 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
         return;
       }
 
-      if (isMounted && !loading) {
-        setLoading(true);
-      }
+      // Start loading for this fetch cycle
+      if (isMounted) setLoading(true);
 
       try {
         const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
         if (!res.ok) {
-          const body = await res.json().catch(() => ({}));
-          const msg = body.error || `Failed to load profile (${res.status})`;
+          const body = await res.json().catch(() => ({} as any));
+          const msg = (body as any).error || `Failed to load profile (${res.status})`;
           setError(msg);
           setProfile(null);
           return;
         }
         const data = (await res.json()) as Profile;
-        if (!isMounted) {
-          return;
-        }
+        if (!isMounted) return;
         setProfile(data);
+        setError(null);
       } catch (err: any) {
-        if (isMounted && !error) {
-          setError(
-            err.message ||
-              "An unexpected error occurred during profile loading."
-          );
-        }
+        if (!isMounted) return;
+        setError(
+          err?.message || "An unexpected error occurred during profile loading."
+        );
+        setProfile(null);
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
 
+    // Only attempt to load profile if we have a user ID.
     if (currentUserId) {
-      // Only attempt to load profile if we have a user ID.
       loadProfile();
-    }
-    // REMOVED: else if (!initialUserId) { ... setLoading(false) ... }
-    // This was causing setLoading(false) prematurely before currentUserId was set by the first effect.
-    // The first useEffect is responsible for setLoading(false) if no session/initialUserId leads to no currentUserId.
-
-    // If initialUserId was provided but currentUserId is null (e.g., bad ID),
-    // the !currentUserId check at the start of loadProfile() prevents fetch,
-    // and loading state would be determined by the first effect or eventually by loadProfile's finally if it ever ran.
-    // This path needs to be robust: if initialUserId is given, first effect doesn't run getSession().
-    // So if initialUserId is bad, currentUserId remains null. loadProfile is called, hits the !currentUserId guard.
-    // In this specific case (bad initialUserId), loading needs to be set to false.
-    else if (initialUserId && !currentUserId) {
+    } else if (initialUserId && !currentUserId) {
       // specifically for bad initialUserId
       if (isMounted) {
         setProfile(null);
@@ -155,7 +137,7 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, initialUserId, error, loading]); // REMOVED loading from dependency array
+  }, [currentUserId, initialUserId]);
 
   const isInstructor = profile?.is_instructor ?? false;
 
