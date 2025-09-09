@@ -5,16 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useProfile } from "../../hooks/useProfile";
-import { createClient } from "../../utils/supabase/client";
-
-const supabase = createClient();
+import { useProfile } from "@/hooks/useProfile";
 
 type Product = {
   id: string;
   name: string;
   description: string | null;
-  stripe_price_id: string;
+  stripe_price_id: string | null;
   image_urls: string | null;
   type: string;
   requires_instructor: boolean;
@@ -94,16 +91,20 @@ export default function ECardsPage() {
       setError(null);
 
       try {
-        const { data: supabaseProducts, error: fetchError } = await supabase
-          .from("products")
-          .select(
-            "id, name, description, stripe_price_id, image_urls, type, requires_instructor"
-          )
-          .eq("type", "ecard");
-
-        if (fetchError) {
-          throw fetchError;
+        const res = await fetch("/api/products/ecard");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || "Failed to fetch eCards");
         }
+        const supabaseProducts = (await res.json()) as Array<{
+          id: string;
+          name: string;
+          description: string | null;
+          stripe_price_id: string | null;
+          image_urls: string | null;
+          type: string;
+          requires_instructor: boolean;
+        }>;
         if (!supabaseProducts || supabaseProducts.length === 0) {
           setProducts([]);
           setIsLoading(false);

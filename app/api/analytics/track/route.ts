@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClientAppRouter } from "@/utils/supabase/server";
+import { db } from "@/db";
+import { analytics } from "@/db/schema";
 
 export async function POST(req: NextRequest) {
   const supabase = createServerClientAppRouter();
@@ -19,21 +21,24 @@ export async function POST(req: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { error } = await supabase.from("analytics").insert({
-    url,
-    referrer,
-    utm_source,
-    utm_medium,
-    utm_campaign,
-    city,
-    region,
-    country,
-    user_id: user ? user.id : null,
-    ip_address: req.headers.get("x-forwarded-for") || req.ip || undefined,
-  });
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    await db.insert(analytics).values({
+      url,
+      referrer,
+      utmSource: utm_source,
+      utmMedium: utm_medium,
+      utmCampaign: utm_campaign,
+      city,
+      region,
+      country,
+      userId: user ? (user.id as string) : null,
+      ipAddress: req.headers.get("x-forwarded-for") || req.ip || undefined,
+    });
+  } catch (e: any) {
+    return NextResponse.json(
+      { error: e?.message || "Failed to record analytics" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ success: true });

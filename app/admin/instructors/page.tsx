@@ -112,54 +112,13 @@ function AdminInstructorsContent() {
       }
       setError(null);
       try {
-        const { data: profilesData, error: profilesError } = await supabase
-          .from("profiles")
-          .select("id, is_instructor, updated_at")
-          .order("updated_at", { ascending: false });
-
-        if (profilesError) {
-          throw profilesError;
+        const res = await fetch("/api/admin/instructors", { cache: "no-store" });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || `Failed to load admin data (${res.status})`);
         }
-
-        let profilesWithEmail: ProfileWithUser[] = (profilesData || []).map(
-          (p: any) => ({
-            id: p.id,
-            is_instructor: p.is_instructor,
-            updated_at: p.updated_at,
-            user_email: null,
-            short_id: p.id.substring(0, 8),
-          })
-        );
-
-        const profileIds = profilesWithEmail.map((p) => p.id);
-        const { data: usersData, error: usersError } = await supabase.rpc(
-          "get_users_with_emails",
-          {
-            profile_ids: profileIds,
-          }
-        );
-
-        if (!usersError && usersData) {
-          const userEmailMap = new Map();
-          usersData.forEach((user: any) => {
-            if (user?.id) {
-              userEmailMap.set(user.id, user.email || null);
-            }
-          });
-
-          profilesWithEmail = profilesWithEmail.map((profile) => {
-            const email = userEmailMap.get(profile.id);
-            return {
-              ...profile,
-              user_email: email || null,
-            };
-          });
-        } else {
-        }
-
-        if (isMounted) {
-          setProfiles(profilesWithEmail);
-        }
+        const list = (await res.json()) as ProfileWithUser[];
+        if (isMounted) setProfiles(list);
       } catch (err: any) {
         if (isMounted) {
           setError(`Failed to fetch instructor profiles: ${err.message}`);
@@ -195,18 +154,17 @@ function AdminInstructorsContent() {
     setError(null);
 
     try {
-      const now = new Date().toISOString();
-
-      const { data, error: updateError } = await supabase
-        .from("profiles")
-        .update({ is_instructor: !currentStatus, updated_at: now })
-        .eq("id", profileId)
-        .select()
-        .single();
-
-      if (updateError) {
-        throw updateError;
+      const res = await fetch("/api/admin/instructors", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ profileId, newStatus: !currentStatus }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Failed to update status (${res.status})`);
       }
+      const { updated_at } = await res.json();
+      const now = updated_at || new Date().toISOString();
 
       setProfiles(
         profiles.map((p) =>

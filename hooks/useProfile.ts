@@ -1,6 +1,6 @@
 import type { Session, User } from "@supabase/supabase-js"; // Import User and Session type
 import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client"; // New client utility
+import { createClient } from "@/utils/supabase/client"; // Supabase for auth only
 
 // import type { Database } from '@/types/supabase'; // Keep commented out
 
@@ -100,51 +100,18 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
       }
 
       try {
-        const { data, error: profileError } = await supabaseClient
-          .from("profiles")
-          .select("id, is_instructor, updated_at")
-          .eq("id", currentUserId)
-          .single();
-
-        if (!isMounted) {
+        const res = await fetch("/api/profile", { cache: "no-store" });
+        if (!isMounted) return;
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          const msg = body.error || `Failed to load profile (${res.status})`;
+          setError(msg);
+          setProfile(null);
           return;
         }
-
-        if (profileError) {
-          if (profileError.code === "PGRST116") {
-            const now = new Date().toISOString();
-            const newProfile = {
-              id: currentUserId,
-              is_instructor: false,
-              updated_at: now,
-            };
-            const { data: insertedProfile, error: insertError } =
-              await supabaseClient
-                .from("profiles")
-                .insert(newProfile)
-                .select()
-                .single();
-            if (!isMounted) {
-              return;
-            }
-            if (insertError) {
-              if (isMounted) {
-                setError(insertError.message || "Failed to create profile.");
-              }
-              throw insertError;
-            }
-            if (isMounted) {
-              setProfile(insertedProfile as Profile);
-            }
-          } else {
-            if (isMounted) {
-              setError(profileError.message || "Failed to load profile.");
-            }
-            throw profileError;
-          }
-        } else if (isMounted) {
-          setProfile(data as Profile);
-        }
+        const data = (await res.json()) as Profile;
+        if (!isMounted) return;
+        setProfile(data);
       } catch (err: any) {
         if (isMounted && !error) {
           setError(
