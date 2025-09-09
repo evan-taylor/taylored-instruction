@@ -8,15 +8,14 @@ export default function InstructorResourcesPage() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+    <div className="container mx-auto flex items-center justify-center px-4 py-8">
       <div className="text-center">
         <p className="text-lg">Redirecting to Instructor Resources…</p>
-        <p className="text-sm mt-2">
-          If you are not redirected, visit
-          {" "}
+        <p className="mt-2 text-sm">
+          If you are not redirected, visit{" "}
           <a
-            href="https://docs.tayloredinstruction.com/"
             className="text-blue-600 hover:underline"
+            href="https://docs.tayloredinstruction.com/"
           >
             https://docs.tayloredinstruction.com/
           </a>

@@ -1,37 +1,37 @@
-'use client'
+"use client";
 
-import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useProfile } from "../../../hooks/useProfile";
+import { Suspense, useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
+import { useProfile } from "../../../hooks/useProfile";
 
-interface ProfileWithUser {
+type ProfileWithUser = {
   id: string;
   is_instructor: boolean;
   updated_at: string | null;
   user_email: string | null;
   short_id?: string;
-}
+};
 
 function AdminInstructorsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const {
-    loading: profileLoading,
-    session,
-  } = useProfile();
+  const { loading: profileLoading, session } = useProfile();
 
   const [supabase] = useState(() => createClient());
   const [profiles, setProfiles] = useState<ProfileWithUser[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [userEmailForDisplay, setUserEmailForDisplay] = useState<string | null>(null);
+  const [userEmailForDisplay, setUserEmailForDisplay] = useState<string | null>(
+    null
+  );
   const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  const [adminAccessCheckInProgress, setAdminAccessCheckInProgress] = useState(true);
+  const [adminAccessCheckInProgress, setAdminAccessCheckInProgress] =
+    useState(true);
   const [adminDataLoading, setAdminDataLoading] = useState(true);
 
-  const forceAdmin = searchParams?.get('admin') === 'true';
+  const forceAdmin = searchParams?.get("admin") === "true";
 
   // Effect 1: Determine Admin Status
   useEffect(() => {
@@ -48,25 +48,18 @@ function AdminInstructorsContent() {
       }
 
       try {
-        if (!session) {
-          // isAdmin is already false
-        } else {
+        if (session) {
           const {
             data: { user },
             error: userError,
           } = await supabase.auth.getUser();
 
           if (userError) {
-            console.error(
-              "Admin Check: Error fetching user for admin status:",
-              userError
-            );
           } else if (user) {
             let emailToCheck = user.email;
             if (!emailToCheck && user.user_metadata?.email) {
               emailToCheck = user.user_metadata.email;
-            }
-            else if (!emailToCheck && user.identities) {
+            } else if (!emailToCheck && user.identities) {
               const googleIdentity = user.identities.find(
                 (id) => id.provider === "google"
               );
@@ -75,7 +68,9 @@ function AdminInstructorsContent() {
               }
             }
 
-            if (isMounted) setUserEmailForDisplay(emailToCheck || null);
+            if (isMounted) {
+              setUserEmailForDisplay(emailToCheck || null);
+            }
 
             const adminEmails = [
               "admin@tayloredinstruction.com",
@@ -83,20 +78,21 @@ function AdminInstructorsContent() {
             ].filter(Boolean);
 
             if (
-              forceAdmin ||
-              (emailToCheck && adminEmails.includes(emailToCheck))
+              (forceAdmin ||
+                (emailToCheck && adminEmails.includes(emailToCheck))) &&
+              isMounted
             ) {
-              if (isMounted) setIsAdmin(true);
+              setIsAdmin(true);
             }
           }
+        } else {
+          // isAdmin is already false
         }
-      } catch (err) {
-        console.error(
-          "Admin Check: Exception during admin status determination:",
-          err
-        );
+      } catch (_err) {
       } finally {
-        if (isMounted) setAdminAccessCheckInProgress(false);
+        if (isMounted) {
+          setAdminAccessCheckInProgress(false);
+        }
       }
     };
 
@@ -111,7 +107,9 @@ function AdminInstructorsContent() {
   useEffect(() => {
     let isMounted = true;
     const fetchAdminData = async () => {
-      if (isMounted) setAdminDataLoading(true);
+      if (isMounted) {
+        setAdminDataLoading(true);
+      }
       setError(null);
       try {
         const { data: profilesData, error: profilesError } = await supabase
@@ -119,7 +117,9 @@ function AdminInstructorsContent() {
           .select("id, is_instructor, updated_at")
           .order("updated_at", { ascending: false });
 
-        if (profilesError) throw profilesError;
+        if (profilesError) {
+          throw profilesError;
+        }
 
         let profilesWithEmail: ProfileWithUser[] = (profilesData || []).map(
           (p: any) => ({
@@ -142,7 +142,7 @@ function AdminInstructorsContent() {
         if (!usersError && usersData) {
           const userEmailMap = new Map();
           usersData.forEach((user: any) => {
-            if (user && user.id) {
+            if (user?.id) {
               userEmailMap.set(user.id, user.email || null);
             }
           });
@@ -155,23 +155,26 @@ function AdminInstructorsContent() {
             };
           });
         } else {
-          console.error("Error fetching user emails:", usersError);
         }
 
-        if (isMounted) setProfiles(profilesWithEmail);
+        if (isMounted) {
+          setProfiles(profilesWithEmail);
+        }
       } catch (err: any) {
-        console.error("Admin Data Fetch: Error fetching profiles:", err);
-        if (isMounted)
+        if (isMounted) {
           setError(`Failed to fetch instructor profiles: ${err.message}`);
+        }
       } finally {
-        if (isMounted) setAdminDataLoading(false);
+        if (isMounted) {
+          setAdminDataLoading(false);
+        }
       }
     };
 
     if (!adminAccessCheckInProgress && isAdmin) {
       fetchAdminData();
-    } else if (!adminAccessCheckInProgress && !isAdmin) {
-      if (isMounted) setAdminDataLoading(false);
+    } else if (!(adminAccessCheckInProgress || isAdmin) && isMounted) {
+      setAdminDataLoading(false);
     }
 
     return () => {
@@ -185,7 +188,6 @@ function AdminInstructorsContent() {
     userEmail: string | null
   ) => {
     if (!supabase) {
-      console.error("Supabase client not available for toggling status.");
       setError("Action failed: client unavailable.");
       return;
     }
@@ -202,7 +204,9 @@ function AdminInstructorsContent() {
         .select()
         .single();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        throw updateError;
+      }
 
       setProfiles(
         profiles.map((p) =>
@@ -212,7 +216,7 @@ function AdminInstructorsContent() {
         )
       );
       setActionMessage(
-        `Instructor status successfully ${!currentStatus ? "approved" : "revoked"}.`
+        `Instructor status successfully ${currentStatus ? "revoked" : "approved"}.`
       );
 
       if (!currentStatus && userEmail) {
@@ -223,44 +227,35 @@ function AdminInstructorsContent() {
             });
 
           if (invokeError) {
-            console.error("Supabase function invocation failed:", invokeError);
             setActionMessage(
               (prev) =>
                 prev +
                 ` (Approval email failed to send. Error: ${invokeError.message})`
             );
+          } else if (
+            responseData?.message?.includes("Approval email sent successfully")
+          ) {
+            setActionMessage((prev) => `${prev} (Approval email sent.)`);
+          } else if (
+            responseData?.message?.includes(
+              "could not be sent due to server config"
+            )
+          ) {
+            setActionMessage(
+              (prev) => `${prev} (Email server configuration issue.)`
+            );
+          } else if (responseData?.error) {
+            setActionMessage(
+              (prev) =>
+                prev +
+                ` (Approval email process reported an error: ${responseData.error})`
+            );
           } else {
-            if (
-              responseData &&
-              responseData.message &&
-              responseData.message.includes("Approval email sent successfully")
-            ) {
-              setActionMessage((prev) => prev + " (Approval email sent.)");
-            } else if (
-              responseData &&
-              responseData.message &&
-              responseData.message.includes("could not be sent due to server config")
-            ) {
-              setActionMessage(
-                (prev) => prev + " (Email server configuration issue.)"
-              );
-            } else if (responseData && responseData.error) {
-              setActionMessage(
-                (prev) =>
-                  prev +
-                  ` (Approval email process reported an error: ${responseData.error})`
-              );
-            } else {
-              setActionMessage(
-                (prev) => prev + " (Approval email status uncertain.)"
-              );
-            }
+            setActionMessage(
+              (prev) => `${prev} (Approval email status uncertain.)`
+            );
           }
         } catch (exceptionDuringInvoke: any) {
-          console.error(
-            "Critical exception during email approval process:",
-            exceptionDuringInvoke
-          );
           setActionMessage(
             (prev) =>
               prev +
@@ -269,7 +264,6 @@ function AdminInstructorsContent() {
         }
       }
     } catch (err: any) {
-      console.error("Error updating instructor status:", err);
       setError(`Failed to update status: ${err.message}`);
     }
   };
@@ -279,7 +273,6 @@ function AdminInstructorsContent() {
     userEmail: string | null
   ) => {
     if (!supabase) {
-      console.error("Supabase client not available for rejecting user.");
       setError("Action failed: client unavailable.");
       return;
     }
@@ -311,23 +304,22 @@ function AdminInstructorsContent() {
         `User ${userEmail || profileId} successfully rejected and deleted.`
       );
     } catch (err: any) {
-      console.error("Error rejecting user:", err);
       setError(`Failed to reject user: ${err.message}`);
     }
   };
 
   if (profileLoading || adminAccessCheckInProgress) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg">Verifying admin access...</p>
           {profileLoading && (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-gray-500 text-sm">
               Loading user profile...
             </p>
           )}
           {adminAccessCheckInProgress && !profileLoading && (
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="mt-1 text-gray-500 text-sm">
               Checking admin privileges...
             </p>
           )}
@@ -336,13 +328,13 @@ function AdminInstructorsContent() {
     );
   }
 
-  if (!isAdmin && !forceAdmin) {
+  if (!(isAdmin || forceAdmin)) {
     if (typeof window !== "undefined") {
       router.push(session ? "/my-account" : "/");
       return null;
     }
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg text-red-600">
             Access Denied. Administrator privileges required.
@@ -359,7 +351,7 @@ function AdminInstructorsContent() {
 
   if (adminDataLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <p className="text-lg">Loading administrator panel...</p>
       </div>
     );
@@ -367,27 +359,25 @@ function AdminInstructorsContent() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-5xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold">
-            Manage Instructors
-          </h1>
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="font-bold text-3xl md:text-4xl">Manage Instructors</h1>
           {forceAdmin && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
+            <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
               Testing Mode Active
             </span>
           )}
         </div>
 
         {userEmailForDisplay && (
-          <p className="mb-4 text-sm text-gray-600">
+          <p className="mb-4 text-gray-600 text-sm">
             Logged in as Admin: {userEmailForDisplay}
           </p>
         )}
 
         {error && (
           <div
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+            className="mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700"
             role="alert"
           >
             <strong className="font-bold">Error:</strong>
@@ -397,7 +387,7 @@ function AdminInstructorsContent() {
 
         {actionMessage && (
           <div
-            className="bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded mb-4"
+            className="mb-4 rounded border border-blue-400 bg-blue-100 px-4 py-3 text-blue-700"
             role="alert"
           >
             <strong className="font-bold">Info:</strong>
@@ -405,49 +395,49 @@ function AdminInstructorsContent() {
           </div>
         )}
 
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <div className="overflow-hidden rounded-lg bg-white shadow-md">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     User ID
                   </th>
                   <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Email
                   </th>
                   <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Status
                   </th>
                   <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Last Updated
                   </th>
                   <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200 bg-white">
                 {profiles.length === 0 ? (
                   <tr>
                     <td
+                      className="px-6 py-4 text-center text-gray-500 text-sm"
                       colSpan={5}
-                      className="px-6 py-4 text-center text-sm text-gray-500"
                     >
                       No users found or access denied by RLS.
                     </td>
@@ -455,28 +445,35 @@ function AdminInstructorsContent() {
                 ) : (
                   profiles.map((profile) => (
                     <tr key={profile.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
                         {profile.short_id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
                         {profile.user_email || "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
                         {profile.is_instructor ? (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          <span className="inline-flex rounded-full bg-green-100 px-2 font-semibold text-green-800 text-xs leading-5">
                             Instructor
                           </span>
                         ) : (
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex rounded-full bg-yellow-100 px-2 font-semibold text-xs text-yellow-800 leading-5">
                             Not Instructor
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'N/A'}
+                      <td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
+                        {profile.updated_at
+                          ? new Date(profile.updated_at).toLocaleDateString()
+                          : "N/A"}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="whitespace-nowrap px-6 py-4 text-right font-medium text-sm">
                         <button
+                          className={`ml-2 rounded-md px-3 py-1.5 font-medium text-xs ${
+                            profile.is_instructor
+                              ? "bg-red-500 text-white hover:bg-red-600"
+                              : "bg-green-500 text-white hover:bg-green-600"
+                          }`}
                           onClick={() =>
                             toggleInstructorStatus(
                               profile.id,
@@ -484,11 +481,6 @@ function AdminInstructorsContent() {
                               profile.user_email
                             )
                           }
-                          className={`ml-2 px-3 py-1.5 text-xs font-medium rounded-md ${
-                            profile.is_instructor
-                              ? "bg-red-500 hover:bg-red-600 text-white"
-                              : "bg-green-500 hover:bg-green-600 text-white"
-                          }`}
                         >
                           {profile.is_instructor
                             ? "Revoke Approval"
@@ -496,10 +488,10 @@ function AdminInstructorsContent() {
                         </button>
                         {!profile.is_instructor && (
                           <button
+                            className="ml-2 rounded-md bg-red-700 px-3 py-1.5 font-medium text-white text-xs hover:bg-red-800"
                             onClick={() =>
                               handleRejectUser(profile.id, profile.user_email)
                             }
-                            className="ml-2 px-3 py-1.5 text-xs font-medium rounded-md bg-red-700 hover:bg-red-800 text-white"
                           >
                             Reject User
                           </button>
@@ -519,11 +511,13 @@ function AdminInstructorsContent() {
 
 export default function AdminInstructorsPage() {
   return (
-    <Suspense fallback={
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
-        <p className="text-lg">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="container mx-auto flex items-center justify-center px-4 py-8">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
       <AdminInstructorsContent />
     </Suspense>
   );

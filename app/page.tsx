@@ -1,8 +1,8 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
+import { AboutSection } from "@/components/home/AboutSection";
+import { CertificationsSection } from "@/components/home/CertificationsSection";
 import { Hero } from "@/components/home/Hero";
 import { ServicesSection } from "@/components/home/ServicesSection";
-import { CertificationsSection } from "@/components/home/CertificationsSection";
-import { AboutSection } from "@/components/home/AboutSection";
 
 export const metadata: Metadata = {
   title: "Taylored Instruction | BLS/CPR Training in Vancouver WA",

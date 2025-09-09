@@ -1,29 +1,29 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
+import type React from "react";
 import { Button } from "@/components/ui/Button";
 
 const AhaInstructorTrainingPageContent: React.FC = () => {
   return (
     <div>
       {/* Hero Section with Background Image */}
-      <section className="relative min-h-[500px] md:min-h-[550px] flex items-center justify-center">
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
+      <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[550px]">
+        <div className="absolute inset-0 h-full w-full overflow-hidden">
           <Image
-            src="/Cpr-Instructor-Image.jpeg"
             alt="CPR Instructor Training Session"
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover", objectPosition: "center" }}
             className="brightness-[0.85]"
+            fill
             priority
+            sizes="100vw"
+            src="/Cpr-Instructor-Image.jpeg"
+            style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50 z-10"></div>
-        <div className="relative z-20 container mx-auto px-6 py-20 text-center">
-          <div className="bg-black/30 backdrop-blur-sm p-8 md:p-10 rounded-xl max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="container relative z-20 mx-auto px-6 py-20 text-center">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+            <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               American Heart Association Instructor Training
             </h1>
           </div>
@@ -31,11 +31,11 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
       </section>
 
       {/* Main Content Section */}
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
-        <h2 className="text-2xl lg:text-3xl font-bold mb-6 text-center">
+      <div className="container mx-auto max-w-4xl px-4 py-12">
+        <h2 className="mb-6 text-center font-bold text-2xl lg:text-3xl">
           Become an American Heart Association Instructor
         </h2>
-        <p className="mb-6 text-lg text-center text-gray-700">
+        <p className="mb-6 text-center text-gray-700 text-lg">
           Are you passionate about saving lives and teaching others critical
           lifesaving skills? The American Heart Association (AHA) Instructor
           courses for Basic Life Support (BLS) and Heartsaver® certifications
@@ -45,27 +45,27 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           and providing lifesaving training.
         </p>
 
-        <div className="text-center mb-10">
+        <div className="mb-10 text-center">
           <Button
             href="https://www.hovn.app/tayloredinstruction/courses/aha-bls-instructor"
-            target="_blank"
             size="lg"
+            target="_blank"
           >
             View Current Offerings
           </Button>
         </div>
 
-        <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Overview</h3>
+        <h3 className="mb-3 font-bold text-xl lg:text-2xl">Course Overview</h3>
         <p className="mb-4 text-gray-700">
           The AHA Instructor Course is designed to train individuals to
-          effectively teach BLS or Heartsaver® courses. Through a combination
-          of online and in-person training, you&apos;ll learn instructional
+          effectively teach BLS or Heartsaver® courses. Through a combination of
+          online and in-person training, you&apos;ll learn instructional
           techniques, gain hands-on experience, and receive mentorship to ensure
           your success as a certified AHA Instructor.
         </p>
 
-        <h3 className="text-xl lg:text-2xl font-bold mb-3">Duration:</h3>
-        <ul className="list-disc list-inside mb-6 text-gray-700 space-y-2">
+        <h3 className="mb-3 font-bold text-xl lg:text-2xl">Duration:</h3>
+        <ul className="mb-6 list-inside list-disc space-y-2 text-gray-700">
           <li>
             <strong>Blended Learning:</strong> 2 hours online, 8 hours in-person
             (excluding monitoring)
@@ -76,23 +76,23 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           </li>
         </ul>
 
-        <h3 className="text-xl lg:text-2xl font-bold mb-3">Audience:</h3>
+        <h3 className="mb-3 font-bold text-xl lg:text-2xl">Audience:</h3>
         <p className="mb-6 text-gray-700">
           This course is ideal for healthcare providers, workplace safety
           trainers, educators, and anyone passionate about teaching lifesaving
           skills.
         </p>
 
-        <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <h3 className="mb-3 font-bold text-xl lg:text-2xl">
           Steps to Become an AHA Instructor
         </h3>
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           1. Complete the Prerequisites
         </h4>
         <p className="mb-2 text-gray-700">
           Before enrolling in the instructor course, you must:
         </p>
-        <ul className="list-disc list-inside mb-4 text-gray-700 space-y-2">
+        <ul className="mb-4 list-inside list-disc space-y-2 text-gray-700">
           <li>
             Hold a current, valid AHA Provider certification for the discipline
             you wish to teach (BLS or Heartsaver®).
@@ -104,17 +104,17 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           <li>
             Fill out an{" "}
             <a
-              href="/Instructor-Candidate-Application.pdf"
               className="text-primary hover:underline"
-              target="_blank"
+              href="/Instructor-Candidate-Application.pdf"
               rel="noopener noreferrer"
+              target="_blank"
             >
               AHA Instructor Candidate Application
             </a>{" "}
             and send it to Taylored Instruction (
             <a
-              href="mailto:info@tayloredinstruction.com"
               className="text-primary hover:underline"
+              href="mailto:info@tayloredinstruction.com"
             >
               info@tayloredinstruction.com
             </a>
@@ -122,24 +122,24 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           </li>
         </ul>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           2. Enroll in the AHA Instructor Course
         </h4>
         <p className="mb-2 text-gray-700">
           Choose the discipline you want to teach:
         </p>
-        <ul className="list-disc list-inside mb-4 text-gray-700 space-y-2">
+        <ul className="mb-4 list-inside list-disc space-y-2 text-gray-700">
           <li>
             <strong>BLS Instructor Course:</strong> Focused on teaching
             healthcare providers and first responders.
           </li>
           <li>
-            <strong>Heartsaver® Instructor Course:</strong> Focused on CPR,
-            AED, and first aid for the general public and workplaces.
+            <strong>Heartsaver® Instructor Course:</strong> Focused on CPR, AED,
+            and first aid for the general public and workplaces.
           </li>
         </ul>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           3. Complete Online Instructor Essentials
         </h4>
         <p className="mb-4 text-gray-700">
@@ -149,13 +149,13 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           You must complete this module before attending the in-person session.
         </p>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           4. Attend the In-Person Instructor Training
         </h4>
         <p className="mb-2 text-gray-700">
           During the in-person session, you&apos;ll:
         </p>
-        <ul className="list-disc list-inside mb-4 text-gray-700 space-y-2">
+        <ul className="mb-4 list-inside list-disc space-y-2 text-gray-700">
           <li>
             Learn to manage a classroom and conduct hands-on skills sessions.
           </li>
@@ -169,7 +169,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           </li>
         </ul>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           5. Complete Monitoring Session
         </h4>
         <p className="mb-4 text-gray-700">
@@ -178,7 +178,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           you are confident and prepared to lead AHA courses independently.
         </p>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           6. Receive Your Instructor Certification
         </h4>
         <p className="mb-6 text-gray-700">
@@ -187,10 +187,10 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           courses as part of a Training Site or Training Center.
         </p>
 
-        <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <h3 className="mb-3 font-bold text-xl lg:text-2xl">
           Certification Details
         </h3>
-        <ul className="list-disc list-inside mb-6 text-gray-700 space-y-2">
+        <ul className="mb-6 list-inside list-disc space-y-2 text-gray-700">
           <li>
             <strong>Instructor Certification Validity:</strong> 2 years
           </li>
@@ -200,11 +200,11 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           </li>
         </ul>
 
-        <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <h3 className="mb-3 font-bold text-xl lg:text-2xl">
           Frequently Asked Questions (FAQ)
         </h3>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           Who can become an AHA Instructor?
         </h4>
         <p className="mb-4 text-gray-700">
@@ -212,7 +212,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           teaching lifesaving skills can become an AHA Instructor.
         </p>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           What disciplines can I teach as an Instructor?
         </h4>
         <p className="mb-4 text-gray-700">
@@ -220,7 +220,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           interest and audience.
         </p>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           What is the cost of the Instructor Course?
         </h4>
         <p className="mb-4 text-gray-700">
@@ -228,7 +228,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           us for details and upcoming course dates.
         </p>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           What materials will I need as an Instructor?
         </h4>
         <p className="mb-4 text-gray-700">
@@ -236,7 +236,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           and access to AHA course materials.
         </p>
 
-        <h4 className="text-lg lg:text-xl font-semibold mb-2">
+        <h4 className="mb-2 font-semibold text-lg lg:text-xl">
           Can I teach independently?
         </h4>
         <p className="mb-4 text-gray-700">

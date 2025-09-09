@@ -1,16 +1,16 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from "react";
+import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useProfile } from "../../hooks/useProfile";
 import { createClient } from "../../utils/supabase/client";
-import Link from "next/link";
-import Image from "next/image";
-import { ShoppingCart, Trash2, Plus, Minus } from "lucide-react";
 
 const supabase = createClient();
 
-interface Product {
+type Product = {
   id: string;
   name: string;
   description: string | null;
@@ -18,7 +18,7 @@ interface Product {
   image_urls: string | null;
   type: string;
   requires_instructor: boolean;
-}
+};
 
 interface ProductWithPrice extends Product {
   display_price: number;
@@ -27,10 +27,10 @@ interface ProductWithPrice extends Product {
   stripe_product_description?: string | null;
 }
 
-interface CartItem {
+type CartItem = {
   product: ProductWithPrice;
   quantity: number;
-}
+};
 
 export default function ECardsPage() {
   const router = useRouter();
@@ -52,9 +52,7 @@ export default function ECardsPage() {
       if (savedCart) {
         try {
           setCartItems(JSON.parse(savedCart));
-        } catch (e) {
-          console.error("Failed to parse cart from localStorage", e);
-        }
+        } catch (_e) {}
       }
     }
   }, []);
@@ -72,7 +70,9 @@ export default function ECardsPage() {
 
   // Effect for handling redirection
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      return;
+    }
 
     if (!session) {
       router.push("/login");
@@ -84,7 +84,7 @@ export default function ECardsPage() {
   // Fetch eCard products only if authorized and auth check is complete
   useEffect(() => {
     const fetchECardsAndPrices = async () => {
-      if (!session || !session.user || !isInstructor) {
+      if (!(session?.user && isInstructor)) {
         setIsLoading(false);
         setProducts([]);
         return;
@@ -102,10 +102,6 @@ export default function ECardsPage() {
           .eq("type", "ecard");
 
         if (fetchError) {
-          console.error(
-            "fetchECardsAndPrices: Error fetching Supabase data:",
-            fetchError
-          );
           throw fetchError;
         }
         if (!supabaseProducts || supabaseProducts.length === 0) {
@@ -154,21 +150,16 @@ export default function ECardsPage() {
               stripe_product_name: stripeInfo.product_name,
               stripe_product_description: stripeInfo.product_description,
             };
-          } else {
-            return {
-              ...supaProduct,
-              display_price: 0,
-              currency: "N/A",
-            };
           }
+          return {
+            ...supaProduct,
+            display_price: 0,
+            currency: "N/A",
+          };
         });
 
         setProducts(enrichedProducts);
       } catch (err: any) {
-        console.error(
-          "fetchECardsAndPrices: Error in fetchECardsAndPrices function:",
-          err
-        );
         setError(
           err.message ||
             "Failed to fetch eCards and their prices. Please try again."
@@ -181,7 +172,7 @@ export default function ECardsPage() {
 
     if (!loading && session && isInstructor) {
       fetchECardsAndPrices();
-    } else if (!loading && (!session || !isInstructor)) {
+    } else if (!(loading || (session && isInstructor))) {
       setIsLoading(false);
       setProducts([]);
     }
@@ -203,7 +194,9 @@ export default function ECardsPage() {
 
   const addToCart = (product: ProductWithPrice) => {
     const quantity = selectedQuantities[product.id] || 1;
-    if (quantity < 1) return;
+    if (quantity < 1) {
+      return;
+    }
 
     const existingItemIndex = cartItems.findIndex(
       (item) => item.product.id === product.id
@@ -230,7 +223,9 @@ export default function ECardsPage() {
   };
 
   const updateCartItemQuantity = (productId: string, newQuantity: number) => {
-    if (newQuantity < 1) return;
+    if (newQuantity < 1) {
+      return;
+    }
 
     setCartItems(
       cartItems.map((item) =>
@@ -256,7 +251,9 @@ export default function ECardsPage() {
   };
 
   const handleCartCheckout = async () => {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0) {
+      return;
+    }
 
     try {
       const lineItems = cartItems.map((item) => ({
@@ -289,16 +286,11 @@ export default function ECardsPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        console.error(
-          "Error creating checkout session:",
-          data.error || "Unknown error"
-        );
         setError(
           data.error || "Could not initiate checkout. Please try again."
         );
       }
-    } catch (err) {
-      console.error("Error in cart checkout flow", err);
+    } catch (_err) {
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoadingProductIds([]);
@@ -307,7 +299,7 @@ export default function ECardsPage() {
 
   if (loading || isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg">
             {loading ? "Checking access..." : "Loading eCards..."}
@@ -319,12 +311,12 @@ export default function ECardsPage() {
 
   if (!session) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg text-red-600">
             Access Denied. You must be logged in.
           </p>
-          <Link href="/login" className="mt-4 inline-block btn btn-primary">
+          <Link className="btn btn-primary mt-4 inline-block" href="/login">
             Login
           </Link>
         </div>
@@ -334,14 +326,14 @@ export default function ECardsPage() {
 
   if (!isInstructor) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg text-red-600">
             Access Denied. You must be an approved instructor.
           </p>
           <Link
+            className="btn btn-primary mt-4 inline-block"
             href="/my-account"
-            className="mt-4 inline-block btn btn-primary"
           >
             Go to My Account
           </Link>
@@ -353,17 +345,17 @@ export default function ECardsPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Shopping Cart Button */}
-      <div className="flex justify-end mb-4">
+      <div className="mb-4 flex justify-end">
         <button
+          className="relative flex items-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
           onClick={() => setIsCartOpen(!isCartOpen)}
-          className="relative flex items-center bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors"
         >
           <ShoppingCart className="mr-2" />
           <span>
             Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)})
           </span>
           {cartItems.length > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+            <span className="-top-2 -right-2 absolute flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
               {cartItems.length}
             </span>
           )}
@@ -372,85 +364,85 @@ export default function ECardsPage() {
 
       {/* Shopping Cart Dropdown */}
       {isCartOpen && (
-        <div className="fixed top-0 right-0 h-full w-full md:w-96 bg-white border-l border-gray-200 shadow-xl z-50 overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 className="text-xl font-semibold">Your Cart</h2>
+        <div className="fixed top-0 right-0 z-50 flex h-full w-full flex-col overflow-hidden border-gray-200 border-l bg-white shadow-xl md:w-96">
+          <div className="flex items-center justify-between border-gray-200 border-b p-4">
+            <h2 className="font-semibold text-xl">Your Cart</h2>
             <button
+              className="rounded-full p-1 hover:bg-gray-100"
               onClick={() => setIsCartOpen(false)}
-              className="p-1 rounded-full hover:bg-gray-100"
             >
               <svg
-                xmlns="http://www.w3.org/2000/svg"
                 className="h-6 w-6"
                 fill="none"
-                viewBox="0 0 24 24"
                 stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
+                  d="M6 18L18 6M6 6l12 12"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
                 />
               </svg>
             </button>
           </div>
           <div className="flex-1 overflow-y-auto p-4">
             {cartItems.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center">
-                <ShoppingCart size={48} className="text-gray-300 mb-4" />
+              <div className="flex h-full flex-col items-center justify-center">
+                <ShoppingCart className="mb-4 text-gray-300" size={48} />
                 <p className="text-gray-500">Your cart is empty</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {cartItems.map((item) => (
                   <div
+                    className="flex rounded-lg border p-3 shadow-sm"
                     key={item.product.id}
-                    className="flex border rounded-lg p-3 shadow-sm"
                   >
-                    <div className="w-16 h-16 overflow-hidden rounded mr-3 flex-shrink-0">
+                    <div className="mr-3 h-16 w-16 flex-shrink-0 overflow-hidden rounded">
                       <Image
-                        src={getImageUrl(item.product.image_urls)}
                         alt={item.product.name}
-                        width={64}
+                        className="h-full w-full object-cover"
                         height={64}
-                        className="w-full h-full object-cover"
+                        src={getImageUrl(item.product.image_urls)}
+                        width={64}
                       />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-gray-500 text-sm">
                         ${item.product.display_price.toFixed(2)} each
                       </p>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center border rounded">
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="flex items-center rounded border">
                           <button
+                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
                             onClick={() =>
                               updateCartItemQuantity(
                                 item.product.id,
                                 item.quantity - 1
                               )
                             }
-                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
                           >
                             <Minus size={12} />
                           </button>
                           <span className="px-2">{item.quantity}</span>
                           <button
+                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
                             onClick={() =>
                               updateCartItemQuantity(
                                 item.product.id,
                                 item.quantity + 1
                               )
                             }
-                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
                           >
                             <Plus size={12} />
                           </button>
                         </div>
                         <button
-                          onClick={() => removeFromCart(item.product.id)}
                           className="p-1 text-red-500 hover:text-red-700"
+                          onClick={() => removeFromCart(item.product.id)}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -462,27 +454,25 @@ export default function ECardsPage() {
             )}
           </div>
 
-          <div className="p-4 border-t border-gray-200">
+          <div className="border-gray-200 border-t p-4">
             {cartItems.length > 0 && (
               <button
+                className="mb-4 inline-block text-red-500 text-sm hover:underline"
                 onClick={clearCart}
-                className="text-sm text-red-500 hover:underline mb-4 inline-block"
               >
                 Clear Cart
               </button>
             )}
 
-            <div className="flex justify-between font-semibold mb-4">
+            <div className="mb-4 flex justify-between font-semibold">
               <span>Total:</span>
               <span>${calculateTotal().toFixed(2)}</span>
             </div>
 
             <button
+              className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:opacity-50"
+              disabled={cartItems.length === 0 || loadingProductIds.length > 0}
               onClick={handleCartCheckout}
-              disabled={
-                cartItems.length === 0 || loadingProductIds.length > 0
-              }
-              className="w-full bg-primary text-white px-4 py-3 rounded-lg shadow-sm hover:bg-primary-dark transition-colors disabled:opacity-50 font-medium"
             >
               {loadingProductIds.length > 0
                 ? "Processing..."
@@ -492,77 +482,77 @@ export default function ECardsPage() {
         </div>
       )}
 
-      <h1 className="text-3xl font-bold mb-8 text-center">eCards</h1>
+      <h1 className="mb-8 text-center font-bold text-3xl">eCards</h1>
 
-      {error && <p className="text-red-600 text-center mb-4">{error}</p>}
+      {error && <p className="mb-4 text-center text-red-600">{error}</p>}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <div
+            className="flex h-full flex-col overflow-hidden rounded-lg border shadow-md transition-shadow hover:shadow-lg"
             key={product.id}
-            className="border rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow flex flex-col h-full"
           >
             <div className="h-48 overflow-hidden">
               <Image
-                src={getImageUrl(product.image_urls)}
                 alt={product.stripe_product_name || product.name}
-                width={300}
+                className="h-full w-full object-cover"
                 height={192}
-                className="w-full h-full object-cover"
+                src={getImageUrl(product.image_urls)}
+                width={300}
               />
             </div>
-            <div className="p-4 flex flex-col flex-grow">
-              <h3 className="text-lg font-semibold mb-2">{product.name}</h3>
-              <p className="text-gray-600 text-sm mb-4">
+            <div className="flex flex-grow flex-col p-4">
+              <h3 className="mb-2 font-semibold text-lg">{product.name}</h3>
+              <p className="mb-4 text-gray-600 text-sm">
                 {product.description}
               </p>
-              <div className="text-lg font-semibold text-primary mt-auto">
+              <div className="mt-auto font-semibold text-lg text-primary">
                 ${product.display_price.toFixed(2)} each
               </div>
             </div>
 
-            <div className="p-4 pt-0 border-t mt-auto">
+            <div className="mt-auto border-t p-4 pt-0">
               <div className="flex items-center gap-3">
-                <div className="flex items-center border rounded overflow-hidden">
+                <div className="flex items-center overflow-hidden rounded border">
                   <button
+                    className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
                     onClick={() =>
                       handleQuantityChange(
                         product.id,
                         Math.max(1, (selectedQuantities[product.id] || 1) - 1)
                       )
                     }
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
                   >
                     <Minus size={10} />
                   </button>
                   <input
-                    type="number"
+                    className="w-12 border-0 py-1 text-center focus:ring-0"
                     min="1"
-                    value={selectedQuantities[product.id] || 1}
                     onChange={(e) =>
                       handleQuantityChange(
                         product.id,
-                        parseInt(e.target.value) || 1
+                        Number.parseInt(e.target.value, 10) || 1
                       )
                     }
-                    className="w-12 border-0 py-1 text-center focus:ring-0"
+                    type="number"
+                    value={selectedQuantities[product.id] || 1}
                   />
                   <button
+                    className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
                     onClick={() =>
                       handleQuantityChange(
                         product.id,
                         (selectedQuantities[product.id] || 1) + 1
                       )
                     }
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700"
                   >
                     <Plus size={10} />
                   </button>
                 </div>
 
                 <button
+                  className="flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
                   onClick={() => addToCart(product)}
-                  className="flex-1 bg-primary text-white px-4 py-2 rounded-lg shadow-sm hover:bg-primary-dark transition-colors flex items-center justify-center"
                 >
                   <ShoppingCart className="mr-2" />
                   Add to Cart

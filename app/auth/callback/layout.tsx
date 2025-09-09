@@ -1,14 +1,14 @@
-import { Metadata } from 'next'
+import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: 'Completing Login | Taylored Instruction',
-  description: 'Completing authentication...',
-}
+  title: "Completing Login | Taylored Instruction",
+  description: "Completing authentication...",
+};
 
 export default function AuthCallbackLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
-  return children
+  return children;
 }

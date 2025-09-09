@@ -1,10 +1,10 @@
 "use client";
 
-import React from "react";
 import Link from "next/link";
+import type React from "react";
 import { twMerge } from "tailwind-merge";
 
-interface ButtonProps {
+type ButtonProps = {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "outline";
   size?: "sm" | "md" | "lg";
@@ -14,7 +14,7 @@ interface ButtonProps {
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
-}
+};
 
 export const Button = ({
   children,
@@ -57,7 +57,7 @@ export const Button = ({
 
   if (href) {
     return (
-      <Link href={href} className={classes} target={target}>
+      <Link className={classes} href={href} target={target}>
         {children}
       </Link>
     );
@@ -65,10 +65,10 @@ export const Button = ({
 
   return (
     <button
-      type={type}
       className={classes}
-      onClick={onClick}
       disabled={disabled}
+      onClick={onClick}
+      type={type}
     >
       {children}
     </button>

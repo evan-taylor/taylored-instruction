@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { updateSession } from "@/utils/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
@@ -18,22 +18,22 @@ export async function middleware(request: NextRequest) {
   }
 
   const isProtectedRoute = protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
+    (route) => pathname === route || pathname.startsWith(`${route}/`)
   );
 
   // If the user is not authenticated
-  if (!user) {
+  if (user) {
+    // If the user is authenticated
+    // And they are trying to access login or signup, redirect to my-account
+    if (pathname === "/login" || pathname === "/signup") {
+      return NextResponse.redirect(new URL("/my-account", request.url));
+    }
+  } else {
     // And the route is protected, redirect to login
     if (isProtectedRoute) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirectedFrom", pathname);
       return NextResponse.redirect(loginUrl);
-    }
-  } else {
-    // If the user is authenticated
-    // And they are trying to access login or signup, redirect to my-account
-    if (pathname === "/login" || pathname === "/signup") {
-      return NextResponse.redirect(new URL("/my-account", request.url));
     }
   }
 

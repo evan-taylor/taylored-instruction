@@ -1,30 +1,30 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
-import { Button } from "@/components/ui/Button";
 import Link from "next/link";
+import type React from "react";
+import { Button } from "@/components/ui/Button";
 
 const FaCprAedInstructorPageContent: React.FC = () => {
   return (
     <div>
       {/* Hero Section with Background Image */}
-      <section className="relative min-h-[500px] md:min-h-[550px] flex items-center justify-center">
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
+      <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[550px]">
+        <div className="absolute inset-0 h-full w-full overflow-hidden">
           <Image
-            src="/Cpr-Instructor-Image.jpeg"
             alt="CPR Instructor Training Session"
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover", objectPosition: "center" }}
             className="brightness-[0.85]"
+            fill
             priority
+            sizes="100vw"
+            src="/Cpr-Instructor-Image.jpeg"
+            style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50 z-10"></div>
-        <div className="relative z-20 container mx-auto px-6 py-20 text-center">
-          <div className="bg-black/30 backdrop-blur-sm p-8 md:p-10 rounded-xl max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="container relative z-20 mx-auto px-6 py-20 text-center">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+            <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               American Red Cross First Aid/CPR/AED Instructor Course
             </h1>
           </div>
@@ -32,49 +32,49 @@ const FaCprAedInstructorPageContent: React.FC = () => {
       </section>
 
       {/* Main Content Section */}
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="container mx-auto max-w-4xl px-4 py-12">
         {/* Resource Links */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8 text-center">
+        <div className="mb-8 flex flex-col items-center justify-center gap-4 text-center sm:flex-row">
           <Link
-            href="/First-Aid-CPR-AED-Instructor-Fact-Sheet.pdf" // Extracted from HTML
-            target="_blank"
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
+            href="/First-Aid-CPR-AED-Instructor-Fact-Sheet.pdf"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            target="_blank"
           >
             Course Fact Sheet
           </Link>
           <Link
-            href="/First-Aid-CPR-AED-Instructor-Manual-Dec-2021.pdf" // Extracted from HTML
-            target="_blank"
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
+            href="/First-Aid-CPR-AED-Instructor-Manual-Dec-2021.pdf"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            target="_blank"
           >
             Instructor Manual
           </Link>
           <Link
-            href="/Practice-Teaching-Workbook.pdf" // Extracted from HTML
-            target="_blank"
+            className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
+            href="/Practice-Teaching-Workbook.pdf"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            target="_blank"
           >
             Practice Teaching Workbook
           </Link>
         </div>
 
         {/* Registration Button */}
-        <div className="text-center mb-12">
+        <div className="mb-12 text-center">
           <Button
             href="https://www.hovn.app/tayloredinstruction/courses/arc-first-aid-cpr-aed-instructor" // Extracted from HTML
-            target="_blank"
             size="lg"
+            target="_blank"
           >
             View Current Offerings
           </Button>
         </div>
 
         {/* Course Purpose Section */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Purpose</h3>
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">Course Purpose</h3>
           <p className="text-gray-700">
             The purpose of the American Red Cross FA/CPR/AED Instructor course
             is to train instructor candidates to teach the basic-level American
@@ -83,8 +83,8 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Course Prerequisites Section */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Course Prerequisites
           </h3>
           <p className="text-gray-700">
@@ -94,13 +94,13 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Course Length Section */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">Course Length</h3>
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">Course Length</h3>
           <p className="mb-2 text-gray-700">
             The FA/CPR/AED Instructor Course is offered in a blended learning
             format that includes:
           </p>
-          <ul className="list-disc pl-5 space-y-1 text-gray-700">
+          <ul className="list-disc space-y-1 pl-5 text-gray-700">
             <li>
               FA/CPR/AED Instructor Course online session—designed to be
               completed in approximately 2 hours.
@@ -113,8 +113,8 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Course Preparation Section */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Course Preparation
           </h3>
           <p className="mb-4 text-gray-700">
@@ -131,10 +131,10 @@ const FaCprAedInstructorPageContent: React.FC = () => {
           <p className="text-gray-700">
             You may view all instructor candidate resources on the{" "}
             <Link
+              className="font-medium text-primary hover:underline"
               href="https://www.redcrosslearningcenter.org/s/candidate-resources-first-aid-cpr-aed-21"
-              target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium"
+              target="_blank"
             >
               Red Cross Learning Center
             </Link>
@@ -143,15 +143,15 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Interested Section */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Interested in taking a course?
           </h3>
           <p className="text-gray-700">
             Register for a course on our{" "}
             <Link
+              className="font-medium text-primary hover:underline"
               href="https://www.hovn.app/tayloredinstruction/courses/arc-first-aid-cpr-aed-instructor"
-              className="text-primary hover:underline font-medium"
             >
               registration page
             </Link>

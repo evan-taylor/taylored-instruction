@@ -1,14 +1,14 @@
-'use client'
+"use client";
 
-import { createClient } from "@/utils/supabase/client";
 import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa, type Theme } from "@supabase/auth-ui-shared";
+import { type Theme, ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
   const [supabaseClient] = useState(() => createClient());
-  const router = useRouter();
+  const _router = useRouter();
 
   const customTheme: Theme = {
     ...ThemeSupa,
@@ -49,19 +49,19 @@ export default function LoginPage() {
 
   return (
     <div
-      className="flex items-center justify-center px-4 py-12 min-h-[60vh]"
+      className="flex min-h-[60vh] items-center justify-center px-4 py-12"
       style={{ backgroundColor: "hsl(var(--background))" }}
     >
       <div
-        className="max-w-md w-full p-8 rounded-lg shadow-lg"
+        className="w-full max-w-md rounded-lg p-8 shadow-lg"
         style={{
           backgroundColor: "hsl(var(--card))",
           borderRadius: "var(--radius)",
         }}
       >
-        <div className="flex flex-col items-center justify-center mb-6">
+        <div className="mb-6 flex flex-col items-center justify-center">
           <h2
-            className="text-2xl font-bold text-center"
+            className="text-center font-bold text-2xl"
             style={{ color: "hsl(var(--foreground))" }}
           >
             Instructor Login
@@ -70,7 +70,6 @@ export default function LoginPage() {
 
         <div className="w-full">
           <Auth
-            supabaseClient={supabaseClient}
             appearance={{
               theme: customTheme,
               style: {
@@ -86,15 +85,6 @@ export default function LoginPage() {
                 },
               },
             }}
-            providers={["google"]}
-            view="magic_link"
-            showLinks={false}
-            magicLink={true}
-            redirectTo={
-              typeof window !== "undefined"
-                ? `${window.location.origin}/api/auth/callback`
-                : "/api/auth/callback"
-            }
             localization={{
               variables: {
                 magic_link: {
@@ -107,10 +97,20 @@ export default function LoginPage() {
                 },
               },
             }}
+            magicLink={true}
+            providers={["google"]}
+            redirectTo={
+              typeof window !== "undefined"
+                ? `${window.location.origin}/api/auth/callback`
+                : "/api/auth/callback"
+            }
+            showLinks={false}
+            supabaseClient={supabaseClient}
+            view="magic_link"
           />
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
+        <div className="mt-6 text-center text-gray-500 text-sm">
           <p>This login is for instructors only.</p>
           <p className="mt-1">
             New instructors will need approval before accessing instructor

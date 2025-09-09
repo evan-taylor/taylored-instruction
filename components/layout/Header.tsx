@@ -1,47 +1,43 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, X, ChevronDown } from "lucide-react";
-import { useSupabaseClient, useSession } from "@supabase/auth-helpers-react";
+import { useEffect, useRef, useState } from "react";
 import { useProfile } from "../../hooks/useProfile";
 
 // --- Type Definitions ---
-interface NavLinkItem {
+type NavLinkItem = {
   label: string;
   href: string;
   indent?: boolean;
   type?: undefined; // Ensure type compatibility with Divider
   requiresInstructor?: boolean; // Added for conditional display
-}
+};
 
-interface NavDivider {
+type NavDivider = {
   label: string;
   type: "divider";
   href?: undefined; // Ensure type compatibility with LinkItem
   indent?: undefined;
   requiresInstructor?: undefined; // Added
-}
+};
 
 type DropdownItem = NavLinkItem | NavDivider;
 
-interface NavTopLevelLink {
+type NavTopLevelLink = {
   label: string;
   dropdown?: DropdownItem[]; // Optional dropdown
   href?: string; // Optional direct href if no dropdown
   hideWhenLoggedIn?: boolean; // Added
   hideWhenLoggedOut?: boolean; // Added
   requiresInstructor?: boolean; // Added for top-level links if needed
-}
+};
 
 // Helper function for active link class
-const getLinkClass = (
-  href: string,
-  pathname: string,
-  isMobile: boolean = false
-) => {
+const getLinkClass = (href: string, pathname: string, isMobile = false) => {
   const baseClass = isMobile
     ? "block py-1"
     : "flex items-center text-text hover:text-primary transition-colors duration-200";
@@ -68,7 +64,7 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
 
 // Function to generate nav links based on auth state
 const generateNavLinks = (
-  isLoggedIn: boolean,
+  _isLoggedIn: boolean,
   isInstructor: boolean
 ): NavTopLevelLink[] => [
   {
@@ -163,7 +159,7 @@ export const Header = () => {
     string | null
   >(null);
   const headerRef = useRef<HTMLElement>(null);
-  const pathname = usePathname() ?? ""; // Provide default empty string if null
+  const _pathname = usePathname() ?? ""; // Provide default empty string if null
 
   // --- Authentication State ---
   const { session, isInstructor, loading: profileLoading } = useProfile();
@@ -172,19 +168,17 @@ export const Header = () => {
 
   const isLoggedIn = !!session; // Simple boolean check
 
-  const handleLogout = async () => {
+  const _handleLogout = async () => {
     setActiveDesktopDropdown(null); // Close any open dropdowns
     closeMobileMenu();
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error("Error signing out:", error);
         // Optionally show an error message to the user
       } else {
         router.push("/"); // Redirect only on successful logout
       }
-    } catch (err) {
-      console.error("Exception during sign out:", err);
+    } catch (_err) {
       // Handle unexpected errors
     }
   };
@@ -219,10 +213,16 @@ export const Header = () => {
   // Filter links for rendering based on auth status
   const filterLinks = (links: NavTopLevelLink[]) => {
     return links.filter((link) => {
-      if (isLoggedIn && link.hideWhenLoggedIn) return false;
-      if (!isLoggedIn && link.hideWhenLoggedOut) return false;
+      if (isLoggedIn && link.hideWhenLoggedIn) {
+        return false;
+      }
+      if (!isLoggedIn && link.hideWhenLoggedOut) {
+        return false;
+      }
       // Add instructor check for top level
-      if (link.requiresInstructor && !isInstructor) return false;
+      if (link.requiresInstructor && !isInstructor) {
+        return false;
+      }
       return true;
     });
   };
@@ -231,42 +231,42 @@ export const Header = () => {
 
   return (
     <header
-      ref={headerRef}
       className="sticky top-0 z-50 bg-background shadow-md"
+      ref={headerRef}
     >
       <div className="container py-3">
-        <div className="flex justify-between items-center">
+        <div className="flex items-center justify-between">
           {/* Logo */}
           <Link
-            href="/"
             className="flex-shrink-0"
+            href="/"
             onClick={() => {
               setActiveDesktopDropdown(null);
               closeMobileMenu();
             }}
           >
             <Image
-              src="/horizontal-logo-black.png"
               alt="Taylored Instruction Logo"
-              width={220}
+              className="h-auto max-h-[64px] w-auto"
               height={64}
-              className="h-auto w-auto max-h-[64px]"
               priority
+              src="/horizontal-logo-black.png"
+              width={220}
             />
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-6">
+          <nav className="hidden items-center space-x-6 lg:flex">
             <NavMenu
-              navLinks={visibleNavLinks}
               activeDropdown={activeDesktopDropdown}
-              toggleDropdown={toggleDesktopDropdown}
-              isLoggedIn={isLoggedIn}
               isInstructor={isInstructor}
+              isLoggedIn={isLoggedIn}
+              navLinks={visibleNavLinks}
+              toggleDropdown={toggleDesktopDropdown}
             />
 
             {/* Cart, Search, Register */}
-            <div className="flex items-center ml-4 space-x-4">
+            <div className="ml-4 flex items-center space-x-4">
               {/* Search button REMOVED */}
               {/* <button className="text-text-light hover:text-primary transition-colors duration-200" aria-label="Search">
                 <Search size={18} />
@@ -276,9 +276,9 @@ export const Header = () => {
                 <ShoppingCart size={20} />
               </Link> */}
               <Link
+                className="btn btn-primary px-4 py-2 text-sm"
                 href="https://www.hovn.app/tayloredinstruction"
                 target="_blank"
-                className="btn btn-primary text-sm py-2 px-4"
               >
                 Register Now
               </Link>
@@ -287,9 +287,9 @@ export const Header = () => {
 
           {/* Mobile Menu Button */}
           <button
-            className="lg:hidden text-text-light hover:text-primary"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
+            className="text-text-light hover:text-primary lg:hidden"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -298,14 +298,14 @@ export const Header = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`lg:hidden bg-background-light transition-all duration-300 ease-in-out overflow-hidden ${isMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}
+        className={`overflow-hidden bg-background-light transition-all duration-300 ease-in-out lg:hidden ${isMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}
       >
         <div className="container py-4">
           <MobileNavMenu
-            navLinks={visibleNavLinks}
             closeMenu={closeMobileMenu}
-            isLoggedIn={isLoggedIn}
             isInstructor={isInstructor}
+            isLoggedIn={isLoggedIn}
+            navLinks={visibleNavLinks}
           />
           <div className="mt-6 flex flex-col items-center space-y-4">
             {/* Mobile Search & Cart - REMOVED */}
@@ -316,10 +316,10 @@ export const Header = () => {
               <ShoppingCart size={20} /> <span>Cart</span>
             </Link> */}
             <Link
-              href="https://www.hovn.app/tayloredinstruction"
-              target="_blank"
               className="btn btn-primary w-full text-center"
+              href="https://www.hovn.app/tayloredinstruction"
               onClick={closeMobileMenu}
+              target="_blank"
             >
               Register Now
             </Link>
@@ -348,7 +348,9 @@ const NavMenu = ({
 
   const filterDropdownItems = (items: DropdownItem[]) => {
     return items.filter((item) => {
-      if (item.requiresInstructor && !isInstructor) return false;
+      if (item.requiresInstructor && !isInstructor) {
+        return false;
+      }
       return true;
     });
   };
@@ -357,14 +359,15 @@ const NavMenu = ({
     <>
       {navLinks.map((link) => {
         // Prevent rendering if a link is accidentally labeled "Logout"
-        if (link.label.toLowerCase() === "logout") return null;
+        if (link.label.toLowerCase() === "logout") {
+          return null;
+        }
 
         return (
-          <div key={link.label} className="relative">
+          <div className="relative" key={link.label}>
             {link.dropdown ? (
               <button
-                onClick={() => toggleDropdown(link.label)}
-                className={`flex items-center text-text hover:text-primary transition-colors duration-200 ${
+                className={`flex items-center text-text transition-colors duration-200 hover:text-primary ${
                   activeDropdown === link.label ||
                   link.dropdown?.some(
                     (item) => item.href && pathname.startsWith(item.href)
@@ -372,17 +375,18 @@ const NavMenu = ({
                     ? "text-primary"
                     : ""
                 }`}
+                onClick={() => toggleDropdown(link.label)}
               >
                 {link.label}
                 <ChevronDown
-                  size={12}
                   className={`ml-1 transition-transform duration-200 ${activeDropdown === link.label ? "rotate-180" : ""}`}
+                  size={12}
                 />
               </button>
             ) : link.href ? (
               <Link
-                href={link.href}
                 className={getLinkClass(link.href, pathname)}
+                href={link.href}
               >
                 {link.label}
               </Link>
@@ -392,25 +396,27 @@ const NavMenu = ({
             )}
 
             {activeDropdown === link.label && link.dropdown && (
-              <div className="absolute left-0 mt-2 w-56 origin-top-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none py-1 z-20">
+              <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                 {filterDropdownItems(link.dropdown).map((item, index) => {
                   if (item.type === "divider") {
                     return (
                       <div
+                        className="px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
                         key={`divider-${index}`}
-                        className="px-4 pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide"
                       >
                         {item.label}
                       </div>
                     );
                   }
                   // Prevent rendering if a dropdown item is accidentally labeled "Logout"
-                  if (item.label.toLowerCase() === "logout") return null;
+                  if (item.label.toLowerCase() === "logout") {
+                    return null;
+                  }
                   return (
                     <Link
-                      key={item.label}
-                      href={item.href!}
                       className={`${getDropdownLinkClass(item.href!, pathname)} ${item.indent ? "pl-8" : ""}`}
+                      href={item.href!}
+                      key={item.label}
                       onClick={() => toggleDropdown(link.label)} // Close dropdown on click
                     >
                       {item.label}
@@ -449,16 +455,20 @@ const MobileNavMenu = ({
 
   const filterDropdownItems = (items: DropdownItem[]) => {
     return items.filter((item) => {
-      if (item.requiresInstructor && !isInstructor) return false;
+      if (item.requiresInstructor && !isInstructor) {
+        return false;
+      }
       return true;
     });
   };
 
   return (
-    <div className="py-2 space-y-1">
+    <div className="space-y-1 py-2">
       {navLinks.map((link) => {
         // Prevent rendering if a link is accidentally labeled "Logout"
-        if (link.label.toLowerCase() === "logout") return null;
+        if (link.label.toLowerCase() === "logout") {
+          return null;
+        }
 
         return (
           // Added return here
@@ -466,8 +476,8 @@ const MobileNavMenu = ({
             {link.dropdown ? (
               <>
                 <button
+                  className="flex w-full items-center justify-between py-2 text-left text-text transition-colors duration-200 hover:text-primary"
                   onClick={() => toggleMobileDropdown(link.label)}
-                  className="w-full flex justify-between items-center py-2 text-left text-text hover:text-primary transition-colors duration-200"
                 >
                   <span>{link.label}</span>
                   <ChevronDown
@@ -475,25 +485,27 @@ const MobileNavMenu = ({
                   />
                 </button>
                 {openMobileDropdown === link.label && (
-                  <div className="pl-4 pt-1 pb-2 space-y-1 border-l border-gray-200 ml-2">
+                  <div className="ml-2 space-y-1 border-gray-200 border-l pt-1 pb-2 pl-4">
                     {filterDropdownItems(link.dropdown).map((item, index) => {
                       if (item.type === "divider") {
                         return (
                           <div
+                            className="pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
                             key={`divider-${index}`}
-                            className="pt-2 pb-1 text-[11px] font-semibold text-gray-500 uppercase tracking-wide"
                           >
                             {item.label}
                           </div>
                         );
                       }
                       // Prevent rendering if a dropdown item is accidentally labeled "Logout"
-                      if (item.label.toLowerCase() === "logout") return null;
+                      if (item.label.toLowerCase() === "logout") {
+                        return null;
+                      }
                       return (
                         <Link
-                          key={item.label}
-                          href={item.href!}
                           className={getDropdownLinkClass(item.href!, pathname)}
+                          href={item.href!}
+                          key={item.label}
                           onClick={closeMenu} // Close main mobile menu on item click
                         >
                           {item.label}
@@ -505,15 +517,15 @@ const MobileNavMenu = ({
               </>
             ) : link.href ? (
               <Link
+                className={`${getLinkClass(link.href, pathname, true)} block border-gray-200 border-b py-2`}
                 href={link.href}
-                className={`${getLinkClass(link.href, pathname, true)} block py-2 border-b border-gray-200`}
                 onClick={closeMenu}
               >
                 {link.label}
               </Link>
             ) : (
               // Fallback for links without href or dropdown
-              <span className="block py-2 border-b border-gray-200 text-text">
+              <span className="block border-gray-200 border-b py-2 text-text">
                 {link.label}
               </span>
             )}

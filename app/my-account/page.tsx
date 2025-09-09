@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useProfile } from "../../hooks/useProfile";
+import type { User } from "@supabase/supabase-js";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { useProfile } from "../../hooks/useProfile";
 
 export default function MyAccountPage() {
   const router = useRouter();
@@ -45,19 +45,19 @@ export default function MyAccountPage() {
 
   // Redirect if not logged in
   useEffect(() => {
-    if (!userLoading && !user) {
+    if (!(userLoading || user)) {
       router.push("/login");
     }
   }, [userLoading, user, router]);
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg text-red-600">Error loading account: {error}</p>
           <button
+            className="mt-4 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Retry
           </button>
@@ -68,10 +68,10 @@ export default function MyAccountPage() {
 
   if (userLoading || loading) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg">Loading account information...</p>
-          <p className="text-sm text-gray-500 mt-2">
+          <p className="mt-2 text-gray-500 text-sm">
             User: {user ? "Loaded" : "Loading"} | Profile:{" "}
             {profile ? "Loaded" : loading ? "Loading" : "Not found"}
           </p>
@@ -82,7 +82,7 @@ export default function MyAccountPage() {
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center">
+      <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg">Redirecting to login...</p>
         </div>
@@ -92,11 +92,11 @@ export default function MyAccountPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-3xl md:text-4xl font-bold mb-6">My Account</h1>
+      <div className="mx-auto max-w-3xl">
+        <h1 className="mb-6 font-bold text-3xl md:text-4xl">My Account</h1>
 
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Account Information</h2>
+        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-4 font-semibold text-xl">Account Information</h2>
 
           <div className="mb-4">
             <p className="text-gray-600">Email:</p>
@@ -113,7 +113,7 @@ export default function MyAccountPage() {
               )}
             </p>
             {!isInstructor && profile && (
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="mt-1 text-gray-500 text-sm">
                 Your instructor status is pending approval from an
                 administrator.
               </p>
@@ -122,20 +122,20 @@ export default function MyAccountPage() {
         </div>
 
         {/* Quick Links */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
+        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
+          <h2 className="mb-4 font-semibold text-xl">Quick Links</h2>
           <div className="space-y-2">
             {isInstructor && profile && (
               <>
                 <Link
+                  className="block text-primary hover:underline"
                   href="/ecards"
-                  className="text-primary hover:underline block"
                 >
                   Purchase eCards
                 </Link>
                 <Link
+                  className="block text-primary hover:underline"
                   href="/instructor-resources"
-                  className="text-primary hover:underline block"
                 >
                   Instructor Resources
                 </Link>
@@ -144,16 +144,16 @@ export default function MyAccountPage() {
             {isAdmin && (
               <div>
                 <button
+                  className="block text-primary hover:underline"
                   onClick={() => setShowAdmin(!showAdmin)}
-                  className="text-primary hover:underline block"
                 >
                   Admin
                 </button>
                 {showAdmin && (
-                  <div className="ml-4 mt-2 space-y-1">
+                  <div className="mt-2 ml-4 space-y-1">
                     <Link
+                      className="block text-primary hover:underline"
                       href="/admin/instructors"
-                      className="text-primary hover:underline block"
                     >
                       Manage Instructors
                     </Link>
@@ -166,15 +166,14 @@ export default function MyAccountPage() {
 
         {/* Sign Out Button */}
         <button
+          className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
           onClick={async () => {
             const { error } = await supabaseClient.auth.signOut();
             if (error) {
-              console.error("Logout error:", error);
             } else {
               router.push("/");
             }
           }}
-          className="w-full md:w-auto px-6 py-3 text-sm font-medium tracking-wide text-white capitalize transition-colors duration-300 transform bg-red-600 rounded-lg hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50"
         >
           Sign Out
         </button>

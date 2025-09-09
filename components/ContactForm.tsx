@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { sendContactEmail } from "@/app/actions/sendContactEmail"; // Import the server action
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Checkbox } from "@/components/ui/checkbox";
-import { sendContactEmail } from "@/app/actions/sendContactEmail"; // Import the server action
+import { Textarea } from "@/components/ui/textarea";
 
 export function ContactForm() {
   const [status, setStatus] = useState<{
@@ -45,8 +45,7 @@ export function ContactForm() {
           error: result.error || "An unknown error occurred.",
         });
       }
-    } catch (error) {
-      console.error("Form submission error:", error);
+    } catch (_error) {
       setStatus({
         loading: false,
         success: false,
@@ -61,35 +60,35 @@ export function ContactForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form className="space-y-6" onSubmit={handleSubmit}>
       {/* Status Messages - Moved to top */}
       {status.success === true && (
-        <p className="p-3 mb-4 rounded bg-green-100 text-green-800 border border-green-200 text-center">
+        <p className="mb-4 rounded border border-green-200 bg-green-100 p-3 text-center text-green-800">
           Message sent successfully! We&apos;ll be in touch soon.
         </p>
       )}
       {status.success === false && status.error && (
-        <p className="p-3 mb-4 rounded bg-red-100 text-red-800 border border-red-200 text-center">
+        <p className="mb-4 rounded border border-red-200 bg-red-100 p-3 text-center text-red-800">
           Error: {status.error}
         </p>
       )}
       {status.loading && (
-        <p className="p-3 mb-4 rounded bg-blue-100 text-blue-800 border border-blue-200 text-center">
+        <p className="mb-4 rounded border border-blue-200 bg-blue-100 p-3 text-center text-blue-800">
           Sending message...
         </p>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
           <Label htmlFor="firstName">
             First Name <span className="text-red-500">*</span>
           </Label>
           <Input
+            disabled={status.loading}
             id="firstName"
             name="firstName"
-            type="text"
             required
-            disabled={status.loading}
+            type="text"
           />
         </div>
         <div>
@@ -97,11 +96,11 @@ export function ContactForm() {
             Last Name <span className="text-red-500">*</span>
           </Label>
           <Input
+            disabled={status.loading}
             id="lastName"
             name="lastName"
-            type="text"
             required
-            disabled={status.loading}
+            type="text"
           />
         </div>
       </div>
@@ -111,43 +110,43 @@ export function ContactForm() {
           Email <span className="text-red-500">*</span>
         </Label>
         <Input
+          disabled={status.loading}
           id="email"
           name="email"
-          type="email"
           required
-          disabled={status.loading}
+          type="email"
         />
       </div>
 
       <div>
         <Label htmlFor="phone">Phone</Label>
-        <Input id="phone" name="phone" type="tel" disabled={status.loading} />
+        <Input disabled={status.loading} id="phone" name="phone" type="tel" />
       </div>
 
       <div>
         <Label>Approximate location (we are willing to travel!)</Label>
         <RadioGroup
-          name="location"
-          value={locationChoice} // Controlled component
-          onValueChange={handleLocationChange}
           className="mt-2"
-          disabled={status.loading}
+          disabled={status.loading} // Controlled component
+          name="location"
+          onValueChange={handleLocationChange}
+          value={locationChoice}
         >
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="Vancouver, WA" id="loc-van" />
-            <Label htmlFor="loc-van" className="font-normal">
+            <RadioGroupItem id="loc-van" value="Vancouver, WA" />
+            <Label className="font-normal" htmlFor="loc-van">
               Vancouver, WA
             </Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="San Luis Obispo, CA" id="loc-slo" />
-            <Label htmlFor="loc-slo" className="font-normal">
+            <RadioGroupItem id="loc-slo" value="San Luis Obispo, CA" />
+            <Label className="font-normal" htmlFor="loc-slo">
               San Luis Obispo, CA
             </Label>
           </div>
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="Other" id="loc-other" />
-            <Label htmlFor="loc-other" className="font-normal">
+            <RadioGroupItem id="loc-other" value="Other" />
+            <Label className="font-normal" htmlFor="loc-other">
               Other
             </Label>
           </div>
@@ -158,11 +157,11 @@ export function ContactForm() {
         <div>
           <Label htmlFor="otherLocation">Other location:</Label>
           <Input
+            disabled={status.loading}
             id="otherLocation"
             name="otherLocation"
-            type="text"
             required={locationChoice === "Other"}
-            disabled={status.loading}
+            type="text"
           />
         </div>
       )}
@@ -172,37 +171,37 @@ export function ContactForm() {
           Comment or Message <span className="text-red-500">*</span>
         </Label>
         <Textarea
+          disabled={status.loading}
           id="message"
           name="message"
-          rows={5}
           required
-          disabled={status.loading}
+          rows={5}
         />
       </div>
 
       <div className="flex items-start space-x-2">
-        <Checkbox id="smsOptIn" name="smsOptIn" disabled={status.loading} />
+        <Checkbox disabled={status.loading} id="smsOptIn" name="smsOptIn" />
         <div className="grid gap-1.5 leading-none">
-          <Label htmlFor="smsOptIn" className="font-normal text-sm">
+          <Label className="font-normal text-sm" htmlFor="smsOptIn">
             Yes, I agree to receive text messages from Taylored Instruction sent
             from 360-685-8199.
           </Label>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Message frequency varies and may include appointment reminders,
             course information, or promotional messages. Message and data rates
             may apply. Reply STOP at any time to unsubscribe or HELP for
             assistance. Contact support at 360-685-8199. See our{" "}
-            <a href="/privacy-policy" className="text-blue-500">
+            <a className="text-blue-500" href="/privacy-policy">
               Privacy Policy
             </a>{" "}
             for details on how we handle your information.
           </p>
         </div>
       </div>
-      <div className="flex items-start space-x-2 mt-2">
-        <Checkbox id="smsOptOut" name="smsOptOut" disabled={status.loading} />
+      <div className="mt-2 flex items-start space-x-2">
+        <Checkbox disabled={status.loading} id="smsOptOut" name="smsOptOut" />
         <div className="grid gap-1.5 leading-none">
-          <Label htmlFor="smsOptOut" className="font-normal text-sm">
+          <Label className="font-normal text-sm" htmlFor="smsOptOut">
             No, I do not want to receive text messages from Taylored
             Instruction.
           </Label>
@@ -217,41 +216,41 @@ export function ContactForm() {
         <div className="mt-2 space-y-2">
           <div className="flex items-center space-x-2">
             <Checkbox
+              disabled={status.loading}
               id="contact-email"
               name="contactMethod"
               value="Email"
-              disabled={status.loading}
             />
-            <Label htmlFor="contact-email" className="font-normal">
+            <Label className="font-normal" htmlFor="contact-email">
               Email
             </Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
+              disabled={status.loading}
               id="contact-phone"
               name="contactMethod"
               value="Phone call"
-              disabled={status.loading}
             />
-            <Label htmlFor="contact-phone" className="font-normal">
+            <Label className="font-normal" htmlFor="contact-phone">
               Phone call
             </Label>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox
+              disabled={status.loading}
               id="contact-sms"
               name="contactMethod"
               value="SMS message"
-              disabled={status.loading}
             />
-            <Label htmlFor="contact-sms" className="font-normal">
+            <Label className="font-normal" htmlFor="contact-sms">
               SMS message (requires opt-in above)
             </Label>
           </div>
         </div>
         {/* Validation message if needed */}
         {status.error?.includes("contact method") && (
-          <p className="text-sm text-red-600 mt-1">
+          <p className="mt-1 text-red-600 text-sm">
             Please select at least one contact method.
           </p>
         )}
@@ -259,19 +258,19 @@ export function ContactForm() {
 
       <div>
         <Button
-          type="submit"
-          variant="primary"
-          size="lg"
           className="w-full"
           disabled={status.loading}
+          size="lg"
+          type="submit"
+          variant="primary"
         >
           {status.loading ? (
             <>
               <svg
-                className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                xmlns="http://www.w3.org/2000/svg"
+                className="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
                 fill="none"
                 viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <circle
                   className="opacity-25"
@@ -280,12 +279,12 @@ export function ContactForm() {
                   r="10"
                   stroke="currentColor"
                   strokeWidth="4"
-                ></circle>
+                />
                 <path
                   className="opacity-75"
-                  fill="currentColor"
                   d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                  fill="currentColor"
+                />
               </svg>
               Sending...
             </>
@@ -294,7 +293,7 @@ export function ContactForm() {
           )}
         </Button>
       </div>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-muted-foreground text-xs">
         By providing a telephone number and submitting this form you are
         consenting to be contacted by SMS text message. Message &amp; data rates
         may apply. You can reply STOP to opt-out of further messaging.

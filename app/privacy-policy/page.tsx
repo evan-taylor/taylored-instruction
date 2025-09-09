@@ -21,19 +21,19 @@ export default function PrivacyPolicyPage() {
     <>
       {/* Hero/Title Section */}
       <section className="relative py-16 md:py-24">
-        <div className="relative container mx-auto px-4 text-center">
-          <h1 className="text-3xl md:text-4xl font-bold mb-4 text-text">
+        <div className="container relative mx-auto px-4 text-center">
+          <h1 className="mb-4 font-bold text-3xl text-text md:text-4xl">
             Privacy Policy
           </h1>
         </div>
       </section>
 
       {/* Main Content Section */}
-      <section className="pb-16 bg-background">
+      <section className="bg-background pb-16">
         {" "}
         {/* Removed py-16 to avoid double padding with hero */}
-        <div className="container mx-auto px-4 max-w-4xl">
-          <h2 className="text-2xl font-semibold mb-6 text-text">
+        <div className="container mx-auto max-w-4xl px-4">
+          <h2 className="mb-6 font-semibold text-2xl text-text">
             1. Introduction
           </h2>
           <p>
@@ -43,17 +43,17 @@ export default function PrivacyPolicyPage() {
             SMS notifications, or use our services.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             2. Information We Collect
           </h2>
-          <h3 className="text-xl font-semibold mb-3 text-text">
+          <h3 className="mb-3 font-semibold text-text text-xl">
             Personal Information
           </h3>
           <p>
             We collect personal information you provide to us directly or
             through account creation, such as:
           </p>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>Name (if provided)</li>
             <li>Email address (required for account creation and login)</li>
             <li>
@@ -73,35 +73,35 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
-          <h3 className="text-xl font-semibold mb-3 text-text mt-4">
+          <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
             Automatically Collected Information
           </h3>
           <p>
             We may automatically collect certain information about your device
             and browsing activity, including:
           </p>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>IP address</li>
             <li>Browser type</li>
             <li>Access times</li>
             <li>Pages visited and actions taken on our site</li>
           </ul>
 
-          <h3 className="text-xl font-semibold mb-3 text-text mt-4">Media</h3>
+          <h3 className="mt-4 mb-3 font-semibold text-text text-xl">Media</h3>
           <p>
             If you upload images or files to our website, please avoid including
             embedded location data (such as EXIF GPS), as this information may
             be accessible to others who download the files.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             3. How We Use Your Information
           </h2>
-          <h3 className="text-xl font-semibold mb-3 text-text">
+          <h3 className="mb-3 font-semibold text-text text-xl">
             To Provide Services
           </h3>
           <p>We use your information to:</p>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>Create and manage your user account</li>
             <li>Authenticate you when you log in</li>
             <li>
@@ -122,7 +122,7 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
-          <h3 className="text-xl font-semibold mb-3 text-text mt-4">
+          <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
             SMS Notifications
           </h3>
           <p>
@@ -137,15 +137,15 @@ export default function PrivacyPolicyPage() {
             <strong>UNSUBSCRIBE</strong>. For help, text <strong>HELP</strong>.
             You can also contact us at 360-685-8199 or
             <a
-              href="mailto:info@tayloredinstruction.com"
               className="text-primary hover:underline"
+              href="mailto:info@tayloredinstruction.com"
             >
               info@tayloredinstruction.com
             </a>
             . Mobile opt-in information is never shared with third parties.
           </p>
 
-          <h3 className="text-xl font-semibold mb-3 text-text mt-4">
+          <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
             Improving Our Services
           </h3>
           <p>
@@ -153,11 +153,11 @@ export default function PrivacyPolicyPage() {
             our offerings, and enhance your experience on our website.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             4. Cookies
           </h2>
           <p>We use cookies to:</p>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>Remember your preferences and settings</li>
             <li>Facilitate login and authentication (if applicable)</li>
             <li>Analyze site usage to improve performance</li>
@@ -167,7 +167,7 @@ export default function PrivacyPolicyPage() {
             Disabling cookies may affect your experience on our website.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             5. Embedded Content and Third-Party Services
           </h2>
           <p>
@@ -178,7 +178,7 @@ export default function PrivacyPolicyPage() {
             privacy practices of these third-party sites.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             6. Sharing and Selling of Information
           </h2>
           <p>
@@ -201,10 +201,10 @@ export default function PrivacyPolicyPage() {
             consent; this information will not be shared with any third parties.
           </p>
 
-          <h3 className="text-xl font-semibold mb-3 text-text mt-4">
+          <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
             Data Sharing
           </h3>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>
               Customer data is not shared with 3rd parties for promotional or
               marketing purposes.
@@ -216,7 +216,7 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
-          <h3 className="text-xl font-semibold mb-3 text-text mt-4">
+          <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
             Messaging Terms and Conditions
           </h3>
           <p>
@@ -229,15 +229,15 @@ export default function PrivacyPolicyPage() {
             time or HELP for assistance. You can also contact us at 360-685-8199
             or{" "}
             <a
-              href="mailto:info@tayloredinstruction.com"
               className="text-primary hover:underline"
+              href="mailto:info@tayloredinstruction.com"
             >
               info@tayloredinstruction.com
             </a>
             . Mobile opt-in information is never shared with third parties.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             7. Data Transfer Policy
           </h2>
           <p>
@@ -245,7 +245,7 @@ export default function PrivacyPolicyPage() {
             organizations under any circumstances, even with your consent.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             8. Data Retention
           </h2>
           <p>
@@ -254,11 +254,11 @@ export default function PrivacyPolicyPage() {
             retention period is required or permitted by law.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             9. Your Rights
           </h2>
           <p>You have the right to:</p>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>Request access to the personal data we hold about you</li>
             <li>
               Request correction or deletion of your personal data, except where
@@ -272,7 +272,7 @@ export default function PrivacyPolicyPage() {
             below.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             10. Data Security
           </h2>
           <p>
@@ -282,10 +282,10 @@ export default function PrivacyPolicyPage() {
             storage is completely secure.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             11. Your Choices
           </h2>
-          <ul className="list-disc list-inside mb-4 text-text-light">
+          <ul className="mb-4 list-inside list-disc text-text-light">
             <li>
               <strong>Opt-Out:</strong> You can opt-out of marketing emails or
               SMS notifications at any time by replying <strong>STOP</strong> or{" "}
@@ -298,14 +298,14 @@ export default function PrivacyPolicyPage() {
             </li>
           </ul>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             12. Automated Detection
           </h2>
           <p>
             We may use automated tools to detect spam or abuse on our website.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             13. Changes to This Privacy Policy
           </h2>
           <p>
@@ -314,7 +314,7 @@ export default function PrivacyPolicyPage() {
             a website notice.
           </p>
 
-          <h2 className="text-2xl font-semibold mb-6 text-text mt-8">
+          <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
             14. Contact Us
           </h2>
           <p>

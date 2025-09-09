@@ -1,20 +1,19 @@
-import React from 'react';
 import {
-  Html,
   Body,
+  Container,
   Head,
   Heading,
   Hr,
-  Container,
+  Html,
   Preview,
   Section,
   Text,
-} from '@react-email/components';
-import { Tailwind } from '@react-email/tailwind';
+} from "@react-email/components";
+import { Tailwind } from "@react-email/tailwind";
 
-interface AlignmentConfirmationEmailProps {
+type AlignmentConfirmationEmailProps = {
   firstName: string;
-}
+};
 
 export default function AlignmentConfirmationEmail({
   firstName,
@@ -26,14 +25,18 @@ export default function AlignmentConfirmationEmail({
       <Tailwind>
         <Body className="bg-gray-100 text-black">
           <Container>
-            <Section className="bg-white border border-black/10 my-10 px-10 py-4 rounded-md">
-              <Heading className="leading-tight">Thank You for Your Interest!</Heading>
+            <Section className="my-10 rounded-md border border-black/10 bg-white px-10 py-4">
+              <Heading className="leading-tight">
+                Thank You for Your Interest!
+              </Heading>
               <Text>Hi {firstName},</Text>
               <Text>
-                We have received your alignment interest form submission. Thank you for considering Taylored Instruction!
+                We have received your alignment interest form submission. Thank
+                you for considering Taylored Instruction!
               </Text>
               <Text>
-                We will review your information and get back to you as soon as possible to discuss potential alignment opportunities.
+                We will review your information and get back to you as soon as
+                possible to discuss potential alignment opportunities.
               </Text>
               <Hr />
               <Text>Best Regards,</Text>
@@ -44,4 +47,4 @@ export default function AlignmentConfirmationEmail({
       </Tailwind>
     </Html>
   );
-} 
+}

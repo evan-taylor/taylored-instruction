@@ -1,33 +1,32 @@
 "use client";
 
-import React from "react";
 import Image from "next/image";
-import Link from "next/link";
+import type React from "react";
 import { Button } from "@/components/ui/Button";
 
 const LifeguardingInstructorPageContent: React.FC = () => {
   return (
     <div>
       {/* Hero Section with Background Image */}
-      <section className="relative min-h-[500px] md:min-h-[550px] flex items-center justify-center">
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
+      <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[550px]">
+        <div className="absolute inset-0 h-full w-full overflow-hidden">
           <Image
-            src="/lifeguard-training.jpeg"
             alt="Lifeguarding Instructor course training"
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover", objectPosition: "center" }}
             className="brightness-[0.85]"
+            fill
             priority
+            sizes="100vw"
+            src="/lifeguard-training.jpeg"
+            style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50 z-10"></div>
-        <div className="relative z-20 container mx-auto px-6 py-20 text-center">
-          <div className="bg-black/30 backdrop-blur-sm p-8 md:p-10 rounded-xl max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="container relative z-20 mx-auto px-6 py-20 text-center">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+            <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               American Red Cross Lifeguarding Instructor Course
             </h1>
-            <p className="text-white/90 max-w-2xl mx-auto">
+            <p className="mx-auto max-w-2xl text-white/90">
               Train to teach Red Cross Lifeguarding courses. Blended learning
               with online and in-person sessions led by an Instructor Trainer.
             </p>
@@ -36,13 +35,13 @@ const LifeguardingInstructorPageContent: React.FC = () => {
       </section>
 
       {/* Main Content Section */}
-      <div className="container mx-auto px-4 py-12 max-w-4xl">
+      <div className="container mx-auto max-w-4xl px-4 py-12">
         {/* Quick Actions */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-10 text-center">
+        <div className="mb-10 flex flex-col items-center justify-center gap-4 text-center sm:flex-row">
           <Button
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
-            target="_blank"
             size="lg"
+            target="_blank"
           >
             View Upcoming Courses
           </Button>
@@ -52,8 +51,8 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Overview */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h2 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h2 className="mb-3 font-bold text-xl lg:text-2xl">
             Course Overview
           </h2>
           <p className="text-gray-700">
@@ -66,9 +65,9 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Prerequisites */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">Prerequisites</h3>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">Prerequisites</h3>
+          <ul className="list-disc space-y-2 pl-5 text-gray-700">
             <li>Minimum age of 17 by the last day of the course.</li>
             <li>
               Possess a current basic-level certification in American Red Cross
@@ -89,7 +88,7 @@ const LifeguardingInstructorPageContent: React.FC = () => {
             <li>
               Successfully complete the prerequisite skill assessment scenario
               evaluating:
-              <ul className="list-[circle] pl-6 mt-2 space-y-1">
+              <ul className="mt-2 list-[circle] space-y-1 pl-6">
                 <li>Entry</li>
                 <li>Swimming approach</li>
                 <li>Surface dive in deep water (7–10 feet)</li>
@@ -103,8 +102,8 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Format & Length */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Course Format and Length
           </h3>
           <p className="mb-3 text-gray-700">
@@ -112,7 +111,7 @@ const LifeguardingInstructorPageContent: React.FC = () => {
             (completed independently) followed by instructor-led classroom and
             in-water sessions.
           </p>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700 mb-3">
+          <ul className="mb-3 list-disc space-y-2 pl-5 text-gray-700">
             <li>Online session: approximately 2 hours to complete.</li>
             <li>
               In-person sessions (including the precourse): 16 hours of
@@ -127,15 +126,15 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Course Materials */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Course Materials
           </h3>
-          <p className="text-gray-700 mb-2">
+          <p className="mb-2 text-gray-700">
             Lifeguarding Instructor candidates should obtain and review the
             following r.24 materials before attending:
           </p>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+          <ul className="list-disc space-y-2 pl-5 text-gray-700">
             <li>
               Lifeguarding Instructor’s Manual{" "}
               <span className="italic">
@@ -158,26 +157,26 @@ const LifeguardingInstructorPageContent: React.FC = () => {
               Lifeguarding Course Presentation for Instructor-Led Training
             </li>
           </ul>
-          <p className="text-gray-700 mt-3 text-sm">
+          <p className="mt-3 text-gray-700 text-sm">
             Digital materials and video are available in the Red Cross Learning
             Center. Print materials and kits can be purchased via the Red Cross
             Store.
           </p>
-          <p className="text-sm mt-2">
+          <p className="mt-2 text-sm">
             <a
+              className="font-medium text-primary hover:underline"
               href="https://www.redcrosslearningcenter.org/s/instructor-candidate-resources"
-              target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium"
+              target="_blank"
             >
               Red Cross Learning Center
             </a>{" "}
             ·{" "}
             <a
+              className="font-medium text-primary hover:underline"
               href="https://www.redcross.org/store"
-              target="_blank"
               rel="noopener noreferrer"
-              className="text-primary hover:underline font-medium"
+              target="_blank"
             >
               Red Cross Store
             </a>
@@ -185,11 +184,11 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* What You'll Learn */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             What You Will Learn
           </h3>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+          <ul className="list-disc space-y-2 pl-5 text-gray-700">
             <li>
               How to teach and evaluate Red Cross Lifeguarding course
               participants
@@ -209,8 +208,8 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Who Should Take */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Who Should Take This Course
           </h3>
           <p className="text-gray-700">
@@ -221,11 +220,11 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Successful Completion */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Successful Completion
           </h3>
-          <ul className="list-disc pl-5 space-y-2 text-gray-700">
+          <ul className="list-disc space-y-2 pl-5 text-gray-700">
             <li>
               Successfully complete the Lifeguarding Instructor Course online
               session.
@@ -236,7 +235,7 @@ const LifeguardingInstructorPageContent: React.FC = () => {
             <li>
               Successfully complete the skill practice and polish session,
               demonstrating instructor-level competency in:
-              <ul className="list-[circle] pl-6 mt-2 space-y-1">
+              <ul className="mt-2 list-[circle] space-y-1 pl-6">
                 <li>Entries and approaches</li>
                 <li>Active rescues at the surface</li>
                 <li>Passive rescues at the surface</li>
@@ -271,16 +270,16 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Certification & Recertification */}
-        <div className="p-6 rounded-lg shadow-sm mb-8">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-8 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Certification & Recertification
           </h3>
-          <p className="text-gray-700 mb-2">
+          <p className="mb-2 text-gray-700">
             Candidates who successfully complete the course are issued the
             American Red Cross Lifeguarding Instructor certificate, valid for 2
             years.
           </p>
-          <p className="text-gray-700 mb-2">
+          <p className="mb-2 text-gray-700">
             To maintain certification, instructors must successfully complete
             the Lifeguarding Instructor Recertification blended learning course
             within the 2-year certification period. If expired, instructors are
@@ -295,8 +294,8 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         </div>
 
         {/* Callouts */}
-        <div className="p-6 rounded-lg shadow-sm mb-10">
-          <h3 className="text-xl lg:text-2xl font-bold mb-3">
+        <div className="mb-10 rounded-lg p-6 shadow-sm">
+          <h3 className="mb-3 font-bold text-xl lg:text-2xl">
             Ready to Get Started?
           </h3>
           <p className="mb-4 text-gray-700">
@@ -304,11 +303,11 @@ const LifeguardingInstructorPageContent: React.FC = () => {
             facility. We regularly schedule classes in Vancouver, WA and San
             Luis Obispo, CA, and can travel for group trainings.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
               href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
-              target="_blank"
               size="lg"
+              target="_blank"
             >
               View Schedule
             </Button>
@@ -318,7 +317,7 @@ const LifeguardingInstructorPageContent: React.FC = () => {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500">
+        <p className="text-gray-500 text-xs">
           Note: Course content and requirements follow the American Red Cross
           Lifeguarding Instructor program guidelines.
         </p>

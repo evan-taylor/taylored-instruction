@@ -1,64 +1,65 @@
-import './globals.css'
-import type { Metadata } from 'next'
-import { Readex_Pro } from 'next/font/google'
-import { Header } from '@/components/layout/Header'
-import { Footer } from '@/components/layout/Footer'
-import { Analytics } from '@vercel/analytics/next'
-import { SpeedInsights } from '@vercel/speed-insights/next'
+import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import type { Metadata } from "next";
+import { Readex_Pro } from "next/font/google";
+import { Footer } from "@/components/layout/Footer";
+import { Header } from "@/components/layout/Header";
 
 const readexPro = Readex_Pro({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  display: 'swap',
-  variable: '--font-readex'
-})
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-readex",
+});
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://tayloredinstruction.com'),
-  title: 'Taylored Instruction | BLS/CPR Training in Vancouver WA',
-  description: 'Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.',
+  metadataBase: new URL("https://tayloredinstruction.com"),
+  title: "Taylored Instruction | BLS/CPR Training in Vancouver WA",
+  description:
+    "Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.",
   openGraph: {
-    type: 'website',
-    locale: 'en_US',
-    url: 'https://tayloredinstruction.com',
-    siteName: 'Taylored Instruction',
-    title: 'Taylored Instruction | BLS/CPR Training in Vancouver WA',
-    description: 'Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.',
+    type: "website",
+    locale: "en_US",
+    url: "https://tayloredinstruction.com",
+    siteName: "Taylored Instruction",
+    title: "Taylored Instruction | BLS/CPR Training in Vancouver WA",
+    description:
+      "Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.",
     images: [
       {
-        url: '/og-image.png',
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: 'Taylored Instruction Logo',
+        alt: "Taylored Instruction Logo",
       },
     ],
   },
   twitter: {
-    card: 'summary_large_image',
-    title: 'Taylored Instruction | BLS/CPR Training in Vancouver WA',
-    description: 'Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.',
-    images: ['/twitter-image.png'],
+    card: "summary_large_image",
+    title: "Taylored Instruction | BLS/CPR Training in Vancouver WA",
+    description:
+      "Get certified in CPR and lifeguarding. Join our CPR Training in Vancouver WA to learn essential life-saving techniques today.",
+    images: ["/twitter-image.png"],
   },
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="en">
       <body className={readexPro.variable}>
-        <div className="flex flex-col min-h-screen">
+        <div className="flex min-h-screen flex-col">
           <Header />
-          <main className="flex-grow">
-            {children}
-          </main>
+          <main className="flex-grow">{children}</main>
           <Footer />
         </div>
         <Analytics />
         <SpeedInsights />
       </body>
     </html>
-  )
-} 
+  );
+}

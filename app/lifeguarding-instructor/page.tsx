@@ -1,5 +1,4 @@
-import React from "react";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import LifeguardingInstructorPageContent from "@/components/LifeguardingInstructorPageContent";
 
 export const metadata: Metadata = {

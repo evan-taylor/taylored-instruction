@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
 function EcardSuccessContent() {
-  const router = useRouter();
+  const _router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
@@ -13,7 +13,7 @@ function EcardSuccessContent() {
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
-    const session_id = searchParams?.get('session_id');
+    const session_id = searchParams?.get("session_id");
     if (!session_id) {
       setStatus("error");
       setMessage("Invalid session ID.");
@@ -46,26 +46,25 @@ function EcardSuccessContent() {
           );
         }
       })
-      .catch((err) => {
-        console.error("Error sending eCard emails:", err);
+      .catch((_err) => {
         setStatus("error");
         setMessage("An error occurred while processing your order.");
       });
   }, [searchParams]);
 
   return (
-    <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
+    <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-8">
       {status === "loading" && (
         <p className="text-lg">Processing your order...</p>
       )}
 
       {status === "success" && (
         <div className="text-center">
-          <h1 className="text-3xl font-bold mb-4">
+          <h1 className="mb-4 font-bold text-3xl">
             Thank you for your purchase!
           </h1>
-          <p className="text-lg mb-6">{message}</p>
-          <Link href="/ecards" className="btn btn-primary">
+          <p className="mb-6 text-lg">{message}</p>
+          <Link className="btn btn-primary" href="/ecards">
             Back to eCards
           </Link>
         </div>
@@ -73,9 +72,9 @@ function EcardSuccessContent() {
 
       {status === "error" && (
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-red-600 mb-4">Oops!</h1>
-          <p className="text-lg mb-6">{message}</p>
-          <Link href="/ecards" className="btn btn-primary">
+          <h1 className="mb-4 font-bold text-3xl text-red-600">Oops!</h1>
+          <p className="mb-6 text-lg">{message}</p>
+          <Link className="btn btn-primary" href="/ecards">
             Back to eCards
           </Link>
         </div>
@@ -86,11 +85,13 @@ function EcardSuccessContent() {
 
 export default function EcardSuccessPage() {
   return (
-    <Suspense fallback={
-      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
-        <p className="text-lg">Loading...</p>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="container mx-auto flex min-h-[60vh] items-center justify-center px-4 py-8">
+          <p className="text-lg">Loading...</p>
+        </div>
+      }
+    >
       <EcardSuccessContent />
     </Suspense>
   );

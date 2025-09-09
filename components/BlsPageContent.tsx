@@ -1,26 +1,26 @@
-import { Button } from "@/components/ui/Button";
 import Image from "next/image";
+import { Button } from "@/components/ui/Button";
 
 export default function BlsPageContent() {
   return (
     <div>
       {/* Hero Section with Background Image */}
-      <section className="relative min-h-[500px] md:min-h-[550px] flex items-center justify-center">
-        <div className="absolute inset-0 w-full h-full overflow-hidden">
+      <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[550px]">
+        <div className="absolute inset-0 h-full w-full overflow-hidden">
           <Image
-            src="/CPR-Training-Stock-Photo-1-scaled.jpeg" // Preserving original image
-            alt="CPR Training Session"
-            fill
-            sizes="100vw"
-            style={{ objectFit: "cover", objectPosition: "20% 51%" }}
+            alt="CPR Training Session" // Preserving original image
             className="brightness-[0.85]"
+            fill
             priority
+            sizes="100vw"
+            src="/CPR-Training-Stock-Photo-1-scaled.jpeg"
+            style={{ objectFit: "cover", objectPosition: "20% 51%" }}
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/50 z-10"></div>
-        <div className="relative z-20 container mx-auto px-6 py-20 text-center">
-          <div className="bg-black/30 backdrop-blur-sm p-8 md:p-10 rounded-xl max-w-4xl mx-auto">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 text-white">
+        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="container relative z-20 mx-auto px-6 py-20 text-center">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+            <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               American Heart Association Basic Life Support
             </h1>
           </div>
@@ -28,10 +28,10 @@ export default function BlsPageContent() {
       </section>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
         <div className="prose prose-lg max-w-none space-y-8">
           <section>
-            <h2 className="text-3xl font-semibold mb-4">Course Overview</h2>
+            <h2 className="mb-4 font-semibold text-3xl">Course Overview</h2>
             <p>
               Our American Heart Association (AHA) Basic Life Support (BLS)
               course is designed for healthcare professionals and first
@@ -54,9 +54,9 @@ export default function BlsPageContent() {
           </section>
 
           <section>
-            <h2 className="text-3xl font-semibold mb-4">Learning Objectives</h2>
+            <h2 className="mb-4 font-semibold text-3xl">Learning Objectives</h2>
             <p>By the end of this course, participants will be able to:</p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul className="list-disc space-y-2 pl-6">
               <li>
                 Perform high-quality CPR for adults, children, and infants
               </li>
@@ -67,7 +67,7 @@ export default function BlsPageContent() {
           </section>
 
           <section>
-            <h2 className="text-3xl font-semibold mb-4">
+            <h2 className="mb-4 font-semibold text-3xl">
               Certification Details
             </h2>
             <p>
@@ -78,9 +78,9 @@ export default function BlsPageContent() {
           </section>
 
           <section>
-            <h2 className="text-3xl font-semibold mb-4">Course Options</h2>
+            <h2 className="mb-4 font-semibold text-3xl">Course Options</h2>
             <p>We offer:</p>
-            <ul className="list-disc pl-6 space-y-2">
+            <ul className="list-disc space-y-2 pl-6">
               <li>
                 <strong className="font-semibold">In-person Training:</strong>{" "}
                 Complete all course components in one session.
@@ -92,11 +92,11 @@ export default function BlsPageContent() {
               </li>
             </ul>
             <div className="mt-8 text-center">
-              <Button variant="primary" size="lg">
+              <Button size="lg" variant="primary">
                 <a
                   href="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider"
-                  target="_blank"
                   rel="noopener noreferrer"
+                  target="_blank"
                 >
                   View Current Offerings
                 </a>
@@ -105,12 +105,12 @@ export default function BlsPageContent() {
           </section>
 
           <section>
-            <h2 className="text-3xl font-semibold mb-4">
+            <h2 className="mb-4 font-semibold text-3xl">
               Frequently Asked Questions (FAQ)
             </h2>
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="mb-2 font-semibold text-xl">
                   Who needs a BLS certification?
                 </h3>
                 <p>
@@ -121,7 +121,7 @@ export default function BlsPageContent() {
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="mb-2 font-semibold text-xl">
                   How long is the course?
                 </h3>
                 <p>
@@ -130,7 +130,7 @@ export default function BlsPageContent() {
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="mb-2 font-semibold text-xl">
                   Are there any prerequisites?
                 </h3>
                 <p>
@@ -139,7 +139,7 @@ export default function BlsPageContent() {
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="mb-2 font-semibold text-xl">
                   What do I need to bring?
                 </h3>
                 <p>
@@ -150,7 +150,7 @@ export default function BlsPageContent() {
                 </p>
               </div>
               <div>
-                <h3 className="text-xl font-semibold mb-2">
+                <h3 className="mb-2 font-semibold text-xl">
                   How do I renew my certification?
                 </h3>
                 <p>

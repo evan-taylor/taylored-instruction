@@ -1,16 +1,15 @@
-import { NextRequest, NextResponse } from "next/server";
 import { Client } from "@notionhq/client";
+import { type NextRequest, NextResponse } from "next/server";
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
     if (!process.env.NOTION_API_KEY) {
-      console.error("NOTION_API_KEY is not set");
       return NextResponse.json(
         { error: "Notion API key not configured" },
         { status: 500 }
@@ -18,11 +17,10 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url);
-    const requestedPageId = searchParams.get('pageId');
+    const requestedPageId = searchParams.get("pageId");
     const pageId = requestedPageId || process.env.NOTION_INSTRUCTOR_PAGE_ID;
 
     if (!pageId) {
-      console.error("No page ID available");
       return NextResponse.json(
         { error: "Notion page ID not configured" },
         { status: 500 }
@@ -33,7 +31,6 @@ export async function GET(req: NextRequest) {
     try {
       page = await notion.pages.retrieve({ page_id: pageId.toString() });
     } catch (pageError: any) {
-      console.error("Error retrieving page:", pageError);
       return NextResponse.json(
         {
           error: "Failed to retrieve page",
@@ -51,7 +48,6 @@ export async function GET(req: NextRequest) {
         page_size: 100,
       });
     } catch (blocksError: any) {
-      console.error("Error retrieving blocks:", blocksError);
       return NextResponse.json(
         {
           error: "Failed to retrieve blocks",
@@ -70,7 +66,7 @@ export async function GET(req: NextRequest) {
         if (pageData.properties.Name?.title?.[0]?.plain_text) {
           return pageData.properties.Name.title[0].plain_text;
         }
-        for (const [key, value] of Object.entries(pageData.properties)) {
+        for (const [_key, value] of Object.entries(pageData.properties)) {
           if (
             value &&
             typeof value === "object" &&
@@ -117,8 +113,7 @@ export async function GET(req: NextRequest) {
                 });
                 const linkedPageTitle = extractPageTitle(linkedPage);
                 block.linked_page_title = linkedPageTitle;
-              } catch (error) {
-                console.error("Error fetching linked page:", error);
+              } catch (_error) {
                 block.linked_page_title = "Linked Page";
               }
             }
@@ -133,15 +128,13 @@ export async function GET(req: NextRequest) {
                   childBlocks.results,
                   depth + 1
                 );
-              } catch (childError) {
-                console.error("Error fetching child blocks:", childError);
+              } catch (_childError) {
                 block.children = [];
               }
             }
 
             return block;
-          } catch (blockError) {
-            console.error("Error processing block:", blockError);
+          } catch (_blockError) {
             return block;
           }
         })
@@ -158,7 +151,6 @@ export async function GET(req: NextRequest) {
       title: extractedTitle,
     });
   } catch (error: any) {
-    console.error("Unexpected error in Notion API:", error);
     return NextResponse.json(
       {
         error: "Failed to fetch content",
