@@ -101,7 +101,9 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
 
       try {
         const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
           const msg = body.error || `Failed to load profile (${res.status})`;
@@ -110,7 +112,9 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
           return;
         }
         const data = (await res.json()) as Profile;
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         setProfile(data);
       } catch (err: any) {
         if (isMounted && !error) {
@@ -151,7 +155,7 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
     return () => {
       isMounted = false;
     };
-  }, [currentUserId, initialUserId, supabaseClient, error, loading]); // REMOVED loading from dependency array
+  }, [currentUserId, initialUserId, error, loading]); // REMOVED loading from dependency array
 
   const isInstructor = profile?.is_instructor ?? false;
 

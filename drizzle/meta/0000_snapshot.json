@@ -35,12 +35,8 @@
           "tableFrom": "profiles",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -53,58 +49,44 @@
           "name": "Allow users to read their own profile",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "using": "(auth.uid() = id)"
         },
         "Allow users to update their own profile": {
           "name": "Allow users to update their own profile",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users can read own profile": {
           "name": "Users can read own profile",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "Users can update own profile": {
           "name": "Users can update own profile",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         },
         "admin_read_all_profiles": {
           "name": "admin_read_all_profiles",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ]
+          "to": ["authenticated"]
         },
         "admin_update_all_profiles": {
           "name": "admin_update_all_profiles",
           "as": "PERMISSIVE",
           "for": "UPDATE",
-          "to": [
-            "authenticated"
-          ]
+          "to": ["authenticated"]
         },
         "Users can insert own profile": {
           "name": "Users can insert own profile",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "isRLSEnabled": true
@@ -188,9 +170,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "products_original_csv_id_key": {
-          "columns": [
-            "original_csv_id"
-          ],
+          "columns": ["original_csv_id"],
           "nullsNotDistinct": false,
           "name": "products_original_csv_id_key"
         }
@@ -206,18 +186,14 @@
           "name": "authenticated_users_access_policy",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "authenticated"
-          ],
+          "to": ["authenticated"],
           "using": "((NOT requires_instructor) OR (EXISTS ( SELECT 1\n   FROM profiles\n  WHERE ((profiles.id = auth.uid()) AND (profiles.is_instructor = true)))))"
         },
         "public_access_policy": {
           "name": "public_access_policy",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "anon"
-          ]
+          "to": ["anon"]
         }
       },
       "isRLSEnabled": true
@@ -308,12 +284,8 @@
           "tableFrom": "analytics",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -326,18 +298,14 @@
           "name": "Analytics insert",
           "as": "PERMISSIVE",
           "for": "INSERT",
-          "to": [
-            "public"
-          ],
+          "to": ["public"],
           "withCheck": "true"
         },
         "Analytics admin select": {
           "name": "Analytics admin select",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": [
-            "public"
-          ]
+          "to": ["public"]
         }
       },
       "isRLSEnabled": true

@@ -1,8 +1,8 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { createServerClientAppRouter } from "@/utils/supabase/server";
 import { db } from "@/db";
 import { products, profiles } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { createServerClientAppRouter } from "@/utils/supabase/server";
 
 export async function GET() {
   const supabase = createServerClientAppRouter();

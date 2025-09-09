@@ -1,8 +1,8 @@
+import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
-import { createServerClientAppRouter } from "@/utils/supabase/server";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { createServerClientAppRouter } from "@/utils/supabase/server";
 
 export async function GET() {
   const supabase = createServerClientAppRouter();
@@ -22,7 +22,11 @@ export async function GET() {
   const userId = user.id;
 
   const existing = await db
-    .select({ id: profiles.id, is_instructor: profiles.isInstructor, updated_at: profiles.updatedAt })
+    .select({
+      id: profiles.id,
+      is_instructor: profiles.isInstructor,
+      updated_at: profiles.updatedAt,
+    })
     .from(profiles)
     .where(eq(profiles.id, userId));
 
@@ -31,7 +35,13 @@ export async function GET() {
   }
 
   const now = new Date().toISOString();
-  await db.insert(profiles).values({ id: userId, isInstructor: false, updatedAt: now });
+  await db
+    .insert(profiles)
+    .values({ id: userId, isInstructor: false, updatedAt: now });
 
-  return NextResponse.json({ id: userId, is_instructor: false, updated_at: now });
+  return NextResponse.json({
+    id: userId,
+    is_instructor: false,
+    updated_at: now,
+  });
 }

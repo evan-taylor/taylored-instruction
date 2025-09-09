@@ -112,13 +112,19 @@ function AdminInstructorsContent() {
       }
       setError(null);
       try {
-        const res = await fetch("/api/admin/instructors", { cache: "no-store" });
+        const res = await fetch("/api/admin/instructors", {
+          cache: "no-store",
+        });
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
-          throw new Error(body.error || `Failed to load admin data (${res.status})`);
+          throw new Error(
+            body.error || `Failed to load admin data (${res.status})`
+          );
         }
         const list = (await res.json()) as ProfileWithUser[];
-        if (isMounted) setProfiles(list);
+        if (isMounted) {
+          setProfiles(list);
+        }
       } catch (err: any) {
         if (isMounted) {
           setError(`Failed to fetch instructor profiles: ${err.message}`);
@@ -139,7 +145,7 @@ function AdminInstructorsContent() {
     return () => {
       isMounted = false;
     };
-  }, [adminAccessCheckInProgress, isAdmin, supabase]);
+  }, [adminAccessCheckInProgress, isAdmin]);
 
   const toggleInstructorStatus = async (
     profileId: string,
@@ -161,7 +167,9 @@ function AdminInstructorsContent() {
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to update status (${res.status})`);
+        throw new Error(
+          body.error || `Failed to update status (${res.status})`
+        );
       }
       const { updated_at } = await res.json();
       const now = updated_at || new Date().toISOString();

@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerClientAppRouter } from "@/utils/supabase/server";
+import { desc, eq } from "drizzle-orm";
+import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { profiles, usersInAuth } from "@/db/schema";
-import { desc, eq } from "drizzle-orm";
+import { createServerClientAppRouter } from "@/utils/supabase/server";
 
 function isAdminEmail(email?: string | null): boolean {
   const adminEmails = [
@@ -17,7 +17,9 @@ async function requireAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, status: 401, error: "Unauthorized" };
+  if (!user) {
+    return { ok: false as const, status: 401, error: "Unauthorized" };
+  }
   const email = user.email || (user.user_metadata as any)?.email || null;
   if (!isAdminEmail(email)) {
     return { ok: false as const, status: 403, error: "Forbidden" };

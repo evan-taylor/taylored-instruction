@@ -136,6 +136,7 @@ export default function MyAccountPage() {
                 <Link
                   className="block text-primary hover:underline"
                   href="/instructor-resources"
+                  target="_blank"
                 >
                   Instructor Resources
                 </Link>

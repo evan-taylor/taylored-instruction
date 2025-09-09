@@ -412,16 +412,18 @@ const NavMenu = ({
                   if (item.label.toLowerCase() === "logout") {
                     return null;
                   }
-                  return (
-                    <Link
-                      className={`${getDropdownLinkClass(item.href!, pathname)} ${item.indent ? "pl-8" : ""}`}
-                      href={item.href!}
-                      key={item.label}
-                      onClick={() => toggleDropdown(link.label)} // Close dropdown on click
-                    >
-                      {item.label}
-                    </Link>
-                  );
+                const isExternal = /^https?:\/\//.test(item.href!);
+                return (
+                  <Link
+                    className={`${getDropdownLinkClass(item.href!, pathname)} ${item.indent ? "pl-8" : ""}`}
+                    href={item.href!}
+                    key={item.label}
+                    onClick={() => toggleDropdown(link.label)} // Close dropdown on click
+                    {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  >
+                    {item.label}
+                  </Link>
+                );
                 })}
               </div>
             )}
@@ -501,12 +503,14 @@ const MobileNavMenu = ({
                       if (item.label.toLowerCase() === "logout") {
                         return null;
                       }
+                      const isExternal = /^https?:\/\//.test(item.href!);
                       return (
                         <Link
                           className={getDropdownLinkClass(item.href!, pathname)}
                           href={item.href!}
                           key={item.label}
                           onClick={closeMenu} // Close main mobile menu on item click
+                          {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                         >
                           {item.label}
                         </Link>
