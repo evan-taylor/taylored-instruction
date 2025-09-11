@@ -35,29 +35,32 @@ function serializeOptions(
 export function createServerClientPagesRouter(
   context: GetServerSidePropsContext
 ) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return context.req.cookies[name];
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          context.res.setHeader(
-            "Set-Cookie",
-            `${name}=${value}; ${serializeOptions(options)}`
-          );
-        },
-        remove(name: string, options: CookieOptions) {
-          context.res.setHeader(
-            "Set-Cookie",
-            `${name}=; ${serializeOptions(options, { maxAge: -1 })}`
-          );
-        },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!(supabaseUrl && supabaseAnonKey)) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return context.req.cookies[name];
       },
-    }
-  );
+      set(name: string, value: string, options: CookieOptions) {
+        context.res.setHeader(
+          "Set-Cookie",
+          `${name}=${value}; ${serializeOptions(options)}`
+        );
+      },
+      remove(name: string, options: CookieOptions) {
+        context.res.setHeader(
+          "Set-Cookie",
+          `${name}=; ${serializeOptions(options, { maxAge: -1 })}`
+        );
+      },
+    },
+  });
 }
 
 // Pages Router: API Routes
@@ -65,41 +68,44 @@ export function createApiClientPagesRouter(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return req.cookies[name];
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          const cookieString = `${name}=${value}; ${serializeOptions(options)}`;
-          const existing = res.getHeader("Set-Cookie");
-          let cookies: string[] = [];
-          if (!existing) {
-            cookies = [cookieString];
-          } else if (Array.isArray(existing)) {
-            cookies = [...existing, cookieString];
-          } else {
-            cookies = [existing as string, cookieString];
-          }
-          res.setHeader("Set-Cookie", cookies);
-        },
-        remove(name: string, options: CookieOptions) {
-          const cookieString = `${name}=; ${serializeOptions(options, { maxAge: -1 })}`;
-          const existing = res.getHeader("Set-Cookie");
-          let cookies: string[] = [];
-          if (!existing) {
-            cookies = [cookieString];
-          } else if (Array.isArray(existing)) {
-            cookies = [...existing, cookieString];
-          } else {
-            cookies = [existing as string, cookieString];
-          }
-          res.setHeader("Set-Cookie", cookies);
-        },
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!(supabaseUrl && supabaseAnonKey)) {
+    throw new Error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_ANON_KEY"
+    );
+  }
+  return createServerClient(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      get(name: string) {
+        return req.cookies[name];
       },
-    }
-  );
+      set(name: string, value: string, options: CookieOptions) {
+        const cookieString = `${name}=${value}; ${serializeOptions(options)}`;
+        const existing = res.getHeader("Set-Cookie");
+        let cookies: string[] = [];
+        if (!existing) {
+          cookies = [cookieString];
+        } else if (Array.isArray(existing)) {
+          cookies = [...existing, cookieString];
+        } else {
+          cookies = [existing as string, cookieString];
+        }
+        res.setHeader("Set-Cookie", cookies);
+      },
+      remove(name: string, options: CookieOptions) {
+        const cookieString = `${name}=; ${serializeOptions(options, { maxAge: -1 })}`;
+        const existing = res.getHeader("Set-Cookie");
+        let cookies: string[] = [];
+        if (!existing) {
+          cookies = [cookieString];
+        } else if (Array.isArray(existing)) {
+          cookies = [...existing, cookieString];
+        } else {
+          cookies = [existing as string, cookieString];
+        }
+        res.setHeader("Set-Cookie", cookies);
+      },
+    },
+  });
 }

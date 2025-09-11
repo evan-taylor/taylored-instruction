@@ -1,19 +1,15 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+}
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
-type PriceInfo = {
-  id: string;
-  unit_amount: number | null;
-  currency: string;
-  product_id: string | Stripe.Product | null;
-  product_name?: string;
-  product_description?: string | null;
-  product_images?: string[];
-};
+// Note: We avoid exporting/using an explicit type alias here to satisfy linter rules
 
 export async function POST(req: NextRequest) {
   const { priceIds } = await req.json();
@@ -36,7 +32,9 @@ export async function POST(req: NextRequest) {
     const priceDetailsPromises = priceIds.map(async (id) => {
       try {
         const price = await stripe.prices.retrieve(id, { expand: ["product"] });
-        let productName, productDescription, productImages;
+        let productName: string | undefined;
+        let productDescription: string | null | undefined;
+        let productImages: string[] | undefined;
 
         if (
           price.product &&
@@ -69,7 +67,7 @@ export async function POST(req: NextRequest) {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
       },
     });
-  } catch (_err: any) {
+  } catch (_err: unknown) {
     return NextResponse.json(
       { error: "Internal Server Error while fetching prices." },
       { status: 500 }

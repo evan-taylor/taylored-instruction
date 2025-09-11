@@ -11,6 +11,7 @@ const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@tayloredinstruction.com"; // Use verified domain and desired from address
 
 // Define schema for form validation
+const MIN_MESSAGE_LENGTH = 5;
 const ContactFormSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -18,7 +19,9 @@ const ContactFormSchema = z.object({
   phone: z.string().optional(),
   location: z.string().optional(),
   otherLocation: z.string().optional(),
-  message: z.string().min(5, "Message must be at least 5 characters"),
+  message: z
+    .string()
+    .min(MIN_MESSAGE_LENGTH, "Message must be at least 5 characters"),
   smsOptIn: z.preprocess((val) => val === "on", z.boolean()).optional(),
   smsOptOut: z.preprocess((val) => val === "on", z.boolean()).optional(),
   contactMethod: z.preprocess(

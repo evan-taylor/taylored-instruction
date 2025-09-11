@@ -1,26 +1,35 @@
 export const runtime = "nodejs";
+
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { profiles } from "@/db/schema";
 import { createServerClientAppRouter } from "@/utils/supabase/server";
 
 export async function GET() {
-  const supabase = createServerClientAppRouter();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
+  // Prefer forwarded header from middleware to avoid extra Supabase call
+  const h = headers();
+  let userId = h.get("x-user-id") ?? undefined;
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  if (!userId) {
+    // Fallback to Supabase if header wasn't set
+    const supabase = createServerClientAppRouter();
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    userId = user.id;
   }
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  const userId = user.id;
 
   const existing = await db
     .select({

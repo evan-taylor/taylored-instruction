@@ -50,16 +50,6 @@ export const Footer = () => {
                   Privacy Policy
                 </Link>
               </li>
-              <li>
-                <Link
-                  className="transition-colors hover:text-primary"
-                  href="https://help.tayloredinstruction.com/"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  Help Center
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -69,16 +59,7 @@ export const Footer = () => {
               Get Help
             </h3>
             <ul className="space-y-2 text-gray-600 text-sm">
-              <li>
-                <Link
-                  className="transition-colors hover:text-primary"
-                  href="https://help.tayloredinstruction.com/"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  Visit Help Center
-                </Link>
-              </li>
+              {/* Visit Help Center link removed */}
               <li>
                 <a
                   className="transition-colors hover:text-primary"

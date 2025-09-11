@@ -72,7 +72,6 @@ const generateNavLinks = (
     dropdown: [
       { label: "About Taylored Instruction", href: "/about" },
       { label: "Contact Us", href: "/contact" },
-      { label: "Help Center", href: "https://help.tayloredinstruction.com/" },
     ],
   },
   {
@@ -412,18 +411,20 @@ const NavMenu = ({
                   if (item.label.toLowerCase() === "logout") {
                     return null;
                   }
-                const isExternal = /^https?:\/\//.test(item.href!);
-                return (
-                  <Link
-                    className={`${getDropdownLinkClass(item.href!, pathname)} ${item.indent ? "pl-8" : ""}`}
-                    href={item.href!}
-                    key={item.label}
-                    onClick={() => toggleDropdown(link.label)} // Close dropdown on click
-                    {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  >
-                    {item.label}
-                  </Link>
-                );
+                  const isExternal = /^https?:\/\//.test(item.href!);
+                  return (
+                    <Link
+                      className={`${getDropdownLinkClass(item.href!, pathname)} ${item.indent ? "pl-8" : ""}`}
+                      href={item.href!}
+                      key={item.label}
+                      onClick={() => toggleDropdown(link.label)} // Close dropdown on click
+                      {...(isExternal
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                    >
+                      {item.label}
+                    </Link>
+                  );
                 })}
               </div>
             )}
@@ -510,7 +511,9 @@ const MobileNavMenu = ({
                           href={item.href!}
                           key={item.label}
                           onClick={closeMenu} // Close main mobile menu on item click
-                          {...(isExternal ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                          {...(isExternal
+                            ? { target: "_blank", rel: "noopener noreferrer" }
+                            : {})}
                         >
                           {item.label}
                         </Link>

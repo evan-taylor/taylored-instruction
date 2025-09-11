@@ -1,29 +1,37 @@
 import { eq } from "drizzle-orm";
+import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { products, profiles } from "@/db/schema";
 import { createServerClientAppRouter } from "@/utils/supabase/server";
 
 export async function GET() {
-  const supabase = createServerClientAppRouter();
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  // Prefer user from middleware header to avoid extra Supabase network hop
+  const h = headers();
+  let userId = h.get("x-user-id") ?? undefined;
 
-  if (userError) {
-    return NextResponse.json({ error: userError.message }, { status: 500 });
-  }
+  if (!userId) {
+    const supabase = createServerClientAppRouter();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (userError) {
+      return NextResponse.json({ error: userError.message }, { status: 500 });
+    }
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    userId = user.id;
   }
 
   // Enforce instructor access since Drizzle bypasses Supabase RLS
   const prof = await db
     .select({ isInstructor: profiles.isInstructor })
     .from(profiles)
-    .where(eq(profiles.id, user.id));
+    .where(eq(profiles.id, userId));
 
   const isInstructor = prof[0]?.isInstructor ?? false;
   if (!isInstructor) {

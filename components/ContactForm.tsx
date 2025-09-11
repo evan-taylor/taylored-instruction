@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { sendContactEmail } from "@/app/actions/sendContactEmail"; // Import the server action
+import { sendContactEmail } from "@/app/actions/send-contact-email"; // Import the server action
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

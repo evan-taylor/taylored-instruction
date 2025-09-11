@@ -4,10 +4,18 @@ import Stripe from "stripe";
 import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+}
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
-const resend = new Resend(process.env.RESEND_API_KEY!);
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+if (!RESEND_API_KEY) {
+  throw new Error("Missing RESEND_API_KEY environment variable");
+}
+const resend = new Resend(RESEND_API_KEY);
 
 const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
 const adminEmail = process.env.ADMIN_EMAIL || "info@tayloredinstruction.com";
@@ -28,6 +36,89 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const sendCartEmails = async (
+    cartItems: CartItem[],
+    totalPrice: string,
+    customerEmail: string
+  ) => {
+    const adminEmailData = await resend.emails.send({
+      from: `Taylored Instruction <${fromEmail}>`,
+      to: [adminEmail],
+      subject: "New Multi-Item eCard Purchase",
+      react: EcardPurchaseAdminEmail({
+        itemName: "Multiple Products",
+        quantity: cartItems
+          .reduce((sum, item) => sum + item.quantity, 0)
+          .toString(),
+        price: totalPrice,
+        customerEmail,
+        sessionId,
+        cartItems: cartItems.map((item) => ({
+          name: item.productName,
+          quantity: item.quantity.toString(),
+        })),
+      }),
+    });
+    if (adminEmailData.error) {
+      // Intentionally not failing request on email notification issues
+    }
+    const userEmailData = await resend.emails.send({
+      from: `Taylored Instruction <${fromEmail}>`,
+      to: [customerEmail],
+      subject: "Your eCard Purchase Confirmation",
+      react: EcardPurchaseUserEmail({
+        itemName: "Multiple Products",
+        quantity: cartItems
+          .reduce((sum, item) => sum + item.quantity, 0)
+          .toString(),
+        price: totalPrice,
+        cartItems: cartItems.map((item) => ({
+          name: item.productName,
+          quantity: item.quantity.toString(),
+        })),
+      }),
+    });
+    if (userEmailData.error) {
+      // Intentionally not failing request on email notification issues
+    }
+  };
+
+  const sendSingleProductEmails = async (
+    itemName: string,
+    quantity: string,
+    totalPrice: string,
+    customerEmail: string
+  ) => {
+    const adminEmailData = await resend.emails.send({
+      from: `Taylored Instruction <${fromEmail}>`,
+      to: [adminEmail],
+      subject: `New eCard Purchase: ${itemName}`,
+      react: EcardPurchaseAdminEmail({
+        itemName,
+        quantity,
+        price: totalPrice,
+        customerEmail,
+        sessionId,
+      }),
+    });
+    if (adminEmailData.error) {
+      // Intentionally not failing request on email notification issues
+    }
+    const userEmailData = await resend.emails.send({
+      from: `Taylored Instruction <${fromEmail}>`,
+      to: [customerEmail],
+      subject: "Your eCard Purchase Confirmation",
+      react: EcardPurchaseUserEmail({
+        itemName,
+        quantity,
+        price: totalPrice,
+      }),
+    });
+    if (userEmailData.error) {
+      // Intentionally not failing request on email notification issues
+    }
+  };
+
   try {
     const session = await stripe.checkout.sessions.retrieve(sessionId);
     const customerEmail = session.customer_email;
@@ -39,8 +130,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const CENTS_IN_DOLLAR = 100;
     const totalPrice = session.amount_total
-      ? (session.amount_total / 100).toFixed(2)
+      ? (session.amount_total / CENTS_IN_DOLLAR).toFixed(2)
       : "0.00";
 
     if (!session.metadata) {
@@ -57,54 +149,7 @@ export async function POST(req: NextRequest) {
         if (!Array.isArray(cartItems) || cartItems.length === 0) {
           throw new Error("Invalid cart items format");
         }
-
-        const _itemSummary = cartItems
-          .map((item) => `${item.productName} (Qty: ${item.quantity})`)
-          .join(", ");
-
-        // Send notification email to admin for cart checkout
-        const adminEmailData = await resend.emails.send({
-          from: `Taylored Instruction <${fromEmail}>`,
-          to: [adminEmail],
-          subject: "New Multi-Item eCard Purchase",
-          react: EcardPurchaseAdminEmail({
-            itemName: "Multiple Products",
-            quantity: cartItems
-              .reduce((sum, item) => sum + item.quantity, 0)
-              .toString(),
-            price: totalPrice,
-            customerEmail,
-            sessionId,
-            cartItems: cartItems.map((item) => ({
-              name: item.productName,
-              quantity: item.quantity.toString(),
-            })),
-          }),
-        });
-
-        if (adminEmailData.error) {
-        }
-
-        // Send confirmation email to the customer for cart checkout
-        const userEmailData = await resend.emails.send({
-          from: `Taylored Instruction <${fromEmail}>`,
-          to: [customerEmail],
-          subject: "Your eCard Purchase Confirmation",
-          react: EcardPurchaseUserEmail({
-            itemName: "Multiple Products",
-            quantity: cartItems
-              .reduce((sum, item) => sum + item.quantity, 0)
-              .toString(),
-            price: totalPrice,
-            cartItems: cartItems.map((item) => ({
-              name: item.productName,
-              quantity: item.quantity.toString(),
-            })),
-          }),
-        });
-
-        if (userEmailData.error) {
-        }
+        await sendCartEmails(cartItems, totalPrice, customerEmail);
       } catch (_error) {
         return NextResponse.json(
           { error: "Invalid cart items format." },
@@ -117,40 +162,12 @@ export async function POST(req: NextRequest) {
       typeof session.metadata.productName === "string" &&
       typeof session.metadata.quantity === "string"
     ) {
-      const itemName = session.metadata.productName;
-      const quantity = session.metadata.quantity;
-
-      // Send notification email to admin for single product
-      const adminEmailData = await resend.emails.send({
-        from: `Taylored Instruction <${fromEmail}>`,
-        to: [adminEmail],
-        subject: `New eCard Purchase: ${itemName}`,
-        react: EcardPurchaseAdminEmail({
-          itemName,
-          quantity,
-          price: totalPrice,
-          customerEmail,
-          sessionId,
-        }),
-      });
-
-      if (adminEmailData.error) {
-      }
-
-      // Send confirmation email to the customer for single product
-      const userEmailData = await resend.emails.send({
-        from: `Taylored Instruction <${fromEmail}>`,
-        to: [customerEmail],
-        subject: "Your eCard Purchase Confirmation",
-        react: EcardPurchaseUserEmail({
-          itemName,
-          quantity,
-          price: totalPrice,
-        }),
-      });
-
-      if (userEmailData.error) {
-      }
+      await sendSingleProductEmails(
+        session.metadata.productName,
+        session.metadata.quantity,
+        totalPrice,
+        customerEmail
+      );
     } else {
       return NextResponse.json(
         { error: "Stripe session metadata has invalid format." },
@@ -159,10 +176,14 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || "Internal Server Error" },
-      { status: 500 }
-    );
+  } catch (error: unknown) {
+    const message =
+      error &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof (error as Record<string, unknown>).message === "string"
+        ? ((error as Record<string, unknown>).message as string)
+        : "Internal Server Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

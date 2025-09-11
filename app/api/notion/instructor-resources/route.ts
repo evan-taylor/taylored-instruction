@@ -27,73 +27,75 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    let page;
+    let page: unknown;
     try {
       page = await notion.pages.retrieve({ page_id: pageId.toString() });
-    } catch (pageError: any) {
+    } catch (pageError: unknown) {
+      const pErr = pageError as { message?: string; code?: string };
       return NextResponse.json(
         {
           error: "Failed to retrieve page",
-          details: pageError.message,
-          code: pageError.code,
+          details: pErr.message,
+          code: pErr.code,
         },
         { status: 500 }
       );
     }
 
-    let blocks;
+    let blocks: { results: unknown[] };
     try {
       blocks = await notion.blocks.children.list({
         block_id: pageId.toString(),
         page_size: 100,
       });
-    } catch (blocksError: any) {
+    } catch (blocksError: unknown) {
+      const bErr = blocksError as { message?: string; code?: string };
       return NextResponse.json(
         {
           error: "Failed to retrieve blocks",
-          details: blocksError.message,
-          code: blocksError.code,
+          details: bErr.message,
+          code: bErr.code,
         },
         { status: 500 }
       );
     }
 
-    const extractPageTitle = (pageData: any): string => {
-      if (pageData.properties) {
-        if (pageData.properties.title?.title?.[0]?.plain_text) {
-          return pageData.properties.title.title[0].plain_text;
-        }
-        if (pageData.properties.Name?.title?.[0]?.plain_text) {
-          return pageData.properties.Name.title[0].plain_text;
-        }
-        for (const [_key, value] of Object.entries(pageData.properties)) {
-          if (
-            value &&
-            typeof value === "object" &&
-            "title" in value &&
-            Array.isArray(value.title) &&
-            value.title[0]?.plain_text
-          ) {
-            return value.title[0].plain_text;
+    const extractPageTitle = (pageData: unknown): string => {
+      if (pageData && typeof pageData === "object") {
+        const pd = pageData as Record<string, unknown>;
+        const properties = pd.properties as Record<string, unknown> | undefined;
+        const childPage = pd.child_page as { title?: string } | undefined;
+        if (properties && typeof properties === "object") {
+          const title = (properties as any).title?.title?.[0]?.plain_text;
+          if (typeof title === "string") return title;
+          const name = (properties as any).Name?.title?.[0]?.plain_text;
+          if (typeof name === "string") return name;
+          for (const value of Object.values(properties)) {
+            if (
+              value &&
+              typeof value === "object" &&
+              "title" in value &&
+              Array.isArray((value as any).title) &&
+              (value as any).title[0]?.plain_text
+            ) {
+              return (value as any).title[0].plain_text as string;
+            }
           }
         }
+        if (childPage?.title) return childPage.title;
       }
-
-      if (pageData.child_page?.title) {
-        return pageData.child_page.title;
-      }
-
       return "";
     };
 
-    const processBlocks = async (
-      blockList: any[],
+    const processBlocks = (
+      blockList: unknown[],
       depth = 0
-    ): Promise<any[]> => {
+    ): Promise<unknown[]> => {
       const MAX_DEPTH = 3;
 
       return Promise.all(
-        blockList.map(async (block: any) => {
+        blockList.map(async (blockUnknown: unknown) => {
+          const block = blockUnknown as any;
           try {
             if (block.type === "child_page" && !requestedPageId) {
               return {
@@ -150,12 +152,13 @@ export async function GET(req: NextRequest) {
       isChildPage: !!requestedPageId,
       title: extractedTitle,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { message?: string; stack?: string };
     return NextResponse.json(
       {
         error: "Failed to fetch content",
-        message: error.message,
-        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+        message: err.message,
+        stack: process.env.NODE_ENV === "development" ? err.stack : undefined,
       },
       { status: 500 }
     );

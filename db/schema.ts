@@ -119,7 +119,7 @@ export const analytics = pgTable(
       withTimezone: true,
       mode: "string",
     }).defaultNow(),
-  url: text(),
+    url: text(),
     referrer: text(),
     userId: uuid("user_id"),
     ipAddress: text("ip_address"),

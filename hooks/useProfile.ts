@@ -96,30 +96,41 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
       }
 
       // Start loading for this fetch cycle
-      if (isMounted) setLoading(true);
+      if (isMounted) {
+        setLoading(true);
+      }
 
       try {
         const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         if (!res.ok) {
-          const body = await res.json().catch(() => ({} as any));
-          const msg = (body as any).error || `Failed to load profile (${res.status})`;
+          const body = await res.json().catch(() => ({}) as any);
+          const msg =
+            (body as any).error || `Failed to load profile (${res.status})`;
           setError(msg);
           setProfile(null);
           return;
         }
         const data = (await res.json()) as Profile;
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         setProfile(data);
         setError(null);
       } catch (err: any) {
-        if (!isMounted) return;
+        if (!isMounted) {
+          return;
+        }
         setError(
           err?.message || "An unexpected error occurred during profile loading."
         );
         setProfile(null);
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
 

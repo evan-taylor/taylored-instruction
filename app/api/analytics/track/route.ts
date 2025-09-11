@@ -22,11 +22,15 @@ export async function POST(req: NextRequest) {
       userId: user ? (user.id as string) : null,
       ipAddress: req.headers.get("x-forwarded-for") || req.ip || undefined,
     });
-  } catch (e: any) {
-    return NextResponse.json(
-      { error: e?.message || "Failed to record analytics" },
-      { status: 500 }
-    );
+  } catch (e: unknown) {
+    const message =
+      e &&
+      typeof e === "object" &&
+      "message" in e &&
+      typeof (e as Record<string, unknown>).message === "string"
+        ? ((e as Record<string, unknown>).message as string)
+        : "Failed to record analytics";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

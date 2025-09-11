@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+if (!STRIPE_SECRET_KEY) {
+  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+}
+const stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: "2023-10-16",
 });
 
@@ -16,12 +20,26 @@ export async function POST(req: NextRequest) {
   }
 
   const numQuantity = Number(quantity);
-  if (Number.isNaN(numQuantity) || numQuantity < 1 || numQuantity > 100) {
+  const MIN_QTY = 1;
+  const MAX_QTY = 100;
+  if (
+    Number.isNaN(numQuantity) ||
+    numQuantity < MIN_QTY ||
+    numQuantity > MAX_QTY
+  ) {
     return NextResponse.json(
-      { error: "Invalid quantity. Must be between 1 and 100." },
+      { error: `Invalid quantity. Must be between ${MIN_QTY} and ${MAX_QTY}.` },
       { status: 400 }
     );
   }
+
+  const getErrorMessage = (err: unknown): string => {
+    if (err && typeof err === "object") {
+      const obj = err as { raw?: { message?: string }; message?: string };
+      return obj.raw?.message ?? (obj.message || "Internal Server Error");
+    }
+    return "Internal Server Error";
+  };
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -56,9 +74,8 @@ export async function POST(req: NextRequest) {
       { error: "Checkout session created, but no redirect URL was provided." },
       { status: 500 }
     );
-  } catch (err: any) {
-    const errorMessage =
-      err.raw?.message || err.message || "Internal Server Error";
+  } catch (err: unknown) {
+    const errorMessage = getErrorMessage(err);
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

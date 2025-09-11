@@ -1,4 +1,5 @@
 export const runtime = "nodejs";
+
 import { desc, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
@@ -21,7 +22,15 @@ async function requireAdmin() {
   if (!user) {
     return { ok: false as const, status: 401, error: "Unauthorized" };
   }
-  const email = user.email || (user.user_metadata as any)?.email || null;
+  const meta = (user as { user_metadata?: unknown }).user_metadata;
+  const metaEmail =
+    meta &&
+    typeof meta === "object" &&
+    "email" in meta &&
+    typeof (meta as Record<string, unknown>).email === "string"
+      ? ((meta as Record<string, unknown>).email as string)
+      : null;
+  const email = user.email ?? metaEmail ?? null;
   if (!isAdminEmail(email)) {
     return { ok: false as const, status: 403, error: "Forbidden" };
   }
@@ -45,9 +54,13 @@ export async function GET() {
     .leftJoin(usersInAuth, eq(profiles.id, usersInAuth.id))
     .orderBy(desc(profiles.updatedAt));
 
+  const ID_PREFIX_LEN = 6;
+  const ID_SUFFIX_LEN = 4;
   const payload = rows.map((r) => ({
     ...r,
-    short_id: r.id ? `${r.id.slice(0, 6)}...${r.id.slice(-4)}` : undefined,
+    short_id: r.id
+      ? `${r.id.slice(0, ID_PREFIX_LEN)}...${r.id.slice(-ID_SUFFIX_LEN)}`
+      : undefined,
   }));
 
   return NextResponse.json(payload);

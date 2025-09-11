@@ -52,10 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script
-          defer
-          src="https://assets.onedollarstats.com/stonks.js"
-        ></script>
+        <script defer src="https://assets.onedollarstats.com/stonks.js" />
       </head>
       <body className={readexPro.variable}>
         <div className="flex min-h-screen flex-col">

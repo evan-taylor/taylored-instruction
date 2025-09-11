@@ -57,17 +57,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      hasCertification,
-      agencies,
-      message,
-      smsOptIn,
-      smsOptOut,
-    } = validatedFields.data; // RESTORED destructuring
+    const { firstName, lastName, email } = validatedFields.data;
 
     // Send email to admin
     const adminEmailData = await resend.emails.send({
@@ -94,6 +84,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (userEmailData.error) {
+      // Intentionally ignoring user email failure to avoid masking success
     }
 
     return NextResponse.json({ success: true }, { status: 200 });
