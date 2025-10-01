@@ -3,14 +3,15 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
-  title: "AED Distribution | Taylored Instruction",
+  title:
+    "AED Sales & Distribution Vancouver WA & San Luis Obispo CA | Automated External Defibrillators",
   description:
-    "Taylored Instruction is an authorized distributor of leading AED brands. Contact us for a quote or to place an order for your organization.",
+    "Buy AEDs (Automated External Defibrillators) in Vancouver WA, Clark County & San Luis Obispo CA. Authorized distributor of ZOLL, Cardiac Science & leading AED brands. Expert guidance, competitive pricing, training included. Equip your business, school or facility with lifesaving AEDs.",
   keywords: [
-    "AED distributor",
+    "AED distributor Vancouver WA",
     "Automated External Defibrillator",
-    "AED sales",
-    "Buy AED",
+    "AED sales Vancouver WA",
+    "Buy AED Vancouver",
     "AED for business",
     "AED for school",
     "Lifesaving equipment",
@@ -21,7 +22,45 @@ export const metadata: Metadata = {
     "Vancouver AED for sale",
     "Vancouver AED for business",
     "Vancouver AED for school",
+    "ZOLL AED Vancouver",
+    "Cardiac Science AED",
+    "AED sales San Luis Obispo",
+    "AED distributor Clark County",
+    "Buy defibrillator Vancouver",
+    "AED training included",
+    "AED for workplace",
+    "AED for gym",
+    "AED for church",
+    "AED Portland OR",
   ],
+  openGraph: {
+    title:
+      "AED Sales & Distribution Vancouver WA & San Luis Obispo CA | Buy Defibrillators",
+    description:
+      "Buy AEDs in Vancouver WA & San Luis Obispo CA. Authorized distributor of leading brands. Expert guidance, competitive pricing, training included.",
+    url: "https://tayloredinstruction.com/aeds",
+    siteName: "Taylored Instruction",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "AED Sales & Distribution - Taylored Instruction",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title:
+      "AED Sales & Distribution Vancouver WA & San Luis Obispo CA",
+    description:
+      "Buy AEDs from authorized distributor. Expert guidance, competitive pricing, training included.",
+    images: ["/twitter-image.png"],
+  },
+  alternates: {
+    canonical: "https://tayloredinstruction.com/aeds",
+  },
 };
 
 export default function AedPage() {

@@ -8,9 +8,9 @@ import { ChamberBadge } from "@/components/ui/ChamberBadge";
 // --- Page Metadata ---
 export const metadata: Metadata = {
   title:
-    "About Taylored Instruction | CPR, Lifeguard & Safety Training Vancouver WA",
+    "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA",
   description:
-    "Learn about Taylored Instruction, our mission, and founder Evan Taylor. We provide expert CPR, Lifeguard, First Aid, and BLS training in Vancouver, WA, and seasonally in San Luis Obispo, CA.",
+    "Meet Evan Taylor and learn about Taylored Instruction's mission to teach lifesaving skills. American Red Cross Licensed Training Provider, AHA Training Site & HSI Training Center. Expert CPR, BLS, First Aid & Lifeguard training in Vancouver, WA, Clark County & San Luis Obispo, CA.",
   keywords: [
     "About Taylored Instruction",
     "Evan Taylor CPR instructor",
@@ -23,31 +23,38 @@ export const metadata: Metadata = {
     "Adaptive swim lessons",
     "Taylored Instruction mission",
     "CPR training Clark County",
+    "Red Cross Instructor Trainer",
+    "AHA BLS Instructor Vancouver",
+    "CPR instructor Vancouver WA",
+    "Lifeguard instructor Vancouver",
+    "About us CPR training",
+    "Vancouver WA safety training company",
+    "SLO CPR instructor",
   ],
   openGraph: {
     title:
-      "About Taylored Instruction | CPR, Lifeguard & Safety Training Vancouver WA",
+      "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
     description:
-      "Learn about Taylored Instruction, our mission, and founder Evan Taylor. We provide expert CPR, Lifeguard, First Aid, and BLS training in Vancouver, WA, and seasonally in San Luis Obispo, CA.",
+      "Meet Evan Taylor and learn about Taylored Instruction's mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA. Red Cross & AHA certified.",
     url: "https://tayloredinstruction.com/about",
     siteName: "Taylored Instruction",
     type: "website",
     images: [
       {
-        url: "/og-image.png", // To be created - consider a team/founder image or branded graphic
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "About Taylored Instruction - Lifesaving Training",
+        alt: "About Taylored Instruction - Lifesaving Training Experts",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title:
-      "About Taylored Instruction | CPR, Lifeguard & Safety Training Vancouver WA",
+      "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
     description:
-      "Learn about Taylored Instruction, our mission, and founder Evan Taylor. We provide expert CPR, Lifeguard, First Aid, and BLS training in Vancouver, WA, and seasonally in San Luis Obispo, CA.",
-    images: ["/twitter-image.png"], // To be created
+      "Meet Evan Taylor and learn about our mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA.",
+    images: ["/twitter-image.png"],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/about",

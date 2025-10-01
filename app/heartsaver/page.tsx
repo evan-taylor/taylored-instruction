@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
-import HeartsaverPageContent from "@/components/HeartsaverPageContent"; // Import the new client component
+import HeartsaverPageContent from "@/components/HeartsaverPageContent";
+import {
+  generateJSONLD,
+  getHeartsaverCourseSchema,
+  getBreadcrumbSchema,
+} from "@/lib/structuredData";
 
-// Extracted from <title> and <meta name="description">
 export const metadata: Metadata = {
   title:
-    "AHA Heartsaver First Aid CPR AED | Vancouver WA - Taylored Instruction",
+    "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA - Workplace Certification",
   description:
-    "Taylored Instruction offers AHA Heartsaver® First Aid, CPR, and AED courses in Vancouver, WA, for individuals needing certification for work or personal preparedness. Learn life-saving skills.",
+    "American Heart Association Heartsaver® First Aid, CPR & AED certification in Vancouver WA, Clark County, and San Luis Obispo CA. Perfect for workplace teams, schools, childcare providers & personal preparedness. Blended learning available.",
   keywords: [
     "Heartsaver CPR AED Vancouver WA",
     "AHA Heartsaver certification",
@@ -19,31 +23,41 @@ export const metadata: Metadata = {
     "Blended learning Heartsaver",
     "Taylored Instruction Heartsaver",
     "Clark County Heartsaver",
+    "Heartsaver San Luis Obispo",
+    "Heartsaver certification San Luis Obispo CA",
+    "Childcare CPR certification",
+    "Daycare CPR training Vancouver",
+    "School CPR training",
+    "Heartsaver Total",
+    "Heartsaver K-12",
+    "Heartsaver Portland OR",
+    "Heartsaver Camas WA",
+    "SLO County Heartsaver",
   ],
   openGraph: {
     title:
-      "AHA Heartsaver First Aid CPR AED | Vancouver WA - Taylored Instruction",
+      "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA",
     description:
-      "Taylored Instruction offers AHA Heartsaver® First Aid, CPR, and AED courses in Vancouver, WA, for individuals needing certification for work or personal preparedness. Learn life-saving skills.",
+      "American Heart Association Heartsaver® certification in Vancouver WA and San Luis Obispo CA. Perfect for workplace teams, schools, and personal preparedness.",
     url: "https://tayloredinstruction.com/heartsaver",
     siteName: "Taylored Instruction",
     type: "article",
     images: [
       {
-        url: "/og-image.png", // To be created
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "AHA Heartsaver CPR AED Training Session",
+        alt: "AHA Heartsaver CPR AED Training - Taylored Instruction",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title:
-      "AHA Heartsaver First Aid CPR AED | Vancouver WA - Taylored Instruction",
+      "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA",
     description:
-      "Taylored Instruction offers AHA Heartsaver® First Aid, CPR, and AED courses in Vancouver, WA, for individuals needing certification for work or personal preparedness. Learn life-saving skills.",
-    images: ["/twitter-image.png"], // To be created
+      "American Heart Association Heartsaver® certification for workplace teams, schools, and personal preparedness. Blended learning available.",
+    images: ["/twitter-image.png"],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/heartsaver",
@@ -51,5 +65,29 @@ export const metadata: Metadata = {
 };
 
 export default function HeartsaverPage() {
-  return <HeartsaverPageContent />; // Render the client component
+  // Generate structured data
+  const courseSchema = getHeartsaverCourseSchema();
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "Heartsaver",
+      url: "https://tayloredinstruction.com/heartsaver",
+    },
+  ]);
+
+  return (
+    <>
+      {/* Structured Data - Course */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+      />
+      {/* Structured Data - Breadcrumb */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+      />
+      <HeartsaverPageContent />
+    </>
+  );
 }
