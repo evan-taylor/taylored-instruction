@@ -3,25 +3,55 @@ import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
-  title: "AED Distribution | Taylored Instruction",
+  title: "AED Sales Vancouver WA | Automated External Defibrillator Distribution",
   description:
-    "Taylored Instruction is an authorized distributor of leading AED brands. Contact us for a quote or to place an order for your organization.",
+    "Buy AEDs in Vancouver WA. Authorized distributor of ZOLL, Cardiac Science & leading AED brands. AED sales for businesses, schools & organizations. Serving Clark County, Battle Ground, Camas, Portland & San Luis Obispo. Expert guidance & competitive pricing.",
   keywords: [
-    "AED distributor",
-    "Automated External Defibrillator",
-    "AED sales",
-    "Buy AED",
-    "AED for business",
-    "AED for school",
-    "Lifesaving equipment",
+    "AED distributor Vancouver WA",
+    "Automated External Defibrillator Vancouver",
+    "AED sales Vancouver WA",
+    "Buy AED Vancouver",
+    "AED for business Vancouver",
+    "AED for school Clark County",
+    "Lifesaving equipment Vancouver WA",
     "Taylored Instruction AED",
-    "Vancouver AED",
-    "Vancouver WA AED distributor",
-    "Vancouver AED sales",
-    "Vancouver AED for sale",
-    "Vancouver AED for business",
-    "Vancouver AED for school",
+    "Vancouver AED distributor",
+    "Vancouver WA AED sales",
+    "AED for sale Vancouver",
+    "AED for business Clark County",
+    "ZOLL AED Vancouver",
+    "Cardiac Science AED",
+    "Battle Ground AED sales",
+    "Camas AED distributor",
+    "Portland AED sales",
+    "San Luis Obispo AED",
   ],
+  openGraph: {
+    title: "AED Sales Vancouver WA | Buy Automated External Defibrillators",
+    description:
+      "Authorized AED distributor in Vancouver WA. ZOLL, Cardiac Science & more. Expert guidance for businesses & schools.",
+    url: "https://tayloredinstruction.com/aeds",
+    siteName: "Taylored Instruction",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "AED Sales and Distribution in Vancouver WA",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AED Sales Vancouver WA | Automated External Defibrillators",
+    description:
+      "Authorized AED distributor. ZOLL, Cardiac Science & more. Expert guidance.",
+    images: ["/twitter-image.png"],
+  },
+  alternates: {
+    canonical: "https://tayloredinstruction.com/aeds",
+  },
 };
 
 export default function AedPage() {

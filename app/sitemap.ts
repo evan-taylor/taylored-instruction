@@ -74,28 +74,66 @@ function getPagePaths(dir: string, baseDir: string = dir): string[] {
   return paths;
 }
 
+// Priority and change frequency mappings for better SEO
+const routePriorityMap: Record<string, number> = {
+  "/": 1.0,
+  "/bls": 0.9,
+  "/first-aid-cpr-aed": 0.9,
+  "/lifeguarding": 0.9,
+  "/heartsaver": 0.9,
+  "/corporate-training": 0.85,
+  "/about": 0.8,
+  "/contact": 0.8,
+  "/aha-instructor-training": 0.75,
+  "/fa-cpr-aed-instructor": 0.75,
+  "/lifeguarding-instructor": 0.75,
+  "/aeds": 0.7,
+};
+
+const routeChangeFreqMap: Record<
+  string,
+  "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never"
+> = {
+  "/": "weekly",
+  "/bls": "monthly",
+  "/first-aid-cpr-aed": "monthly",
+  "/lifeguarding": "monthly",
+  "/heartsaver": "monthly",
+  "/corporate-training": "monthly",
+  "/about": "monthly",
+  "/contact": "monthly",
+  "/aha-instructor-training": "monthly",
+  "/fa-cpr-aed-instructor": "monthly",
+  "/lifeguarding-instructor": "monthly",
+};
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const appDirPath = path.join(process.cwd(), "app");
   const pageRoutes = getPagePaths(appDirPath);
 
-  const sitemapEntries: MetadataRoute.Sitemap = pageRoutes.map((route) => ({
-    url: `${baseUrl}${route === "/" ? "" : route}`, // Handle root path correctly
-    lastModified: new Date(),
-    changeFrequency: "weekly", // Default, can be adjusted per route
-    priority: route === "/" ? 1 : 0.8, // Higher priority for homepage
-  }));
+  const sitemapEntries: MetadataRoute.Sitemap = pageRoutes.map((route) => {
+    const priority = routePriorityMap[route] || 0.6;
+    const changeFrequency = routeChangeFreqMap[route] || "monthly";
+
+    return {
+      url: `${baseUrl}${route === "/" ? "" : route}`,
+      lastModified: new Date(),
+      changeFrequency: changeFrequency,
+      priority: priority,
+    };
+  });
 
   // Ensure the root path is included if not already
   if (!sitemapEntries.some((entry) => entry.url === baseUrl)) {
     sitemapEntries.unshift({
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: "yearly",
+      changeFrequency: "weekly",
       priority: 1,
     });
   }
 
-  // Deduplicate entries just in case (e.g. if '/' was added manually and also found)
+  // Deduplicate entries
   const uniqueEntries = Array.from(
     new Set(sitemapEntries.map((e) => e.url))
   ).map((url) => {

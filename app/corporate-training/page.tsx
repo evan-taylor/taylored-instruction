@@ -13,25 +13,57 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
-  title: "Corporate CPR Training | Taylored Instruction",
+  title: "Corporate CPR Training Vancouver WA | Workplace Safety Certification",
   description:
-    "Equip your business, school, or organization with essential lifesaving CPR skills. Flexible, expert-led corporate training.",
+    "On-site corporate CPR, BLS & First Aid training in Vancouver WA. AHA & Red Cross certified. Equip your business, school or organization with lifesaving skills. Serving Clark County, Battle Ground, Camas, Portland. OSHA compliant.",
   keywords: [
     "Corporate CPR training Vancouver WA",
-    "Workplace CPR certification",
-    "Business CPR classes",
-    "School CPR training",
+    "Workplace CPR certification Clark County",
+    "Business CPR classes Vancouver",
+    "School CPR training Vancouver WA",
     "Organization CPR training",
-    "On-site CPR training",
-    "Group CPR training",
-    "AHA corporate training",
+    "On-site CPR training Vancouver",
+    "Group CPR training Clark County",
+    "AHA corporate training Vancouver",
     "Red Cross corporate training",
-    "OSHA compliance CPR",
+    "OSHA compliance CPR Vancouver",
     "Employee CPR certification",
     "Team CPR training Vancouver WA",
     "Taylored Instruction corporate",
     "Vancouver WA corporate CPR",
+    "Battle Ground workplace training",
+    "Camas corporate CPR",
+    "Portland business CPR",
+    "San Luis Obispo corporate training",
+    "Workplace BLS training",
+    "Company safety training",
   ],
+  openGraph: {
+    title: "Corporate CPR Training Vancouver WA | Workplace Safety",
+    description:
+      "On-site corporate CPR, BLS & First Aid training. AHA & Red Cross certified. Equip your team with lifesaving skills.",
+    url: "https://tayloredinstruction.com/corporate-training",
+    siteName: "Taylored Instruction",
+    type: "article",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Corporate CPR Training Session in Vancouver WA",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Corporate CPR Training Vancouver WA | Workplace Safety",
+    description:
+      "On-site corporate CPR, BLS & First Aid training. Equip your team with lifesaving skills.",
+    images: ["/twitter-image.png"],
+  },
+  alternates: {
+    canonical: "https://tayloredinstruction.com/corporate-training",
+  },
 };
 
 export default function CorporateTrainingPage() {

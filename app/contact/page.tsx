@@ -6,43 +6,49 @@ import { ContactForm } from "@/components/ContactForm"; // Placeholder for the f
 
 // --- Page Metadata ---
 export const metadata: Metadata = {
-  title: "Contact Taylored Instruction | CPR & Safety Training Vancouver WA",
+  title: "Contact Taylored Instruction | CPR Training Vancouver WA (360) 207-1844",
   description:
-    "Contact Taylored Instruction in Vancouver, WA for inquiries about CPR, Lifeguard, BLS, First Aid, and other safety training courses. We are here to help!",
+    "Contact Taylored Instruction in Vancouver WA for CPR, BLS, First Aid & Lifeguard training. Call (360) 207-1844 or email evan@tayloredinstruction.com. Serving Clark County, Battle Ground, Camas, Portland & San Luis Obispo.",
   keywords: [
     "Contact Taylored Instruction",
     "Taylored Instruction phone number",
     "Taylored Instruction email",
     "CPR training inquiry Vancouver WA",
     "Lifeguard course questions Vancouver WA",
-    "Safety training support",
+    "Safety training support Clark County",
     "Vancouver WA CPR contact",
     "Get in touch Taylored Instruction",
-    "BLS course contact",
+    "BLS course contact Vancouver",
     "First Aid training contact",
+    "(360) 207-1844",
+    "evan@tayloredinstruction.com",
+    "Battle Ground CPR inquiry",
+    "Camas training contact",
+    "Portland CPR questions",
+    "San Luis Obispo CPR contact",
   ],
   openGraph: {
-    title: "Contact Taylored Instruction | CPR & Safety Training Vancouver WA",
+    title: "Contact Taylored Instruction | CPR Training Vancouver WA",
     description:
-      "Contact Taylored Instruction in Vancouver, WA for inquiries about CPR, Lifeguard, BLS, First Aid, and other safety training courses.",
+      "Get in touch for CPR, BLS, First Aid & Lifeguard training in Vancouver WA. Call (360) 207-1844.",
     url: "https://tayloredinstruction.com/contact",
     siteName: "Taylored Instruction",
     type: "website",
     images: [
       {
-        url: "/og-image.png", // To be created - consider a general contact/branded image
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Contact Taylored Instruction",
+        alt: "Contact Taylored Instruction - Vancouver WA CPR Training",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Contact Taylored Instruction | CPR & Safety Training Vancouver WA",
+    title: "Contact Taylored Instruction | CPR Training Vancouver WA",
     description:
-      "Contact Taylored Instruction in Vancouver, WA for inquiries about CPR, Lifeguard, BLS, First Aid, and other safety training courses.",
-    images: ["/twitter-image.png"], // To be created
+      "Get in touch for CPR, BLS, First Aid & Lifeguard training. Call (360) 207-1844.",
+    images: ["/twitter-image.png"],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/contact",

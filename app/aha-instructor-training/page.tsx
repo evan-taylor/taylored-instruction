@@ -4,47 +4,51 @@ import AhaInstructorTrainingPageContent from "@/components/AhaInstructorTraining
 
 export const metadata: Metadata = {
   title:
-    "AHA Instructor Training | Become a Certified CPR Instructor - Vancouver WA",
+    "AHA Instructor Training Vancouver WA | Become BLS & Heartsaver Instructor",
   description:
-    "Join Taylored Instruction in Vancouver, WA to teach lifesaving skills as an American Heart Association (AHA) instructor for BLS or Heartsaver® courses. Start your journey today!",
+    "Become an AHA certified CPR instructor in Vancouver WA. BLS & Heartsaver instructor courses. Teach lifesaving skills with American Heart Association certification. Serving Clark County, Battle Ground, Camas & San Luis Obispo.",
   keywords: [
     "AHA instructor training Vancouver WA",
-    "Become CPR instructor",
+    "Become CPR instructor Vancouver",
     "BLS instructor course Vancouver WA",
     "Heartsaver instructor course Vancouver WA",
-    "Teach CPR classes",
+    "Teach CPR classes Vancouver",
     "American Heart Association instructor certification",
-    "Lifesaving skills instructor",
+    "Lifesaving skills instructor Clark County",
     "CPR instructor prerequisites",
-    "AHA Training Faculty",
+    "AHA Training Faculty Vancouver",
     "Taylored Instruction AHA instructor",
     "Vancouver WA instructor training",
-    "Clark County CPR instructor",
+    "Clark County CPR instructor training",
+    "Battle Ground instructor course",
+    "San Luis Obispo AHA instructor",
+    "BLS instructor certification",
+    "Heartsaver instructor certification",
   ],
   openGraph: {
     title:
-      "AHA Instructor Training | Become a Certified CPR Instructor - Vancouver WA",
+      "AHA Instructor Training Vancouver WA | Become BLS & Heartsaver Instructor",
     description:
-      "Join Taylored Instruction in Vancouver, WA to teach lifesaving skills as an American Heart Association (AHA) instructor for BLS or Heartsaver® courses.",
+      "Become an AHA certified CPR instructor. BLS & Heartsaver instructor courses in Vancouver WA.",
     url: "https://tayloredinstruction.com/aha-instructor-training",
     siteName: "Taylored Instruction",
     type: "article",
     images: [
       {
-        url: "/og-image.png", // To be created
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "AHA CPR Instructor Training Session",
+        alt: "AHA CPR Instructor Training Session in Vancouver WA",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title:
-      "AHA Instructor Training | Become a Certified CPR Instructor - Vancouver WA",
+      "AHA Instructor Training Vancouver WA | Become CPR Instructor",
     description:
-      "Join Taylored Instruction in Vancouver, WA to teach lifesaving skills as an American Heart Association (AHA) instructor for BLS or Heartsaver® courses.",
-    images: ["/twitter-image.png"], // To be created
+      "Become an AHA certified CPR instructor. BLS & Heartsaver instructor courses.",
+    images: ["/twitter-image.png"],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/aha-instructor-training",

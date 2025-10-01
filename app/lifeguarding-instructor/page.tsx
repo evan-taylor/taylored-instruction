@@ -3,24 +3,29 @@ import LifeguardingInstructorPageContent from "@/components/LifeguardingInstruct
 
 export const metadata: Metadata = {
   title:
-    "Lifeguarding Instructor Course | American Red Cross | Vancouver, WA & San Luis Obispo",
+    "Lifeguarding Instructor Course Vancouver WA | Red Cross Instructor Training",
   description:
-    "Become an American Red Cross Lifeguarding Instructor. Blended learning with online and in-person sessions in Vancouver, WA and San Luis Obispo, CA.",
+    "Become a Red Cross Lifeguarding Instructor in Vancouver WA & San Luis Obispo CA. Train to teach lifeguard certification. Blended learning available. Serving Clark County, Battle Ground, Camas & Portland.",
   keywords: [
-    "Lifeguarding Instructor",
+    "Lifeguarding Instructor Vancouver WA",
     "Red Cross Lifeguarding Instructor course",
-    "Lifeguard Instructor training",
-    "Vancouver WA lifeguard instructor",
+    "Lifeguard Instructor training Vancouver",
+    "Vancouver WA lifeguard instructor course",
     "San Luis Obispo lifeguard instructor",
-    "CPR AED for Professional Rescuers",
+    "CPR AED for Professional Rescuers instructor",
     "Aquatic safety instructor training",
+    "Teach lifeguarding Vancouver",
+    "Clark County lifeguard instructor",
+    "Battle Ground instructor training",
+    "Lifeguard instructor certification",
+    "Red Cross aquatic instructor",
   ],
   openGraph: {
     title:
-      "Lifeguarding Instructor Course | American Red Cross | Vancouver, WA & San Luis Obispo",
+      "Lifeguarding Instructor Course Vancouver WA | Red Cross Training",
     description:
-      "Become an American Red Cross Lifeguarding Instructor. Blended learning with online and in-person sessions in Vancouver, WA and San Luis Obispo, CA.",
-    url: "https://tayloredinstruction.com/lifeguarding-instructor/",
+      "Become a Red Cross Lifeguarding Instructor. Train to teach lifeguard certification in Vancouver WA.",
+    url: "https://tayloredinstruction.com/lifeguarding-instructor",
     siteName: "Taylored Instruction",
     type: "article",
     images: [
@@ -28,20 +33,20 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Lifeguarding Instructor Course",
+        alt: "Lifeguarding Instructor Course in Vancouver WA",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
     title:
-      "Lifeguarding Instructor Course | American Red Cross | Vancouver, WA & San Luis Obispo",
+      "Lifeguarding Instructor Course Vancouver WA | Red Cross",
     description:
-      "Become an American Red Cross Lifeguarding Instructor. Blended learning with online and in-person sessions in Vancouver, WA and San Luis Obispo, CA.",
+      "Become a Red Cross Lifeguarding Instructor. Train to teach lifeguard certification.",
     images: ["/twitter-image.png"],
   },
   alternates: {
-    canonical: "https://www.tayloredinstruction.com/lifeguarding-instructor/",
+    canonical: "https://tayloredinstruction.com/lifeguarding-instructor",
   },
 };
 
