@@ -3,11 +3,11 @@ import Stripe from "stripe";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
-  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-  if (!STRIPE_SECRET_KEY) {
+  const StripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!StripeSecretKey) {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
-  return new Stripe(STRIPE_SECRET_KEY, {
+  return new Stripe(StripeSecretKey, {
     apiVersion: "2023-10-16",
   });
 }
@@ -15,18 +15,18 @@ function getStripeClient(): Stripe {
 export async function POST(req: NextRequest) {
   const { lineItems, email, metadata } = await req.json();
 
-  const MIN_ITEM_QUANTITY = 1;
-  const MAX_ITEM_QUANTITY = 100;
+  const MinItemQuantity = 1;
+  const MaxItemQuantity = 100;
 
   const validateItems = (
     items: Array<{ price?: string; quantity?: number }>
   ) => {
     for (const item of items) {
-      if (!(item.price && item.quantity) || item.quantity < MIN_ITEM_QUANTITY) {
+      if (!(item.price && item.quantity) || item.quantity < MinItemQuantity) {
         return "Each line item must have a valid price ID and quantity";
       }
-      if (item.quantity > MAX_ITEM_QUANTITY) {
-        return `Quantity for any item cannot exceed ${MAX_ITEM_QUANTITY}`;
+      if (item.quantity > MaxItemQuantity) {
+        return `Quantity for any item cannot exceed ${MaxItemQuantity}`;
       }
     }
     return null;
@@ -59,20 +59,29 @@ export async function POST(req: NextRequest) {
   };
 
   try {
+    // Stripe API parameters use snake_case as required by their API
     const session = await getStripeClient().checkout.sessions.create({
       mode: "payment",
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       payment_method_types: ["card"],
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       customer_email: email,
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       line_items: lineItems,
       metadata,
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       automatic_tax: {
         enabled: true,
       },
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       tax_id_collection: {
         enabled: true,
       },
+      // biome-ignore lint/style/useNamingConvention: Stripe API
       allow_promotion_codes: true,
     });
 

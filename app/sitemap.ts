@@ -144,9 +144,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Deduplicate entries just in case
   const uniqueEntries = Array.from(
     new Set(sitemapEntries.map((e) => e.url))
-  ).map((url) => {
-    return sitemapEntries.find((e) => e.url === url)!;
-  });
+  ).map((url) => sitemapEntries.find((e) => e.url === url)!);
 
   return uniqueEntries;
 }

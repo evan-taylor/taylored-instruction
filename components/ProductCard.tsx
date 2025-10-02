@@ -63,10 +63,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isInstructor }) => {
           <button
             className={`ml-2 rounded bg-blue-500 px-3 py-1 text-sm text-white transition-colors duration-150 hover:bg-blue-600 ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
             disabled={isDisabled}
-            onClick={() =>
-              alert(`Adding ${product.name} to cart (not implemented)`)
-            }
+            onClick={() => {
+              // TODO: Implement cart functionality
+            }}
             title={isDisabled ? "Requires instructor login" : "Add to cart"}
+            type="button"
           >
             Add to Cart
           </button>

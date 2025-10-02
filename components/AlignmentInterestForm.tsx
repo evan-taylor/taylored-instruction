@@ -68,6 +68,32 @@ const AlignmentInterestForm: React.FC = () => {
     }));
   };
 
+  const handleAgencyCheckboxChange = (
+    agencyValue: string,
+    checked: boolean
+  ) => {
+    setFormData((prevState) => {
+      const currentAgencies = prevState.agencies;
+      if (checked) {
+        return { ...prevState, agencies: [...currentAgencies, agencyValue] };
+      }
+      return {
+        ...prevState,
+        agencies: currentAgencies.filter((agency) => agency !== agencyValue),
+      };
+    });
+  };
+
+  const handleSmsCheckboxChange = (
+    field: "smsOptIn" | "smsOptOut",
+    checked: boolean
+  ) => {
+    setFormData((prevState) => ({
+      ...prevState,
+      [field]: checked,
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setStatus("Submitting...");
@@ -211,14 +237,10 @@ const AlignmentInterestForm: React.FC = () => {
                 id="agencyARC"
                 name="agencies"
                 onCheckedChange={(checked) =>
-                  handleChange({
-                    target: {
-                      name: "agencies",
-                      value: "American Red Cross",
-                      type: "checkbox",
-                      checked,
-                    },
-                  } as any)
+                  handleAgencyCheckboxChange(
+                    "American Red Cross",
+                    checked === true
+                  )
                 }
                 value="American Red Cross"
               />
@@ -234,14 +256,10 @@ const AlignmentInterestForm: React.FC = () => {
                 id="agencyAHA"
                 name="agencies"
                 onCheckedChange={(checked) =>
-                  handleChange({
-                    target: {
-                      name: "agencies",
-                      value: "American Heart Association",
-                      type: "checkbox",
-                      checked,
-                    },
-                  } as any)
+                  handleAgencyCheckboxChange(
+                    "American Heart Association",
+                    checked === true
+                  )
                 }
                 value="American Heart Association"
               />
@@ -257,14 +275,10 @@ const AlignmentInterestForm: React.FC = () => {
                 id="agencyHSI"
                 name="agencies"
                 onCheckedChange={(checked) =>
-                  handleChange({
-                    target: {
-                      name: "agencies",
-                      value: "Health and Safety Institute",
-                      type: "checkbox",
-                      checked,
-                    },
-                  } as any)
+                  handleAgencyCheckboxChange(
+                    "Health and Safety Institute",
+                    checked === true
+                  )
                 }
                 value="Health and Safety Institute"
               />
@@ -294,14 +308,7 @@ const AlignmentInterestForm: React.FC = () => {
           id="smsOptIn"
           name="smsOptIn"
           onCheckedChange={(checked) =>
-            handleChange({
-              target: {
-                name: "smsOptIn",
-                value: "",
-                type: "checkbox",
-                checked,
-              },
-            } as any)
+            handleSmsCheckboxChange("smsOptIn", checked === true)
           }
         />
         <div className="grid gap-1.5 leading-none">
@@ -335,14 +342,7 @@ const AlignmentInterestForm: React.FC = () => {
           id="smsOptOut"
           name="smsOptOut"
           onCheckedChange={(checked) =>
-            handleChange({
-              target: {
-                name: "smsOptOut",
-                value: "",
-                type: "checkbox",
-                checked,
-              },
-            } as any)
+            handleSmsCheckboxChange("smsOptOut", checked === true)
           }
         />
         <div className="grid gap-1.5 leading-none">
@@ -362,13 +362,22 @@ const AlignmentInterestForm: React.FC = () => {
         </Button>
       </div>
 
-      {status && (
-        <p
-          className={`mt-4 rounded p-3 text-center text-sm ${status.includes("successfully") ? "bg-green-100 text-green-800" : status.includes("failed") ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"}`}
-        >
-          {status}
-        </p>
-      )}
+      {status &&
+        (() => {
+          let statusClass = "bg-blue-100 text-blue-800";
+          if (status.includes("successfully")) {
+            statusClass = "bg-green-100 text-green-800";
+          } else if (status.includes("failed")) {
+            statusClass = "bg-red-100 text-red-800";
+          }
+          return (
+            <p
+              className={`mt-4 rounded p-3 text-center text-sm ${statusClass}`}
+            >
+              {status}
+            </p>
+          );
+        })()}
     </form>
   );
 };

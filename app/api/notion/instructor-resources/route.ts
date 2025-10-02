@@ -97,7 +97,7 @@ export async function GET(req: NextRequest) {
       blockList: unknown[],
       depth = 0
     ): Promise<unknown[]> => {
-      const MAX_DEPTH = 3;
+      const MaxDepth = 3;
 
       return Promise.all(
         blockList.map(async (blockUnknown: unknown) => {
@@ -126,7 +126,7 @@ export async function GET(req: NextRequest) {
               }
             }
 
-            if (block.has_children && depth < MAX_DEPTH) {
+            if (block.has_children && depth < MaxDepth) {
               try {
                 const childBlocks = await notion.blocks.children.list({
                   block_id: block.id,

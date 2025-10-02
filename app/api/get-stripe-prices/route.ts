@@ -3,11 +3,11 @@ import Stripe from "stripe";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
-  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-  if (!STRIPE_SECRET_KEY) {
+  const StripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!StripeSecretKey) {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
-  return new Stripe(STRIPE_SECRET_KEY, {
+  return new Stripe(StripeSecretKey, {
     apiVersion: "2023-10-16",
   });
 }
@@ -52,13 +52,19 @@ export async function POST(req: NextRequest) {
           productImages = productData.images;
         }
 
+        // API response properties use snake_case to match Stripe's convention
         return {
           id: price.id,
+          // biome-ignore lint/style/useNamingConvention: Stripe API response
           unit_amount: price.unit_amount,
           currency: price.currency,
+          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_id: price.product,
+          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_name: productName,
+          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_description: productDescription,
+          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_images: productImages,
         };
       } catch (_error) {

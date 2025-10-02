@@ -6,11 +6,11 @@ import { getResendClient } from "@/lib/resend";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
-  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-  if (!STRIPE_SECRET_KEY) {
+  const StripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!StripeSecretKey) {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
-  return new Stripe(STRIPE_SECRET_KEY, {
+  return new Stripe(StripeSecretKey, {
     apiVersion: "2023-10-16",
   });
 }
@@ -129,9 +129,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const CENTS_IN_DOLLAR = 100;
+    const CentsInDollar = 100;
     const totalPrice = session.amount_total
-      ? (session.amount_total / CENTS_IN_DOLLAR).toFixed(2)
+      ? (session.amount_total / CentsInDollar).toFixed(2)
       : "0.00";
 
     if (!session.metadata) {

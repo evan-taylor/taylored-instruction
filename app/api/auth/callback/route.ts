@@ -29,7 +29,9 @@ export async function GET(req: NextRequest) {
             .update(profiles)
             .set({ lastLogin: now })
             .where(eq(profiles.id, user.id));
-        } catch (_dbError) {}
+        } catch (_dbError) {
+          // Silently fail - login timestamp update is not critical
+        }
       }
 
       return NextResponse.redirect(new URL(next, req.url));

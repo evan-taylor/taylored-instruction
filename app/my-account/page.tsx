@@ -58,6 +58,7 @@ export default function MyAccountPage() {
           <button
             className="mt-4 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             onClick={() => window.location.reload()}
+            type="button"
           >
             Retry
           </button>
@@ -67,13 +68,19 @@ export default function MyAccountPage() {
   }
 
   if (userLoading || loading) {
+    let profileStatus = "Not found";
+    if (profile) {
+      profileStatus = "Loaded";
+    } else if (loading) {
+      profileStatus = "Loading";
+    }
+
     return (
       <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg">Loading account information...</p>
           <p className="mt-2 text-gray-500 text-sm">
-            User: {user ? "Loaded" : "Loading"} | Profile:{" "}
-            {profile ? "Loaded" : loading ? "Loading" : "Not found"}
+            User: {user ? "Loaded" : "Loading"} | Profile: {profileStatus}
           </p>
         </div>
       </div>
@@ -147,6 +154,7 @@ export default function MyAccountPage() {
                 <button
                   className="block text-primary hover:underline"
                   onClick={() => setShowAdmin(!showAdmin)}
+                  type="button"
                 >
                   Admin
                 </button>
@@ -170,11 +178,11 @@ export default function MyAccountPage() {
           className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
           onClick={async () => {
             const { error } = await supabaseClient.auth.signOut();
-            if (error) {
-            } else {
+            if (!error) {
               router.push("/");
             }
           }}
+          type="button"
         >
           Sign Out
         </button>

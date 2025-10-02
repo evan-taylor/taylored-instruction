@@ -55,8 +55,6 @@ export const metadata: Metadata = {
   },
 };
 
-const BasicLifeSupportPage: React.FC = () => {
-  return <BasicLifeSupportPageContent />;
-};
+const BasicLifeSupportPage: React.FC = () => <BasicLifeSupportPageContent />;
 
 export default BasicLifeSupportPage;

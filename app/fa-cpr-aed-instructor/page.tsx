@@ -55,8 +55,8 @@ export const metadata: Metadata = {
   },
 };
 
-const FaCprAedInstructorPage: React.FC = () => {
-  return <FaCprAedInstructorPageContent />;
-};
+const FaCprAedInstructorPage: React.FC = () => (
+  <FaCprAedInstructorPageContent />
+);
 
 export default FaCprAedInstructorPage;

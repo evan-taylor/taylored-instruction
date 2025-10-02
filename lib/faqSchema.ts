@@ -8,7 +8,7 @@ export type FAQItem = {
   answer: string;
 };
 
-type FAQSchema = {
+type FaqSchema = {
   "@context": string;
   "@type": string;
   mainEntity: Array<{
@@ -46,20 +46,18 @@ type FAQSchema = {
  *   dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
  * />
  */
-export const getFAQSchema = (faqs: FAQItem[]): FAQSchema => {
-  return {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.question,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.answer,
-      },
-    })),
-  };
-};
+export const getFAQSchema = (faqs: FAQItem[]): FaqSchema => ({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((faq) => ({
+    "@type": "Question",
+    name: faq.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: faq.answer,
+    },
+  })),
+});
 
 // Common FAQs for different pages
 

@@ -104,6 +104,7 @@ export const TestimonialsSection = () => {
               aria-label="Previous testimonial"
               className="rounded-full bg-gray-100 p-2 transition-colors hover:bg-gray-200"
               onClick={prevTestimonial}
+              type="button"
             >
               <ChevronLeft className="text-gray-600" />
             </button>
@@ -117,6 +118,7 @@ export const TestimonialsSection = () => {
                   }`}
                   key={index}
                   onClick={() => setActiveIndex(index)}
+                  type="button"
                 />
               ))}
             </div>
@@ -125,6 +127,7 @@ export const TestimonialsSection = () => {
               aria-label="Next testimonial"
               className="rounded-full bg-gray-100 p-2 transition-colors hover:bg-gray-200"
               onClick={nextTestimonial}
+              type="button"
             >
               <ChevronRight className="text-gray-600" />
             </button>

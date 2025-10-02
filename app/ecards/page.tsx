@@ -244,12 +244,11 @@ export default function ECardsPage() {
     }
   };
 
-  const calculateTotal = () => {
-    return cartItems.reduce(
+  const calculateTotal = () =>
+    cartItems.reduce(
       (total, item) => total + item.product.display_price * item.quantity,
       0
     );
-  };
 
   const handleCartCheckout = async () => {
     if (cartItems.length === 0) {
@@ -350,6 +349,7 @@ export default function ECardsPage() {
         <button
           className="relative flex items-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
           onClick={() => setIsCartOpen(!isCartOpen)}
+          type="button"
         >
           <ShoppingCart className="mr-2" />
           <span>
@@ -371,6 +371,7 @@ export default function ECardsPage() {
             <button
               className="rounded-full p-1 hover:bg-gray-100"
               onClick={() => setIsCartOpen(false)}
+              type="button"
             >
               <svg
                 className="h-6 w-6"
@@ -425,6 +426,7 @@ export default function ECardsPage() {
                                 item.quantity - 1
                               )
                             }
+                            type="button"
                           >
                             <Minus size={12} />
                           </button>
@@ -437,6 +439,7 @@ export default function ECardsPage() {
                                 item.quantity + 1
                               )
                             }
+                            type="button"
                           >
                             <Plus size={12} />
                           </button>
@@ -444,6 +447,7 @@ export default function ECardsPage() {
                         <button
                           className="p-1 text-red-500 hover:text-red-700"
                           onClick={() => removeFromCart(item.product.id)}
+                          type="button"
                         >
                           <Trash2 size={14} />
                         </button>
@@ -460,6 +464,7 @@ export default function ECardsPage() {
               <button
                 className="mb-4 inline-block text-red-500 text-sm hover:underline"
                 onClick={clearCart}
+                type="button"
               >
                 Clear Cart
               </button>
@@ -474,6 +479,7 @@ export default function ECardsPage() {
               className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:opacity-50"
               disabled={cartItems.length === 0 || loadingProductIds.length > 0}
               onClick={handleCartCheckout}
+              type="button"
             >
               {loadingProductIds.length > 0
                 ? "Processing..."
@@ -523,6 +529,7 @@ export default function ECardsPage() {
                         Math.max(1, (selectedQuantities[product.id] || 1) - 1)
                       )
                     }
+                    type="button"
                   >
                     <Minus size={10} />
                   </button>
@@ -546,6 +553,7 @@ export default function ECardsPage() {
                         (selectedQuantities[product.id] || 1) + 1
                       )
                     }
+                    type="button"
                   >
                     <Plus size={10} />
                   </button>
@@ -554,6 +562,7 @@ export default function ECardsPage() {
                 <button
                   className="flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
                   onClick={() => addToCart(product)}
+                  type="button"
                 >
                   <ShoppingCart className="mr-2" />
                   Add to Cart

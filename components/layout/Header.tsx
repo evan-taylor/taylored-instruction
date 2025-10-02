@@ -289,6 +289,7 @@ export const Header = () => {
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             className="text-text-light hover:text-primary lg:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            type="button"
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -345,14 +346,13 @@ const NavMenu = ({
 }) => {
   const pathname = usePathname() ?? "";
 
-  const filterDropdownItems = (items: DropdownItem[]) => {
-    return items.filter((item) => {
+  const filterDropdownItems = (items: DropdownItem[]) =>
+    items.filter((item) => {
       if (item.requiresInstructor && !isInstructor) {
         return false;
       }
       return true;
     });
-  };
 
   return (
     <>
@@ -375,6 +375,7 @@ const NavMenu = ({
                     : ""
                 }`}
                 onClick={() => toggleDropdown(link.label)}
+                type="button"
               >
                 {link.label}
                 <ChevronDown
@@ -456,14 +457,13 @@ const MobileNavMenu = ({
     setOpenMobileDropdown(openMobileDropdown === dropdown ? null : dropdown);
   };
 
-  const filterDropdownItems = (items: DropdownItem[]) => {
-    return items.filter((item) => {
+  const filterDropdownItems = (items: DropdownItem[]) =>
+    items.filter((item) => {
       if (item.requiresInstructor && !isInstructor) {
         return false;
       }
       return true;
     });
-  };
 
   return (
     <div className="space-y-1 py-2">
@@ -481,6 +481,7 @@ const MobileNavMenu = ({
                 <button
                   className="flex w-full items-center justify-between py-2 text-left text-text transition-colors duration-200 hover:text-primary"
                   onClick={() => toggleMobileDropdown(link.label)}
+                  type="button"
                 >
                   <span>{link.label}</span>
                   <ChevronDown

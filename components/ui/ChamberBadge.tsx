@@ -3,18 +3,18 @@
 import { useEffect } from "react";
 
 declare global {
-  type Window = {
+  interface Window {
     MNI?: {
       Widgets?: {
         Member: new (
           id: string,
-          options: any
+          options: unknown
         ) => {
           create: () => void;
         };
       };
     };
-  };
+  }
 }
 
 export const ChamberBadge = () => {
@@ -32,7 +32,9 @@ export const ChamberBadge = () => {
             styleTemplate:
               "#@id{text-align:center;position:relative}#@id .mn-widget-member-name{font-weight:700}#@id .mn-widget-member-logo{max-width:100%}",
           }).create();
-        } catch (_error) {}
+        } catch (_error) {
+          // Widget creation failed - silently continue
+        }
       } else {
         // Script exists but MNI not ready (might happen briefly)
       }
@@ -54,12 +56,17 @@ export const ChamberBadge = () => {
             styleTemplate:
               "#@id{text-align:center;position:relative}#@id .mn-widget-member-name{font-weight:700}#@id .mn-widget-member-logo{max-width:100%}",
           }).create();
-        } catch (_error) {}
+        } catch (_error) {
+          // Widget creation failed - silently continue
+        }
       } else {
+        // MNI not ready after script load
       }
     };
 
-    script.onerror = () => {};
+    script.onerror = () => {
+      // Script load failed - silently fail
+    };
 
     document.body.appendChild(script);
 

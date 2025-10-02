@@ -57,8 +57,8 @@ export const metadata: Metadata = {
   },
 };
 
-const AhaInstructorTrainingPage: React.FC = () => {
-  return <AhaInstructorTrainingPageContent />;
-};
+const AhaInstructorTrainingPage: React.FC = () => (
+  <AhaInstructorTrainingPageContent />
+);
 
 export default AhaInstructorTrainingPage;

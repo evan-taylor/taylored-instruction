@@ -392,8 +392,6 @@ export const getBreadcrumbSchema = (
 });
 
 // Utility function to generate script tag for JSON-LD
-export const generateJSONLD = (data: unknown) => {
-  return {
-    __html: JSON.stringify(data),
-  };
-};
+export const generateJSONLD = (data: unknown) => ({
+  __html: JSON.stringify(data),
+});

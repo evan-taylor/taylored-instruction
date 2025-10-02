@@ -13,8 +13,8 @@ function EcardSuccessContent() {
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
-    const session_id = searchParams?.get("session_id");
-    if (!session_id) {
+    const sessionId = searchParams?.get("session_id");
+    if (!sessionId) {
       setStatus("error");
       setMessage("Invalid session ID.");
       return;
@@ -29,7 +29,7 @@ function EcardSuccessContent() {
     fetch("/api/send-ecard-emails", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId: session_id }),
+      body: JSON.stringify({ sessionId }),
     })
       .then((res) => res.json())
       .then((data) => {

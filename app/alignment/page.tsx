@@ -55,8 +55,6 @@ export const metadata: Metadata = {
   },
 };
 
-const AlignmentPage = () => {
-  return <AlignmentPageContent />;
-};
+const AlignmentPage = () => <AlignmentPageContent />;
 
 export default AlignmentPage;
