@@ -59,6 +59,7 @@ const LifeguardingPageContent: React.FC = () => {
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
             size="lg"
             target="_blank"
+            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             Register for Lifeguard Certification
           </Button>
@@ -66,6 +67,7 @@ const LifeguardingPageContent: React.FC = () => {
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended"
             size="lg"
             target="_blank"
+            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             Register for Recertification
           </Button>

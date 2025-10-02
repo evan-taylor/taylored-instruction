@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { Button } from "@/components/ui/Button";
+import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 
 export default function BlsPageContent() {
   return (
@@ -91,17 +91,11 @@ export default function BlsPageContent() {
                 an in-person skills session.
               </li>
             </ul>
-            <div className="mt-8 text-center">
-              <Button size="lg" variant="primary">
-                <a
-                  href="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  View Current Offerings
-                </a>
-              </Button>
-            </div>
+            <CourseRegistrationButton
+              courseName="BLS Certification"
+              registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider"
+              buttonText="View Current Offerings"
+            />
           </section>
 
           <section>

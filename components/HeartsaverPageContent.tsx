@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Button } from "@/components/ui/Button";
+import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 
 export default function HeartsaverPageContent() {
   return (
@@ -105,18 +105,11 @@ export default function HeartsaverPageContent() {
                 you&apos;ve learned.
               </li>
             </ul>
-            {/* Found button link in HTML */}
-            <div className="mt-8 text-center">
-              <Button size="lg" variant="primary">
-                <a
-                  href="https://www.hovn.app/tayloredinstruction/certifications/aha-heartsaver-first-aid-cpr-aed"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  View Current Offerings
-                </a>
-              </Button>
-            </div>
+            <CourseRegistrationButton
+              courseName="Heartsaver Certification"
+              registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-heartsaver-first-aid-cpr-aed"
+              buttonText="View Current Offerings"
+            />
           </section>
 
           <section>

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type React from "react";
-import { Button } from "@/components/ui/Button";
+import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 
 const BasicLifeSupportPageContent: React.FC = () => {
   return (
@@ -54,15 +54,11 @@ const BasicLifeSupportPageContent: React.FC = () => {
         </div>
 
         {/* Registration Button */}
-        <div className="mb-12 text-center">
-          <Button
-            href="https://www.hovn.app/service-providers/tayloredinstruction/offerings"
-            size="lg"
-            target="_blank"
-          >
-            View Current Offerings
-          </Button>
-        </div>
+        <CourseRegistrationButton
+          courseName="Basic Life Support"
+          registrationUrl="https://www.hovn.app/service-providers/tayloredinstruction/offerings"
+          buttonText="View Current Offerings"
+        />
 
         {/* Course Purpose Section */}
         <div className="mb-8 rounded-lg bg-gray-50 p-6 shadow-sm">

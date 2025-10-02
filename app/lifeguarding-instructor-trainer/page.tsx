@@ -129,7 +129,11 @@ export default function Page() {
       </div>
 
       <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-        <Button href="/contact" size="lg">
+        <Button 
+          href="/contact" 
+          size="lg"
+          className="shadow-lg hover:shadow-xl transition-shadow duration-200"
+        >
           Request an On-Site Course
         </Button>
         <Button
@@ -137,6 +141,7 @@ export default function Page() {
           size="lg"
           target="_blank"
           variant="secondary"
+          className="shadow-lg hover:shadow-xl transition-shadow duration-200"
         >
           View Public Offerings
         </Button>

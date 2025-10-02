@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import type React from "react";
-import { Button } from "@/components/ui/Button";
+import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 
 const AhaInstructorTrainingPageContent: React.FC = () => {
   return (
@@ -45,15 +45,11 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           and providing lifesaving training.
         </p>
 
-        <div className="mb-10 text-center">
-          <Button
-            href="https://www.hovn.app/tayloredinstruction/courses/aha-bls-instructor"
-            size="lg"
-            target="_blank"
-          >
-            View Current Offerings
-          </Button>
-        </div>
+        <CourseRegistrationButton
+          courseName="AHA Instructor Training"
+          registrationUrl="https://www.hovn.app/tayloredinstruction/courses/aha-bls-instructor"
+          buttonText="View Current Offerings"
+        />
 
         <h3 className="mb-3 font-bold text-xl lg:text-2xl">Course Overview</h3>
         <p className="mb-4 text-gray-700">
