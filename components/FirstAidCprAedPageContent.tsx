@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type React from "react";
-import { Button } from "@/components/ui/Button";
+import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 
 const FirstAidCprAedPageContent: React.FC = () => {
   return (
@@ -52,15 +52,11 @@ const FirstAidCprAedPageContent: React.FC = () => {
           </Link>
         </div>
 
-        <div className="mb-12 text-center">
-          <Button
-            href="https://www.hovn.app/tayloredinstruction/courses/arc-adult-pediatric-first-aid-cpr-aed/o/cm408sfgn0000ggkzk66s7no4"
-            size="lg"
-            target="_blank"
-          >
-            View Current Offerings
-          </Button>
-        </div>
+        <CourseRegistrationButton
+          courseName="First Aid/CPR/AED"
+          registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-adult-pediatric-first-aid-cpr-aed/o/cm408sfgn0000ggkzk66s7no4"
+          buttonText="View Current Offerings"
+        />
 
         {/* Course Purpose Section */}
         <div className="mb-8 rounded-lg bg-gray-50 p-6 shadow-sm">

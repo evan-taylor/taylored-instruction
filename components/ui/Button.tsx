@@ -11,6 +11,7 @@ type ButtonProps = {
   className?: string;
   href?: string;
   target?: string;
+  rel?: string;
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
@@ -23,6 +24,7 @@ export const Button = ({
   className = "",
   href,
   target,
+  rel,
   onClick,
   type = "button",
   disabled = false,
@@ -57,7 +59,7 @@ export const Button = ({
 
   if (href) {
     return (
-      <Link className={classes} href={href} target={target}>
+      <Link className={classes} href={href} target={target} rel={rel}>
         {children}
       </Link>
     );

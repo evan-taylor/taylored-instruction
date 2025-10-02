@@ -42,10 +42,16 @@ const LifeguardingInstructorPageContent: React.FC = () => {
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
             size="lg"
             target="_blank"
+            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             View Upcoming Courses
           </Button>
-          <Button href="/contact" size="lg" variant="secondary">
+          <Button 
+            href="/contact" 
+            size="lg" 
+            variant="secondary"
+            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
+          >
             Host This Course
           </Button>
         </div>
@@ -308,10 +314,16 @@ const LifeguardingInstructorPageContent: React.FC = () => {
               href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
               size="lg"
               target="_blank"
+              className="shadow-lg hover:shadow-xl transition-shadow duration-200"
             >
               View Schedule
             </Button>
-            <Button href="/contact" size="lg" variant="secondary">
+            <Button 
+              href="/contact" 
+              size="lg" 
+              variant="secondary"
+              className="shadow-lg hover:shadow-xl transition-shadow duration-200"
+            >
               Contact Us
             </Button>
           </div>
