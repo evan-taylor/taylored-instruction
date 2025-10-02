@@ -8,6 +8,7 @@ interface CourseRegistrationButtonProps {
   registrationUrl: string;
   buttonText?: string;
   className?: string;
+  variant?: "primary" | "secondary" | "outline";
 }
 
 const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
@@ -15,6 +16,7 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   registrationUrl,
   buttonText,
   className = "",
+  variant = "primary",
 }) => {
   const defaultButtonText = buttonText || `Register for ${courseName}`;
 
@@ -23,6 +25,7 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
       <Button
         href={registrationUrl}
         size="lg"
+        variant={variant}
         target="_blank"
         rel="noopener noreferrer"
         className="shadow-lg hover:shadow-xl transition-shadow duration-200"
