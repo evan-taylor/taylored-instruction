@@ -24,6 +24,7 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
         href={registrationUrl}
         size="lg"
         target="_blank"
+        rel="noopener noreferrer"
         className="shadow-lg hover:shadow-xl transition-shadow duration-200"
       >
         {defaultButtonText}
