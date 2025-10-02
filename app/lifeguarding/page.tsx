@@ -1,12 +1,17 @@
 import type { Metadata } from "next";
 import type React from "react";
 import LifeguardingPageContent from "@/components/LifeguardingPageContent";
+import {
+  generateJSONLD,
+  getLifeguardingCourseSchema,
+  getBreadcrumbSchema,
+} from "@/lib/structuredData";
 
-// Extract metadata from the provided HTML
 export const metadata: Metadata = {
-  title: "Lifeguarding Certification in Vancouver, WA",
+  title:
+    "Red Cross Lifeguarding Certification | Vancouver WA & San Luis Obispo CA - Professional Training",
   description:
-    "Explore Red Cross lifeguarding classes for certification. Become a certified lifeguard with us today with our experienced instructors!",
+    "Become a certified lifeguard with American Red Cross Lifeguarding training in Vancouver WA, Clark County, and San Luis Obispo CA. Learn rescue techniques, CPR, First Aid & water safety. Blended learning & in-person options. Start your lifeguard career today!",
   keywords: [
     "Lifeguard certification Vancouver WA",
     "Red Cross lifeguarding",
@@ -20,39 +25,74 @@ export const metadata: Metadata = {
     "Taylored Instruction lifeguarding",
     "Vancouver WA lifeguard classes",
     "Clark County lifeguard",
+    "Lifeguard San Luis Obispo",
+    "Lifeguard certification San Luis Obispo CA",
+    "Lifeguard training Portland OR",
+    "Lifeguard Camas WA",
+    "Lifeguard Battle Ground WA",
+    "Pool lifeguard training",
+    "Waterfront lifeguard certification",
+    "Shallow water lifeguard",
+    "SLO County lifeguard",
+    "Red Cross LGI",
+    "Lifeguard Instructor Vancouver",
   ],
-  // Add other relevant metadata extracted from HTML if needed
-  // e.g., openGraph data
   openGraph: {
-    title: "Lifeguarding Certification in Vancouver, WA",
+    title:
+      "Red Cross Lifeguarding Certification | Vancouver WA & San Luis Obispo CA",
     description:
-      "Explore Red Cross lifeguarding classes for certification. Become a certified lifeguard with us today with our experienced instructors!",
-    url: "https://tayloredinstruction.com/lifeguarding/", // Use your actual URL
+      "Become a certified lifeguard with American Red Cross training in Vancouver WA and San Luis Obispo CA. Learn rescue techniques, CPR, First Aid & water safety.",
+    url: "https://tayloredinstruction.com/lifeguarding",
     siteName: "Taylored Instruction",
     type: "article",
     images: [
       {
-        url: "/og-image.png", // To be created
+        url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Lifeguarding Certification Training Session",
+        alt: "Red Cross Lifeguarding Certification - Taylored Instruction",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lifeguarding Certification in Vancouver, WA",
+    title:
+      "Red Cross Lifeguarding Certification | Vancouver WA & San Luis Obispo CA",
     description:
-      "Explore Red Cross lifeguarding classes for certification. Become a certified lifeguard with us today with our experienced instructors!",
-    images: ["/twitter-image.png"], // To be created
+      "Become a certified lifeguard with American Red Cross training. Learn rescue techniques, CPR, First Aid & water safety.",
+    images: ["/twitter-image.png"],
   },
   alternates: {
-    canonical: "https://www.tayloredinstruction.com/lifeguarding/", // Use your actual URL
+    canonical: "https://tayloredinstruction.com/lifeguarding",
   },
 };
 
 const LifeguardingPage: React.FC = () => {
-  return <LifeguardingPageContent />;
+  // Generate structured data
+  const courseSchema = getLifeguardingCourseSchema();
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "Lifeguarding",
+      url: "https://tayloredinstruction.com/lifeguarding",
+    },
+  ]);
+
+  return (
+    <>
+      {/* Structured Data - Course */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+      />
+      {/* Structured Data - Breadcrumb */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+      />
+      <LifeguardingPageContent />
+    </>
+  );
 };
 
 export default LifeguardingPage;

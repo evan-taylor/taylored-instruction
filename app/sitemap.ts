@@ -74,28 +74,61 @@ function getPagePaths(dir: string, baseDir: string = dir): string[] {
   return paths;
 }
 
+// Route-specific configuration for priority and change frequency
+const routeConfig: Record<
+  string,
+  { priority: number; changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never" }
+> = {
+  "/": { priority: 1.0, changeFrequency: "weekly" },
+  "/about": { priority: 0.9, changeFrequency: "monthly" },
+  "/contact": { priority: 0.9, changeFrequency: "monthly" },
+  "/bls": { priority: 0.95, changeFrequency: "weekly" },
+  "/basic-life-support": { priority: 0.95, changeFrequency: "weekly" },
+  "/first-aid-cpr-aed": { priority: 0.95, changeFrequency: "weekly" },
+  "/heartsaver": { priority: 0.95, changeFrequency: "weekly" },
+  "/lifeguarding": { priority: 0.95, changeFrequency: "weekly" },
+  "/corporate-training": { priority: 0.9, changeFrequency: "weekly" },
+  "/aeds": { priority: 0.85, changeFrequency: "monthly" },
+  "/aha-instructor-training": { priority: 0.85, changeFrequency: "monthly" },
+  "/fa-cpr-aed-instructor": { priority: 0.8, changeFrequency: "monthly" },
+  "/lifeguarding-instructor": { priority: 0.8, changeFrequency: "monthly" },
+  "/lifeguarding-instructor-trainer": { priority: 0.75, changeFrequency: "monthly" },
+  "/alignment": { priority: 0.8, changeFrequency: "monthly" },
+  "/instructor-resources": { priority: 0.7, changeFrequency: "monthly" },
+  "/ecards": { priority: 0.75, changeFrequency: "monthly" },
+  "/privacy-policy": { priority: 0.3, changeFrequency: "yearly" },
+  "/terms": { priority: 0.3, changeFrequency: "yearly" },
+};
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const appDirPath = path.join(process.cwd(), "app");
   const pageRoutes = getPagePaths(appDirPath);
 
-  const sitemapEntries: MetadataRoute.Sitemap = pageRoutes.map((route) => ({
-    url: `${baseUrl}${route === "/" ? "" : route}`, // Handle root path correctly
-    lastModified: new Date(),
-    changeFrequency: "weekly", // Default, can be adjusted per route
-    priority: route === "/" ? 1 : 0.8, // Higher priority for homepage
-  }));
+  const sitemapEntries: MetadataRoute.Sitemap = pageRoutes.map((route) => {
+    const config = routeConfig[route] || {
+      priority: 0.7,
+      changeFrequency: "monthly" as const,
+    };
+    
+    return {
+      url: `${baseUrl}${route === "/" ? "" : route}`,
+      lastModified: new Date(),
+      changeFrequency: config.changeFrequency,
+      priority: config.priority,
+    };
+  });
 
   // Ensure the root path is included if not already
   if (!sitemapEntries.some((entry) => entry.url === baseUrl)) {
     sitemapEntries.unshift({
       url: baseUrl,
       lastModified: new Date(),
-      changeFrequency: "yearly",
-      priority: 1,
+      changeFrequency: "weekly",
+      priority: 1.0,
     });
   }
 
-  // Deduplicate entries just in case (e.g. if '/' was added manually and also found)
+  // Deduplicate entries just in case
   const uniqueEntries = Array.from(
     new Set(sitemapEntries.map((e) => e.url))
   ).map((url) => {

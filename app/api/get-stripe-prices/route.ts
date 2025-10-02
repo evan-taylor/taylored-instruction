@@ -1,13 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-if (!STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+// Lazy Stripe initialization to avoid build-time errors
+function getStripeClient(): Stripe {
+  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+  if (!STRIPE_SECRET_KEY) {
+    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+  }
+  return new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: "2023-10-16",
+  });
 }
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
 
 // Note: We avoid exporting/using an explicit type alias here to satisfy linter rules
 
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const priceDetailsPromises = priceIds.map(async (id) => {
       try {
-        const price = await stripe.prices.retrieve(id, { expand: ["product"] });
+        const price = await getStripeClient().prices.retrieve(id, { expand: ["product"] });
         let productName: string | undefined;
         let productDescription: string | null | undefined;
         let productImages: string[] | undefined;

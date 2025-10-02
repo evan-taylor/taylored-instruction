@@ -13,9 +13,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 
 export const metadata: Metadata = {
-  title: "Corporate CPR Training | Taylored Instruction",
+  title:
+    "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety Certification",
   description:
-    "Equip your business, school, or organization with essential lifesaving CPR skills. Flexible, expert-led corporate training.",
+    "Professional on-site corporate CPR, BLS & First Aid training in Vancouver WA, Clark County & San Luis Obispo CA. AHA & Red Cross certified workplace safety training for businesses, schools & organizations. OSHA compliant. Flexible scheduling. Group discounts available.",
   keywords: [
     "Corporate CPR training Vancouver WA",
     "Workplace CPR certification",
@@ -31,7 +32,45 @@ export const metadata: Metadata = {
     "Team CPR training Vancouver WA",
     "Taylored Instruction corporate",
     "Vancouver WA corporate CPR",
+    "Corporate BLS training",
+    "Workplace First Aid training",
+    "Company CPR certification",
+    "Business safety training",
+    "Corporate CPR San Luis Obispo",
+    "On-site training Clark County",
+    "Corporate training Portland OR",
+    "Group CPR classes Vancouver",
+    "Employee safety training",
+    "Workplace emergency response",
   ],
+  openGraph: {
+    title:
+      "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety",
+    description:
+      "Professional on-site corporate CPR, BLS & First Aid training. AHA & Red Cross certified. Serving businesses, schools & organizations in Vancouver WA & San Luis Obispo CA.",
+    url: "https://tayloredinstruction.com/corporate-training",
+    siteName: "Taylored Instruction",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Corporate CPR Training - Taylored Instruction",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title:
+      "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety",
+    description:
+      "Professional on-site corporate CPR, BLS & First Aid training. AHA & Red Cross certified.",
+    images: ["/twitter-image.png"],
+  },
+  alternates: {
+    canonical: "https://tayloredinstruction.com/corporate-training",
+  },
 };
 
 export default function CorporateTrainingPage() {
