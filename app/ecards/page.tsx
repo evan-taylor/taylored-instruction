@@ -4,6 +4,7 @@ import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
 
@@ -31,6 +32,7 @@ type CartItem = {
 
 export default function ECardsPage() {
   const router = useRouter();
+  const posthog = usePostHog();
   const { isInstructor, loading, session } = useProfile();
   const [products, setProducts] = useState<ProductWithPrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -255,6 +257,22 @@ export default function ECardsPage() {
       return;
     }
 
+    // Track checkout initiation
+    posthog.capture("ecard_checkout_initiated", {
+      cartItems: cartItems.map((item) => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        quantity: item.quantity,
+        price: item.product.display_price,
+      })),
+      totalItems: cartItems.length,
+      totalValue: cartItems.reduce(
+        (total, item) => total + item.product.display_price * item.quantity,
+        0
+      ),
+      userId: session?.user?.id,
+    });
+
     try {
       const lineItems = cartItems.map((item) => ({
         price: item.product.stripe_price_id,
@@ -284,13 +302,46 @@ export default function ECardsPage() {
 
       const data = await response.json();
       if (data.url) {
+        // Track successful checkout redirect
+        posthog.capture("ecard_checkout_redirected", {
+          cartItems: cartItems.map((item) => ({
+            productId: item.product.id,
+            productName: item.product.name,
+            quantity: item.quantity,
+          })),
+          totalItems: cartItems.length,
+          userId: session?.user?.id,
+        });
+
         window.location.href = data.url;
       } else {
+        // Track checkout error
+        posthog.capture("ecard_checkout_error", {
+          error: data.error || "Unknown error",
+          cartItems: cartItems.map((item) => ({
+            productId: item.product.id,
+            productName: item.product.name,
+            quantity: item.quantity,
+          })),
+          userId: session?.user?.id,
+        });
+
         setError(
           data.error || "Could not initiate checkout. Please try again."
         );
       }
     } catch (_err) {
+      // Track unexpected error
+      posthog.capture("ecard_checkout_error", {
+        error: "Network or server error",
+        cartItems: cartItems.map((item) => ({
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+        })),
+        userId: session?.user?.id,
+      });
+
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoadingProductIds([]);

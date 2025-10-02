@@ -12,6 +12,7 @@ import {
   getVancouverLocalBusinessSchema,
   getWebSiteSchema,
 } from "@/lib/structuredData";
+import { PostHogPageView, PostHogProvider } from "@/providers";
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
@@ -149,11 +150,14 @@ export default function RootLayout({
         <script defer src="https://assets.onedollarstats.com/stonks.js" />
       </head>
       <body className={readexPro.variable}>
-        <div className="flex min-h-screen flex-col">
-          <Header />
-          <main className="flex-grow">{children}</main>
-          <Footer />
-        </div>
+        <PostHogProvider>
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+          </div>
+          <PostHogPageView />
+        </PostHogProvider>
         <Analytics />
         <SpeedInsights />
       </body>

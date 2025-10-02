@@ -1,5 +1,6 @@
 "use client";
 
+import { usePostHog } from "posthog-js/react";
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 const AlignmentInterestForm: React.FC = () => {
+  const posthog = usePostHog();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -98,6 +100,14 @@ const AlignmentInterestForm: React.FC = () => {
     e.preventDefault();
     setStatus("Submitting...");
 
+    // Track form submission attempt
+    posthog.capture("alignment_interest_submitted", {
+      hasCertification: formData.hasCertification,
+      agencies: formData.agencies,
+      smsOptIn: formData.smsOptIn,
+      smsOptOut: formData.smsOptOut,
+    });
+
     try {
       const response = await fetch("/api/alignment-interest", {
         method: "POST",
@@ -111,6 +121,15 @@ const AlignmentInterestForm: React.FC = () => {
 
       if (response.ok && result.success) {
         setStatus("Form submitted successfully! We will be in touch soon.");
+
+        // Track successful submission
+        posthog.capture("alignment_interest_success", {
+          hasCertification: formData.hasCertification,
+          agencies: formData.agencies,
+          smsOptIn: formData.smsOptIn,
+          smsOptOut: formData.smsOptOut,
+        });
+
         setFormData({
           // Reset form on success
           firstName: "",
@@ -124,11 +143,23 @@ const AlignmentInterestForm: React.FC = () => {
           smsOptOut: false,
         });
       } else {
+        // Track form submission error
+        posthog.capture("alignment_interest_error", {
+          error: result.error || "Unknown error",
+          hasCertification: formData.hasCertification,
+        });
+
         setStatus(
           `Submission failed: ${result.error || "Unknown error. Please check your input and try again."}`
         );
       }
     } catch (_error) {
+      // Track unexpected error
+      posthog.capture("alignment_interest_error", {
+        error: "Network or server error",
+        hasCertification: formData.hasCertification,
+      });
+
       setStatus(
         "Submission failed due to a network or server error. Please try again later."
       );

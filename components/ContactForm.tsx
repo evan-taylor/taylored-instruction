@@ -1,5 +1,6 @@
 "use client";
 
+import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 import { sendContactEmail } from "@/app/actions/send-contact-email"; // Import the server action
 import { Button } from "@/components/ui/Button";
@@ -10,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 export function ContactForm() {
+  const posthog = usePostHog();
   const [status, setStatus] = useState<{
     loading: boolean;
     success: boolean | null;
@@ -27,6 +29,13 @@ export function ContactForm() {
     setStatus({ loading: true, success: null, error: null });
     const formData = new FormData(event.currentTarget);
 
+    // Track form submission attempt
+    posthog.capture("contact_form_submitted", {
+      location: formData.get("location"),
+      contactMethods: formData.getAll("contactMethod"),
+      smsOptIn: formData.get("smsOptIn") === "on",
+    });
+
     try {
       // --- Call the server action ---
       const result = await sendContactEmail(formData);
@@ -34,6 +43,14 @@ export function ContactForm() {
 
       if (result.success) {
         setStatus({ loading: false, success: true, error: null });
+
+        // Track successful submission
+        posthog.capture("contact_form_success", {
+          location: formData.get("location"),
+          contactMethods: formData.getAll("contactMethod"),
+          smsOptIn: formData.get("smsOptIn") === "on",
+        });
+
         // Optionally reset the form
         (event.target as HTMLFormElement).reset();
         setLocationChoice("Vancouver, WA");
@@ -44,12 +61,24 @@ export function ContactForm() {
           success: false,
           error: result.error || "An unknown error occurred.",
         });
+
+        // Track form submission error
+        posthog.capture("contact_form_error", {
+          error: result.error || "Unknown error",
+          location: formData.get("location"),
+        });
       }
     } catch (_error) {
       setStatus({
         loading: false,
         success: false,
         error: "An unexpected error occurred.",
+      });
+
+      // Track unexpected error
+      posthog.capture("contact_form_error", {
+        error: "Unexpected error",
+        location: formData.get("location"),
       });
     }
   };

@@ -3,12 +3,49 @@
 import { Auth } from "@supabase/auth-ui-react";
 import { type Theme, ThemeSupa } from "@supabase/auth-ui-shared";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { usePostHog } from "posthog-js/react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
   const [supabaseClient] = useState(() => createClient());
   const _router = useRouter();
+  const posthog = usePostHog();
+
+  // Track auth state changes
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+          createdAt: session.user.created_at,
+        });
+
+        posthog.capture("user_signed_in", {
+          method: "email", // Default assumption, could be enhanced
+          userId: session.user.id,
+          email: session.user.email,
+        });
+      } else if (event === "SIGNED_OUT") {
+        posthog.capture("user_signed_out");
+      } else if (event === "SIGNED_UP" && session?.user) {
+        posthog.identify(session.user.id, {
+          email: session.user.email,
+          createdAt: session.user.created_at,
+        });
+
+        posthog.capture("user_signed_up", {
+          method: "email", // Default assumption, could be enhanced
+          userId: session.user.id,
+          email: session.user.email,
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [supabaseClient, posthog]);
 
   const customTheme: Theme = {
     ...ThemeSupa,

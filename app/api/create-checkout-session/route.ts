@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import PostHogClient from "@/lib/posthog";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -45,6 +46,19 @@ export async function POST(req: NextRequest) {
   };
 
   try {
+    // Track checkout session creation
+    const posthog = PostHogClient();
+    await posthog.capture({
+      distinctId: email,
+      event: "checkout_session_created",
+      properties: {
+        priceId,
+        quantity: numQuantity,
+        email,
+        metadata,
+      },
+    });
+
     // Stripe API parameters use snake_case as required by their API
     const session = await getStripeClient().checkout.sessions.create({
       mode: "payment",
@@ -80,14 +94,45 @@ export async function POST(req: NextRequest) {
     });
 
     if (session.url) {
+      // Track successful checkout session creation
+      await posthog.capture({
+        distinctId: email,
+        event: "checkout_session_created_success",
+        properties: {
+          priceId,
+          quantity: numQuantity,
+          email,
+          sessionId: session.id,
+          metadata,
+        },
+      });
+      await posthog.shutdown();
+
       return NextResponse.json({ url: session.url });
     }
+
+    await posthog.shutdown();
     return NextResponse.json(
       { error: "Checkout session created, but no redirect URL was provided." },
       { status: 500 }
     );
   } catch (err: unknown) {
     const errorMessage = getErrorMessage(err);
+
+    // Track checkout session creation error
+    const posthog = PostHogClient();
+    await posthog.capture({
+      distinctId: email,
+      event: "checkout_session_error",
+      properties: {
+        error: errorMessage,
+        priceId,
+        quantity: numQuantity,
+        email,
+      },
+    });
+    await posthog.shutdown();
+
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
