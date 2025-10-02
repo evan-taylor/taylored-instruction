@@ -1,12 +1,11 @@
 "use server";
 
-import { Resend } from "resend";
+import { getResendClient } from "@/lib/resend";
 import { z } from "zod";
 import ContactConfirmationEmail from "@/emails/ContactConfirmationEmail";
 import ContactFormEmail from "@/emails/ContactFormEmail";
 
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Resend client will be initialized lazily via getResendClient()
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@tayloredinstruction.com"; // Use verified domain and desired from address
 
@@ -83,7 +82,7 @@ export async function sendContactEmail(
 
   try {
     // Send email to admin
-    const adminEmailData = await resend.emails.send({
+    const adminEmailData = await getResendClient().emails.send({
       from: `Contact Form <${fromEmail}>`,
       to: [adminEmail],
       replyTo: email,
@@ -107,7 +106,7 @@ export async function sendContactEmail(
     }
 
     // Send confirmation email to user
-    const userEmailData = await resend.emails.send({
+    const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [email],
       subject: "Message Received - Taylored Instruction",

@@ -1,11 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import { z } from "zod"; // Assuming zod is needed for the schema
+import { getResendClient } from "@/lib/resend";
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
-
-// Initialize Resend
-const resend = new Resend(process.env.RESEND_API_KEY);
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@tayloredinstruction.com"; // Use verified domain and desired from address
 
@@ -60,7 +57,7 @@ export async function POST(req: NextRequest) {
     const { firstName, lastName, email } = validatedFields.data;
 
     // Send email to admin
-    const adminEmailData = await resend.emails.send({
+    const adminEmailData = await getResendClient().emails.send({
       from: `Alignment Form <${fromEmail}>`, // Updated sender name
       to: [adminEmail],
       replyTo: email,
@@ -76,7 +73,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Send confirmation email to user
-    const userEmailData = await resend.emails.send({
+    const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
       to: [email],
       subject: "Alignment Interest Received - Taylored Instruction",

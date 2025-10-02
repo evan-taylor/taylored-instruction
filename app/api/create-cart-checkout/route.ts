@@ -1,13 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-if (!STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+// Lazy Stripe initialization to avoid build-time errors
+function getStripeClient(): Stripe {
+  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+  if (!STRIPE_SECRET_KEY) {
+    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+  }
+  return new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: "2023-10-16",
+  });
 }
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
 
 export async function POST(req: NextRequest) {
   const { lineItems, email, metadata } = await req.json();
@@ -48,7 +51,7 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const session = await stripe.checkout.sessions.create({
+    const session = await getStripeClient().checkout.sessions.create({
       mode: "payment",
       payment_method_types: ["card"],
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,

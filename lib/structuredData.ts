@@ -82,7 +82,7 @@ interface CourseSchema {
   educationalCredentialAwarded?: string;
   hasCourseInstance?: {
     "@type": string;
-    courseMode: string;
+    courseMode: string | string[];
     duration: string;
     inLanguage: string;
   };

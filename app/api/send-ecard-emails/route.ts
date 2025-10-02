@@ -1,21 +1,19 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { Resend } from "resend";
 import Stripe from "stripe";
+import { getResendClient } from "@/lib/resend";
 import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
 
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
-if (!STRIPE_SECRET_KEY) {
-  throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+// Lazy Stripe initialization to avoid build-time errors
+function getStripeClient(): Stripe {
+  const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+  if (!STRIPE_SECRET_KEY) {
+    throw new Error("Missing STRIPE_SECRET_KEY environment variable");
+  }
+  return new Stripe(STRIPE_SECRET_KEY, {
+    apiVersion: "2023-10-16",
+  });
 }
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: "2023-10-16",
-});
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-if (!RESEND_API_KEY) {
-  throw new Error("Missing RESEND_API_KEY environment variable");
-}
-const resend = new Resend(RESEND_API_KEY);
 
 const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
 const adminEmail = process.env.ADMIN_EMAIL || "info@tayloredinstruction.com";
@@ -41,7 +39,7 @@ export async function POST(req: NextRequest) {
     totalPrice: string,
     customerEmail: string
   ) => {
-    const adminEmailData = await resend.emails.send({
+    const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
       subject: "New Multi-Item eCard Purchase",
@@ -62,7 +60,7 @@ export async function POST(req: NextRequest) {
     if (adminEmailData.error) {
       // Intentionally not failing request on email notification issues
     }
-    const userEmailData = await resend.emails.send({
+    const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
       subject: "Your eCard Purchase Confirmation",
@@ -89,7 +87,7 @@ export async function POST(req: NextRequest) {
     totalPrice: string,
     customerEmail: string
   ) => {
-    const adminEmailData = await resend.emails.send({
+    const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
       subject: `New eCard Purchase: ${itemName}`,
@@ -104,7 +102,7 @@ export async function POST(req: NextRequest) {
     if (adminEmailData.error) {
       // Intentionally not failing request on email notification issues
     }
-    const userEmailData = await resend.emails.send({
+    const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
       subject: "Your eCard Purchase Confirmation",
@@ -120,7 +118,7 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    const session = await getStripeClient().checkout.sessions.retrieve(sessionId);
     const customerEmail = session.customer_email;
 
     if (!customerEmail) {
