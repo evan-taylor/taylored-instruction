@@ -47,8 +47,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "AHA Instructor Training Vancouver WA & San Luis Obispo CA",
+    title: "AHA Instructor Training Vancouver WA & San Luis Obispo CA",
     description:
       "Become an American Heart Association CPR instructor. Teach lifesaving skills today!",
     images: ["/twitter-image.png"],

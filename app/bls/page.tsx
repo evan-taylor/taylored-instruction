@@ -77,13 +77,13 @@ export default function BlsPage() {
     <>
       {/* Structured Data - Course */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+        type="application/ld+json"
       />
       {/* Structured Data - Breadcrumb */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
       />
       <BlsPageContent />
     </>

@@ -77,7 +77,17 @@ function getPagePaths(dir: string, baseDir: string = dir): string[] {
 // Route-specific configuration for priority and change frequency
 const routeConfig: Record<
   string,
-  { priority: number; changeFrequency: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never" }
+  {
+    priority: number;
+    changeFrequency:
+      | "always"
+      | "hourly"
+      | "daily"
+      | "weekly"
+      | "monthly"
+      | "yearly"
+      | "never";
+  }
 > = {
   "/": { priority: 1.0, changeFrequency: "weekly" },
   "/about": { priority: 0.9, changeFrequency: "monthly" },
@@ -92,7 +102,10 @@ const routeConfig: Record<
   "/aha-instructor-training": { priority: 0.85, changeFrequency: "monthly" },
   "/fa-cpr-aed-instructor": { priority: 0.8, changeFrequency: "monthly" },
   "/lifeguarding-instructor": { priority: 0.8, changeFrequency: "monthly" },
-  "/lifeguarding-instructor-trainer": { priority: 0.75, changeFrequency: "monthly" },
+  "/lifeguarding-instructor-trainer": {
+    priority: 0.75,
+    changeFrequency: "monthly",
+  },
   "/alignment": { priority: 0.8, changeFrequency: "monthly" },
   "/instructor-resources": { priority: 0.7, changeFrequency: "monthly" },
   "/ecards": { priority: 0.75, changeFrequency: "monthly" },
@@ -109,7 +122,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
       changeFrequency: "monthly" as const,
     };
-    
+
     return {
       url: `${baseUrl}${route === "/" ? "" : route}`,
       lastModified: new Date(),

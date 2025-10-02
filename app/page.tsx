@@ -5,7 +5,8 @@ import { Hero } from "@/components/home/Hero";
 import { ServicesSection } from "@/components/home/ServicesSection";
 
 export const metadata: Metadata = {
-  title: "Taylored Instruction | Professional CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA",
+  title:
+    "Taylored Instruction | Professional CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA",
   description:
     "Get certified in CPR, BLS, First Aid & Lifeguarding with Taylored Instruction. American Red Cross & AHA Training in Vancouver WA, Clark County, San Luis Obispo CA & surrounding areas. Expert instruction, flexible scheduling.",
   keywords: [

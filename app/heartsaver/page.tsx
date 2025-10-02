@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import HeartsaverPageContent from "@/components/HeartsaverPageContent";
 import {
   generateJSONLD,
-  getHeartsaverCourseSchema,
   getBreadcrumbSchema,
+  getHeartsaverCourseSchema,
 } from "@/lib/structuredData";
 
 export const metadata: Metadata = {
@@ -79,13 +79,13 @@ export default function HeartsaverPage() {
     <>
       {/* Structured Data - Course */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+        type="application/ld+json"
       />
       {/* Structured Data - Breadcrumb */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
       />
       <HeartsaverPageContent />
     </>

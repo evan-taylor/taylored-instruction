@@ -59,7 +59,7 @@ export const Button = ({
 
   if (href) {
     return (
-      <Link className={classes} href={href} target={target} rel={rel}>
+      <Link className={classes} href={href} rel={rel} target={target}>
         {children}
       </Link>
     );

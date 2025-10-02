@@ -1,6 +1,6 @@
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 // Lazy initialization to avoid errors during build time
 let _db: PostgresJsDatabase | null = null;
@@ -24,10 +24,12 @@ function getConnectionString(): string {
 }
 
 function initializeDb(): PostgresJsDatabase {
-  if (_db) return _db;
+  if (_db) {
+    return _db;
+  }
 
   const connectionString = getConnectionString();
-  
+
   // For Supabase, ensure SSL and disable prepared statements when using pgbouncer.
   // See: https://orm.drizzle.team/docs/get-started-postgresql#with-postgresjs
   const client = postgres(connectionString, {

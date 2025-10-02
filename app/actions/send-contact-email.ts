@@ -1,9 +1,9 @@
 "use server";
 
-import { getResendClient } from "@/lib/resend";
 import { z } from "zod";
 import ContactConfirmationEmail from "@/emails/ContactConfirmationEmail";
 import ContactFormEmail from "@/emails/ContactFormEmail";
+import { getResendClient } from "@/lib/resend";
 
 // Resend client will be initialized lazily via getResendClient()
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email

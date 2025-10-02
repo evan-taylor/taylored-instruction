@@ -3,7 +3,7 @@
  * Comprehensive schema markup for Taylored Instruction
  */
 
-interface LocalBusinessSchema {
+type LocalBusinessSchema = {
   "@context": string;
   "@type": string;
   "@id": string;
@@ -41,9 +41,9 @@ interface LocalBusinessSchema {
     ratingValue: string;
     reviewCount: string;
   };
-}
+};
 
-interface OrganizationSchema {
+type OrganizationSchema = {
   "@context": string;
   "@type": string;
   name: string;
@@ -66,9 +66,9 @@ interface OrganizationSchema {
   };
   sameAs: string[];
   knowsAbout: string[];
-}
+};
 
-interface CourseSchema {
+type CourseSchema = {
   "@context": string;
   "@type": string;
   name: string;
@@ -91,9 +91,9 @@ interface CourseSchema {
     category: string;
     priceCurrency?: string;
   };
-}
+};
 
-interface WebSiteSchema {
+type WebSiteSchema = {
   "@context": string;
   "@type": string;
   name: string;
@@ -106,9 +106,9 @@ interface WebSiteSchema {
     };
     "query-input": string;
   };
-}
+};
 
-interface BreadcrumbSchema {
+type BreadcrumbSchema = {
   "@context": string;
   "@type": string;
   itemListElement: Array<{
@@ -117,7 +117,7 @@ interface BreadcrumbSchema {
     name: string;
     item?: string;
   }>;
-}
+};
 
 // Organization Schema - Main company information
 export const getOrganizationSchema = (): OrganizationSchema => ({
@@ -336,8 +336,7 @@ export const getHeartsaverCourseSchema = (): CourseSchema => ({
     url: "https://tayloredinstruction.com",
   },
   courseCode: "AHA-HEARTSAVER",
-  educationalCredentialAwarded:
-    "AHA Heartsaver Certification (Valid 2 Years)",
+  educationalCredentialAwarded: "AHA Heartsaver Certification (Valid 2 Years)",
   hasCourseInstance: {
     "@type": "CourseInstance",
     courseMode: ["Blended", "In-Person"],
@@ -379,7 +378,9 @@ export const getLifeguardingCourseSchema = (): CourseSchema => ({
 });
 
 // Breadcrumb Schema Generator
-export const getBreadcrumbSchema = (items: Array<{ name: string; url?: string }>): BreadcrumbSchema => ({
+export const getBreadcrumbSchema = (
+  items: Array<{ name: string; url?: string }>
+): BreadcrumbSchema => ({
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: items.map((item, index) => ({

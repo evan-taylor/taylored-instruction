@@ -39,18 +39,18 @@ const LifeguardingInstructorPageContent: React.FC = () => {
         {/* Quick Actions */}
         <div className="mb-10 flex flex-col items-center justify-center gap-4 text-center sm:flex-row">
           <Button
+            className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
             size="lg"
             target="_blank"
-            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             View Upcoming Courses
           </Button>
-          <Button 
-            href="/contact" 
-            size="lg" 
+          <Button
+            className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
+            href="/contact"
+            size="lg"
             variant="secondary"
-            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             Host This Course
           </Button>
@@ -311,18 +311,18 @@ const LifeguardingInstructorPageContent: React.FC = () => {
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button
+              className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
               href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
               size="lg"
               target="_blank"
-              className="shadow-lg hover:shadow-xl transition-shadow duration-200"
             >
               View Schedule
             </Button>
-            <Button 
-              href="/contact" 
-              size="lg" 
+            <Button
+              className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
+              href="/contact"
+              size="lg"
               variant="secondary"
-              className="shadow-lg hover:shadow-xl transition-shadow duration-200"
             >
               Contact Us
             </Button>

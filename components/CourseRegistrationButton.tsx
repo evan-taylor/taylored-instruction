@@ -3,13 +3,13 @@
 import type React from "react";
 import { Button } from "@/components/ui/Button";
 
-interface CourseRegistrationButtonProps {
+type CourseRegistrationButtonProps = {
   courseName: string;
   registrationUrl: string;
   buttonText?: string;
   className?: string;
   variant?: "primary" | "secondary" | "outline";
-}
+};
 
 const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   courseName,
@@ -23,12 +23,12 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   return (
     <div className={`mb-12 text-center ${className}`}>
       <Button
+        className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
         href={registrationUrl}
-        size="lg"
-        variant={variant}
-        target="_blank"
         rel="noopener noreferrer"
-        className="shadow-lg hover:shadow-xl transition-shadow duration-200"
+        size="lg"
+        target="_blank"
+        variant={variant}
       >
         {defaultButtonText}
       </Button>

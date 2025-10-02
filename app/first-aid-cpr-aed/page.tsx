@@ -3,8 +3,8 @@ import type React from "react";
 import FirstAidCprAedPageContent from "@/components/FirstAidCprAedPageContent";
 import {
   generateJSONLD,
-  getFirstAidCPRAEDCourseSchema,
   getBreadcrumbSchema,
+  getFirstAidCPRAEDCourseSchema,
 } from "@/lib/structuredData";
 
 export const metadata: Metadata = {
@@ -81,13 +81,13 @@ const FirstAidCprAedPage: React.FC = () => {
     <>
       {/* Structured Data - Course */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+        type="application/ld+json"
       />
       {/* Structured Data - Breadcrumb */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
       />
       <FirstAidCprAedPageContent />
     </>

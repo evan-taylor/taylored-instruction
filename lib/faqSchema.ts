@@ -3,12 +3,12 @@
  * Use this to add FAQ structured data to pages
  */
 
-export interface FAQItem {
+export type FAQItem = {
   question: string;
   answer: string;
-}
+};
 
-interface FAQSchema {
+type FAQSchema = {
   "@context": string;
   "@type": string;
   mainEntity: Array<{
@@ -19,13 +19,13 @@ interface FAQSchema {
       text: string;
     };
   }>;
-}
+};
 
 /**
  * Generate FAQ Schema for structured data
  * @param faqs Array of FAQ items with questions and answers
  * @returns FAQSchema object ready for JSON-LD
- * 
+ *
  * @example
  * const faqs = [
  *   {
@@ -37,9 +37,9 @@ interface FAQSchema {
  *     answer: "Yes! We offer competitive pricing for corporate and group training. Contact us for a custom quote."
  *   }
  * ];
- * 
+ *
  * const faqSchema = getFAQSchema(faqs);
- * 
+ *
  * // In your page component:
  * <script
  *   type="application/ld+json"
@@ -185,13 +185,13 @@ export const instructorTrainingFAQs: FAQItem[] = [
 
 /**
  * Example usage in a page component:
- * 
+ *
  * import { generateJSONLD } from '@/lib/structuredData';
  * import { getFAQSchema, blsFAQs } from '@/lib/faqSchema';
- * 
+ *
  * export default function BLSPage() {
  *   const faqSchema = getFAQSchema(blsFAQs);
- *   
+ *
  *   return (
  *     <>
  *       <script

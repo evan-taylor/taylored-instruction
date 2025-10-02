@@ -52,8 +52,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "AED Sales & Distribution Vancouver WA & San Luis Obispo CA",
+    title: "AED Sales & Distribution Vancouver WA & San Luis Obispo CA",
     description:
       "Buy AEDs from authorized distributor. Expert guidance, competitive pricing, training included.",
     images: ["/twitter-image.png"],

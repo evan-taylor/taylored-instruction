@@ -3,8 +3,8 @@ import type React from "react";
 import LifeguardingPageContent from "@/components/LifeguardingPageContent";
 import {
   generateJSONLD,
-  getLifeguardingCourseSchema,
   getBreadcrumbSchema,
+  getLifeguardingCourseSchema,
 } from "@/lib/structuredData";
 
 export const metadata: Metadata = {
@@ -82,13 +82,13 @@ const LifeguardingPage: React.FC = () => {
     <>
       {/* Structured Data - Course */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+        type="application/ld+json"
       />
       {/* Structured Data - Breadcrumb */}
       <script
-        type="application/ld+json"
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
       />
       <LifeguardingPageContent />
     </>

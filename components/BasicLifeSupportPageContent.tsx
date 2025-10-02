@@ -55,9 +55,9 @@ const BasicLifeSupportPageContent: React.FC = () => {
 
         {/* Registration Button */}
         <CourseRegistrationButton
+          buttonText="View Current Offerings"
           courseName="Basic Life Support"
           registrationUrl="https://www.hovn.app/service-providers/tayloredinstruction/offerings"
-          buttonText="View Current Offerings"
         />
 
         {/* Course Purpose Section */}

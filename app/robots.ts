@@ -19,24 +19,12 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/admin/",
-          "/my-account/",
-          "/auth/",
-          "/login/",
-        ],
+        disallow: ["/api/", "/admin/", "/my-account/", "/auth/", "/login/"],
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: [
-          "/api/",
-          "/admin/",
-          "/my-account/",
-          "/auth/",
-          "/login/",
-        ],
+        disallow: ["/api/", "/admin/", "/my-account/", "/auth/", "/login/"],
       },
     ],
     sitemap: "https://tayloredinstruction.com/sitemap.xml",

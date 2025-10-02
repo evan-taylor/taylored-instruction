@@ -32,8 +32,7 @@ export const metadata: Metadata = {
     "SLO CPR instructor",
   ],
   openGraph: {
-    title:
-      "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
+    title: "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
     description:
       "Meet Evan Taylor and learn about Taylored Instruction's mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA. Red Cross & AHA certified.",
     url: "https://tayloredinstruction.com/about",
@@ -50,8 +49,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
+    title: "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
     description:
       "Meet Evan Taylor and learn about our mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA.",
     images: ["/twitter-image.png"],

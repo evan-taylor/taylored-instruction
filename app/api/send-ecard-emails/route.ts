@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getResendClient } from "@/lib/resend";
 import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
+import { getResendClient } from "@/lib/resend";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -118,7 +118,8 @@ export async function POST(req: NextRequest) {
   };
 
   try {
-    const session = await getStripeClient().checkout.sessions.retrieve(sessionId);
+    const session =
+      await getStripeClient().checkout.sessions.retrieve(sessionId);
     const customerEmail = session.customer_email;
 
     if (!customerEmail) {

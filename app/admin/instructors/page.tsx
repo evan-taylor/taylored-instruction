@@ -20,23 +20,29 @@ function AdminInstructorsContent() {
   const { loading: profileLoading, session } = useProfile();
 
   const formatLastLogin = (lastLogin: string | null) => {
-    if (!lastLogin) return { text: "Never", className: "text-gray-400" };
-    
+    if (!lastLogin) {
+      return { text: "Never", className: "text-gray-400" };
+    }
+
     const loginDate = new Date(lastLogin);
     const now = new Date();
-    const diffInDays = Math.floor((now.getTime() - loginDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const diffInDays = Math.floor(
+      (now.getTime() - loginDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
     if (diffInDays === 0) {
       return { text: "Today", className: "text-green-600 font-medium" };
-    } else if (diffInDays === 1) {
-      return { text: "Yesterday", className: "text-green-500" };
-    } else if (diffInDays < 7) {
-      return { text: `${diffInDays} days ago`, className: "text-yellow-600" };
-    } else if (diffInDays < 30) {
-      return { text: `${diffInDays} days ago`, className: "text-orange-600" };
-    } else {
-      return { text: loginDate.toLocaleDateString(), className: "text-red-600" };
     }
+    if (diffInDays === 1) {
+      return { text: "Yesterday", className: "text-green-500" };
+    }
+    if (diffInDays < 7) {
+      return { text: `${diffInDays} days ago`, className: "text-yellow-600" };
+    }
+    if (diffInDays < 30) {
+      return { text: `${diffInDays} days ago`, className: "text-orange-600" };
+    }
+    return { text: loginDate.toLocaleDateString(), className: "text-red-600" };
   };
 
   const [supabase] = useState(() => createClient());
@@ -461,7 +467,11 @@ function AdminInstructorsContent() {
                           : "N/A"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
-                        <span className={formatLastLogin(profile.last_login).className}>
+                        <span
+                          className={
+                            formatLastLogin(profile.last_login).className
+                          }
+                        >
                           {formatLastLogin(profile.last_login).text}
                         </span>
                       </td>

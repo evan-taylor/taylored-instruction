@@ -106,9 +106,9 @@ export default function HeartsaverPageContent() {
               </li>
             </ul>
             <CourseRegistrationButton
+              buttonText="View Current Offerings"
               courseName="Heartsaver Certification"
               registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-heartsaver-first-aid-cpr-aed"
-              buttonText="View Current Offerings"
             />
           </section>
 

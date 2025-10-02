@@ -67,9 +67,13 @@ export async function GET(req: NextRequest) {
         const childPage = pd.child_page as { title?: string } | undefined;
         if (properties && typeof properties === "object") {
           const title = (properties as any).title?.title?.[0]?.plain_text;
-          if (typeof title === "string") return title;
+          if (typeof title === "string") {
+            return title;
+          }
           const name = (properties as any).Name?.title?.[0]?.plain_text;
-          if (typeof name === "string") return name;
+          if (typeof name === "string") {
+            return name;
+          }
           for (const value of Object.values(properties)) {
             if (
               value &&
@@ -82,7 +86,9 @@ export async function GET(req: NextRequest) {
             }
           }
         }
-        if (childPage?.title) return childPage.title;
+        if (childPage?.title) {
+          return childPage.title;
+        }
       }
       return "";
     };

@@ -18,9 +18,11 @@ export async function POST(req: NextRequest) {
   const MIN_ITEM_QUANTITY = 1;
   const MAX_ITEM_QUANTITY = 100;
 
-  const validateItems = (items: Array<{ price?: string; quantity?: number }>) => {
+  const validateItems = (
+    items: Array<{ price?: string; quantity?: number }>
+  ) => {
     for (const item of items) {
-      if (!item.price || !item.quantity || item.quantity < MIN_ITEM_QUANTITY) {
+      if (!(item.price && item.quantity) || item.quantity < MIN_ITEM_QUANTITY) {
         return "Each line item must have a valid price ID and quantity";
       }
       if (item.quantity > MAX_ITEM_QUANTITY) {
@@ -32,9 +34,15 @@ export async function POST(req: NextRequest) {
 
   const validateRequest = () => {
     const hasLineItems = Array.isArray(lineItems) && lineItems.length > 0;
-    if (!hasLineItems) return "Missing or invalid lineItems in request body";
-    if (!email) return "Missing email in request body";
-    return validateItems(lineItems as Array<{ price?: string; quantity?: number }>);
+    if (!hasLineItems) {
+      return "Missing or invalid lineItems in request body";
+    }
+    if (!email) {
+      return "Missing email in request body";
+    }
+    return validateItems(
+      lineItems as Array<{ price?: string; quantity?: number }>
+    );
   };
 
   const validationError = validateRequest();

@@ -34,7 +34,9 @@ export async function POST(req: NextRequest) {
   try {
     const priceDetailsPromises = priceIds.map(async (id) => {
       try {
-        const price = await getStripeClient().prices.retrieve(id, { expand: ["product"] });
+        const price = await getStripeClient().prices.retrieve(id, {
+          expand: ["product"],
+        });
         let productName: string | undefined;
         let productDescription: string | null | undefined;
         let productImages: string[] | undefined;

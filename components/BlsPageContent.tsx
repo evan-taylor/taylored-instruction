@@ -92,9 +92,9 @@ export default function BlsPageContent() {
               </li>
             </ul>
             <CourseRegistrationButton
+              buttonText="View Current Offerings"
               courseName="BLS Certification"
               registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider"
-              buttonText="View Current Offerings"
             />
           </section>
 

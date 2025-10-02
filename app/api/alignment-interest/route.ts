@@ -1,8 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod"; // Assuming zod is needed for the schema
-import { getResendClient } from "@/lib/resend";
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
+import { getResendClient } from "@/lib/resend";
+
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@tayloredinstruction.com"; // Use verified domain and desired from address
 

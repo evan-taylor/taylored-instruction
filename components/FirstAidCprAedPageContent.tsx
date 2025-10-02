@@ -53,9 +53,9 @@ const FirstAidCprAedPageContent: React.FC = () => {
         </div>
 
         <CourseRegistrationButton
+          buttonText="View Current Offerings"
           courseName="First Aid/CPR/AED"
           registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-adult-pediatric-first-aid-cpr-aed/o/cm408sfgn0000ggkzk66s7no4"
-          buttonText="View Current Offerings"
         />
 
         {/* Course Purpose Section */}

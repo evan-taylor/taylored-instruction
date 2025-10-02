@@ -22,17 +22,17 @@ export async function updateSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-        setAll(cookiesToSet) {
-          for (const { name, value } of cookiesToSet) {
-            request.cookies.set(name, value);
-          }
-          supabaseResponse = NextResponse.next({
-            request: { headers: requestHeaders },
-          });
-          for (const { name, value, options } of cookiesToSet) {
-            supabaseResponse.cookies.set(name, value, options);
-          }
-        },
+      setAll(cookiesToSet) {
+        for (const { name, value } of cookiesToSet) {
+          request.cookies.set(name, value);
+        }
+        supabaseResponse = NextResponse.next({
+          request: { headers: requestHeaders },
+        });
+        for (const { name, value, options } of cookiesToSet) {
+          supabaseResponse.cookies.set(name, value, options);
+        }
+      },
     },
   });
 

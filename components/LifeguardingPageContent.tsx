@@ -56,18 +56,18 @@ const LifeguardingPageContent: React.FC = () => {
         {/* Registration Buttons */}
         <div className="mb-12 flex flex-col items-center justify-center gap-4 text-center sm:flex-row">
           <Button
+            className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
             size="lg"
             target="_blank"
-            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             Register for Lifeguard Certification
           </Button>
           <Button
+            className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended"
             size="lg"
             target="_blank"
-            className="shadow-lg hover:shadow-xl transition-shadow duration-200"
           >
             Register for Recertification
           </Button>
