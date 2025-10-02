@@ -9,6 +9,7 @@ type ProfileWithUser = {
   id: string;
   is_instructor: boolean;
   updated_at: string | null;
+  last_login: string | null;
   user_email: string | null;
   short_id?: string;
 };
@@ -17,6 +18,26 @@ function AdminInstructorsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { loading: profileLoading, session } = useProfile();
+
+  const formatLastLogin = (lastLogin: string | null) => {
+    if (!lastLogin) return { text: "Never", className: "text-gray-400" };
+    
+    const loginDate = new Date(lastLogin);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - loginDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) {
+      return { text: "Today", className: "text-green-600 font-medium" };
+    } else if (diffInDays === 1) {
+      return { text: "Yesterday", className: "text-green-500" };
+    } else if (diffInDays < 7) {
+      return { text: `${diffInDays} days ago`, className: "text-yellow-600" };
+    } else if (diffInDays < 30) {
+      return { text: `${diffInDays} days ago`, className: "text-orange-600" };
+    } else {
+      return { text: loginDate.toLocaleDateString(), className: "text-red-600" };
+    }
+  };
 
   const [supabase] = useState(() => createClient());
   const [profiles, setProfiles] = useState<ProfileWithUser[]>([]);
@@ -394,6 +415,12 @@ function AdminInstructorsContent() {
                     className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
                   >
+                    Last Login
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
+                    scope="col"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -403,7 +430,7 @@ function AdminInstructorsContent() {
                   <tr>
                     <td
                       className="px-6 py-4 text-center text-gray-500 text-sm"
-                      colSpan={5}
+                      colSpan={6}
                     >
                       No users found or access denied by RLS.
                     </td>
@@ -432,6 +459,11 @@ function AdminInstructorsContent() {
                         {profile.updated_at
                           ? new Date(profile.updated_at).toLocaleDateString()
                           : "N/A"}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm">
+                        <span className={formatLastLogin(profile.last_login).className}>
+                          {formatLastLogin(profile.last_login).text}
+                        </span>
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right font-medium text-sm">
                         <button

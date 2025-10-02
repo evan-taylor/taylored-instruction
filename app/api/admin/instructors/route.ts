@@ -48,6 +48,7 @@ export async function GET() {
       id: profiles.id,
       is_instructor: profiles.isInstructor,
       updated_at: profiles.updatedAt,
+      last_login: profiles.lastLogin,
       user_email: usersInAuth.email,
     })
     .from(profiles)

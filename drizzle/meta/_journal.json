@@ -15,6 +15,13 @@
       "when": 1757393245347,
       "tag": "0001_kind_frank_castle",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1759378765000,
+      "tag": "0002_add_last_login_to_profiles",
+      "breakpoints": true
     }
   ]
 }
