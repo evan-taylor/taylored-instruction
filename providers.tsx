@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { PostHogProvider as PhProvider } from "posthog-js/react";
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -37,4 +37,12 @@ export function PostHogPageView(): null {
   }, [pathname, searchParams]);
 
   return null;
+}
+
+export function PostHogPageViewWrapper() {
+  return (
+    <Suspense fallback={null}>
+      <PostHogPageView />
+    </Suspense>
+  );
 }

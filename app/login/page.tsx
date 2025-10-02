@@ -30,17 +30,6 @@ export default function LoginPage() {
         });
       } else if (event === "SIGNED_OUT") {
         posthog.capture("user_signed_out");
-      } else if (event === "SIGNED_UP" && session?.user) {
-        posthog.identify(session.user.id, {
-          email: session.user.email,
-          createdAt: session.user.created_at,
-        });
-
-        posthog.capture("user_signed_up", {
-          method: "email", // Default assumption, could be enhanced
-          userId: session.user.id,
-          email: session.user.email,
-        });
       }
     });
 

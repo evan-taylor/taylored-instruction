@@ -12,7 +12,7 @@ import {
   getVancouverLocalBusinessSchema,
   getWebSiteSchema,
 } from "@/lib/structuredData";
-import { PostHogPageView, PostHogProvider } from "@/providers";
+import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
@@ -156,7 +156,7 @@ export default function RootLayout({
             <main className="flex-grow">{children}</main>
             <Footer />
           </div>
-          <PostHogPageView />
+          <PostHogPageViewWrapper />
         </PostHogProvider>
         <Analytics />
         <SpeedInsights />

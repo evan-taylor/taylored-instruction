@@ -1,13 +1,6 @@
 export const dynamic = "force-dynamic";
-class SentryExampleApiError extends Error {
-  constructor(message: string | undefined) {
-    super(message);
-    this.name = "SentryExampleAPIError";
-  }
-}
-// A faulty API route to test Sentry's error monitoring
+
+// Example API route for testing error handling
 export function GET() {
-  throw new SentryExampleApiError(
-    "This error is raised on the backend called by the example page."
-  );
+  throw new Error("This is an example error for testing error handling.");
 }
