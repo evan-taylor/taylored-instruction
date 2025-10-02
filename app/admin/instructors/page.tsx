@@ -10,6 +10,7 @@ type ProfileWithUser = {
   is_instructor: boolean;
   updated_at: string | null;
   user_email: string | null;
+  last_sign_in_at: string | null;
   short_id?: string;
 };
 
@@ -394,6 +395,12 @@ function AdminInstructorsContent() {
                     className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
                     scope="col"
                   >
+                    Last Login
+                  </th>
+                  <th
+                    className="px-6 py-3 text-left font-medium text-gray-500 text-xs uppercase tracking-wider"
+                    scope="col"
+                  >
                     Actions
                   </th>
                 </tr>
@@ -403,7 +410,7 @@ function AdminInstructorsContent() {
                   <tr>
                     <td
                       className="px-6 py-4 text-center text-gray-500 text-sm"
-                      colSpan={5}
+                      colSpan={6}
                     >
                       No users found or access denied by RLS.
                     </td>
@@ -432,6 +439,11 @@ function AdminInstructorsContent() {
                         {profile.updated_at
                           ? new Date(profile.updated_at).toLocaleDateString()
                           : "N/A"}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-gray-500 text-sm">
+                        {profile.last_sign_in_at
+                          ? new Date(profile.last_sign_in_at).toLocaleString()
+                          : "Never"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right font-medium text-sm">
                         <button

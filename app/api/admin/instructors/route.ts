@@ -49,6 +49,7 @@ export async function GET() {
       is_instructor: profiles.isInstructor,
       updated_at: profiles.updatedAt,
       user_email: usersInAuth.email,
+      last_sign_in_at: usersInAuth.lastSignInAt,
     })
     .from(profiles)
     .leftJoin(usersInAuth, eq(profiles.id, usersInAuth.id))

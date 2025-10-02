@@ -18,6 +18,7 @@ const auth = pgSchema("auth");
 export const usersInAuth = auth.table("users", {
   id: uuid("id").primaryKey().notNull(),
   email: text("email"),
+  lastSignInAt: timestamp("last_sign_in_at", { withTimezone: true, mode: "string" }),
 });
 
 export const profiles = pgTable(
