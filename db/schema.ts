@@ -26,6 +26,7 @@ export const profiles = pgTable(
     id: uuid().primaryKey().notNull(),
     isInstructor: boolean("is_instructor").default(false).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true, mode: "string" }),
+    lastLogin: timestamp("last_login", { withTimezone: true, mode: "string" }),
   },
   (table) => [
     foreignKey({

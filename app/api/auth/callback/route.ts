@@ -1,5 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClientAppRouter } from "@/utils/supabase/server";
+import { db } from "@/db";
+import { profiles } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -9,7 +12,26 @@ export async function GET(req: NextRequest) {
   if (code) {
     const supabase = createServerClientAppRouter();
     try {
-      await supabase.auth.exchangeCodeForSession(code);
+      const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (error) {
+        throw error;
+      }
+
+      // Update last_login timestamp for the user
+      if (user?.id) {
+        try {
+          const now = new Date().toISOString();
+          await db
+            .update(profiles)
+            .set({ lastLogin: now })
+            .where(eq(profiles.id, user.id));
+        } catch (dbError) {
+          // Log the error but don't fail the auth flow
+          console.error("Failed to update last_login:", dbError);
+        }
+      }
+
       return NextResponse.redirect(new URL(next, req.url));
     } catch (_error) {
       return NextResponse.redirect(
