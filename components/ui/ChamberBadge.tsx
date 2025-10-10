@@ -2,20 +2,19 @@
 
 import { useEffect } from "react";
 
-declare global {
-  type Window = {
-    MNI?: {
-      Widgets?: {
-        Member: new (
-          id: string,
-          options: unknown
-        ) => {
-          create: () => void;
-        };
-      };
+type ChamberBadgeWidget = {
+  create: () => void;
+};
+
+type ChamberWindow = typeof globalThis.window & {
+  MNI?: {
+    Widgets?: {
+      Member: new (id: string, options: unknown) => ChamberBadgeWidget;
     };
   };
-}
+};
+
+const getChamberWindow = (): ChamberWindow => window as ChamberWindow;
 
 export const ChamberBadge = () => {
   const badgeId = "mni-membership-638813734234709448";
@@ -23,21 +22,28 @@ export const ChamberBadge = () => {
   useEffect(() => {
     const scriptId = "chamber-member-script";
 
+    const createMemberWidget = (): boolean => {
+      const chamberWindow = getChamberWindow();
+      const MemberWidget = chamberWindow.MNI?.Widgets?.Member;
+      if (!MemberWidget) {
+        return false;
+      }
+
+      try {
+        new MemberWidget(badgeId, {
+          member: 27_745,
+          styleTemplate:
+            "#@id{text-align:center;position:relative}#@id .mn-widget-member-name{font-weight:700}#@id .mn-widget-member-logo{max-width:100%}",
+        }).create();
+        return true;
+      } catch (_error) {
+        return false;
+      }
+    };
+
     const existingScript = document.getElementById(scriptId);
     if (existingScript) {
-      if (window.MNI?.Widgets?.Member) {
-        try {
-          new window.MNI.Widgets.Member(badgeId, {
-            member: 27_745,
-            styleTemplate:
-              "#@id{text-align:center;position:relative}#@id .mn-widget-member-name{font-weight:700}#@id .mn-widget-member-logo{max-width:100%}",
-          }).create();
-        } catch (_error) {
-          // Widget creation failed - silently continue
-        }
-      } else {
-        // Script exists but MNI not ready (might happen briefly)
-      }
+      createMemberWidget();
       return;
     }
 
@@ -49,17 +55,7 @@ export const ChamberBadge = () => {
     script.async = true;
 
     script.onload = () => {
-      if (window.MNI?.Widgets?.Member) {
-        try {
-          new window.MNI.Widgets.Member(badgeId, {
-            member: 27_745,
-            styleTemplate:
-              "#@id{text-align:center;position:relative}#@id .mn-widget-member-name{font-weight:700}#@id .mn-widget-member-logo{max-width:100%}",
-          }).create();
-        } catch (_error) {
-          // Widget creation failed - silently continue
-        }
-      } else {
+      if (!createMemberWidget()) {
         // MNI not ready after script load
       }
     };
