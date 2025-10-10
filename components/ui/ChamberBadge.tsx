@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 declare global {
-  interface Window {
+  type Window = {
     MNI?: {
       Widgets?: {
         Member: new (
@@ -14,7 +14,7 @@ declare global {
         };
       };
     };
-  }
+  };
 }
 
 export const ChamberBadge = () => {

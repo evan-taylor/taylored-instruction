@@ -34,13 +34,13 @@ export const EcardPurchaseUserEmail: React.FC<
       <Container style={container}>
         <Heading style={heading}>Thank you for your eCard Purchase!</Heading>
 
-        {cartItems && cartItems.length > 0 ? (
+        {cartItems && cartItems.length > 0 && (
           <Section style={section}>
             <Text style={paragraph}>
               Here are the details of your purchase:
             </Text>
-            {cartItems.map((item, index) => (
-              <Row key={index} style={itemRow}>
+            {cartItems.map((item) => (
+              <Row key={item.name} style={itemRow}>
                 <Column style={itemNameColumn}>{item.name}</Column>
                 <Column style={itemQuantityColumn}>Qty: {item.quantity}</Column>
               </Row>
@@ -51,7 +51,8 @@ export const EcardPurchaseUserEmail: React.FC<
               <Column style={totalValueColumn}>${price}</Column>
             </Row>
           </Section>
-        ) : itemName && quantity ? (
+        )}
+        {(!cartItems || cartItems.length === 0) && itemName && quantity && (
           <Section style={section}>
             <Text style={paragraph}>You have successfully purchased:</Text>
             <Row style={itemRow}>
@@ -64,7 +65,8 @@ export const EcardPurchaseUserEmail: React.FC<
               <Column style={totalValueColumn}>${price}</Column>
             </Row>
           </Section>
-        ) : (
+        )}
+        {(!cartItems || cartItems.length === 0) && !(itemName && quantity) && (
           <Text style={paragraph}>
             There was an issue displaying your order details. Please contact
             support.

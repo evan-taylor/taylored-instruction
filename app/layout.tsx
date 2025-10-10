@@ -118,28 +118,24 @@ export default function RootLayout({
         />
         <link href="https://assets.onedollarstats.com" rel="preconnect" />
 
-        {/* Structured Data - Organization */}
         <script
           dangerouslySetInnerHTML={generateJSONLD(organizationSchema)}
           key="organization-jsonld"
           type="application/ld+json"
         />
 
-        {/* Structured Data - Vancouver Local Business */}
         <script
           dangerouslySetInnerHTML={generateJSONLD(vancouverBusinessSchema)}
           key="vancouver-business-jsonld"
           type="application/ld+json"
         />
 
-        {/* Structured Data - San Luis Obispo Local Business */}
         <script
           dangerouslySetInnerHTML={generateJSONLD(sloBusinessSchema)}
           key="slo-business-jsonld"
           type="application/ld+json"
         />
 
-        {/* Structured Data - Website */}
         <script
           dangerouslySetInnerHTML={generateJSONLD(websiteSchema)}
           key="website-jsonld"

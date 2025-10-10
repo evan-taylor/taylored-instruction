@@ -51,7 +51,9 @@ export default function ECardsPage() {
       if (savedCart) {
         try {
           setCartItems(JSON.parse(savedCart));
-        } catch (_e) {}
+        } catch (_e) {
+          setCartItems([]);
+        }
       }
     }
   }, []);
@@ -80,8 +82,65 @@ export default function ECardsPage() {
     }
   }, [loading, session, isInstructor, router]);
 
-  // Fetch eCard products only if authorized and auth check is complete
   useEffect(() => {
+    type SupabaseProduct = {
+      id: string;
+      name: string;
+      description: string | null;
+      stripe_price_id: string | null;
+      image_urls: string | null;
+      type: string;
+      requires_instructor: boolean;
+    };
+
+    type StripePriceData = {
+      id: string;
+      unit_amount: number | null;
+      currency: string;
+      product_name: string;
+      product_description?: string | null;
+      error?: string;
+    };
+
+    const fetchStripePrices = async (priceIds: string[]) => {
+      const priceResponse = await fetch("/api/get-stripe-prices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceIds }),
+      });
+
+      if (!priceResponse.ok) {
+        const errorData = await priceResponse.json();
+        throw new Error(errorData.error || "Failed to fetch Stripe prices.");
+      }
+
+      return priceResponse.json() as Promise<StripePriceData[]>;
+    };
+
+    const enrichProduct = (
+      supaProduct: SupabaseProduct,
+      stripePriceDataArray: StripePriceData[]
+    ) => {
+      const CentsInDollar = 100;
+      const stripeInfo = stripePriceDataArray.find(
+        (sp) => sp.id === supaProduct.stripe_price_id && !sp.error
+      );
+      if (stripeInfo && stripeInfo.unit_amount !== null) {
+        return {
+          ...supaProduct,
+          display_price: stripeInfo.unit_amount / CentsInDollar,
+          currency: stripeInfo.currency.toUpperCase(),
+          stripe_product_name: stripeInfo.product_name,
+          stripe_product_description: stripeInfo.product_description,
+        };
+      }
+      return {
+        ...supaProduct,
+        display_price: 0,
+        currency: "N/A",
+      };
+    };
+
     const fetchECardsAndPrices = async () => {
       if (!(session?.user && isInstructor)) {
         setIsLoading(false);
@@ -98,15 +157,7 @@ export default function ECardsPage() {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || "Failed to fetch eCards");
         }
-        const supabaseProducts = (await res.json()) as Array<{
-          id: string;
-          name: string;
-          description: string | null;
-          stripe_price_id: string | null;
-          image_urls: string | null;
-          type: string;
-          requires_instructor: boolean;
-        }>;
+        const supabaseProducts = (await res.json()) as SupabaseProduct[];
         if (!supabaseProducts || supabaseProducts.length === 0) {
           setProducts([]);
           setIsLoading(false);
@@ -128,45 +179,22 @@ export default function ECardsPage() {
           return;
         }
 
-        const priceResponse = await fetch("/api/get-stripe-prices", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceIds }),
-        });
+        const stripePriceDataArray = await fetchStripePrices(priceIds);
 
-        if (!priceResponse.ok) {
-          const errorData = await priceResponse.json();
-          throw new Error(errorData.error || "Failed to fetch Stripe prices.");
-        }
-
-        const stripePriceDataArray = await priceResponse.json();
-
-        const enrichedProducts = supabaseProducts.map((supaProduct) => {
-          const stripeInfo = stripePriceDataArray.find(
-            (sp: any) => sp.id === supaProduct.stripe_price_id && !sp.error
-          );
-          if (stripeInfo && stripeInfo.unit_amount !== null) {
-            return {
-              ...supaProduct,
-              display_price: stripeInfo.unit_amount / 100,
-              currency: stripeInfo.currency.toUpperCase(),
-              stripe_product_name: stripeInfo.product_name,
-              stripe_product_description: stripeInfo.product_description,
-            };
-          }
-          return {
-            ...supaProduct,
-            display_price: 0,
-            currency: "N/A",
-          };
-        });
+        const enrichedProducts = supabaseProducts.map((supaProduct) =>
+          enrichProduct(supaProduct, stripePriceDataArray)
+        );
 
         setProducts(enrichedProducts);
-      } catch (err: any) {
-        setError(
-          err.message ||
-            "Failed to fetch eCards and their prices. Please try again."
-        );
+      } catch (err: unknown) {
+        const errorMessage =
+          err &&
+          typeof err === "object" &&
+          "message" in err &&
+          typeof err.message === "string"
+            ? err.message
+            : "Failed to fetch eCards and their prices. Please try again.";
+        setError(errorMessage);
         setProducts([]);
       } finally {
         setIsLoading(false);
@@ -420,11 +448,13 @@ export default function ECardsPage() {
           <div className="flex items-center justify-between border-gray-200 border-b p-4">
             <h2 className="font-semibold text-xl">Your Cart</h2>
             <button
+              aria-label="Close cart"
               className="rounded-full p-1 hover:bg-gray-100"
               onClick={() => setIsCartOpen(false)}
               type="button"
             >
               <svg
+                aria-hidden="true"
                 className="h-6 w-6"
                 fill="none"
                 stroke="currentColor"

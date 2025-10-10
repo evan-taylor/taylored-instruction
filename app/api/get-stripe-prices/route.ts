@@ -55,16 +55,11 @@ export async function POST(req: NextRequest) {
         // API response properties use snake_case to match Stripe's convention
         return {
           id: price.id,
-          // biome-ignore lint/style/useNamingConvention: Stripe API response
           unit_amount: price.unit_amount,
           currency: price.currency,
-          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_id: price.product,
-          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_name: productName,
-          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_description: productDescription,
-          // biome-ignore lint/style/useNamingConvention: Stripe API response
           product_images: productImages,
         };
       } catch (_error) {

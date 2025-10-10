@@ -74,8 +74,15 @@ export default function AlignmentInterestEmail({
                 </Text>
               )}
               <Text>
-                <strong>SMS Opt-In:</strong>{" "}
-                {smsOptIn ? "Yes" : smsOptOut ? "No (opted out)" : "No"}
+                <strong>SMS Opt-In:</strong> {(() => {
+                  if (smsOptIn) {
+                    return "Yes";
+                  }
+                  if (smsOptOut) {
+                    return "No (opted out)";
+                  }
+                  return "No";
+                })()}
               </Text>
             </Section>
           </Container>

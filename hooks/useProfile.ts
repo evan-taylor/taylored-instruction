@@ -36,6 +36,36 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
 
   useEffect(() => {
     let isMounted = true;
+
+    const clearSessionState = () => {
+      setSession(null);
+      setUser(null);
+      setCurrentUserId(undefined);
+      setEmail(null);
+    };
+
+    const handleSessionError = (sessionError: Error) => {
+      setError(`Could not fetch session: ${sessionError.message}`);
+      clearSessionState();
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
+
+    const handleValidSession = (currentSession: Session) => {
+      setSession(currentSession);
+      setUser(currentSession.user);
+      setCurrentUserId(currentSession.user.id);
+      setEmail(currentSession.user.email ?? null);
+    };
+
+    const handleNoSession = () => {
+      clearSessionState();
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
+
     async function fetchSessionAndSetState() {
       const {
         data: { session: currentSession },
@@ -46,37 +76,15 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
       }
 
       if (sessionError) {
-        setError(`Could not fetch session: ${sessionError.message}`);
-        setSession(null);
-        setUser(null);
-        setCurrentUserId(undefined);
-        setEmail(null);
-        if (isMounted) {
-          setLoading(false); // Stop loading if session fails
-        }
+        handleSessionError(sessionError);
       } else if (currentSession) {
-        setSession(currentSession);
-        setUser(currentSession.user);
-        setCurrentUserId(currentSession.user.id);
-        setEmail(currentSession.user.email ?? null);
-        // Loading remains true, waits for profile fetch
+        handleValidSession(currentSession);
       } else {
-        // No session
-        setSession(null);
-        setUser(null);
-        setCurrentUserId(undefined);
-        setEmail(null);
-        if (isMounted) {
-          setLoading(false); // Stop loading if no session
-        }
+        handleNoSession();
       }
     }
 
-    if (initialUserId) {
-      // initialUserId is provided, currentUserId is already set.
-      // Loading remains true until profile is fetched in the next effect.
-      // Note: session/user/email object will not be populated if only initialUserId is used.
-    } else {
+    if (!initialUserId) {
       fetchSessionAndSetState();
     }
     return () => {
@@ -86,63 +94,75 @@ export function useProfile(initialUserId?: string): UseProfileReturn {
 
   useEffect(() => {
     let isMounted = true;
-    async function loadProfile() {
-      if (!currentUserId) {
-        if (isMounted) {
-          setProfile(null);
-          setLoading(false);
-        }
-        return;
-      }
 
-      // Start loading for this fetch cycle
-      if (isMounted) {
-        setLoading(true);
-      }
+    const handleFetchError = async (res: Response) => {
+      const body = await res
+        .json()
+        .catch(() => ({}) as Record<string, unknown>);
+      const errorMsg = (body as Record<string, unknown>).error;
+      const msg =
+        typeof errorMsg === "string"
+          ? errorMsg
+          : `Failed to load profile (${res.status})`;
+      setError(msg);
+      setProfile(null);
+    };
 
+    const handleCatchError = (err: unknown) => {
+      setError(
+        (err as Error)?.message ||
+          "An unexpected error occurred during profile loading."
+      );
+      setProfile(null);
+    };
+
+    const handleProfileSuccess = (data: Profile) => {
+      setProfile(data);
+      setError(null);
+    };
+
+    const fetchProfileData = async (): Promise<Profile | null> => {
+      const res = await fetch("/api/profile", { cache: "no-store" });
+      if (!res.ok) {
+        await handleFetchError(res);
+        return null;
+      }
+      return (await res.json()) as Profile;
+    };
+
+    const executeProfileFetch = async () => {
       try {
-        const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!isMounted) {
-          return;
+        const data = await fetchProfileData();
+        if (isMounted && data) {
+          handleProfileSuccess(data);
         }
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({}) as any);
-          const msg =
-            (body as any).error || `Failed to load profile (${res.status})`;
-          setError(msg);
-          setProfile(null);
-          return;
+      } catch (err: unknown) {
+        if (isMounted) {
+          handleCatchError(err);
         }
-        const data = (await res.json()) as Profile;
-        if (!isMounted) {
-          return;
-        }
-        setProfile(data);
-        setError(null);
-      } catch (err: any) {
-        if (!isMounted) {
-          return;
-        }
-        setError(
-          err?.message || "An unexpected error occurred during profile loading."
-        );
-        setProfile(null);
       } finally {
         if (isMounted) {
           setLoading(false);
         }
       }
-    }
+    };
 
-    // Only attempt to load profile if we have a user ID.
-    if (currentUserId) {
-      loadProfile();
-    } else if (initialUserId && !currentUserId) {
-      // specifically for bad initialUserId
-      if (isMounted) {
+    async function loadProfile() {
+      if (!currentUserId) {
         setProfile(null);
         setLoading(false);
+        return;
       }
+
+      setLoading(true);
+      await executeProfileFetch();
+    }
+
+    if (currentUserId) {
+      loadProfile();
+    } else if (initialUserId && !currentUserId && isMounted) {
+      setProfile(null);
+      setLoading(false);
     }
 
     return () => {

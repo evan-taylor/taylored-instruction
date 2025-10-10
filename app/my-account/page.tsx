@@ -22,9 +22,9 @@ export default function MyAccountPage() {
   useEffect(() => {
     const getUser = async () => {
       const {
-        data: { user },
+        data: { user: currentUser },
       } = await supabaseClient.auth.getUser();
-      setUser(user);
+      setUser(currentUser);
       setUserLoading(false);
     };
     getUser();
@@ -177,8 +177,8 @@ export default function MyAccountPage() {
         <button
           className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
           onClick={async () => {
-            const { error } = await supabaseClient.auth.signOut();
-            if (!error) {
+            const { error: signOutError } = await supabaseClient.auth.signOut();
+            if (!signOutError) {
               router.push("/");
             }
           }}

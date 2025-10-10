@@ -12,6 +12,10 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+export const users = pgTable("users", {
+  id: uuid().primaryKey().notNull(),
+});
+
 export const profiles = pgTable(
   "profiles",
   {

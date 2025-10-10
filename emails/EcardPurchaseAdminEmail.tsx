@@ -38,18 +38,19 @@ export const EcardPurchaseAdminEmail: React.FC<
         <Text style={paragraph}>You have received a new eCard purchase.</Text>
         <Hr style={hr} />
 
-        {cartItems && cartItems.length > 0 ? (
+        {cartItems && cartItems.length > 0 && (
           <Section style={section}>
             <Text style={subHeading}>Purchased Items:</Text>
-            {cartItems.map((item, index) => (
-              <Row key={index} style={itemRow}>
+            {cartItems.map((item) => (
+              <Row key={item.name} style={itemRow}>
                 <Column style={itemDetailsColumn}>
                   {item.name} (Qty: {item.quantity})
                 </Column>
               </Row>
             ))}
           </Section>
-        ) : itemName && quantity ? (
+        )}
+        {(!cartItems || cartItems.length === 0) && itemName && quantity && (
           <Section style={section}>
             <Row>
               <Column style={labelColumn}>Item Name:</Column>
@@ -60,7 +61,8 @@ export const EcardPurchaseAdminEmail: React.FC<
               <Column style={valueColumn}>{quantity}</Column>
             </Row>
           </Section>
-        ) : (
+        )}
+        {(!cartItems || cartItems.length === 0) && !(itemName && quantity) && (
           <Section style={section}>
             <Text style={paragraph}>
               Could not determine purchased items. Check session metadata.

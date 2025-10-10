@@ -142,9 +142,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   // Deduplicate entries just in case
-  const uniqueEntries = Array.from(
-    new Set(sitemapEntries.map((e) => e.url))
-  ).map((url) => sitemapEntries.find((e) => e.url === url)!);
+  const uniqueUrls = Array.from(new Set(sitemapEntries.map((e) => e.url)));
+  const uniqueEntries = uniqueUrls
+    .map((url) => sitemapEntries.find((e) => e.url === url))
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
 
   return uniqueEntries;
 }

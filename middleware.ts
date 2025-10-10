@@ -28,13 +28,10 @@ export async function middleware(request: NextRequest) {
     if (pathname === "/login" || pathname === "/signup") {
       return NextResponse.redirect(new URL("/my-account", request.url));
     }
-  } else {
-    // And the route is protected, redirect to login
-    if (isProtectedRoute) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("redirectedFrom", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
+  } else if (isProtectedRoute) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("redirectedFrom", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   // If no redirects occurred, return the response from updateSession

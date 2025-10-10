@@ -62,26 +62,18 @@ export async function POST(req: NextRequest) {
     // Stripe API parameters use snake_case as required by their API
     const session = await getStripeClient().checkout.sessions.create({
       mode: "payment",
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       payment_method_types: ["card"],
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       customer_email: email,
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       line_items: lineItems,
       metadata,
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       automatic_tax: {
         enabled: true,
       },
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       tax_id_collection: {
         enabled: true,
       },
-      // biome-ignore lint/style/useNamingConvention: Stripe API
       allow_promotion_codes: true,
     });
 

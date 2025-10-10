@@ -110,13 +110,13 @@ export const TestimonialsSection = () => {
             </button>
 
             <div className="flex space-x-2">
-              {testimonials.map((_, index) => (
+              {testimonials.map((testimonial, index) => (
                 <button
                   aria-label={`Go to testimonial ${index + 1}`}
                   className={`h-3 w-3 rounded-full transition-colors ${
                     index === activeIndex ? "bg-primary-500" : "bg-gray-300"
                   }`}
-                  key={index}
+                  key={testimonial.id}
                   onClick={() => setActiveIndex(index)}
                   type="button"
                 />
