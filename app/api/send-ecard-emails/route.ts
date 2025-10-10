@@ -24,8 +24,28 @@ type CartItem = {
   quantity: number;
 };
 
+const validateSessionId = (sessionId: unknown): string | null => {
+  if (!sessionId || typeof sessionId !== "string") {
+    return null;
+  }
+  return sessionId;
+};
+
+const parseCartItems = (cartItemsJson: string): CartItem[] | null => {
+  try {
+    const items: CartItem[] = JSON.parse(cartItemsJson);
+    if (!Array.isArray(items) || items.length === 0) {
+      return null;
+    }
+    return items;
+  } catch (_error) {
+    return null;
+  }
+};
+
 export async function POST(req: NextRequest) {
-  const { sessionId } = await req.json();
+  const body = await req.json();
+  const sessionId = validateSessionId(body.sessionId);
 
   if (!sessionId) {
     return NextResponse.json(
@@ -141,23 +161,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Handle cart-based checkout (multiple products)
     if (session.metadata.cartItems) {
-      try {
-        const cartItems: CartItem[] = JSON.parse(session.metadata.cartItems);
-        if (!Array.isArray(cartItems) || cartItems.length === 0) {
-          throw new Error("Invalid cart items format");
-        }
-        await sendCartEmails(cartItems, totalPrice, customerEmail);
-      } catch (_error) {
+      const cartItems = parseCartItems(session.metadata.cartItems);
+      if (!cartItems) {
         return NextResponse.json(
           { error: "Invalid cart items format." },
           { status: 400 }
         );
       }
+      await sendCartEmails(cartItems, totalPrice, customerEmail);
+      return NextResponse.json({ success: true });
     }
-    // Handle single product checkout
-    else if (
+
+    if (
       typeof session.metadata.productName === "string" &&
       typeof session.metadata.quantity === "string"
     ) {
@@ -167,14 +183,13 @@ export async function POST(req: NextRequest) {
         totalPrice,
         customerEmail
       );
-    } else {
-      return NextResponse.json(
-        { error: "Stripe session metadata has invalid format." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: true });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json(
+      { error: "Stripe session metadata has invalid format." },
+      { status: 400 }
+    );
   } catch (error: unknown) {
     const message =
       error &&

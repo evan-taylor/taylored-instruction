@@ -7,6 +7,28 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "../../hooks/useProfile";
 
+const ADMIN_EMAILS = [
+  "admin@tayloredinstruction.com",
+  "evan@tayloredinstruction.com",
+] as const;
+
+const getProfileStatus = (
+  profile: unknown,
+  loadingProfile: boolean
+): string => {
+  if (profile) {
+    return "Loaded";
+  }
+  if (loadingProfile) {
+    return "Loading";
+  }
+  return "Not found";
+};
+
+const isAdminEmail = (email: string | null | undefined): boolean =>
+  typeof email === "string" &&
+  ADMIN_EMAILS.some((adminEmail) => adminEmail === email);
+
 export default function MyAccountPage() {
   const router = useRouter();
   const [supabaseClient] = useState(() => createClient());
@@ -22,25 +44,16 @@ export default function MyAccountPage() {
   useEffect(() => {
     const getUser = async () => {
       const {
-        data: { user },
+        data: { user: currentUser },
       } = await supabaseClient.auth.getUser();
-      setUser(user);
+      setUser(currentUser);
       setUserLoading(false);
     };
     getUser();
   }, [supabaseClient]);
 
   useEffect(() => {
-    const userEmail = user?.email;
-    if (userEmail) {
-      const adminEmails = [
-        "admin@tayloredinstruction.com",
-        "evan@tayloredinstruction.com",
-      ].filter(Boolean);
-      setIsAdmin(adminEmails.includes(userEmail));
-    } else {
-      setIsAdmin(false);
-    }
+    setIsAdmin(isAdminEmail(user?.email));
   }, [user]);
 
   // Redirect if not logged in
@@ -68,13 +81,7 @@ export default function MyAccountPage() {
   }
 
   if (userLoading || loading) {
-    let profileStatus = "Not found";
-    if (profile) {
-      profileStatus = "Loaded";
-    } else if (loading) {
-      profileStatus = "Loading";
-    }
-
+    const profileStatus = getProfileStatus(profile, loading);
     return (
       <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
@@ -143,6 +150,7 @@ export default function MyAccountPage() {
                 <Link
                   className="block text-primary hover:underline"
                   href="/instructor-resources"
+                  rel="noopener"
                   target="_blank"
                 >
                   Instructor Resources
@@ -177,8 +185,8 @@ export default function MyAccountPage() {
         <button
           className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
           onClick={async () => {
-            const { error } = await supabaseClient.auth.signOut();
-            if (!error) {
+            const { error: signOutError } = await supabaseClient.auth.signOut();
+            if (!signOutError) {
               router.push("/");
             }
           }}

@@ -17,62 +17,71 @@ const excludedSegments = [
   "robots", // Exclude robots.txt generation
 ];
 
-// Function to recursively find page files
-function getPagePaths(dir: string, baseDir: string = dir): string[] {
-  let paths: string[] = [];
+const pageFilePrefixes = [
+  "page.tsx",
+  "page.jsx",
+  "page.ts",
+  "page.js",
+] as const;
+
+const shouldSkipRelativePath = (relativePath: string): boolean =>
+  excludedSegments.some((segment) => relativePath.includes(segment));
+
+const isRouteGroupSegment = (segment: string): boolean =>
+  segment.startsWith("(") && segment.endsWith(")");
+
+const isPageFile = (fileName: string): boolean =>
+  pageFilePrefixes.some((prefix) => fileName.startsWith(prefix));
+
+const normalizeRoutePath = (relativePath: string): string => {
+  const directory = path.dirname(relativePath).replace(/\\\\/g, "/");
+
+  const cleanedSegments = directory
+    .split("/")
+    .filter(
+      (segment) =>
+        segment !== "." && segment !== "" && !isRouteGroupSegment(segment)
+    );
+
+  if (cleanedSegments.length === 0) {
+    return "/";
+  }
+
+  return `/${cleanedSegments.join("/")}`;
+};
+
+const gatherPageRoutes = (dir: string, baseDir: string): string[] => {
+  const routes: string[] = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true });
 
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     const relativePath = path.relative(baseDir, fullPath);
 
-    // Skip excluded segments
-    if (excludedSegments.some((segment) => relativePath.includes(segment))) {
+    if (shouldSkipRelativePath(relativePath)) {
       continue;
     }
 
     if (entry.isDirectory()) {
-      // Exclude directories that are route groups like (dashboard) or (marketing)
-      // or internal Next.js folders like __DEFAULT__
-      if (!(entry.name.startsWith("(") || entry.name.startsWith("_"))) {
-        paths = paths.concat(getPagePaths(fullPath, baseDir));
-      } else if (entry.name.startsWith("(") && entry.name.endsWith(")")) {
-        // Include pages within route groups, but don't include the group itself in the path
-        paths = paths.concat(getPagePaths(fullPath, baseDir));
-      }
-    } else if (
-      entry.isFile() &&
-      (entry.name.startsWith("page.tsx") ||
-        entry.name.startsWith("page.jsx") ||
-        entry.name.startsWith("page.ts") ||
-        entry.name.startsWith("page.js"))
-    ) {
-      // Construct the URL path from the file path
-      let routePath = path.dirname(relativePath).replace(/\\\\/g, "/"); // Normalize windows paths
-
-      // Remove (group) segments from the path
-      routePath = routePath
-        .split("/")
-        .filter(
-          (segment) => !(segment.startsWith("(") && segment.endsWith(")"))
-        )
-        .join("/");
-
-      if (routePath === "." || routePath === "") {
-        routePath = "/";
-      } else if (!routePath.startsWith("/")) {
-        routePath = `/${routePath}`;
-      }
-
-      // Avoid duplicate root path if already added
-      if (routePath === "/" && paths.includes("/")) {
+      if (entry.name.startsWith("_")) {
         continue;
       }
-      paths.push(routePath);
+
+      routes.push(...gatherPageRoutes(fullPath, baseDir));
+      continue;
+    }
+
+    if (entry.isFile() && isPageFile(entry.name)) {
+      routes.push(normalizeRoutePath(relativePath));
     }
   }
-  return paths;
-}
+
+  return routes;
+};
+
+// Function to recursively find page files
+const getPagePaths = (dir: string, baseDir: string = dir): string[] =>
+  gatherPageRoutes(dir, baseDir);
 
 // Route-specific configuration for priority and change frequency
 const routeConfig: Record<
@@ -142,9 +151,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }
 
   // Deduplicate entries just in case
-  const uniqueEntries = Array.from(
-    new Set(sitemapEntries.map((e) => e.url))
-  ).map((url) => sitemapEntries.find((e) => e.url === url)!);
+  const uniqueUrls = Array.from(new Set(sitemapEntries.map((e) => e.url)));
+  const uniqueEntries = uniqueUrls
+    .map((url) => sitemapEntries.find((e) => e.url === url))
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
 
   return uniqueEntries;
 }

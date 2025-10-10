@@ -22,7 +22,6 @@ async function requireAdmin() {
   if (!user) {
     return { ok: false as const, status: 401, error: "Unauthorized" };
   }
-  // biome-ignore lint/style/useNamingConvention: Supabase API uses snake_case
   const meta = (user as { user_metadata?: unknown }).user_metadata;
   const metaEmail =
     meta &&
@@ -48,11 +47,8 @@ export async function GET() {
   const profileRows = await db
     .select({
       id: profiles.id,
-      // biome-ignore lint/style/useNamingConvention: API response uses snake_case
       is_instructor: profiles.isInstructor,
-      // biome-ignore lint/style/useNamingConvention: API response uses snake_case
       updated_at: profiles.updatedAt,
-      // biome-ignore lint/style/useNamingConvention: API response uses snake_case
       last_login: profiles.lastLogin,
     })
     .from(profiles)
@@ -69,7 +65,6 @@ export async function GET() {
 
   const { data: emailData, error: emailError } = await supabase.rpc(
     "get_users_with_emails",
-    // biome-ignore lint/style/useNamingConvention: Supabase RPC function parameter uses snake_case
     { profile_ids: profileIds }
   );
 
@@ -93,15 +88,10 @@ export async function GET() {
   // API response uses snake_case to match frontend expectations
   const payload = profileRows.map((r) => ({
     id: r.id,
-    // biome-ignore lint/style/useNamingConvention: API response uses snake_case
     is_instructor: r.is_instructor,
-    // biome-ignore lint/style/useNamingConvention: API response uses snake_case
     updated_at: r.updated_at,
-    // biome-ignore lint/style/useNamingConvention: API response uses snake_case
     last_login: r.last_login,
-    // biome-ignore lint/style/useNamingConvention: API response uses snake_case
     user_email: emailMap.get(r.id) || null,
-    // biome-ignore lint/style/useNamingConvention: API response uses snake_case
     short_id: r.id
       ? `${r.id.slice(0, IdPrefixLen)}...${r.id.slice(-IdSuffixLen)}`
       : undefined,
@@ -127,6 +117,5 @@ export async function PATCH(req: NextRequest) {
     .set({ isInstructor: newStatus, updatedAt: now })
     .where(eq(profiles.id, profileId));
 
-  // biome-ignore lint/style/useNamingConvention: API response uses snake_case
   return NextResponse.json({ ok: true, updated_at: now });
 }

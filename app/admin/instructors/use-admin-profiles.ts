@@ -4,15 +4,10 @@ import type { ProfileWithUser } from "./types";
 // API returns snake_case which is mapped to camelCase
 type ApiProfileResponse = {
   id: string;
-  // biome-ignore lint/style/useNamingConvention: API response uses snake_case
   is_instructor: boolean;
-  // biome-ignore lint/style/useNamingConvention: API response uses snake_case
   updated_at: string | null;
-  // biome-ignore lint/style/useNamingConvention: API response uses snake_case
   last_login: string | null;
-  // biome-ignore lint/style/useNamingConvention: API response uses snake_case
   user_email: string | null;
-  // biome-ignore lint/style/useNamingConvention: API response uses snake_case
   short_id?: string;
 };
 

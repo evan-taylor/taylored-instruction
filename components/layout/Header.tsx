@@ -8,6 +8,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { useProfile } from "../../hooks/useProfile";
 
+const EXTERNAL_LINK_REGEX = /^https?:\/\//;
+
 // --- Type Definitions ---
 type NavLinkItem = {
   label: string;
@@ -15,6 +17,8 @@ type NavLinkItem = {
   indent?: boolean;
   type?: undefined; // Ensure type compatibility with Divider
   requiresInstructor?: boolean; // Added for conditional display
+  hideWhenLoggedIn?: boolean;
+  hideWhenLoggedOut?: boolean;
 };
 
 type NavDivider = {
@@ -137,18 +141,18 @@ const generateNavLinks = (
             } as NavLinkItem,
           ]
         : []),
+      { type: "divider", label: "Account" },
+      {
+        label: "Login",
+        href: "/login",
+        hideWhenLoggedIn: true,
+      },
+      {
+        label: "My Account",
+        href: "/my-account",
+        hideWhenLoggedOut: true,
+      },
     ],
-  },
-  {
-    label: "Login", // Changed from "My Account"
-    href: "/login", // Direct link to login page
-    hideWhenLoggedIn: true, // Hide when logged in
-  },
-  // Add Account link for logged-in users
-  {
-    label: "My Account",
-    href: "/my-account", // Or your preferred account page
-    hideWhenLoggedOut: true, // Hide when logged out
   },
 ];
 
@@ -161,9 +165,9 @@ export const Header = () => {
   const _pathname = usePathname() ?? ""; // Provide default empty string if null
 
   // --- Authentication State ---
-  const { session, isInstructor, loading: profileLoading } = useProfile();
+  const { session, isInstructor } = useProfile();
   const supabase = useSupabaseClient();
-  const router = useRouter(); // Next.js router for redirection (if needed, usePathname is for reading)
+  const router = useRouter();
 
   const isLoggedIn = !!session; // Simple boolean check
 
@@ -351,58 +355,70 @@ const NavMenu = ({
       if (item.requiresInstructor && !isInstructor) {
         return false;
       }
+      if (item.type === "divider") {
+        return true;
+      }
+      if (isLoggedIn && item.hideWhenLoggedIn) {
+        return false;
+      }
+      if (!isLoggedIn && item.hideWhenLoggedOut) {
+        return false;
+      }
       return true;
     });
+
+  const renderNavLink = (link: NavTopLevelLink) => {
+    if (link.dropdown) {
+      return (
+        <button
+          className={`flex items-center text-text transition-colors duration-200 hover:text-primary ${
+            activeDropdown === link.label ||
+            link.dropdown?.some(
+              (item) => item.href && pathname.startsWith(item.href)
+            )
+              ? "text-primary"
+              : ""
+          }`}
+          onClick={() => toggleDropdown(link.label)}
+          type="button"
+        >
+          {link.label}
+          <ChevronDown
+            className={`ml-1 transition-transform duration-200 ${activeDropdown === link.label ? "rotate-180" : ""}`}
+            size={12}
+          />
+        </button>
+      );
+    }
+    if (link.href) {
+      return (
+        <Link className={getLinkClass(link.href, pathname)} href={link.href}>
+          {link.label}
+        </Link>
+      );
+    }
+    return <span>{link.label}</span>;
+  };
 
   return (
     <>
       {navLinks.map((link) => {
-        // Prevent rendering if a link is accidentally labeled "Logout"
         if (link.label.toLowerCase() === "logout") {
           return null;
         }
 
         return (
           <div className="relative" key={link.label}>
-            {link.dropdown ? (
-              <button
-                className={`flex items-center text-text transition-colors duration-200 hover:text-primary ${
-                  activeDropdown === link.label ||
-                  link.dropdown?.some(
-                    (item) => item.href && pathname.startsWith(item.href)
-                  )
-                    ? "text-primary"
-                    : ""
-                }`}
-                onClick={() => toggleDropdown(link.label)}
-                type="button"
-              >
-                {link.label}
-                <ChevronDown
-                  className={`ml-1 transition-transform duration-200 ${activeDropdown === link.label ? "rotate-180" : ""}`}
-                  size={12}
-                />
-              </button>
-            ) : link.href ? (
-              <Link
-                className={getLinkClass(link.href, pathname)}
-                href={link.href}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              // Fallback for links without href or dropdown, if any. Or simply return null if not expected.
-              <span>{link.label}</span>
-            )}
+            {renderNavLink(link)}
 
             {activeDropdown === link.label && link.dropdown && (
               <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                {filterDropdownItems(link.dropdown).map((item, index) => {
+                {filterDropdownItems(link.dropdown).map((item) => {
                   if (item.type === "divider") {
                     return (
                       <div
                         className="px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
-                        key={`divider-${index}`}
+                        key={`divider-${item.label}`}
                       >
                         {item.label}
                       </div>
@@ -412,13 +428,16 @@ const NavMenu = ({
                   if (item.label.toLowerCase() === "logout") {
                     return null;
                   }
-                  const isExternal = /^https?:\/\//.test(item.href!);
+                  if (!item.href) {
+                    return null;
+                  }
+                  const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
                   return (
                     <Link
-                      className={`${getDropdownLinkClass(item.href!, pathname)} ${item.indent ? "pl-8" : ""}`}
-                      href={item.href!}
+                      className={`${getDropdownLinkClass(item.href, pathname)} ${item.indent ? "pl-8" : ""}`}
+                      href={item.href}
                       key={item.label}
-                      onClick={() => toggleDropdown(link.label)} // Close dropdown on click
+                      onClick={() => toggleDropdown(link.label)}
                       {...(isExternal
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
@@ -462,83 +481,99 @@ const MobileNavMenu = ({
       if (item.requiresInstructor && !isInstructor) {
         return false;
       }
+      if (item.type === "divider") {
+        return true;
+      }
+      if (isLoggedIn && item.hideWhenLoggedIn) {
+        return false;
+      }
+      if (!isLoggedIn && item.hideWhenLoggedOut) {
+        return false;
+      }
       return true;
     });
+
+  const renderDropdownItem = (item: DropdownItem) => {
+    if (item.type === "divider") {
+      return (
+        <div
+          className="pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
+          key={`divider-${item.label}`}
+        >
+          {item.label}
+        </div>
+      );
+    }
+    if (item.label.toLowerCase() === "logout") {
+      return null;
+    }
+    if (!item.href) {
+      return null;
+    }
+    const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
+    return (
+      <Link
+        className={getDropdownLinkClass(item.href, pathname)}
+        href={item.href}
+        key={item.label}
+        onClick={closeMenu}
+        {...(isExternal
+          ? { target: "_blank", rel: "noopener noreferrer" }
+          : {})}
+      >
+        {item.label}
+      </Link>
+    );
+  };
+
+  const renderMobileLink = (link: NavTopLevelLink) => {
+    if (link.dropdown) {
+      return (
+        <>
+          <button
+            className="flex w-full items-center justify-between py-2 text-left text-text transition-colors duration-200 hover:text-primary"
+            onClick={() => toggleMobileDropdown(link.label)}
+            type="button"
+          >
+            <span>{link.label}</span>
+            <ChevronDown
+              className={`ml-1 h-3 w-3 transition-transform duration-200 ${openMobileDropdown === link.label ? "rotate-180" : ""}`}
+            />
+          </button>
+          {openMobileDropdown === link.label && (
+            <div className="ml-2 space-y-1 border-gray-200 border-l pt-1 pb-2 pl-4">
+              {filterDropdownItems(link.dropdown).map(renderDropdownItem)}
+            </div>
+          )}
+        </>
+      );
+    }
+    if (link.href) {
+      return (
+        <Link
+          className={`${getLinkClass(link.href, pathname, true)} block border-gray-200 border-b py-2`}
+          href={link.href}
+          onClick={closeMenu}
+        >
+          {link.label}
+        </Link>
+      );
+    }
+    return (
+      <span className="block border-gray-200 border-b py-2 text-text">
+        {link.label}
+      </span>
+    );
+  };
 
   return (
     <div className="space-y-1 py-2">
       {navLinks.map((link) => {
-        // Prevent rendering if a link is accidentally labeled "Logout"
         if (link.label.toLowerCase() === "logout") {
           return null;
         }
 
-        return (
-          // Added return here
-          <div key={link.label}>
-            {link.dropdown ? (
-              <>
-                <button
-                  className="flex w-full items-center justify-between py-2 text-left text-text transition-colors duration-200 hover:text-primary"
-                  onClick={() => toggleMobileDropdown(link.label)}
-                  type="button"
-                >
-                  <span>{link.label}</span>
-                  <ChevronDown
-                    className={`ml-1 h-3 w-3 transition-transform duration-200 ${openMobileDropdown === link.label ? "rotate-180" : ""}`}
-                  />
-                </button>
-                {openMobileDropdown === link.label && (
-                  <div className="ml-2 space-y-1 border-gray-200 border-l pt-1 pb-2 pl-4">
-                    {filterDropdownItems(link.dropdown).map((item, index) => {
-                      if (item.type === "divider") {
-                        return (
-                          <div
-                            className="pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
-                            key={`divider-${index}`}
-                          >
-                            {item.label}
-                          </div>
-                        );
-                      }
-                      // Prevent rendering if a dropdown item is accidentally labeled "Logout"
-                      if (item.label.toLowerCase() === "logout") {
-                        return null;
-                      }
-                      const isExternal = /^https?:\/\//.test(item.href!);
-                      return (
-                        <Link
-                          className={getDropdownLinkClass(item.href!, pathname)}
-                          href={item.href!}
-                          key={item.label}
-                          onClick={closeMenu} // Close main mobile menu on item click
-                          {...(isExternal
-                            ? { target: "_blank", rel: "noopener noreferrer" }
-                            : {})}
-                        >
-                          {item.label}
-                        </Link>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            ) : link.href ? (
-              <Link
-                className={`${getLinkClass(link.href, pathname, true)} block border-gray-200 border-b py-2`}
-                href={link.href}
-                onClick={closeMenu}
-              >
-                {link.label}
-              </Link>
-            ) : (
-              // Fallback for links without href or dropdown
-              <span className="block border-gray-200 border-b py-2 text-text">
-                {link.label}
-              </span>
-            )}
-          </div>
-        ); // Closing parenthesis for return
+        return <div key={link.label}>{renderMobileLink(link)}</div>;
       })}
     </div>
   );

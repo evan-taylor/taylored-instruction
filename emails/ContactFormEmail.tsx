@@ -84,7 +84,15 @@ export const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
           <Row>
             <Column style={labelColumn}>SMS Opt-In:</Column>
             <Column style={valueColumn}>
-              {smsOptIn ? "Yes" : smsOptOut ? "No (opted out)" : "No"}
+              {(() => {
+                if (smsOptIn) {
+                  return "Yes";
+                }
+                if (smsOptOut) {
+                  return "No (opted out)";
+                }
+                return "No";
+              })()}
             </Column>
           </Row>
           <Row>

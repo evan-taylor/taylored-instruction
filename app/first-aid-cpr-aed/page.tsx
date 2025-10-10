@@ -79,12 +79,10 @@ const FirstAidCprAedPage: React.FC = () => {
 
   return (
     <>
-      {/* Structured Data - Course */}
       <script
         dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
         type="application/ld+json"
       />
-      {/* Structured Data - Breadcrumb */}
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
         type="application/ld+json"
