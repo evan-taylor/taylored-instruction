@@ -25,6 +25,10 @@ const getProfileStatus = (
   return "Not found";
 };
 
+const isAdminEmail = (email: string | null | undefined): boolean =>
+  typeof email === "string" &&
+  ADMIN_EMAILS.some((adminEmail) => adminEmail === email);
+
 export default function MyAccountPage() {
   const router = useRouter();
   const [supabaseClient] = useState(() => createClient());
@@ -49,7 +53,7 @@ export default function MyAccountPage() {
   }, [supabaseClient]);
 
   useEffect(() => {
-    setIsAdmin(ADMIN_EMAILS.includes(user?.email ?? ""));
+    setIsAdmin(isAdminEmail(user?.email));
   }, [user]);
 
   // Redirect if not logged in
