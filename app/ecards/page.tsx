@@ -83,16 +83,6 @@ export default function ECardsPage() {
   }, [loading, session, isInstructor, router]);
 
   useEffect(() => {
-    type SupabaseProduct = {
-      id: string;
-      name: string;
-      description: string | null;
-      stripe_price_id: string | null;
-      image_urls: string | null;
-      type: string;
-      requires_instructor: boolean;
-    };
-
     type StripePriceData = {
       id: string;
       unit_amount: number | null;
@@ -118,7 +108,7 @@ export default function ECardsPage() {
     };
 
     const enrichProduct = (
-      supaProduct: SupabaseProduct,
+      supaProduct: Product,
       stripePriceDataArray: StripePriceData[]
     ) => {
       const CentsInDollar = 100;
@@ -141,72 +131,116 @@ export default function ECardsPage() {
       };
     };
 
-    const fetchECardsAndPrices = async () => {
-      if (!(session?.user && isInstructor)) {
-        setIsLoading(false);
+    const parseResponseJson = async (
+      response: Response
+    ): Promise<unknown | null> => {
+      try {
+        return await response.json();
+      } catch (_error) {
+        return null;
+      }
+    };
+
+    const extractPriceIds = (items: Product[]): string[] =>
+      items
+        .map((item) => item.stripe_price_id)
+        .filter(
+          (id): id is string => typeof id === "string" && id.trim() !== ""
+        );
+
+    const applyFallbackPricing = (items: Product[]) => {
+      setProducts(
+        items.map((item) => ({
+          ...item,
+          display_price: 0,
+          currency: "USD",
+        }))
+      );
+    };
+
+    const handleSupabaseProducts = async (supabaseProducts: Product[]) => {
+      if (supabaseProducts.length === 0) {
         setProducts([]);
         return;
       }
 
+      const priceIds = extractPriceIds(supabaseProducts);
+
+      if (priceIds.length === 0) {
+        applyFallbackPricing(supabaseProducts);
+        return;
+      }
+
+      const stripePriceDataArray = await fetchStripePrices(priceIds);
+      setProducts(
+        supabaseProducts.map((supaProduct) =>
+          enrichProduct(supaProduct, stripePriceDataArray)
+        )
+      );
+    };
+
+    const parseErrorMessage = (caughtError: unknown): string => {
+      if (
+        caughtError &&
+        typeof caughtError === "object" &&
+        "message" in caughtError &&
+        typeof (caughtError as { message?: unknown }).message === "string"
+      ) {
+        return (caughtError as { message: string }).message;
+      }
+
+      return "Failed to fetch eCards and their prices. Please try again.";
+    };
+
+    const fetchSupabaseProducts = async (): Promise<Product[]> => {
+      const response = await fetch("/api/products/ecard");
+      const payload = await parseResponseJson(response);
+
+      if (!response.ok) {
+        const message =
+          payload &&
+          typeof payload === "object" &&
+          "error" in payload &&
+          typeof (payload as { error?: unknown }).error === "string"
+            ? (payload as { error: string }).error
+            : "Failed to fetch eCards";
+        throw new Error(message);
+      }
+
+      if (!Array.isArray(payload)) {
+        return [];
+      }
+
+      return payload as Product[];
+    };
+
+    const loadEcardProducts = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const res = await fetch("/api/products/ecard");
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || "Failed to fetch eCards");
-        }
-        const supabaseProducts = (await res.json()) as SupabaseProduct[];
-        if (!supabaseProducts || supabaseProducts.length === 0) {
-          setProducts([]);
-          setIsLoading(false);
-          return;
-        }
-
-        const priceIds = supabaseProducts
-          .map((p) => p.stripe_price_id)
-          .filter((id) => id != null) as string[];
-        if (priceIds.length === 0) {
-          setProducts(
-            supabaseProducts.map((p) => ({
-              ...p,
-              display_price: 0,
-              currency: "USD",
-            }))
-          );
-          setIsLoading(false);
-          return;
-        }
-
-        const stripePriceDataArray = await fetchStripePrices(priceIds);
-
-        const enrichedProducts = supabaseProducts.map((supaProduct) =>
-          enrichProduct(supaProduct, stripePriceDataArray)
-        );
-
-        setProducts(enrichedProducts);
-      } catch (err: unknown) {
-        const errorMessage =
-          err &&
-          typeof err === "object" &&
-          "message" in err &&
-          typeof err.message === "string"
-            ? err.message
-            : "Failed to fetch eCards and their prices. Please try again.";
-        setError(errorMessage);
+        const supabaseProducts = await fetchSupabaseProducts();
+        await handleSupabaseProducts(supabaseProducts);
+      } catch (caughtError: unknown) {
+        setError(parseErrorMessage(caughtError));
         setProducts([]);
       } finally {
         setIsLoading(false);
       }
     };
 
-    if (!loading && session && isInstructor) {
-      fetchECardsAndPrices();
-    } else if (!(loading || (session && isInstructor))) {
-      setIsLoading(false);
-      setProducts([]);
+    if (loading) {
+      return;
     }
+
+    if (session && isInstructor) {
+      loadEcardProducts();
+      return;
+    }
+
+    setError(null);
+    setIsLoading(false);
+    setProducts([]);
   }, [loading, session, isInstructor]);
 
   const getImageUrl = (imageUrl: string | null): string => {

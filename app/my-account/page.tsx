@@ -7,6 +7,24 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "../../hooks/useProfile";
 
+const ADMIN_EMAILS = [
+  "admin@tayloredinstruction.com",
+  "evan@tayloredinstruction.com",
+] as const;
+
+const getProfileStatus = (
+  profile: unknown,
+  loadingProfile: boolean
+): string => {
+  if (profile) {
+    return "Loaded";
+  }
+  if (loadingProfile) {
+    return "Loading";
+  }
+  return "Not found";
+};
+
 export default function MyAccountPage() {
   const router = useRouter();
   const [supabaseClient] = useState(() => createClient());
@@ -31,16 +49,7 @@ export default function MyAccountPage() {
   }, [supabaseClient]);
 
   useEffect(() => {
-    const userEmail = user?.email;
-    if (userEmail) {
-      const adminEmails = [
-        "admin@tayloredinstruction.com",
-        "evan@tayloredinstruction.com",
-      ].filter(Boolean);
-      setIsAdmin(adminEmails.includes(userEmail));
-    } else {
-      setIsAdmin(false);
-    }
+    setIsAdmin(ADMIN_EMAILS.includes(user?.email ?? ""));
   }, [user]);
 
   // Redirect if not logged in
@@ -68,13 +77,7 @@ export default function MyAccountPage() {
   }
 
   if (userLoading || loading) {
-    let profileStatus = "Not found";
-    if (profile) {
-      profileStatus = "Loaded";
-    } else if (loading) {
-      profileStatus = "Loading";
-    }
-
+    const profileStatus = getProfileStatus(profile, loading);
     return (
       <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
@@ -143,6 +146,7 @@ export default function MyAccountPage() {
                 <Link
                   className="block text-primary hover:underline"
                   href="/instructor-resources"
+                  rel="noopener"
                   target="_blank"
                 >
                   Instructor Resources
