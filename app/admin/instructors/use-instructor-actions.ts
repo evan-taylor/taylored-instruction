@@ -1,6 +1,7 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { useMutation } from "convex/react";
 import type { Dispatch, SetStateAction } from "react";
 import { useState } from "react";
+import { api } from "@/convex/_generated/api";
 import type { ProfileWithUser } from "./types";
 
 type ApprovalEmailResponse = {
@@ -42,22 +43,25 @@ function handleApprovalEmailResponse(
 }
 
 async function sendApprovalEmail(
-  supabase: SupabaseClient,
   userEmail: string,
   setActionMessage: MessageSetter
 ) {
   try {
-    const response = await supabase.functions.invoke("send-approval-email", {
-      body: { email: userEmail, name: userEmail.split("@")[0] },
+    const response = await fetch("/api/send-approval-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail, name: userEmail.split("@")[0] }),
     });
 
-    if (response.error) {
+    if (response.ok) {
+      const data = await response.json();
+      handleApprovalEmailResponse(data, setActionMessage);
+    } else {
+      const errorData = await response.json().catch(() => ({}));
       setActionMessage(
         (prev) =>
-          `${prev || ""} (Approval email failed to send. Error: ${response.error.message})`
+          `${prev || ""} (Approval email failed to send. Error: ${errorData.error || "Unknown error"})`
       );
-    } else {
-      handleApprovalEmailResponse(response.data, setActionMessage);
     }
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : "Unknown error";
@@ -69,7 +73,6 @@ async function sendApprovalEmail(
 }
 
 export function useInstructorActions(
-  supabase: SupabaseClient,
   profiles: ProfileWithUser[],
   setProfiles: (updatedProfiles: ProfileWithUser[]) => void
 ) {
@@ -81,6 +84,13 @@ export function useInstructorActions(
     userEmail: string | null;
   }>({ isOpen: false, userId: null, userEmail: null });
 
+  const updateInstructorStatusMutation = useMutation(
+    api.admin.updateInstructorStatus
+  );
+  const deleteUserAndProfileMutation = useMutation(
+    api.admin.deleteUserAndProfile
+  );
+
   const toggleInstructorStatus = async (
     profileId: string,
     currentStatus: boolean,
@@ -90,20 +100,12 @@ export function useInstructorActions(
     setError(null);
 
     try {
-      const res = await fetch("/api/admin/instructors", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ profileId, newStatus: !currentStatus }),
+      const result = await updateInstructorStatusMutation({
+        // biome-ignore lint/suspicious/noExplicitAny: Convex ID type conversion required (important-comment)
+        profileId: profileId as unknown as any,
+        newStatus: !currentStatus,
       });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(
-          body.error || `Failed to update status (${res.status})`
-        );
-      }
-
-      const result = await res.json();
       const now = result.updated_at || new Date().toISOString();
 
       setProfiles(
@@ -119,7 +121,7 @@ export function useInstructorActions(
       );
 
       if (!currentStatus && userEmail) {
-        await sendApprovalEmail(supabase, userEmail, setActionMessage);
+        await sendApprovalEmail(userEmail, setActionMessage);
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
@@ -146,16 +148,10 @@ export function useInstructorActions(
     setError(null);
 
     try {
-      const response = await supabase.functions.invoke(
-        "delete-user-and-profile",
-        {
-          body: { userId },
-        }
-      );
-
-      if (response.error) {
-        throw response.error;
-      }
+      await deleteUserAndProfileMutation({
+        // biome-ignore lint/suspicious/noExplicitAny: Convex ID type conversion required (important-comment)
+        profileId: userId as unknown as any,
+      });
 
       setProfiles(profiles.filter((p) => p.id !== userId));
       setActionMessage(

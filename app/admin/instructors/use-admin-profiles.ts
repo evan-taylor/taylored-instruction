@@ -1,71 +1,28 @@
-import { useEffect, useState } from "react";
+import { useQuery } from "convex/react";
+import { useState } from "react";
+import { api } from "@/convex/_generated/api";
 import type { ProfileWithUser } from "./types";
 
-// API returns snake_case which is mapped to camelCase
-type ApiProfileResponse = {
+type ConvexProfile = {
   id: string;
   is_instructor: boolean;
-  updated_at: string | null;
-  last_login: string | null;
+  updated_at: string | null | undefined;
+  last_login: string | null | undefined;
   user_email: string | null;
-  short_id?: string;
+  short_id: string;
 };
 
-function mapApiProfileToLocal(apiProfile: ApiProfileResponse): ProfileWithUser {
+function mapConvexProfileToLocal(
+  convexProfile: ConvexProfile
+): ProfileWithUser {
   return {
-    id: apiProfile.id,
-    isInstructor: apiProfile.is_instructor,
-    updatedAt: apiProfile.updated_at,
-    lastLogin: apiProfile.last_login,
-    userEmail: apiProfile.user_email,
-    shortId: apiProfile.short_id,
+    id: convexProfile.id,
+    isInstructor: convexProfile.is_instructor,
+    updatedAt: convexProfile.updated_at,
+    lastLogin: convexProfile.last_login,
+    userEmail: convexProfile.user_email,
+    shortId: convexProfile.short_id,
   };
-}
-
-async function fetchProfilesFromApi(): Promise<ProfileWithUser[]> {
-  const res = await fetch("/api/admin/instructors", {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Failed to load admin data (${res.status})`);
-  }
-
-  const apiProfiles = (await res.json()) as ApiProfileResponse[];
-  return apiProfiles.map(mapApiProfileToLocal);
-}
-
-type SetState<T> = (value: T) => void;
-
-async function loadProfilesData(
-  isMounted: boolean,
-  setProfiles: SetState<ProfileWithUser[]>,
-  setError: SetState<string | null>,
-  setAdminDataLoading: SetState<boolean>
-) {
-  if (!isMounted) {
-    return;
-  }
-
-  setAdminDataLoading(true);
-  setError(null);
-
-  try {
-    const fetchedProfiles = await fetchProfilesFromApi();
-    if (isMounted) {
-      setProfiles(fetchedProfiles);
-    }
-  } catch (err) {
-    if (isMounted) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      setError(`Failed to fetch instructor profiles: ${message}`);
-    }
-  } finally {
-    if (isMounted) {
-      setAdminDataLoading(false);
-    }
-  }
 }
 
 export function useAdminProfiles(
@@ -74,24 +31,20 @@ export function useAdminProfiles(
 ) {
   const [profiles, setProfiles] = useState<ProfileWithUser[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [adminDataLoading, setAdminDataLoading] = useState(true);
 
-  useEffect(() => {
-    let isMounted = true;
+  const convexProfiles = useQuery(
+    api.admin.getAllInstructors,
+    !adminAccessCheckInProgress && isAdmin ? {} : "skip"
+  );
 
-    const shouldFetchProfiles = !adminAccessCheckInProgress && isAdmin;
-    const shouldStopLoading = !(adminAccessCheckInProgress || isAdmin);
+  const adminDataLoading = convexProfiles === undefined;
 
-    if (shouldFetchProfiles) {
-      loadProfilesData(isMounted, setProfiles, setError, setAdminDataLoading);
-    } else if (shouldStopLoading) {
-      setAdminDataLoading(false);
+  if (convexProfiles && Array.isArray(convexProfiles)) {
+    const mappedProfiles = convexProfiles.map(mapConvexProfileToLocal);
+    if (JSON.stringify(mappedProfiles) !== JSON.stringify(profiles)) {
+      setProfiles(mappedProfiles);
     }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [adminAccessCheckInProgress, isAdmin]);
+  }
 
   return {
     profiles,

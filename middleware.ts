@@ -1,42 +1,46 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { updateSession } from "@/utils/supabase/middleware";
+import {
+  convexAuthNextjsMiddleware,
+  nextjsMiddlewareRedirect,
+} from "@convex-dev/auth/nextjs/server";
+import { NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  // updateSession handles session refresh and returns both the response and user
-  const { response: supabaseResponse, user } = await updateSession(request);
+export const middleware = convexAuthNextjsMiddleware(
+  async (request, { convexAuth }) => {
+    const { pathname } = request.nextUrl;
 
-  const { pathname } = request.nextUrl;
+    const protectedRoutes = ["/my-account", "/ecards"];
+    const ignoredPaths = ["/api/webhook"];
 
-  // Add paths that should be explicitly protected if not covered by the default deny
-  const protectedRoutes = ["/my-account", "/ecards"];
-
-  const ignoredPaths = ["/api/webhook"]; // Paths to completely ignore by this auth logic
-
-  const isIgnoredPath = ignoredPaths.some((path) => pathname.startsWith(path));
-  if (isIgnoredPath) {
-    return supabaseResponse;
-  }
-
-  const isProtectedRoute = protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`)
-  );
-
-  // If the user is not authenticated
-  if (user) {
-    // If the user is authenticated
-    // And they are trying to access login or signup, redirect to my-account
-    if (pathname === "/login" || pathname === "/signup") {
-      return NextResponse.redirect(new URL("/my-account", request.url));
+    const isIgnoredPath = ignoredPaths.some((path) =>
+      pathname.startsWith(path)
+    );
+    if (isIgnoredPath) {
+      return NextResponse.next();
     }
-  } else if (isProtectedRoute) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("redirectedFrom", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
 
-  // If no redirects occurred, return the response from updateSession
-  return supabaseResponse;
-}
+    const isProtectedRoute = protectedRoutes.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    );
+
+    if (isProtectedRoute) {
+      const isAuthenticated = await convexAuth.isAuthenticated();
+
+      if (!isAuthenticated) {
+        return nextjsMiddlewareRedirect(request, "/login");
+      }
+    }
+
+    if (pathname === "/login" || pathname === "/signup") {
+      const isAuthenticated = await convexAuth.isAuthenticated();
+
+      if (isAuthenticated) {
+        return nextjsMiddlewareRedirect(request, "/my-account");
+      }
+    }
+
+    return NextResponse.next();
+  }
+);
 
 // Matcher config remains the same
 export const config = {

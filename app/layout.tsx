@@ -1,4 +1,5 @@
 import "./globals.css";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
@@ -13,6 +14,7 @@ import {
   getWebSiteSchema,
 } from "@/lib/structuredData";
 import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
+import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
@@ -146,14 +148,18 @@ export default function RootLayout({
         <script defer src="https://assets.onedollarstats.com/stonks.js" />
       </head>
       <body className={readexPro.variable}>
-        <PostHogProvider>
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-          </div>
-          <PostHogPageViewWrapper />
-        </PostHogProvider>
+        <ConvexAuthNextjsServerProvider>
+          <ConvexClientProvider>
+            <PostHogProvider>
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-grow">{children}</main>
+                <Footer />
+              </div>
+              <PostHogPageViewWrapper />
+            </PostHogProvider>
+          </ConvexClientProvider>
+        </ConvexAuthNextjsServerProvider>
         <Analytics />
         <SpeedInsights />
       </body>

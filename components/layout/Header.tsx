@@ -1,6 +1,6 @@
 "use client";
 
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -166,21 +166,17 @@ export const Header = () => {
 
   // --- Authentication State ---
   const { session, isInstructor } = useProfile();
-  const supabase = useSupabaseClient();
+  const { signOut } = useAuthActions();
   const router = useRouter();
 
-  const isLoggedIn = !!session; // Simple boolean check
+  const isLoggedIn = !!session;
 
   const _handleLogout = async () => {
-    setActiveDesktopDropdown(null); // Close any open dropdowns
+    setActiveDesktopDropdown(null);
     closeMobileMenu();
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        // Optionally show an error message to the user
-      } else {
-        router.push("/"); // Redirect only on successful logout
-      }
+      await signOut();
+      router.push("/");
     } catch (_err) {
       // Handle unexpected errors
     }

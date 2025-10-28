@@ -1,0 +1,44 @@
+import { authTables } from "@convex-dev/auth/server";
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+const schema = defineSchema({
+  ...authTables,
+
+  profiles: defineTable({
+    userId: v.id("users"), // Reference to auth users table
+    isInstructor: v.boolean(),
+    updatedAt: v.optional(v.string()),
+    lastLogin: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_instructor_status", ["isInstructor"]),
+
+  products: defineTable({
+    originalCsvId: v.optional(v.number()),
+    sku: v.optional(v.string()),
+    name: v.string(),
+    description: v.optional(v.string()),
+    imageUrls: v.optional(v.string()),
+    categories: v.optional(v.array(v.string())),
+    type: v.string(), // 'digital' | 'aed' | 'ecard'
+    requiresInstructor: v.boolean(),
+    stripePriceId: v.optional(v.string()),
+  })
+    .index("by_type", ["type"])
+    .index("by_requires_instructor", ["requiresInstructor"]),
+
+  analytics: defineTable({
+    url: v.optional(v.string()),
+    referrer: v.optional(v.string()),
+    userId: v.optional(v.id("users")),
+    ipAddress: v.optional(v.string()),
+    city: v.optional(v.string()),
+    region: v.optional(v.string()),
+    country: v.optional(v.string()),
+  })
+    .index("by_user", ["userId"])
+    .index("by_url", ["url"]),
+});
+
+export default schema;

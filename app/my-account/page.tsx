@@ -1,10 +1,9 @@
 "use client";
 
-import type { User } from "@supabase/supabase-js";
+import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
 import { useProfile } from "../../hooks/useProfile";
 
 const ADMIN_EMAILS = [
@@ -12,7 +11,7 @@ const ADMIN_EMAILS = [
   "evan@tayloredinstruction.com",
 ] as const;
 
-const getProfileStatus = (
+const _getProfileStatus = (
   profile: unknown,
   loadingProfile: boolean
 ): string => {
@@ -31,37 +30,22 @@ const isAdminEmail = (email: string | null | undefined): boolean =>
 
 export default function MyAccountPage() {
   const router = useRouter();
-  const [supabaseClient] = useState(() => createClient());
-  const [user, setUser] = useState<User | null>(null);
-  const [userLoading, setUserLoading] = useState(true);
-
-  const { profile, loading, isInstructor, error } = useProfile(user?.id);
+  const { signOut } = useAuthActions();
+  const authToken = useAuthToken();
+  const { profile, loading, isInstructor, error, email } = useProfile();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
 
-  // Get user on mount
   useEffect(() => {
-    const getUser = async () => {
-      const {
-        data: { user: currentUser },
-      } = await supabaseClient.auth.getUser();
-      setUser(currentUser);
-      setUserLoading(false);
-    };
-    getUser();
-  }, [supabaseClient]);
+    setIsAdmin(isAdminEmail(email));
+  }, [email]);
 
   useEffect(() => {
-    setIsAdmin(isAdminEmail(user?.email));
-  }, [user]);
-
-  // Redirect if not logged in
-  useEffect(() => {
-    if (!(userLoading || user)) {
+    if (!loading && authToken === null) {
       router.push("/login");
     }
-  }, [userLoading, user, router]);
+  }, [loading, authToken, router]);
 
   if (error) {
     return (
@@ -80,21 +64,17 @@ export default function MyAccountPage() {
     );
   }
 
-  if (userLoading || loading) {
-    const profileStatus = getProfileStatus(profile, loading);
+  if (loading) {
     return (
       <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
           <p className="text-lg">Loading account information...</p>
-          <p className="mt-2 text-gray-500 text-sm">
-            User: {user ? "Loaded" : "Loading"} | Profile: {profileStatus}
-          </p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  if (authToken === null) {
     return (
       <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">
@@ -114,7 +94,7 @@ export default function MyAccountPage() {
 
           <div className="mb-4">
             <p className="text-gray-600">Email:</p>
-            <p className="font-medium">{user.email || "Not available"}</p>
+            <p className="font-medium">{email || "Not available"}</p>
           </div>
 
           <div className="mb-4">
@@ -185,10 +165,8 @@ export default function MyAccountPage() {
         <button
           className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
           onClick={async () => {
-            const { error: signOutError } = await supabaseClient.auth.signOut();
-            if (!signOutError) {
-              router.push("/");
-            }
+            await signOut();
+            router.push("/");
           }}
           type="button"
         >
