@@ -46,7 +46,7 @@ export const getProducts = query({
       args.type !== undefined
         ? await ctx.db
             .query("products")
-            .withIndex("by_type", (q) => q.eq("type", args.type))
+            .withIndex("by_type", (q) => q.eq("type", args.type as string))
             .collect()
         : await ctx.db.query("products").collect();
 

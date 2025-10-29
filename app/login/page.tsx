@@ -26,7 +26,7 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      await signIn("magic-link", { email });
+      await signIn("email", { email });
       setMessage("Check your email for a magic link to sign in!");
       posthog.capture("magic_link_requested", { email });
     } catch (error) {

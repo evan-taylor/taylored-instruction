@@ -18,8 +18,8 @@ function mapConvexProfileToLocal(
   return {
     id: convexProfile.id,
     isInstructor: convexProfile.is_instructor,
-    updatedAt: convexProfile.updated_at,
-    lastLogin: convexProfile.last_login,
+    updatedAt: convexProfile.updated_at ?? null,
+    lastLogin: convexProfile.last_login ?? null,
     userEmail: convexProfile.user_email,
     shortId: convexProfile.short_id,
   };
