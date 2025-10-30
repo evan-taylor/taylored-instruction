@@ -10,9 +10,12 @@ const schema = defineSchema({
     isInstructor: v.boolean(),
     updatedAt: v.optional(v.string()),
     lastLogin: v.optional(v.string()),
+    notifiedAt: v.optional(v.string()),
+    deactivatedAt: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
-    .index("by_instructor_status", ["isInstructor"]),
+    .index("by_instructor_status", ["isInstructor"])
+    .index("by_deactivated", ["deactivatedAt"]),
 
   products: defineTable({
     originalCsvId: v.optional(v.number()),
