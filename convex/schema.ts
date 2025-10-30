@@ -39,6 +39,19 @@ const schema = defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_url", ["url"]),
+
+  staging_profiles: defineTable({
+    email: v.string(),
+    supabaseUserId: v.string(), // Original Supabase auth.users.id
+    isInstructor: v.boolean(),
+    updatedAt: v.optional(v.string()),
+    lastLogin: v.optional(v.string()),
+    processedAt: v.optional(v.number()), // Timestamp when attached to Convex user
+    convexUserId: v.optional(v.id("users")), // Set when attached
+  })
+    .index("by_email", ["email"])
+    .index("by_supabase_id", ["supabaseUserId"])
+    .index("by_processed", ["processedAt"]),
 });
 
 export default schema;

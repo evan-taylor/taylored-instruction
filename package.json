@@ -12,7 +12,8 @@
     "drizzle:generate": "drizzle-kit generate",
     "drizzle:migrate": "drizzle-kit migrate",
     "drizzle:push": "drizzle-kit push",
-    "drizzle:pull": "drizzle-kit pull"
+    "drizzle:pull": "drizzle-kit pull",
+    "migrate:supabase": "tsx scripts/migrateFromSupabase.ts"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.90",
@@ -66,6 +67,7 @@
     "postcss": "^8.4.31",
     "supabase": "^2.22.6",
     "tailwindcss": "^3.3.5",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.2",
     "ultracite": "^5.4.5"
   }
