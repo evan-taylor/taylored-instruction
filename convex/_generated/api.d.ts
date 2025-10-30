@@ -13,6 +13,7 @@ import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as http from "../http.js";
 import type * as migration from "../migration.js";
+import type * as notifications from "../notifications.js";
 import type * as products from "../products.js";
 import type * as profiles from "../profiles.js";
 
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   http: typeof http;
   migration: typeof migration;
+  notifications: typeof notifications;
   products: typeof products;
   profiles: typeof profiles;
 }>;
