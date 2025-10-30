@@ -1,11 +1,13 @@
 "use client";
 
+import { useQuery } from "convex/react";
 import { Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
+import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 
 type Product = {
@@ -34,6 +36,7 @@ export default function ECardsPage() {
   const router = useRouter();
   const posthog = usePostHog();
   const { isInstructor, loading, session } = useProfile();
+  const ecardProducts = useQuery(api.products.getEcardProducts);
   const [products, setProducts] = useState<ProductWithPrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,16 +111,16 @@ export default function ECardsPage() {
     };
 
     const enrichProduct = (
-      supaProduct: Product,
+      convexProduct: Product,
       stripePriceDataArray: StripePriceData[]
     ) => {
       const CentsInDollar = 100;
       const stripeInfo = stripePriceDataArray.find(
-        (sp) => sp.id === supaProduct.stripe_price_id && !sp.error
+        (sp) => sp.id === convexProduct.stripe_price_id && !sp.error
       );
       if (stripeInfo && stripeInfo.unit_amount !== null) {
         return {
-          ...supaProduct,
+          ...convexProduct,
           display_price: stripeInfo.unit_amount / CentsInDollar,
           currency: stripeInfo.currency.toUpperCase(),
           stripe_product_name: stripeInfo.product_name,
@@ -125,20 +128,10 @@ export default function ECardsPage() {
         };
       }
       return {
-        ...supaProduct,
+        ...convexProduct,
         display_price: 0,
         currency: "N/A",
       };
-    };
-
-    const parseResponseJson = async (
-      response: Response
-    ): Promise<unknown | null> => {
-      try {
-        return await response.json();
-      } catch (_error) {
-        return null;
-      }
     };
 
     const extractPriceIds = (items: Product[]): string[] =>
@@ -158,23 +151,23 @@ export default function ECardsPage() {
       );
     };
 
-    const handleSupabaseProducts = async (supabaseProducts: Product[]) => {
-      if (supabaseProducts.length === 0) {
+    const handleConvexProducts = async (convexProducts: Product[]) => {
+      if (convexProducts.length === 0) {
         setProducts([]);
         return;
       }
 
-      const priceIds = extractPriceIds(supabaseProducts);
+      const priceIds = extractPriceIds(convexProducts);
 
       if (priceIds.length === 0) {
-        applyFallbackPricing(supabaseProducts);
+        applyFallbackPricing(convexProducts);
         return;
       }
 
       const stripePriceDataArray = await fetchStripePrices(priceIds);
       setProducts(
-        supabaseProducts.map((supaProduct) =>
-          enrichProduct(supaProduct, stripePriceDataArray)
+        convexProducts.map((convexProduct) =>
+          enrichProduct(convexProduct, stripePriceDataArray)
         )
       );
     };
@@ -192,35 +185,15 @@ export default function ECardsPage() {
       return "Failed to fetch eCards and their prices. Please try again.";
     };
 
-    const fetchSupabaseProducts = async (): Promise<Product[]> => {
-      const response = await fetch("/api/products/ecard");
-      const payload = await parseResponseJson(response);
-
-      if (!response.ok) {
-        const message =
-          payload &&
-          typeof payload === "object" &&
-          "error" in payload &&
-          typeof (payload as { error?: unknown }).error === "string"
-            ? (payload as { error: string }).error
-            : "Failed to fetch eCards";
-        throw new Error(message);
-      }
-
-      if (!Array.isArray(payload)) {
-        return [];
-      }
-
-      return payload as Product[];
-    };
-
     const loadEcardProducts = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const supabaseProducts = await fetchSupabaseProducts();
-        await handleSupabaseProducts(supabaseProducts);
+        if (!ecardProducts) {
+          return;
+        }
+        await handleConvexProducts(ecardProducts as unknown as Product[]);
       } catch (caughtError: unknown) {
         setError(parseErrorMessage(caughtError));
         setProducts([]);
@@ -229,11 +202,11 @@ export default function ECardsPage() {
       }
     };
 
-    if (loading) {
+    if (loading || ecardProducts === undefined) {
       return;
     }
 
-    if (session && isInstructor) {
+    if (session && isInstructor && ecardProducts) {
       loadEcardProducts();
       return;
     }
@@ -241,7 +214,7 @@ export default function ECardsPage() {
     setError(null);
     setIsLoading(false);
     setProducts([]);
-  }, [loading, session, isInstructor]);
+  }, [loading, session, isInstructor, ecardProducts]);
 
   const getImageUrl = (imageUrl: string | null): string => {
     if (!imageUrl || imageUrl.trim() === "") {

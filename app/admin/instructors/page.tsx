@@ -1,8 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
-import { createClient } from "@/utils/supabase/client";
+import { Suspense } from "react";
 import { useProfile } from "../../../hooks/useProfile";
 import { AlertMessages } from "./alert-messages";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -21,11 +20,10 @@ function AdminInstructorsContent() {
   const searchParams = useSearchParams();
   const { loading: profileLoading, session } = useProfile();
 
-  const [supabase] = useState(() => createClient());
   const forceAdmin = searchParams?.get("admin") === "true";
 
   const { isAdmin, userEmailForDisplay, adminAccessCheckInProgress } =
-    useAdminAuth(profileLoading, session, forceAdmin, supabase);
+    useAdminAuth(profileLoading, session, forceAdmin);
 
   const {
     profiles,
@@ -42,7 +40,7 @@ function AdminInstructorsContent() {
     confirmRejectUser,
     cancelRejectUser,
     confirmDialogState,
-  } = useInstructorActions(supabase, profiles, setProfiles);
+  } = useInstructorActions(profiles, setProfiles);
 
   const error = fetchError || actionError;
 

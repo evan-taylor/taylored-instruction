@@ -61,6 +61,24 @@
           }
         }
       }
+    },
+    {
+      "includes": ["convex/tsconfig.json", "convex/_generated/**"],
+      "json": {
+        "parser": {
+          "allowComments": true
+        }
+      }
+    },
+    {
+      "includes": ["scripts/migrateFromSupabase.ts"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
+          }
+        }
+      }
     }
   ]
 }

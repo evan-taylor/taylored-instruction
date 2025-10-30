@@ -1,4 +1,3 @@
-import type { User } from "@supabase/supabase-js";
 import {
   ADMIN_EMAILS,
   DAYS_IN_MONTH,
@@ -31,27 +30,6 @@ export function formatLastLogin(lastLogin: string | null): LastLoginDisplay {
     return { text: `${diffInDays} days ago`, className: "text-orange-600" };
   }
   return { text: loginDate.toLocaleDateString(), className: "text-red-600" };
-}
-
-export function extractUserEmail(user: User): string | null {
-  if (user.email) {
-    return user.email;
-  }
-
-  if (user.user_metadata?.email) {
-    return user.user_metadata.email as string;
-  }
-
-  if (user.identities) {
-    const googleIdentity = user.identities.find(
-      (id) => id.provider === "google"
-    );
-    if (googleIdentity?.identity_data?.email) {
-      return googleIdentity.identity_data.email as string;
-    }
-  }
-
-  return null;
 }
 
 export function isAdminEmail(
