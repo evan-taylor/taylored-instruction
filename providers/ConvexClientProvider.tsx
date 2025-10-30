@@ -5,11 +5,12 @@ import { ConvexReactClient } from "convex/react";
 import type { ReactNode } from "react";
 import { MigrationAttachment } from "@/components/MigrationAttachment";
 
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+const convexUrl =
+  process.env.NEXT_PUBLIC_CONVEX_URL || process.env.NEXT_PUBLIC_CONVEX_SITE_URL;
 
 if (!convexUrl) {
   throw new Error(
-    "Missing NEXT_PUBLIC_CONVEX_URL environment variable. Please add it to your .env.local file."
+    "Missing Convex URL. Please set NEXT_PUBLIC_CONVEX_URL in your environment or ensure the Convex Preview Deployments integration is enabled in Vercel. See https://docs.convex.dev/production/hosting/preview-deployments"
   );
 }
 
