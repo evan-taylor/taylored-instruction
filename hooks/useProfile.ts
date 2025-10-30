@@ -24,19 +24,18 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
   const authToken = useAuthToken();
   const profile = useQuery(api.profiles.getProfile);
 
-  const loading = profile === undefined;
+  const loading = authToken === undefined || profile === undefined;
   const isAuthenticated = authToken !== null;
   const isInstructor = profile?.is_instructor ?? false;
 
-  const session =
-    isAuthenticated && profile
-      ? {
-          user: {
-            id: profile.userId,
-            email: profile.userId,
-          },
-        }
-      : null;
+  const session = isAuthenticated
+    ? {
+        user: {
+          id: profile?.userId ?? "unknown",
+          email: profile?.userId,
+        },
+      }
+    : null;
 
   return {
     session,

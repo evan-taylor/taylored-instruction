@@ -1,24 +1,34 @@
 "use client";
 
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
+import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { api } from "@/convex/_generated/api";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
   const router = useRouter();
   const posthog = usePostHog();
   const authToken = useAuthToken();
+  const updateLastLogin = useMutation(api.profiles.updateLastLogin);
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const hasCreatedProfile = useRef(false);
 
   useEffect(() => {
     if (authToken !== null) {
+      if (!hasCreatedProfile.current) {
+        hasCreatedProfile.current = true;
+        updateLastLogin().catch(() => {
+          // Intentionally ignore profile creation errors to not block login
+        });
+      }
       router.push("/my-account");
     }
-  }, [authToken, router]);
+  }, [authToken, router, updateLastLogin]);
 
   const handleMagicLinkSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
