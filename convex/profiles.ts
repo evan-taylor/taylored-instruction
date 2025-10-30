@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
 export const getProfile = query({
@@ -16,6 +17,10 @@ export const getProfile = query({
       .first();
 
     if (existingProfile) {
+      if (existingProfile.deactivatedAt) {
+        return null;
+      }
+
       return {
         id: existingProfile._id,
         userId: existingProfile.userId,
@@ -49,7 +54,18 @@ export const updateLastLogin = mutation({
         isInstructor: false,
         updatedAt: now,
         lastLogin: now,
+        notifiedAt: now,
       });
+
+      const user = await ctx.db.get(userId);
+      await ctx.scheduler.runAfter(
+        0,
+        internal.notifications.sendNewUserAdminNotification,
+        {
+          userId,
+          userEmail: user?.email,
+        }
+      );
       return;
     }
 
@@ -99,5 +115,96 @@ export const getProfileByUserId = query({
       updated_at: profile.updatedAt,
       last_login: profile.lastLogin,
     };
+  },
+});
+
+const assertAdmin = async (ctx: MutationCtx) => {
+  const currentUserId = await auth.getUserId(ctx);
+  if (!currentUserId) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await ctx.db.get(currentUserId);
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const adminEmails = [
+    "admin@tayloredinstruction.com",
+    "evan@tayloredinstruction.com",
+  ];
+  const isAdmin = user.email && adminEmails.includes(user.email);
+
+  if (!isAdmin) {
+    throw new Error("Forbidden: Admin access required");
+  }
+};
+
+export const approveInstructor = mutation({
+  args: {
+    userId: v.id("users"),
+    approve: v.boolean(),
+  },
+  handler: async (ctx, args) => {
+    await assertAdmin(ctx);
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (!profile) {
+      throw new Error("Profile not found");
+    }
+
+    const wasInstructor = profile.isInstructor;
+    const willBeInstructor = args.approve;
+
+    if (wasInstructor === willBeInstructor) {
+      return;
+    }
+
+    const now = new Date().toISOString();
+    await ctx.db.patch(profile._id, {
+      isInstructor: willBeInstructor,
+      updatedAt: now,
+    });
+
+    if (!wasInstructor && willBeInstructor) {
+      const user = await ctx.db.get(args.userId);
+      if (user?.email) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.notifications.sendInstructorApprovalEmail,
+          {
+            email: user.email,
+            name: user.name,
+          }
+        );
+      }
+    }
+  },
+});
+
+export const deactivateUser = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await assertAdmin(ctx);
+
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+      .first();
+
+    if (!profile) {
+      throw new Error("Profile not found");
+    }
+
+    const now = new Date().toISOString();
+    await ctx.db.patch(profile._id, {
+      deactivatedAt: now,
+    });
   },
 });
