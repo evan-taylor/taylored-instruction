@@ -1,34 +1,25 @@
 "use client";
 
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth } from "convex/react";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useRef, useState } from "react";
-import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const { signIn } = useAuthActions();
   const { isAuthenticated } = useConvexAuth();
   const router = useRouter();
   const posthog = usePostHog();
-  const updateLastLogin = useMutation(api.profiles.updateLastLogin);
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const hasCreatedProfile = useRef(false);
 
   useEffect(() => {
     if (isAuthenticated) {
-      if (!hasCreatedProfile.current) {
-        hasCreatedProfile.current = true;
-        updateLastLogin().catch(() => {
-          // Intentionally ignore profile creation errors to not block login
-        });
-      }
       router.push("/my-account");
     }
-  }, [isAuthenticated, router, updateLastLogin]);
+  }, [isAuthenticated, router]);
 
   const handleMagicLinkSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +27,11 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      await signIn("email", { email });
+      await signIn("email", { email: email.trim().toLowerCase() });
       setMessage("Check your email for a magic link to sign in!");
-      posthog.capture("magic_link_requested", { email });
+      posthog.capture("magic_link_requested", {
+        email: email.trim().toLowerCase(),
+      });
     } catch (error) {
       setMessage("Failed to send magic link. Please try again.");
       posthog.capture("magic_link_error", { error: String(error) });

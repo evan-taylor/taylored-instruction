@@ -1,11 +1,12 @@
-import { useConvexAuth, useMutation } from "convex/react";
-import { useEffect, useState } from "react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 
 export function useMigrationAttachment() {
   const attachUserData = useMutation(api.migration.attachUserDataOnLogin);
   const { isAuthenticated } = useConvexAuth();
-  const [hasAttempted, setHasAttempted] = useState(false);
+  const profile = useQuery(api.profiles.getProfile);
+  const lastProcessedUserId = useRef<string | null>(null);
   const [result, setResult] = useState<{
     attached: boolean;
     reason?: string;
@@ -14,11 +15,15 @@ export function useMigrationAttachment() {
 
   useEffect(() => {
     async function attemptAttachment() {
-      if (hasAttempted || !isAuthenticated) {
+      if (!(isAuthenticated && profile?.userId)) {
         return;
       }
 
-      setHasAttempted(true);
+      if (lastProcessedUserId.current === profile.userId) {
+        return;
+      }
+
+      lastProcessedUserId.current = profile.userId;
 
       try {
         const attachResult = await attachUserData();
@@ -29,7 +34,7 @@ export function useMigrationAttachment() {
     }
 
     attemptAttachment();
-  }, [attachUserData, isAuthenticated, hasAttempted]);
+  }, [attachUserData, isAuthenticated, profile?.userId]);
 
   return result;
 }

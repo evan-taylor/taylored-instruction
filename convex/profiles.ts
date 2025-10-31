@@ -21,9 +21,12 @@ export const getProfile = query({
         return null;
       }
 
+      const user = await ctx.db.get(userId);
+
       return {
         id: existingProfile._id,
         userId: existingProfile.userId,
+        email: user?.email ?? null,
         is_instructor: existingProfile.isInstructor,
         updated_at: existingProfile.updatedAt,
         last_login: existingProfile.lastLogin,

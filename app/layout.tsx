@@ -4,6 +4,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Readex_Pro } from "next/font/google";
+import { AuthEffects } from "@/components/auth-effects";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import {
@@ -151,6 +152,7 @@ export default function RootLayout({
         <body className={readexPro.variable}>
           <ConvexClientProvider>
             <PostHogProvider>
+              <AuthEffects />
               <div className="flex min-h-screen flex-col">
                 <Header />
                 <main className="flex-grow">{children}</main>

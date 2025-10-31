@@ -10,12 +10,16 @@ export const attachUserDataOnLogin = mutation({
       throw new Error("Not authenticated");
     }
 
+    const user = await ctx.db.get(userId);
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.email) {
-      throw new Error("No email found for user");
-    }
+    const email = (user?.email ?? identity?.email ?? "").toLowerCase();
 
-    const email = identity.email.toLowerCase();
+    if (!email) {
+      return {
+        attached: false,
+        reason: "No email found on user record or identity",
+      };
+    }
 
     const existingProfile = await ctx.db
       .query("profiles")
@@ -29,12 +33,23 @@ export const attachUserDataOnLogin = mutation({
     const stagingProfile = await ctx.db
       .query("staging_profiles")
       .withIndex("by_email", (q) => q.eq("email", email))
-      .filter((q) => q.eq(q.field("processedAt"), undefined))
       .first();
 
     if (!stagingProfile) {
       return { attached: false, reason: "No staging profile found" };
     }
+
+    if (stagingProfile.processedAt !== undefined) {
+      return {
+        attached: false,
+        reason: "Staging profile already processed",
+      };
+    }
+
+    await ctx.db.patch(stagingProfile._id, {
+      processedAt: Date.now(),
+      convexUserId: userId,
+    });
 
     await ctx.db.insert("profiles", {
       userId,
@@ -43,10 +58,16 @@ export const attachUserDataOnLogin = mutation({
       lastLogin: new Date().toISOString(),
     });
 
-    await ctx.db.patch(stagingProfile._id, {
-      processedAt: Date.now(),
-      convexUserId: userId,
-    });
+    const allProfilesForUser = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    if (allProfilesForUser.length > 1) {
+      throw new Error(
+        `Multiple profiles detected for userId ${userId}: ${allProfilesForUser.length} profiles exist`
+      );
+    }
 
     return {
       attached: true,
@@ -66,12 +87,13 @@ export const checkStagingProfile = query({
       return null;
     }
 
+    const user = await ctx.db.get(userId);
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity?.email) {
+    const email = (user?.email ?? identity?.email ?? "").toLowerCase();
+
+    if (!email) {
       return null;
     }
-
-    const email = identity.email.toLowerCase();
 
     const stagingProfile = await ctx.db
       .query("staging_profiles")
@@ -92,10 +114,13 @@ export const getMigrationStats = query({
       throw new Error("Not authenticated");
     }
 
+    const user = await ctx.db.get(userId);
     const identity = await ctx.auth.getUserIdentity();
+    const email = user?.email ?? identity?.email ?? "";
+
     const isAdmin =
-      identity?.email === "admin@tayloredinstruction.com" ||
-      identity?.email === "evan@tayloredinstruction.com";
+      email === "admin@tayloredinstruction.com" ||
+      email === "evan@tayloredinstruction.com";
 
     if (!isAdmin) {
       throw new Error("Admin access required");
