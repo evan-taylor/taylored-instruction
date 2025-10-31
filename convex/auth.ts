@@ -17,6 +17,7 @@ if (process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM) {
         const resend = new Resend(resendApiKey);
         const verificationUrl = new URL(url);
         verificationUrl.searchParams.set("email", identifier);
+        verificationUrl.searchParams.set("redirectTo", "/my-account");
         const link = verificationUrl.toString();
 
         await resend.emails.send({
