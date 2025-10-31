@@ -33,7 +33,7 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
     ? {
         user: {
           id: profile?.userId ?? "unknown",
-          email: profile?.email ?? null,
+          email: profile?.email ?? undefined,
         },
       }
     : null;
