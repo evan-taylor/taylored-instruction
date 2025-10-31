@@ -186,19 +186,7 @@ export const approveInstructor = mutation({
       updatedAt: now,
     });
 
-    if (!wasInstructor && willBeInstructor) {
-      const user = await ctx.db.get(args.userId);
-      if (user?.email) {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.notifications.sendInstructorApprovalEmail,
-          {
-            email: user.email,
-            name: user.name,
-          }
-        );
-      }
-    }
+    // Note: Approval email is now sent by the admin UI via Next.js server action
   },
 });
 
