@@ -95,12 +95,29 @@ http.route({
       });
     }
 
-    const siteUrl = process.env.CONVEX_SITE_URL || process.env.SITE_URL;
-    if (siteUrl && !result.callbackUrl?.startsWith(siteUrl)) {
-      return new Response(JSON.stringify({ error: "Invalid callback URL" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json" },
-      });
+    const convexUrl = process.env.CONVEX_URL;
+    if (convexUrl && result.callbackUrl) {
+      try {
+        const allowedOrigin = new URL(convexUrl).origin;
+        const callbackOrigin = new URL(result.callbackUrl).origin;
+        if (callbackOrigin !== allowedOrigin) {
+          return new Response(
+            JSON.stringify({ error: "Invalid callback URL origin" }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json" },
+            }
+          );
+        }
+      } catch (_error) {
+        return new Response(
+          JSON.stringify({ error: "Invalid callback URL format" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
     }
 
     return new Response(
