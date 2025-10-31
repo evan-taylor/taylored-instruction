@@ -26,10 +26,6 @@ export const attachUserDataOnLogin = mutation({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
 
-    if (existingProfile) {
-      return { attached: false, reason: "Profile already exists" };
-    }
-
     const stagingProfile = await ctx.db
       .query("staging_profiles")
       .withIndex("by_email", (q) => q.eq("email", email))
@@ -43,6 +39,27 @@ export const attachUserDataOnLogin = mutation({
       return {
         attached: false,
         reason: "Staging profile already processed",
+      };
+    }
+
+    if (existingProfile) {
+      await ctx.db.patch(existingProfile._id, {
+        isInstructor: stagingProfile.isInstructor,
+        updatedAt: stagingProfile.updatedAt,
+      });
+
+      await ctx.db.patch(stagingProfile._id, {
+        processedAt: Date.now(),
+        convexUserId: userId,
+      });
+
+      return {
+        attached: true,
+        merged: true,
+        profile: {
+          isInstructor: stagingProfile.isInstructor,
+          supabaseUserId: stagingProfile.supabaseUserId,
+        },
       };
     }
 
@@ -71,6 +88,7 @@ export const attachUserDataOnLogin = mutation({
 
     return {
       attached: true,
+      merged: false,
       profile: {
         isInstructor: stagingProfile.isInstructor,
         supabaseUserId: stagingProfile.supabaseUserId,
