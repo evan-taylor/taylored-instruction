@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -13,44 +13,39 @@ function getStripeClient(): Stripe {
   });
 }
 
-function getPriceCached(id: string) {
-  return unstable_cache(
-    async () => {
-      const price = await getStripeClient().prices.retrieve(id, {
-        expand: ["product"],
-      });
+async function getPriceCached(id: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`stripe-price:${id}`);
 
-      let productName: string | undefined;
-      let productDescription: string | null | undefined;
-      let productImages: string[] | undefined;
+  const price = await getStripeClient().prices.retrieve(id, {
+    expand: ["product"],
+  });
 
-      if (
-        price.product &&
-        typeof price.product === "object" &&
-        "name" in price.product
-      ) {
-        const productData = price.product as Stripe.Product;
-        productName = productData.name;
-        productDescription = productData.description;
-        productImages = productData.images;
-      }
+  let productName: string | undefined;
+  let productDescription: string | null | undefined;
+  let productImages: string[] | undefined;
 
-      return {
-        id: price.id,
-        unit_amount: price.unit_amount,
-        currency: price.currency,
-        product_id: price.product,
-        product_name: productName,
-        product_description: productDescription,
-        product_images: productImages,
-      };
-    },
-    [`stripe-price-${id}`],
-    {
-      revalidate: 3600, // 1 hour
-      tags: [`stripe-price:${id}`],
-    }
-  )();
+  if (
+    price.product &&
+    typeof price.product === "object" &&
+    "name" in price.product
+  ) {
+    const productData = price.product as Stripe.Product;
+    productName = productData.name;
+    productDescription = productData.description;
+    productImages = productData.images;
+  }
+
+  return {
+    id: price.id,
+    unit_amount: price.unit_amount,
+    currency: price.currency,
+    product_id: price.product,
+    product_name: productName,
+    product_description: productDescription,
+    product_images: productImages,
+  };
 }
 
 // Note: We avoid exporting/using an explicit type alias here to satisfy linter rules

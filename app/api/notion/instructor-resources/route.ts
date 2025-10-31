@@ -1,35 +1,28 @@
 import { Client } from "@notionhq/client";
-import { unstable_cache } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-function fetchNotionPageCached(pageId: string) {
-  return unstable_cache(
-    async () => await notion.pages.retrieve({ page_id: pageId }),
-    [`notion-page-${pageId}`],
-    {
-      revalidate: 3600, // 1 hour
-      tags: ["notion-instructor"],
-    }
-  )();
+async function fetchNotionPageCached(pageId: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("notion-instructor");
+
+  return await notion.pages.retrieve({ page_id: pageId });
 }
 
-function fetchNotionBlocksCached(pageId: string) {
-  return unstable_cache(
-    async () =>
-      await notion.blocks.children.list({
-        block_id: pageId,
-        page_size: 100,
-      }),
-    [`notion-blocks-${pageId}`],
-    {
-      revalidate: 3600, // 1 hour
-      tags: ["notion-instructor"],
-    }
-  )();
+async function fetchNotionBlocksCached(pageId: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("notion-instructor");
+
+  return await notion.blocks.children.list({
+    block_id: pageId,
+    page_size: 100,
+  });
 }
 
 export async function GET(req: NextRequest) {

@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
+  cacheComponents: true, // Enable Cache Components (PPR) for Next.js 16
   images: {
     // domains: ['tayloredinstruction.com', 'www.tayloredinstruction.com'], // Deprecated
     remotePatterns: [

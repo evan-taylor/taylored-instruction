@@ -63,6 +63,16 @@
       }
     },
     {
+      "includes": ["app/(marketing)/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
+        }
+      }
+    },
+    {
       "includes": ["convex/tsconfig.json", "convex/_generated/**"],
       "json": {
         "parser": {
