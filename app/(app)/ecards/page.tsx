@@ -121,6 +121,7 @@ export default function ECardsPage() {
     }
 
     if (lastFetchedIdsRef.current === idsKey) {
+      setIsLoading(false);
       return;
     }
 
@@ -214,9 +215,7 @@ export default function ECardsPage() {
         setError(parseErrorMessage(caughtError));
         setProducts([]);
       } finally {
-        if (!aborted) {
-          setIsLoading(false);
-        }
+        setIsLoading(false);
       }
     })();
 
