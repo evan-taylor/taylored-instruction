@@ -13,6 +13,12 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
+  const url = new URL(request.url);
+
+  if (url.searchParams.has("code")) {
+    return;
+  }
+
   if (isDebugRoute(request)) {
     return;
   }
