@@ -4,8 +4,6 @@ import { z } from "zod";
 import InstructorApprovalEmail from "@/emails/InstructorApprovalEmail";
 import { getResendClient } from "@/lib/resend";
 
-export const runtime = "nodejs";
-
 const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
 
 const ApprovalEmailSchema = z.object({
