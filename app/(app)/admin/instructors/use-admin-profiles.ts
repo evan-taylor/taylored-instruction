@@ -5,6 +5,7 @@ import type { ProfileWithUser } from "./types";
 
 type ConvexProfile = {
   id: string;
+  userId: string;
   is_instructor: boolean;
   updated_at: string | null | undefined;
   last_login: string | null | undefined;
@@ -17,6 +18,7 @@ function mapConvexProfileToLocal(
 ): ProfileWithUser {
   return {
     id: convexProfile.id,
+    userId: convexProfile.userId,
     isInstructor: convexProfile.is_instructor,
     updatedAt: convexProfile.updated_at ?? null,
     lastLogin: convexProfile.last_login ?? null,
