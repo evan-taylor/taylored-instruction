@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   ],
 };
 
+export const revalidate = 86_400;
+
 export default function PrivacyPolicyPage() {
   return (
     <>

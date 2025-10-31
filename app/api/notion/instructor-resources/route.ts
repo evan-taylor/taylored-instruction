@@ -1,11 +1,36 @@
 import { Client } from "@notionhq/client";
+import { unstable_cache } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 
 const notion = new Client({
   auth: process.env.NOTION_API_KEY,
 });
 
-export const dynamic = "force-dynamic";
+function fetchNotionPageCached(pageId: string) {
+  return unstable_cache(
+    async () => await notion.pages.retrieve({ page_id: pageId }),
+    [`notion-page-${pageId}`],
+    {
+      revalidate: 3600, // 1 hour
+      tags: ["notion-instructor"],
+    }
+  )();
+}
+
+function fetchNotionBlocksCached(pageId: string) {
+  return unstable_cache(
+    async () =>
+      await notion.blocks.children.list({
+        block_id: pageId,
+        page_size: 100,
+      }),
+    [`notion-blocks-${pageId}`],
+    {
+      revalidate: 3600, // 1 hour
+      tags: ["notion-instructor"],
+    }
+  )();
+}
 
 export async function GET(req: NextRequest) {
   try {
@@ -28,33 +53,26 @@ export async function GET(req: NextRequest) {
     }
 
     let page: unknown;
-    try {
-      page = await notion.pages.retrieve({ page_id: pageId.toString() });
-    } catch (pageError: unknown) {
-      const pErr = pageError as { message?: string; code?: string };
-      return NextResponse.json(
-        {
-          error: "Failed to retrieve page",
-          details: pErr.message,
-          code: pErr.code,
-        },
-        { status: 500 }
-      );
-    }
-
     let blocks: { results: unknown[] };
+
     try {
-      blocks = await notion.blocks.children.list({
-        block_id: pageId.toString(),
-        page_size: 100,
-      });
-    } catch (blocksError: unknown) {
-      const bErr = blocksError as { message?: string; code?: string };
+      if (requestedPageId) {
+        page = await notion.pages.retrieve({ page_id: pageId.toString() });
+        blocks = await notion.blocks.children.list({
+          block_id: pageId.toString(),
+          page_size: 100,
+        });
+      } else {
+        page = await fetchNotionPageCached(pageId.toString());
+        blocks = await fetchNotionBlocksCached(pageId.toString());
+      }
+    } catch (error: unknown) {
+      const err = error as { message?: string; code?: string };
       return NextResponse.json(
         {
-          error: "Failed to retrieve blocks",
-          details: bErr.message,
-          code: bErr.code,
+          error: "Failed to retrieve page or blocks",
+          details: err.message,
+          code: err.code,
         },
         { status: 500 }
       );
