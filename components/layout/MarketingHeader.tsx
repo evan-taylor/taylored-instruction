@@ -1,5 +1,6 @@
 "use client";
 
+import { useConvexAuth } from "convex/react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -54,7 +55,7 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
   return `${baseClass} ${isActive ? activeClass : ""}`;
 };
 
-const NAV_LINKS: NavTopLevelLink[] = [
+const generateNavLinks = (isAuthenticated: boolean): NavTopLevelLink[] => [
   {
     label: "About Us",
     dropdown: [
@@ -109,7 +110,9 @@ const NAV_LINKS: NavTopLevelLink[] = [
         href: "https://docs.tayloredinstruction.com/",
       },
       { type: "divider", label: "Account" },
-      { label: "Login", href: "/login" },
+      ...(isAuthenticated
+        ? [{ label: "My Account", href: "/my-account" }]
+        : [{ label: "Login", href: "/login" }]),
     ],
   },
 ];
@@ -121,6 +124,9 @@ export const MarketingHeader = () => {
   >(null);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname() ?? "";
+  const { isAuthenticated } = useConvexAuth();
+
+  const navLinks = generateNavLinks(isAuthenticated);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -176,7 +182,7 @@ export const MarketingHeader = () => {
           <nav className="hidden items-center space-x-6 lg:flex">
             <NavMenu
               activeDropdown={activeDesktopDropdown}
-              navLinks={NAV_LINKS}
+              navLinks={navLinks}
               pathname={pathname}
               toggleDropdown={toggleDesktopDropdown}
             />
@@ -212,7 +218,7 @@ export const MarketingHeader = () => {
         <div className="container py-4">
           <MobileNavMenu
             closeMenu={closeMobileMenu}
-            navLinks={NAV_LINKS}
+            navLinks={navLinks}
             pathname={pathname}
           />
           <div className="mt-6 flex flex-col items-center space-y-4">

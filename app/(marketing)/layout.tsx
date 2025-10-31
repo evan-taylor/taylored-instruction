@@ -1,18 +1,25 @@
-"use cache";
-
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import { Suspense } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { MarketingHeader } from "@/components/layout/MarketingHeader";
+import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
-export default async function MarketingLayout({
+export default function MarketingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <MarketingHeader />
-      <main className="flex-grow">{children}</main>
-      <Footer />
-    </div>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <ConvexAuthNextjsServerProvider>
+        <ConvexClientProvider>
+          <div className="flex min-h-screen flex-col">
+            <MarketingHeader />
+            <main className="flex-grow">{children}</main>
+            <Footer />
+          </div>
+        </ConvexClientProvider>
+      </ConvexAuthNextjsServerProvider>
+    </Suspense>
   );
 }
