@@ -51,6 +51,20 @@ export const updateLastLogin = mutation({
       .first();
 
     if (!profile) {
+      const user = await ctx.db.get(userId);
+      const email = user?.email?.toLowerCase();
+
+      if (email) {
+        const stagingProfile = await ctx.db
+          .query("staging_profiles")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .first();
+
+        if (stagingProfile && stagingProfile.processedAt === undefined) {
+          return;
+        }
+      }
+
       const now = new Date().toISOString();
       await ctx.db.insert("profiles", {
         userId,
@@ -60,7 +74,6 @@ export const updateLastLogin = mutation({
         notifiedAt: now,
       });
 
-      const user = await ctx.db.get(userId);
       await ctx.scheduler.runAfter(
         0,
         internal.notifications.sendNewUserAdminNotification,
