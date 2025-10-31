@@ -27,7 +27,10 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      await signIn("email", { email: email.trim().toLowerCase() });
+      await signIn("email", {
+        email: email.trim().toLowerCase(),
+        redirectTo: "/my-account",
+      });
       setMessage("Check your email for a magic link to sign in!");
       posthog.capture("magic_link_requested", {
         email: email.trim().toLowerCase(),
