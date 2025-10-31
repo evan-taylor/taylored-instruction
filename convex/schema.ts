@@ -55,23 +55,6 @@ const schema = defineSchema({
     .index("by_email", ["email"])
     .index("by_supabase_id", ["supabaseUserId"])
     .index("by_processed", ["processedAt"]),
-
-  email_otps: defineTable({
-    email: v.string(),
-    codeHash: v.string(), // Hashed 6-digit code
-    salt: v.string(), // Random salt for hashing
-    callbackUrl: v.string(), // Provider callback URL to complete auth
-    expiresAt: v.number(), // Timestamp when code expires
-    createdAt: v.number(), // Timestamp when code was created
-    consumed: v.boolean(), // Whether code has been used
-    attempts: v.number(), // Number of verification attempts
-    lastSentAt: v.number(), // Timestamp of last send (for rate limiting)
-    ipAddress: v.optional(v.string()), // IP for rate limiting
-    userAgent: v.optional(v.string()), // User agent for tracking
-  })
-    .index("by_email", ["email"])
-    .index("by_expires_at", ["expiresAt"])
-    .index("by_email_and_consumed", ["email", "consumed"]),
 });
 
 export default schema;

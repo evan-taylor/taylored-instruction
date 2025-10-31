@@ -55,9 +55,10 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      await signIn("email", {
-        email: email.trim().toLowerCase(),
-      });
+      const formData = new FormData();
+      formData.append("email", email.trim().toLowerCase());
+
+      await signIn("resend-otp", formData);
       setMessage("We emailed you a 6-digit code!");
       setStep("code");
       setExpiryTime(Date.now() + OTP_EXPIRY_MS);
@@ -78,36 +79,21 @@ export default function LoginPage() {
     setMessage("");
 
     try {
-      const response = await fetch("/api/auth/verify-email-code", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          code: code.trim(),
-        }),
-      });
+      const formData = new FormData();
+      formData.append("email", email.trim().toLowerCase());
+      formData.append("code", code.trim());
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        setMessage(result.error || "Invalid or expired code");
-        posthog.capture("otp_verification_failed", {
-          email: email.trim().toLowerCase(),
-          error: result.error,
-        });
-        return;
-      }
+      await signIn("resend-otp", formData);
 
       posthog.capture("otp_verified", {
         email: email.trim().toLowerCase(),
       });
-
-      window.location.assign(result.redirectUrl);
     } catch (error) {
-      setMessage("An error occurred. Please try again.");
-      posthog.capture("otp_verification_error", { error: String(error) });
+      setMessage("Invalid or expired code. Please try again.");
+      posthog.capture("otp_verification_failed", {
+        email: email.trim().toLowerCase(),
+        error: String(error),
+      });
     } finally {
       setIsLoading(false);
     }
