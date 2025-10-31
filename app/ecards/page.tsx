@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 
@@ -47,6 +47,20 @@ export default function ECardsPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
+  const lastFetchedIdsRef = useRef<string>("");
+
+  const idsKey = useMemo(() => {
+    if (!ecardProducts) {
+      return "";
+    }
+    const ids = ecardProducts
+      .map((p) => p?.stripe_price_id)
+      .filter((id): id is string => !!id && id.trim() !== "")
+      .sort()
+      .join(",");
+    return ids;
+  }, [ecardProducts]);
+
   // Load cart from localStorage on initial render
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -86,6 +100,34 @@ export default function ECardsPage() {
   }, [loading, session, isInstructor, router]);
 
   useEffect(() => {
+    if (loading || !session || !isInstructor) {
+      return;
+    }
+
+    if (!ecardProducts) {
+      return;
+    }
+
+    if (!idsKey) {
+      setProducts(
+        (ecardProducts as unknown as Product[]).map((item) => ({
+          ...item,
+          display_price: 0,
+          currency: "USD",
+        }))
+      );
+      setIsLoading(false);
+      return;
+    }
+
+    if (lastFetchedIdsRef.current === idsKey) {
+      return;
+    }
+
+    lastFetchedIdsRef.current = idsKey;
+
+    let aborted = false;
+
     type StripePriceData = {
       id: string;
       unit_amount: number | null;
@@ -134,44 +176,6 @@ export default function ECardsPage() {
       };
     };
 
-    const extractPriceIds = (items: Product[]): string[] =>
-      items
-        .map((item) => item.stripe_price_id)
-        .filter(
-          (id): id is string => typeof id === "string" && id.trim() !== ""
-        );
-
-    const applyFallbackPricing = (items: Product[]) => {
-      setProducts(
-        items.map((item) => ({
-          ...item,
-          display_price: 0,
-          currency: "USD",
-        }))
-      );
-    };
-
-    const handleConvexProducts = async (convexProducts: Product[]) => {
-      if (convexProducts.length === 0) {
-        setProducts([]);
-        return;
-      }
-
-      const priceIds = extractPriceIds(convexProducts);
-
-      if (priceIds.length === 0) {
-        applyFallbackPricing(convexProducts);
-        return;
-      }
-
-      const stripePriceDataArray = await fetchStripePrices(priceIds);
-      setProducts(
-        convexProducts.map((convexProduct) =>
-          enrichProduct(convexProduct, stripePriceDataArray)
-        )
-      );
-    };
-
     const parseErrorMessage = (caughtError: unknown): string => {
       if (
         caughtError &&
@@ -185,36 +189,41 @@ export default function ECardsPage() {
       return "Failed to fetch eCards and their prices. Please try again.";
     };
 
-    const loadEcardProducts = async () => {
+    (async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        if (!ecardProducts) {
+        const priceIds = idsKey.split(",");
+        const stripePriceDataArray = await fetchStripePrices(priceIds);
+
+        if (aborted) {
           return;
         }
-        await handleConvexProducts(ecardProducts as unknown as Product[]);
+
+        setProducts(
+          (ecardProducts as unknown as Product[]).map((p) =>
+            enrichProduct(p, stripePriceDataArray)
+          )
+        );
       } catch (caughtError: unknown) {
+        if (aborted) {
+          return;
+        }
+
         setError(parseErrorMessage(caughtError));
         setProducts([]);
       } finally {
-        setIsLoading(false);
+        if (!aborted) {
+          setIsLoading(false);
+        }
       }
+    })();
+
+    return () => {
+      aborted = true;
     };
-
-    if (loading || ecardProducts === undefined) {
-      return;
-    }
-
-    if (session && isInstructor && ecardProducts) {
-      loadEcardProducts();
-      return;
-    }
-
-    setError(null);
-    setIsLoading(false);
-    setProducts([]);
-  }, [loading, session, isInstructor, ecardProducts]);
+  }, [loading, session, isInstructor, idsKey, ecardProducts]);
 
   const getImageUrl = (imageUrl: string | null): string => {
     if (!imageUrl || imageUrl.trim() === "") {
