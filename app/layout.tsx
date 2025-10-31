@@ -1,12 +1,8 @@
 import "./globals.css";
-import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Readex_Pro } from "next/font/google";
-import { AuthEffects } from "@/components/auth-effects";
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
 import {
   generateJSONLD,
   getOrganizationSchema,
@@ -14,8 +10,6 @@ import {
   getVancouverLocalBusinessSchema,
   getWebSiteSchema,
 } from "@/lib/structuredData";
-import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
-import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
@@ -110,61 +104,49 @@ export default function RootLayout({
   const websiteSchema = getWebSiteSchema();
 
   return (
-    <ConvexAuthNextjsServerProvider>
-      <html lang="en">
-        <head>
-          {/* Preconnect to external domains for performance */}
-          <link href="https://fonts.googleapis.com" rel="preconnect" />
-          <link
-            crossOrigin=""
-            href="https://fonts.gstatic.com"
-            rel="preconnect"
-          />
-          <link href="https://assets.onedollarstats.com" rel="preconnect" />
+    <html lang="en">
+      <head>
+        {/* Preconnect to external domains for performance */}
+        <link href="https://fonts.googleapis.com" rel="preconnect" />
+        <link
+          crossOrigin=""
+          href="https://fonts.gstatic.com"
+          rel="preconnect"
+        />
+        <link href="https://assets.onedollarstats.com" rel="preconnect" />
 
-          <script
-            dangerouslySetInnerHTML={generateJSONLD(organizationSchema)}
-            key="organization-jsonld"
-            type="application/ld+json"
-          />
+        <script
+          dangerouslySetInnerHTML={generateJSONLD(organizationSchema)}
+          key="organization-jsonld"
+          type="application/ld+json"
+        />
 
-          <script
-            dangerouslySetInnerHTML={generateJSONLD(vancouverBusinessSchema)}
-            key="vancouver-business-jsonld"
-            type="application/ld+json"
-          />
+        <script
+          dangerouslySetInnerHTML={generateJSONLD(vancouverBusinessSchema)}
+          key="vancouver-business-jsonld"
+          type="application/ld+json"
+        />
 
-          <script
-            dangerouslySetInnerHTML={generateJSONLD(sloBusinessSchema)}
-            key="slo-business-jsonld"
-            type="application/ld+json"
-          />
+        <script
+          dangerouslySetInnerHTML={generateJSONLD(sloBusinessSchema)}
+          key="slo-business-jsonld"
+          type="application/ld+json"
+        />
 
-          <script
-            dangerouslySetInnerHTML={generateJSONLD(websiteSchema)}
-            key="website-jsonld"
-            type="application/ld+json"
-          />
+        <script
+          dangerouslySetInnerHTML={generateJSONLD(websiteSchema)}
+          key="website-jsonld"
+          type="application/ld+json"
+        />
 
-          {/* Analytics Script - Deferred for performance */}
-          <script defer src="https://assets.onedollarstats.com/stonks.js" />
-        </head>
-        <body className={readexPro.variable}>
-          <ConvexClientProvider>
-            <PostHogProvider>
-              <AuthEffects />
-              <div className="flex min-h-screen flex-col">
-                <Header />
-                <main className="flex-grow">{children}</main>
-                <Footer />
-              </div>
-              <PostHogPageViewWrapper />
-            </PostHogProvider>
-          </ConvexClientProvider>
-          <Analytics />
-          <SpeedInsights />
-        </body>
-      </html>
-    </ConvexAuthNextjsServerProvider>
+        {/* Analytics Script - Deferred for performance */}
+        <script defer src="https://assets.onedollarstats.com/stonks.js" />
+      </head>
+      <body className={readexPro.variable}>
+        {children}
+        <Analytics />
+        <SpeedInsights />
+      </body>
+    </html>
   );
 }

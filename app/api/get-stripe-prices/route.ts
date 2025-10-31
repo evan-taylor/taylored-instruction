@@ -1,3 +1,4 @@
+import { cacheLife, cacheTag } from "next/cache";
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 
@@ -10,6 +11,41 @@ function getStripeClient(): Stripe {
   return new Stripe(StripeSecretKey, {
     apiVersion: "2023-10-16",
   });
+}
+
+async function getPriceCached(id: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag(`stripe-price:${id}`);
+
+  const price = await getStripeClient().prices.retrieve(id, {
+    expand: ["product"],
+  });
+
+  let productName: string | undefined;
+  let productDescription: string | null | undefined;
+  let productImages: string[] | undefined;
+
+  if (
+    price.product &&
+    typeof price.product === "object" &&
+    "name" in price.product
+  ) {
+    const productData = price.product as Stripe.Product;
+    productName = productData.name;
+    productDescription = productData.description;
+    productImages = productData.images;
+  }
+
+  return {
+    id: price.id,
+    unit_amount: price.unit_amount,
+    currency: price.currency,
+    product_id: price.product,
+    product_name: productName,
+    product_description: productDescription,
+    product_images: productImages,
+  };
 }
 
 // Note: We avoid exporting/using an explicit type alias here to satisfy linter rules
@@ -34,34 +70,7 @@ export async function POST(req: NextRequest) {
   try {
     const priceDetailsPromises = priceIds.map(async (id) => {
       try {
-        const price = await getStripeClient().prices.retrieve(id, {
-          expand: ["product"],
-        });
-        let productName: string | undefined;
-        let productDescription: string | null | undefined;
-        let productImages: string[] | undefined;
-
-        if (
-          price.product &&
-          typeof price.product === "object" &&
-          "name" in price.product
-        ) {
-          const productData = price.product as Stripe.Product;
-          productName = productData.name;
-          productDescription = productData.description;
-          productImages = productData.images;
-        }
-
-        // API response properties use snake_case to match Stripe's convention
-        return {
-          id: price.id,
-          unit_amount: price.unit_amount,
-          currency: price.currency,
-          product_id: price.product,
-          product_name: productName,
-          product_description: productDescription,
-          product_images: productImages,
-        };
+        return await getPriceCached(id);
       } catch (_error) {
         return { id, error: "Failed to retrieve price details." };
       }

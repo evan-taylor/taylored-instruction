@@ -1,5 +1,6 @@
 "use server";
 
+import React from "react";
 import { z } from "zod";
 import ContactConfirmationEmail from "@/emails/ContactConfirmationEmail";
 import ContactFormEmail from "@/emails/ContactFormEmail";
@@ -108,7 +109,7 @@ export async function sendContactEmail(
       to: [adminEmail],
       replyTo: email,
       subject: `New Contact Form Submission from ${firstName} ${lastName}`,
-      react: ContactFormEmail({
+      react: React.createElement(ContactFormEmail, {
         firstName,
         lastName,
         email,
@@ -131,7 +132,7 @@ export async function sendContactEmail(
       from: `Taylored Instruction <${fromEmail}>`,
       to: [email],
       subject: "Message Received - Taylored Instruction",
-      react: ContactConfirmationEmail({ firstName }),
+      react: React.createElement(ContactConfirmationEmail, { firstName }),
     });
 
     if (userEmailData.error) {

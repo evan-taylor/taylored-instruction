@@ -63,20 +63,20 @@
       }
     },
     {
-      "includes": ["convex/tsconfig.json", "convex/_generated/**"],
-      "json": {
-        "parser": {
-          "allowComments": true
+      "includes": ["app/(marketing)/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "useAwait": "off"
+          }
         }
       }
     },
     {
-      "includes": ["scripts/migrateFromSupabase.ts"],
-      "linter": {
-        "rules": {
-          "complexity": {
-            "noExcessiveCognitiveComplexity": "off"
-          }
+      "includes": ["convex/tsconfig.json", "convex/_generated/**"],
+      "json": {
+        "parser": {
+          "allowComments": true
         }
       }
     }
