@@ -5,6 +5,7 @@ import { api } from "@/convex/_generated/api";
 type Profile = {
   id: string;
   userId: string;
+  email: string | null;
   is_instructor: boolean;
   updated_at: string | null | undefined;
   last_login?: string | null | undefined;
@@ -32,7 +33,7 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
     ? {
         user: {
           id: profile?.userId ?? "unknown",
-          email: profile?.userId,
+          email: profile?.email ?? null,
         },
       }
     : null;
@@ -44,6 +45,6 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
     loading,
     error: null,
     userId: profile?.userId,
-    email: profile?.userId || null,
+    email: profile?.email || null,
   };
 }
