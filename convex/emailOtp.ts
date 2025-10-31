@@ -1,6 +1,5 @@
-import { createHash, randomBytes } from "node:crypto";
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery } from "./_generated/server";
 
 const OTP_CODE_MAX = 1_000_000;
 const OTP_CODE_LENGTH = 6;
@@ -15,11 +14,23 @@ const RATE_LIMIT_MINUTE_MS = SECONDS_PER_MINUTE * MS_PER_SECOND;
 const RATE_LIMIT_HOUR_MS =
   MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
 const MAX_REQUESTS_PER_HOUR = 5;
+const HEX_RADIX = 16;
+const HEX_PAD_WIDTH = 2;
 
-function hashCode(code: string, salt: string): string {
-  return createHash("sha256")
-    .update(code + salt)
-    .digest("hex");
+function randomHex(bytes: number): string {
+  const array = new Uint8Array(bytes);
+  crypto.getRandomValues(array);
+  return Array.from(array)
+    .map((b) => b.toString(HEX_RADIX).padStart(HEX_PAD_WIDTH, "0"))
+    .join("");
+}
+
+async function hashCode(code: string, salt: string): Promise<string> {
+  const data = new TextEncoder().encode(code + salt);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(HEX_RADIX).padStart(HEX_PAD_WIDTH, "0"))
+    .join("");
 }
 
 export function generateSixDigitCode(): string {
@@ -27,7 +38,7 @@ export function generateSixDigitCode(): string {
   return code.toString().padStart(OTP_CODE_LENGTH, "0");
 }
 
-export const storeOtp = mutation({
+export const storeOtp = internalMutation({
   args: {
     email: v.string(),
     code: v.string(),
@@ -38,8 +49,8 @@ export const storeOtp = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
     const expiresAt = now + OTP_EXPIRY_MS;
-    const salt = randomBytes(SALT_BYTES).toString("hex");
-    const codeHash = hashCode(args.code, salt);
+    const salt = randomHex(SALT_BYTES);
+    const codeHash = await hashCode(args.code, salt);
 
     const existingOtps = await ctx.db
       .query("email_otps")
@@ -70,7 +81,7 @@ export const storeOtp = mutation({
   },
 });
 
-export const verifyOtp = mutation({
+export const verifyOtp = internalMutation({
   args: {
     email: v.string(),
     code: v.string(),
@@ -107,7 +118,7 @@ export const verifyOtp = mutation({
       };
     }
 
-    const codeHash = hashCode(args.code, otp.salt);
+    const codeHash = await hashCode(args.code, otp.salt);
     const isValid = codeHash === otp.codeHash;
 
     if (!isValid) {
@@ -129,7 +140,7 @@ export const verifyOtp = mutation({
   },
 });
 
-export const checkRateLimit = query({
+export const checkRateLimit = internalQuery({
   args: {
     email: v.string(),
   },

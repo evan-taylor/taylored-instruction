@@ -1,5 +1,5 @@
 import { httpRouter } from "convex/server";
-import { api } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 
@@ -36,9 +36,12 @@ http.route({
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const rateLimitCheck = await ctx.runQuery(api.emailOtp.checkRateLimit, {
-      email: normalizedEmail,
-    });
+    const rateLimitCheck = await ctx.runQuery(
+      internal.emailOtp.checkRateLimit,
+      {
+        email: normalizedEmail,
+      }
+    );
 
     if (!rateLimitCheck.allowed) {
       return new Response(JSON.stringify({ error: rateLimitCheck.error }), {
@@ -51,7 +54,7 @@ http.route({
       .toString()
       .padStart(OTP_CODE_LENGTH, "0");
 
-    const result = await ctx.runMutation(api.emailOtp.storeOtp, {
+    const result = await ctx.runMutation(internal.emailOtp.storeOtp, {
       email: normalizedEmail,
       code,
       callbackUrl,
@@ -83,7 +86,7 @@ http.route({
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    const result = await ctx.runMutation(api.emailOtp.verifyOtp, {
+    const result = await ctx.runMutation(internal.emailOtp.verifyOtp, {
       email: normalizedEmail,
       code,
     });
