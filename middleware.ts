@@ -5,6 +5,7 @@ import {
 } from "@convex-dev/auth/nextjs/server";
 
 const isLoginPage = createRouteMatcher(["/login"]);
+const isDebugRoute = createRouteMatcher(["/debug-auth"]);
 const isProtectedRoute = createRouteMatcher([
   "/my-account(.*)",
   "/ecards(.*)",
@@ -12,6 +13,10 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
+  if (isDebugRoute(request)) {
+    return;
+  }
+
   if (isLoginPage(request) && (await convexAuth.isAuthenticated())) {
     return nextjsMiddlewareRedirect(request, "/my-account");
   }
