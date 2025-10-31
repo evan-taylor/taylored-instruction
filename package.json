@@ -42,9 +42,6 @@
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.22.4"
   },
-  "engines": {
-    "node": ">=20.9.0"
-  },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
     "@types/node": "^20.10.0",
