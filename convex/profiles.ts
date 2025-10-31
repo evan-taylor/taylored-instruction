@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
@@ -74,14 +73,29 @@ export const updateLastLogin = mutation({
         notifiedAt: now,
       });
 
-      await ctx.scheduler.runAfter(
-        0,
-        internal.notifications.sendNewUserAdminNotification,
-        {
-          userId,
-          userEmail: user?.email,
+      const webhookSecret = process.env.INTERNAL_EMAIL_WEBHOOK_SECRET;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_BASE_URL || "https://tayloredinstruction.com";
+
+      if (webhookSecret) {
+        try {
+          await fetch(`${baseUrl}/api/internal/email/new-user-notification`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Internal-Email-Secret": webhookSecret,
+            },
+            body: JSON.stringify({
+              userId,
+              userEmail: user?.email,
+            }),
+          });
+          // Webhook call succeeded or failed - continue either way (important-comment)
+        } catch (_error) {
+          // Webhook call failed - continue anyway (important-comment)
         }
-      );
+      }
+
       return;
     }
 
@@ -186,7 +200,8 @@ export const approveInstructor = mutation({
       updatedAt: now,
     });
 
-    // Note: Approval email is now sent by the admin UI via Next.js server action
+    // Note: Approval email is now sent by the admin UI via Next.js server action (important-comment)
+    // This provides better security (no exposed secrets) and error handling
   },
 });
 

@@ -1,5 +1,6 @@
 import {
   Body,
+  Button,
   Container,
   Head,
   Heading,
@@ -7,101 +8,88 @@ import {
   Html,
   Link,
   Preview,
+  Section,
   Text,
 } from "@react-email/components";
+import { Tailwind } from "@react-email/tailwind";
 
 type InstructorApprovalEmailProps = {
   firstName: string;
 };
 
-export const InstructorApprovalEmail: React.FC<
-  Readonly<InstructorApprovalEmailProps>
-> = ({ firstName }) => (
-  <Html>
-    <Head />
-    <Preview>You've been approved as an instructor!</Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={heading}>
-          Congratulations, {firstName}! You're Approved!
-        </Heading>
-        <Text style={paragraph}>
-          We're excited to let you know that you've been approved as an
-          instructor at Taylored Instruction.
-        </Text>
-        <Text style={paragraph}>
-          You now have access to purchase digital eCards and other instructor
-          resources through your account.
-        </Text>
-        <Hr style={hr} />
-        <Text style={paragraph}>Get started by logging into your account:</Text>
-        <Link href="https://www.tayloredinstruction.com/login" style={link}>
-          Log In to Your Account
-        </Link>
-        <br />
-        <Link href="https://www.tayloredinstruction.com/ecards" style={link}>
-          Purchase eCards
-        </Link>
-        <Hr style={hr} />
-        <Text style={paragraph}>
-          If you have any questions or need assistance, please don't hesitate to
-          reach out to us.
-        </Text>
-        <Text style={footer}>Taylored Instruction | Vancouver, WA</Text>
-      </Container>
-    </Body>
-  </Html>
-);
+export default function InstructorApprovalEmail({
+  firstName,
+}: InstructorApprovalEmailProps) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL || "https://tayloredinstruction.com";
 
-export default InstructorApprovalEmail;
-
-// Styles
-const main = {
-  backgroundColor: "#f6f9fc",
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-  backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
-  border: "1px solid #f0f0f0",
-  borderRadius: "4px",
-};
-
-const heading = {
-  fontSize: "24px",
-  lineHeight: "1.3",
-  fontWeight: "700",
-  color: "#484848",
-  padding: "0 20px",
-};
-
-const paragraph = {
-  fontSize: "16px",
-  lineHeight: "1.4",
-  color: "#484848",
-  padding: "0 20px",
-};
-
-const link = {
-  color: "#2b6cb0",
-  textDecoration: "underline",
-  marginLeft: "20px",
-  display: "inline-block",
-  marginBottom: "10px",
-};
-
-const hr = {
-  borderColor: "#e6ebf1",
-  margin: "20px 0",
-};
-
-const footer = {
-  color: "#8898aa",
-  fontSize: "12px",
-  lineHeight: "16px",
-  padding: "0 20px",
-};
+  return (
+    <Html>
+      <Head />
+      <Preview>
+        You're approved as an instructor at Taylored Instruction
+      </Preview>
+      <Tailwind>
+        <Body className="bg-gray-100 text-black">
+          <Container>
+            <Section className="my-10 rounded-md border border-black/10 bg-white px-10 py-4">
+              <Heading className="leading-tight">
+                Welcome to Taylored Instruction!
+              </Heading>
+              <Text>Hi {firstName},</Text>
+              <Text>
+                Great news! Your instructor status has been approved. You now
+                have access to all instructor resources and features.
+              </Text>
+              <Text>You can now:</Text>
+              <ul>
+                <li>Purchase digital eCards for your students</li>
+                <li>Access instructor resources and documentation</li>
+                <li>Manage your instructor account</li>
+              </ul>
+              <Section className="my-6 text-center">
+                <Button
+                  className="rounded bg-blue-600 px-6 py-3 text-center text-white"
+                  href={`${baseUrl}/login`}
+                >
+                  Log In to Your Account
+                </Button>
+              </Section>
+              <Text>
+                Once logged in, visit the{" "}
+                <Link
+                  className="text-blue-600 underline"
+                  href={`${baseUrl}/ecards`}
+                >
+                  eCards page
+                </Link>{" "}
+                to purchase digital certification cards for your students.
+              </Text>
+              <Text>
+                If you have any questions or need assistance, please don't
+                hesitate to reach out to us at{" "}
+                <Link
+                  className="text-blue-600 underline"
+                  href="mailto:info@tayloredinstruction.com"
+                >
+                  info@tayloredinstruction.com
+                </Link>{" "}
+                or call us at{" "}
+                <Link
+                  className="text-blue-600 underline"
+                  href="tel:360-685-8199"
+                >
+                  360-685-8199
+                </Link>
+                .
+              </Text>
+              <Hr />
+              <Text>Best Regards,</Text>
+              <Text>The Taylored Instruction Team</Text>
+            </Section>
+          </Container>
+        </Body>
+      </Tailwind>
+    </Html>
+  );
+}
