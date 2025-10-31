@@ -15,12 +15,16 @@ if (process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM) {
       id: "email",
       sendVerificationRequest: async ({ identifier, url }) => {
         const resend = new Resend(resendApiKey);
+        const verificationUrl = new URL(url);
+        verificationUrl.searchParams.set("email", identifier);
+        const link = verificationUrl.toString();
+
         await resend.emails.send({
           from: emailFrom,
           to: identifier,
           subject: "Sign in to Taylored Instruction",
-          html: `<p>Click <a href="${url}">this link</a> to sign in.</p>`,
-          text: `Sign in: ${url}`,
+          html: `<p>Click <a href="${link}">this link</a> to sign in.</p>`,
+          text: `Sign in: ${link}`,
         });
       },
     })
