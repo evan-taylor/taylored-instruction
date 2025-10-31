@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import React from "react";
 import Stripe from "stripe";
 import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
       subject: "New Multi-Item eCard Purchase",
-      react: EcardPurchaseAdminEmail({
+      react: React.createElement(EcardPurchaseAdminEmail, {
         itemName: "Multiple Products",
         quantity: cartItems
           .reduce((sum, item) => sum + item.quantity, 0)
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
       subject: "Your eCard Purchase Confirmation",
-      react: EcardPurchaseUserEmail({
+      react: React.createElement(EcardPurchaseUserEmail, {
         itemName: "Multiple Products",
         quantity: cartItems
           .reduce((sum, item) => sum + item.quantity, 0)
@@ -111,7 +112,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
       subject: `New eCard Purchase: ${itemName}`,
-      react: EcardPurchaseAdminEmail({
+      react: React.createElement(EcardPurchaseAdminEmail, {
         itemName,
         quantity,
         price: totalPrice,
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
       subject: "Your eCard Purchase Confirmation",
-      react: EcardPurchaseUserEmail({
+      react: React.createElement(EcardPurchaseUserEmail, {
         itemName,
         quantity,
         price: totalPrice,

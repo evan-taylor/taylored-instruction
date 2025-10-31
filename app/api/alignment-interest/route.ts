@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+import React from "react";
 import { z } from "zod"; // Assuming zod is needed for the schema
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
@@ -63,7 +64,9 @@ export async function POST(req: NextRequest) {
       to: [adminEmail],
       replyTo: email,
       subject: `New Alignment Interest Submission from ${firstName} ${lastName}`,
-      react: AlignmentInterestEmail({ ...validatedFields.data }), // Pass validated data
+      react: React.createElement(AlignmentInterestEmail, {
+        ...validatedFields.data,
+      }), // Pass validated data
     });
 
     if (adminEmailData.error) {
@@ -78,7 +81,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
       to: [email],
       subject: "Alignment Interest Received - Taylored Instruction",
-      react: AlignmentConfirmationEmail({ firstName }), // Pass necessary data
+      react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
     });
 
     if (userEmailData.error) {
