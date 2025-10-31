@@ -201,6 +201,18 @@ export const Header = () => {
     };
   }, []);
 
+  useEffect(() => {
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        router.refresh();
+      }
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => {
+      window.removeEventListener("pageshow", onPageShow);
+    };
+  }, [router]);
+
   const toggleDesktopDropdown = (dropdown: string) => {
     setActiveDesktopDropdown(
       activeDesktopDropdown === dropdown ? null : dropdown
