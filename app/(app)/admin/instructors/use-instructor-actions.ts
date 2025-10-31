@@ -1,5 +1,6 @@
 import { useMutation } from "convex/react";
 import { useState } from "react";
+import { sendInstructorApprovalEmail } from "@/app/actions/send-instructor-approval-email";
 import { api } from "@/convex/_generated/api";
 import type { ProfileWithUser } from "./types";
 
@@ -19,6 +20,29 @@ export function useInstructorActions(
   const deleteUserAndProfileMutation = useMutation(
     api.admin.deleteUserAndProfile
   );
+
+  const sendApprovalEmailIfNeeded = async (
+    profileId: string,
+    isApproving: boolean
+  ): Promise<string> => {
+    if (!isApproving) {
+      return "";
+    }
+
+    const profile = profiles.find((p) => p.id === profileId);
+    if (!profile?.userEmail) {
+      return "";
+    }
+
+    const result = await sendInstructorApprovalEmail(
+      profile.userEmail,
+      profile.userEmail.split("@")[0]
+    );
+
+    return result.success
+      ? "Approval email sent."
+      : `(${result.error || "Email failed to send"})`;
+  };
 
   const toggleInstructorStatus = async (
     profileId: string,
@@ -45,8 +69,13 @@ export function useInstructorActions(
         )
       );
 
+      const emailStatus = await sendApprovalEmailIfNeeded(
+        profileId,
+        !currentStatus
+      );
+
       setActionMessage(
-        `Instructor status successfully ${currentStatus ? "revoked" : "approved"}. ${currentStatus ? "" : "Approval email sent."}`
+        `Instructor status successfully ${currentStatus ? "revoked" : "approved"}. ${currentStatus ? "" : emailStatus}`
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : "Unknown error";
