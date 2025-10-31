@@ -5,8 +5,8 @@ type InstructorsTableProps = {
   profiles: ProfileWithUser[];
   onToggleStatus: (
     profileId: string,
-    currentStatus: boolean,
-    userEmail: string | null
+    userId: string,
+    currentStatus: boolean
   ) => void;
   onRejectUser: (profileId: string, userEmail: string | null) => void;
 };
@@ -112,8 +112,8 @@ export function InstructorsTable({
                         onClick={() =>
                           onToggleStatus(
                             profile.id,
-                            profile.isInstructor,
-                            profile.userEmail
+                            profile.userId,
+                            profile.isInstructor
                           )
                         }
                         type="button"

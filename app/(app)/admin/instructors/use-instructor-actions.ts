@@ -22,6 +22,7 @@ export function useInstructorActions(
 
   const toggleInstructorStatus = async (
     profileId: string,
+    userId: string,
     currentStatus: boolean
   ) => {
     setActionMessage(null);
@@ -30,7 +31,7 @@ export function useInstructorActions(
     try {
       await approveInstructorMutation({
         // biome-ignore lint/suspicious/noExplicitAny: Convex ID type conversion required (important-comment)
-        userId: profileId as unknown as any,
+        userId: userId as unknown as any,
         approve: !currentStatus,
       });
 
