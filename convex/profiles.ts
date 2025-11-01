@@ -51,18 +51,10 @@ export const updateLastLogin = mutation({
 
     if (!profile) {
       const user = await ctx.db.get(userId);
-      const email = user?.email?.toLowerCase();
 
-      if (email) {
-        const stagingProfile = await ctx.db
-          .query("staging_profiles")
-          .withIndex("by_email", (q) => q.eq("email", email))
-          .first();
-
-        if (stagingProfile && stagingProfile.processedAt === undefined) {
-          return;
-        }
-      }
+      // Note: Previously had early return for staging_profiles with processedAt === undefined
+      // This was blocking new user login, so we now always create the profile
+      // Staging profiles are used for migration tracking but should not prevent login
 
       const now = new Date().toISOString();
       await ctx.db.insert("profiles", {
