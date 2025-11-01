@@ -1,4 +1,13 @@
+import { captureRequestError } from "@sentry/nextjs";
+
 export async function register() {
-  // PostHog instrumentation is handled in instrumentation-client.ts
-  // This file can be used for other server-side instrumentation if needed
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    await import("./sentry.server.config");
+  }
+
+  if (process.env.NEXT_RUNTIME === "edge") {
+    await import("./sentry.edge.config");
+  }
 }
+
+export const onRequestError = captureRequestError;
