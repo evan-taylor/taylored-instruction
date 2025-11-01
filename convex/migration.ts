@@ -63,36 +63,11 @@ export const attachUserDataOnLogin = mutation({
       };
     }
 
-    await ctx.db.patch(stagingProfile._id, {
-      processedAt: Date.now(),
-      convexUserId: userId,
-    });
-
-    await ctx.db.insert("profiles", {
-      userId,
-      isInstructor: stagingProfile.isInstructor,
-      updatedAt: stagingProfile.updatedAt,
-      lastLogin: new Date().toISOString(),
-    });
-
-    const allProfilesForUser = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    if (allProfilesForUser.length > 1) {
-      throw new Error(
-        `Multiple profiles detected for userId ${userId}: ${allProfilesForUser.length} profiles exist`
-      );
-    }
-
+    // No profile exists yet - updateLastLogin will handle profile creation
+    // This prevents race condition where both mutations try to insert profiles
     return {
-      attached: true,
-      merged: false,
-      profile: {
-        isInstructor: stagingProfile.isInstructor,
-        supabaseUserId: stagingProfile.supabaseUserId,
-      },
+      attached: false,
+      reason: "Profile will be created by updateLastLogin mutation",
     };
   },
 });
