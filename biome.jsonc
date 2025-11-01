@@ -79,6 +79,16 @@
           "allowComments": true
         }
       }
+    },
+    {
+      "includes": ["convex/**/*.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
     }
   ]
 }
