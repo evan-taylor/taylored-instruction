@@ -127,7 +127,10 @@ export default function ECardsPage() {
   }, []);
 
   const enrichProduct = useCallback(
-    (convexProduct: Product, stripePriceDataArray: StripePriceData[]) => {
+    (
+      convexProduct: Product,
+      stripePriceDataArray: StripePriceData[]
+    ): ProductWithPrice => {
       const CentsInDollar = 100;
       const stripeInfo = stripePriceDataArray.find(
         (sp) => sp.id === convexProduct.stripe_price_id && !sp.error
@@ -145,6 +148,8 @@ export default function ECardsPage() {
         ...convexProduct,
         display_price: 0,
         currency: "N/A",
+        stripe_product_name: undefined,
+        stripe_product_description: undefined,
       };
     },
     []
@@ -163,7 +168,7 @@ export default function ECardsPage() {
     return "Failed to fetch eCards and their prices. Please try again.";
   }, []);
 
-  const products = useMemo(() => {
+  const products = useMemo((): ProductWithPrice[] => {
     if (!ecardProducts) {
       return [];
     }
@@ -173,6 +178,8 @@ export default function ECardsPage() {
         ...item,
         display_price: 0,
         currency: "USD",
+        stripe_product_name: undefined,
+        stripe_product_description: undefined,
       }));
     }
 
