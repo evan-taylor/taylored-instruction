@@ -2,16 +2,26 @@
 
 import { Heart, LifeBuoy, UserCheck } from "lucide-react";
 import Link from "next/link";
+import type { ComponentProps, ReactNode } from "react";
 
 type ServiceCardProps = {
-  icon: React.ReactNode;
+  icon: ReactNode;
   title: string;
   description: string;
   link: string;
+  rel?: ComponentProps<typeof Link>["rel"];
+  target?: ComponentProps<typeof Link>["target"];
 };
 
-const ServiceCard = ({ icon, title, description, link }: ServiceCardProps) => (
-  <Link className="group block h-full" href={link}>
+const ServiceCard = ({
+  icon,
+  title,
+  description,
+  link,
+  rel,
+  target,
+}: ServiceCardProps) => (
+  <Link className="group block h-full" href={link} rel={rel} target={target}>
     <div
       className={
         "h-full rounded-lg bg-white p-8 shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg group-focus-within:ring-2 group-focus-within:ring-primary group-focus-within:ring-offset-2"
@@ -40,7 +50,9 @@ export const ServicesSection = () => (
         <ServiceCard
           description="We offer American Heart Association or American Red Cross CPR training for both laypersons and professional rescuers. Need to train your staff? We would love to work with you."
           icon={<Heart />}
-          link="/classes"
+          link="https://www.hovn.app/tayloredinstruction/"
+          rel="noopener noreferrer"
+          target="_blank"
           title="CPR Training"
         />
 

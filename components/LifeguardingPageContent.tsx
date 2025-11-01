@@ -205,7 +205,9 @@ const LifeguardingPageContent: React.FC = () => {
             Search for open class on our{" "}
             <Link
               className="font-medium text-primary hover:underline"
-              href="/classes/"
+              href="https://www.hovn.app/tayloredinstruction"
+              rel="noopener noreferrer"
+              target="_blank"
             >
               registration page
             </Link>

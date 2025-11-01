@@ -36,9 +36,6 @@ export const ContactConfirmationEmail: React.FC<
           In the meantime, feel free to browse our website or check our class
           schedule:
         </Text>
-        <Link href="https://www.tayloredinstruction.com/classes" style={link}>
-          View Our Classes
-        </Link>
         <br />
         <Link
           href="https://www.hovn.app/tayloredinstruction"
