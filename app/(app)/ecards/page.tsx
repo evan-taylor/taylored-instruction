@@ -120,13 +120,6 @@ export default function ECardsPage() {
       return;
     }
 
-    if (lastFetchedIdsRef.current === idsKey) {
-      setIsLoading(false);
-      return;
-    }
-
-    lastFetchedIdsRef.current = idsKey;
-
     let aborted = false;
 
     type StripePriceData = {
@@ -207,6 +200,7 @@ export default function ECardsPage() {
             enrichProduct(p, stripePriceDataArray)
           )
         );
+        lastFetchedIdsRef.current = idsKey;
       } catch (caughtError: unknown) {
         if (aborted) {
           return;
@@ -510,7 +504,7 @@ export default function ECardsPage() {
                     <div className="flex-1">
                       <h3 className="font-medium">{item.product.name}</h3>
                       <p className="text-gray-500 text-sm">
-                        ${item.product.display_price.toFixed(2)} each
+                        ${(item.product.display_price ?? 0).toFixed(2)} each
                       </p>
                       <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center rounded border">
@@ -589,6 +583,14 @@ export default function ECardsPage() {
 
       {error && <p className="mb-4 text-center text-red-600">{error}</p>}
 
+      {products.length === 0 && !error && (
+        <div className="py-12 text-center">
+          <p className="text-gray-600 text-lg">
+            No eCards available at this time.
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {products.map((product) => (
           <div
@@ -610,7 +612,7 @@ export default function ECardsPage() {
                 {product.description}
               </p>
               <div className="mt-auto font-semibold text-lg text-primary">
-                ${product.display_price.toFixed(2)} each
+                ${(product.display_price ?? 0).toFixed(2)} each
               </div>
             </div>
 
