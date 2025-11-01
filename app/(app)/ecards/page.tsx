@@ -47,9 +47,10 @@ export default function ECardsPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const lastFetchedIdsRef = useRef<string>("");
   const fetchingKeyRef = useRef<string | null>(null);
-  const pricesCacheRef = useRef<Map<string, StripePriceData[]>>(new Map());
+  const [stripePricesByKey, setStripePricesByKey] = useState<
+    Record<string, StripePriceData[]>
+  >({});
 
   type StripePriceData = {
     id: string;
@@ -162,39 +163,19 @@ export default function ECardsPage() {
     return "Failed to fetch eCards and their prices. Please try again.";
   }, []);
 
-  // Effect A: Fetch Stripe prices when idsKey changes (with in-flight deduplication and caching)
+  // Effect A: Fetch Stripe prices when idsKey changes (fetch-and-cache only)
   useEffect(() => {
     if (loading || !session || !isInstructor) {
       return;
     }
 
-    if (!ecardProducts) {
+    if (!idsKey) {
       return;
     }
 
-    if (!idsKey) {
-      setProducts(
-        (ecardProducts as unknown as Product[]).map((item) => ({
-          ...item,
-          display_price: 0,
-          currency: "USD",
-        }))
-      );
+    if (stripePricesByKey[idsKey]) {
       setIsLoading(false);
       return;
-    }
-
-    if (pricesCacheRef.current.has(idsKey)) {
-      const cachedPrices = pricesCacheRef.current.get(idsKey);
-      if (cachedPrices) {
-        setProducts(
-          (ecardProducts as unknown as Product[]).map((p) =>
-            enrichProduct(p, cachedPrices)
-          )
-        );
-        setIsLoading(false);
-        return;
-      }
     }
 
     if (fetchingKeyRef.current === idsKey) {
@@ -216,21 +197,16 @@ export default function ECardsPage() {
           return;
         }
 
-        pricesCacheRef.current.set(idsKey, stripePriceDataArray);
-
-        setProducts(
-          (ecardProducts as unknown as Product[]).map((p) =>
-            enrichProduct(p, stripePriceDataArray)
-          )
-        );
-        lastFetchedIdsRef.current = idsKey;
+        setStripePricesByKey((prev) => ({
+          ...prev,
+          [idsKey]: stripePriceDataArray,
+        }));
       } catch (caughtError: unknown) {
         if (aborted) {
           return;
         }
 
         setError(parseErrorMessage(caughtError));
-        setProducts([]);
       } finally {
         fetchingKeyRef.current = null;
         setIsLoading(false);
@@ -245,19 +221,29 @@ export default function ECardsPage() {
     session,
     isInstructor,
     idsKey,
-    ecardProducts,
     fetchStripePrices,
-    enrichProduct,
     parseErrorMessage,
+    stripePricesByKey,
   ]);
 
   // Effect B: Recompute products when ecardProducts changes (using cached prices)
   useEffect(() => {
-    if (!(ecardProducts && idsKey)) {
+    if (!ecardProducts) {
       return;
     }
 
-    const cachedPrices = pricesCacheRef.current.get(idsKey);
+    if (!idsKey) {
+      setProducts(
+        (ecardProducts as unknown as Product[]).map((item) => ({
+          ...item,
+          display_price: 0,
+          currency: "USD",
+        }))
+      );
+      return;
+    }
+
+    const cachedPrices = stripePricesByKey[idsKey];
     if (cachedPrices) {
       setProducts(
         (ecardProducts as unknown as Product[]).map((p) =>
@@ -265,7 +251,7 @@ export default function ECardsPage() {
         )
       );
     }
-  }, [ecardProducts, idsKey, enrichProduct]);
+  }, [ecardProducts, idsKey, stripePricesByKey, enrichProduct]);
 
   const getImageUrl = (imageUrl: string | null): string => {
     if (!imageUrl || imageUrl.trim() === "") {
