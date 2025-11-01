@@ -229,7 +229,6 @@ export default function ECardsPage() {
           return;
         }
 
-        fetchedKeysRef.current.add(currentIdsKey);
         setStripePricesByKey((prev) => ({
           ...prev,
           [currentIdsKey]: stripePriceDataArray,
@@ -241,7 +240,8 @@ export default function ECardsPage() {
 
         setError(parseErrorMessage(caughtError));
       } finally {
-        if (!aborted && fetchingKeyRef.current === currentIdsKey) {
+        if (fetchingKeyRef.current === currentIdsKey) {
+          fetchedKeysRef.current.add(currentIdsKey);
           fetchingKeyRef.current = null;
           setIsLoading(false);
         }
@@ -259,6 +259,12 @@ export default function ECardsPage() {
     fetchStripePrices,
     parseErrorMessage,
   ]);
+
+  useEffect(() => {
+    if (!loading && !(session && isInstructor)) {
+      setIsLoading(false);
+    }
+  }, [loading, session, isInstructor]);
 
   const getImageUrl = (imageUrl: string | null): string => {
     if (!imageUrl || imageUrl.trim() === "") {
