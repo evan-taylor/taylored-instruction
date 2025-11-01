@@ -13,9 +13,22 @@ export function formatLastLogin(lastLogin: string | null): LastLoginDisplay {
 
   const loginDate = new Date(lastLogin);
   const now = new Date();
-  const diffInDays = Math.floor(
-    (now.getTime() - loginDate.getTime()) / MILLISECONDS_PER_DAY
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
   );
+  const startOfLoginDay = new Date(
+    loginDate.getFullYear(),
+    loginDate.getMonth(),
+    loginDate.getDate()
+  );
+  let diffInDays = Math.round(
+    (startOfToday.getTime() - startOfLoginDay.getTime()) / MILLISECONDS_PER_DAY
+  );
+  if (diffInDays < 0) {
+    diffInDays = 0;
+  }
 
   if (diffInDays === 0) {
     return { text: "Today", className: "text-green-600 font-medium" };
