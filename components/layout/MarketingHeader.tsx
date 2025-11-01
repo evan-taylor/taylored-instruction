@@ -1,11 +1,11 @@
 "use client";
 
-import { useConvexAuth } from "convex/react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
 
@@ -55,7 +55,10 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
   return `${baseClass} ${isActive ? activeClass : ""}`;
 };
 
-const generateNavLinks = (isAuthenticated: boolean): NavTopLevelLink[] => [
+const generateNavLinks = (
+  isAuthenticated: boolean,
+  isInstructor: boolean
+): NavTopLevelLink[] => [
   {
     label: "About Us",
     dropdown: [
@@ -104,11 +107,25 @@ const generateNavLinks = (isAuthenticated: boolean): NavTopLevelLink[] => [
   {
     label: "Instructors",
     dropdown: [
-      { label: "Alignment", href: "/alignment" },
-      {
-        label: "Instructor Resources",
-        href: "https://docs.tayloredinstruction.com/",
-      },
+      ...(isInstructor
+        ? ([] as NavLinkItem[])
+        : ([{ label: "Alignment", href: "/alignment" }] as NavLinkItem[])),
+      ...(isInstructor
+        ? [
+            {
+              label: "Instructor Resources",
+              href: "https://docs.tayloredinstruction.com/",
+            } as NavLinkItem,
+          ]
+        : []),
+      ...(isInstructor
+        ? [
+            {
+              label: "eCards",
+              href: "/ecards",
+            } as NavLinkItem,
+          ]
+        : []),
       { type: "divider", label: "Account" },
       ...(isAuthenticated
         ? [{ label: "My Account", href: "/my-account" }]
@@ -124,9 +141,10 @@ export const MarketingHeader = () => {
   >(null);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname() ?? "";
-  const { isAuthenticated } = useConvexAuth();
+  const { session, isInstructor } = useProfile();
 
-  const navLinks = generateNavLinks(isAuthenticated);
+  const isAuthenticated = !!session;
+  const navLinks = generateNavLinks(isAuthenticated, isInstructor);
 
   // Close dropdown when clicking outside
   useEffect(() => {
