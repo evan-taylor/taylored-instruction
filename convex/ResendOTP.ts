@@ -44,7 +44,7 @@ export const ResendOTP = Email({
           <p>This code will expire in ${OTP_EXPIRY_MINUTES} minutes.</p>
           <p>If you didn't request this code, you can safely ignore this email.</p>
           <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-          <p style="color: #666; font-size: 12px;">Taylored Instruction - Professional CPR, BLS & Lifeguarding Training</p>
+          <p style="color: #666; font-size: 12px;">Taylored Instruction LLC</p>
         </div>
       `,
       text: `Your Taylored Instruction login code is: ${token}\n\nThis code will expire in ${OTP_EXPIRY_MINUTES} minutes.\n\nIf you didn't request this code, you can safely ignore this email.`,
