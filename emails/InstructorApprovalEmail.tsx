@@ -38,8 +38,9 @@ export default function InstructorApprovalEmail({
               </Heading>
               <Text>Hi {firstName},</Text>
               <Text>
-                Great news! Your instructor status has been approved. You now
-                have access to all instructor resources and features.
+                Great news! Your instructor login on our website has been
+                approved. You now have access to all instructor resources and
+                features.
               </Text>
               <Text>You can now:</Text>
               <ul>
@@ -74,7 +75,7 @@ export default function InstructorApprovalEmail({
                 >
                   info@tayloredinstruction.com
                 </Link>{" "}
-                or call us at{" "}
+                or call or text us at{" "}
                 <Link
                   className="text-blue-600 underline"
                   href="tel:360-685-8199"
@@ -85,7 +86,7 @@ export default function InstructorApprovalEmail({
               </Text>
               <Hr />
               <Text>Best Regards,</Text>
-              <Text>The Taylored Instruction Team</Text>
+              <Text>Evan Taylor, Taylored Instruction</Text>
             </Section>
           </Container>
         </Body>
