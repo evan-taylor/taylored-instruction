@@ -113,7 +113,7 @@ const generateNavLinks = (
     ],
   },
   {
-    label: "Products",
+    label: "AEDs",
     dropdown: [
       { label: "AEDs", href: "/aeds" },
       // Add more product categories here as needed
