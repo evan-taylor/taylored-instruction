@@ -51,12 +51,39 @@ export const updateLastLogin = mutation({
 
     if (!profile) {
       const user = await ctx.db.get(userId);
+      const email = user?.email?.toLowerCase();
 
-      // Note: Previously had early return for staging_profiles with processedAt === undefined
-      // This was blocking new user login, so we now always create the profile
-      // Staging profiles are used for migration tracking but should not prevent login
+      // Check for staging profile to determine if this is a migration or new user
+      const stagingProfile = email
+        ? await ctx.db
+            .query("staging_profiles")
+            .withIndex("by_email", (q) => q.eq("email", email))
+            .first()
+        : null;
 
       const now = new Date().toISOString();
+
+      // If staging profile exists and is unprocessed, auto-approve user with staging data
+      // No admin notification email is sent for staged users
+      if (stagingProfile && stagingProfile.processedAt === undefined) {
+        await ctx.db.insert("profiles", {
+          userId,
+          isInstructor: stagingProfile.isInstructor,
+          updatedAt: stagingProfile.updatedAt ?? now,
+          lastLogin: now,
+          notifiedAt: now, // Set to prevent duplicate notifications (important-comment)
+        });
+
+        // Mark staging profile as processed
+        await ctx.db.patch(stagingProfile._id, {
+          processedAt: Date.now(),
+          convexUserId: userId,
+        });
+
+        return;
+      }
+
+      // No staging profile or already processed - create new profile and notify admin
       await ctx.db.insert("profiles", {
         userId,
         isInstructor: false,
