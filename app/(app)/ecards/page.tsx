@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 
@@ -37,7 +37,6 @@ export default function ECardsPage() {
   const posthog = usePostHog();
   const { isInstructor, loading, session } = useProfile();
   const ecardProducts = useQuery(api.products.getEcardProducts);
-  const [products, setProducts] = useState<ProductWithPrice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuantities, setSelectedQuantities] = useState<
@@ -47,7 +46,20 @@ export default function ECardsPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  const lastFetchedIdsRef = useRef<string>("");
+  const fetchingKeyRef = useRef<string | null>(null);
+  const fetchedKeysRef = useRef<Set<string>>(new Set());
+  const [stripePricesByKey, setStripePricesByKey] = useState<
+    Record<string, StripePriceData[]>
+  >({});
+
+  type StripePriceData = {
+    id: string;
+    unit_amount: number | null;
+    currency: string;
+    product_name: string;
+    product_description?: string | null;
+    error?: string;
+  };
 
   const idsKey = useMemo(() => {
     if (!ecardProducts) {
@@ -99,57 +111,26 @@ export default function ECardsPage() {
     }
   }, [loading, session, isInstructor, router]);
 
-  useEffect(() => {
-    if (loading || !session || !isInstructor) {
-      return;
+  const fetchStripePrices = useCallback(async (priceIds: string[]) => {
+    const priceResponse = await fetch("/api/get-stripe-prices", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priceIds }),
+    });
+
+    if (!priceResponse.ok) {
+      const errorData = await priceResponse.json();
+      throw new Error(errorData.error || "Failed to fetch Stripe prices.");
     }
 
-    if (!ecardProducts) {
-      return;
-    }
+    return priceResponse.json() as Promise<StripePriceData[]>;
+  }, []);
 
-    if (!idsKey) {
-      setProducts(
-        (ecardProducts as unknown as Product[]).map((item) => ({
-          ...item,
-          display_price: 0,
-          currency: "USD",
-        }))
-      );
-      setIsLoading(false);
-      return;
-    }
-
-    let aborted = false;
-
-    type StripePriceData = {
-      id: string;
-      unit_amount: number | null;
-      currency: string;
-      product_name: string;
-      product_description?: string | null;
-      error?: string;
-    };
-
-    const fetchStripePrices = async (priceIds: string[]) => {
-      const priceResponse = await fetch("/api/get-stripe-prices", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceIds }),
-      });
-
-      if (!priceResponse.ok) {
-        const errorData = await priceResponse.json();
-        throw new Error(errorData.error || "Failed to fetch Stripe prices.");
-      }
-
-      return priceResponse.json() as Promise<StripePriceData[]>;
-    };
-
-    const enrichProduct = (
+  const enrichProduct = useCallback(
+    (
       convexProduct: Product,
       stripePriceDataArray: StripePriceData[]
-    ) => {
+    ): ProductWithPrice => {
       const CentsInDollar = 100;
       const stripeInfo = stripePriceDataArray.find(
         (sp) => sp.id === convexProduct.stripe_price_id && !sp.error
@@ -167,21 +148,74 @@ export default function ECardsPage() {
         ...convexProduct,
         display_price: 0,
         currency: "N/A",
+        stripe_product_name: undefined,
+        stripe_product_description: undefined,
       };
-    };
+    },
+    []
+  );
 
-    const parseErrorMessage = (caughtError: unknown): string => {
-      if (
-        caughtError &&
-        typeof caughtError === "object" &&
-        "message" in caughtError &&
-        typeof (caughtError as { message?: unknown }).message === "string"
-      ) {
-        return (caughtError as { message: string }).message;
-      }
+  const parseErrorMessage = useCallback((caughtError: unknown): string => {
+    if (
+      caughtError &&
+      typeof caughtError === "object" &&
+      "message" in caughtError &&
+      typeof (caughtError as { message?: unknown }).message === "string"
+    ) {
+      return (caughtError as { message: string }).message;
+    }
 
-      return "Failed to fetch eCards and their prices. Please try again.";
-    };
+    return "Failed to fetch eCards and their prices. Please try again.";
+  }, []);
+
+  const products = useMemo((): ProductWithPrice[] => {
+    if (!ecardProducts) {
+      return [];
+    }
+
+    if (!idsKey) {
+      return (ecardProducts as unknown as Product[]).map((item) => ({
+        ...item,
+        display_price: 0,
+        currency: "USD",
+        stripe_product_name: undefined,
+        stripe_product_description: undefined,
+      }));
+    }
+
+    const cachedPrices = stripePricesByKey[idsKey];
+    if (!cachedPrices) {
+      return [];
+    }
+
+    return (ecardProducts as unknown as Product[]).map((p) =>
+      enrichProduct(p, cachedPrices)
+    );
+  }, [ecardProducts, idsKey, stripePricesByKey, enrichProduct]);
+
+  // Effect: Fetch Stripe prices when idsKey changes (fetch-and-cache only)
+  useEffect(() => {
+    if (loading || !session || !isInstructor) {
+      return;
+    }
+
+    if (!idsKey) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (fetchedKeysRef.current.has(idsKey)) {
+      setIsLoading(false);
+      return;
+    }
+
+    if (fetchingKeyRef.current === idsKey) {
+      return;
+    }
+
+    let aborted = false;
+    const currentIdsKey = idsKey;
+    fetchingKeyRef.current = idsKey;
 
     (async () => {
       setIsLoading(true);
@@ -195,28 +229,36 @@ export default function ECardsPage() {
           return;
         }
 
-        setProducts(
-          (ecardProducts as unknown as Product[]).map((p) =>
-            enrichProduct(p, stripePriceDataArray)
-          )
-        );
-        lastFetchedIdsRef.current = idsKey;
+        fetchedKeysRef.current.add(currentIdsKey);
+        setStripePricesByKey((prev) => ({
+          ...prev,
+          [currentIdsKey]: stripePriceDataArray,
+        }));
       } catch (caughtError: unknown) {
         if (aborted) {
           return;
         }
 
         setError(parseErrorMessage(caughtError));
-        setProducts([]);
       } finally {
-        setIsLoading(false);
+        if (!aborted && fetchingKeyRef.current === currentIdsKey) {
+          fetchingKeyRef.current = null;
+          setIsLoading(false);
+        }
       }
     })();
 
     return () => {
       aborted = true;
     };
-  }, [loading, session, isInstructor, idsKey, ecardProducts]);
+  }, [
+    loading,
+    session,
+    isInstructor,
+    idsKey,
+    fetchStripePrices,
+    parseErrorMessage,
+  ]);
 
   const getImageUrl = (imageUrl: string | null): string => {
     if (!imageUrl || imageUrl.trim() === "") {
