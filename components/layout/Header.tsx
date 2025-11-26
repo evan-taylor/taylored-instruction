@@ -24,7 +24,7 @@ type NavLinkItem = {
 type NavDivider = {
   label: string;
   type: "divider";
-  href?: undefined; // Ensure type compatibility with LinkItem
+  href?: string; // Optional href for clickable dividers
   indent?: undefined;
   requiresInstructor?: undefined; // Added
 };
@@ -85,7 +85,11 @@ const generateNavLinks = (
         label: "Register for Classes",
         href: "https://www.hovn.app/tayloredinstruction",
       },
-      { type: "divider", label: "American Heart Association Courses" },
+      {
+        type: "divider",
+        label: "American Heart Association Courses",
+        href: "https://www.hovn.app/tayloredinstruction/agencies/aha",
+      },
       { label: "BLS", href: "/bls", indent: true },
       { label: "Heartsaver", href: "/heartsaver", indent: true },
       {
@@ -93,7 +97,11 @@ const generateNavLinks = (
         href: "/aha-instructor-training",
         indent: true,
       },
-      { type: "divider", label: "American Red Cross Courses" },
+      {
+        type: "divider",
+        label: "American Red Cross Courses",
+        href: "https://www.hovn.app/tayloredinstruction/agencies/arc",
+      },
       {
         label: "Adult and Pediatric First Aid/CPR/AED",
         href: "/first-aid-cpr-aed",
@@ -375,6 +383,61 @@ const NavMenu = ({
       return true;
     });
 
+  const renderDivider = (item: NavDivider, onItemClick: () => void) => {
+    if (!item.href) {
+      return (
+        <div
+          className="px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
+          key={`divider-${item.label}`}
+        >
+          {item.label}
+        </div>
+      );
+    }
+    const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
+    return (
+      <Link
+        className="block px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
+        href={item.href}
+        key={`divider-${item.label}`}
+        onClick={onItemClick}
+        {...(isExternal
+          ? { target: "_blank", rel: "noopener noreferrer" }
+          : {})}
+      >
+        {item.label}
+      </Link>
+    );
+  };
+
+  const renderDropdownItem = (
+    item: DropdownItem,
+    onItemClick: () => void
+  ): React.ReactNode => {
+    if (item.type === "divider") {
+      return renderDivider(item, onItemClick);
+    }
+    if (!item.href || item.label.toLowerCase() === "logout") {
+      return null;
+    }
+    const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
+    const indentClass = item.indent ? " pl-8" : "";
+    const linkProps = isExternal
+      ? { target: "_blank" as const, rel: "noopener noreferrer" }
+      : {};
+    return (
+      <Link
+        className={`${getDropdownLinkClass(item.href, pathname)}${indentClass}`}
+        href={item.href}
+        key={item.label}
+        onClick={onItemClick}
+        {...linkProps}
+      >
+        {item.label}
+      </Link>
+    );
+  };
+
   const renderNavLink = (link: NavTopLevelLink) => {
     if (link.dropdown) {
       return (
@@ -421,39 +484,9 @@ const NavMenu = ({
 
             {activeDropdown === link.label && link.dropdown && (
               <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
-                {filterDropdownItems(link.dropdown).map((item) => {
-                  if (item.type === "divider") {
-                    return (
-                      <div
-                        className="px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
-                        key={`divider-${item.label}`}
-                      >
-                        {item.label}
-                      </div>
-                    );
-                  }
-                  // Prevent rendering if a dropdown item is accidentally labeled "Logout"
-                  if (item.label.toLowerCase() === "logout") {
-                    return null;
-                  }
-                  if (!item.href) {
-                    return null;
-                  }
-                  const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
-                  return (
-                    <Link
-                      className={`${getDropdownLinkClass(item.href, pathname)} ${item.indent ? "pl-8" : ""}`}
-                      href={item.href}
-                      key={item.label}
-                      onClick={() => toggleDropdown(link.label)}
-                      {...(isExternal
-                        ? { target: "_blank", rel: "noopener noreferrer" }
-                        : {})}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
+                {filterDropdownItems(link.dropdown).map((item) =>
+                  renderDropdownItem(item, () => toggleDropdown(link.label))
+                )}
               </div>
             )}
           </div>
@@ -503,6 +536,22 @@ const MobileNavMenu = ({
 
   const renderDropdownItem = (item: DropdownItem) => {
     if (item.type === "divider") {
+      if (item.href) {
+        const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
+        return (
+          <Link
+            className="block pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
+            href={item.href}
+            key={`divider-${item.label}`}
+            onClick={closeMenu}
+            {...(isExternal
+              ? { target: "_blank", rel: "noopener noreferrer" }
+              : {})}
+          >
+            {item.label}
+          </Link>
+        );
+      }
       return (
         <div
           className="pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"

@@ -44,7 +44,7 @@ const LifeguardingInstructorPageContent: React.FC = () => {
             size="lg"
             target="_blank"
           >
-            View Upcoming Courses
+            View Current Offerings
           </Button>
           <Button
             className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
@@ -316,7 +316,7 @@ const LifeguardingInstructorPageContent: React.FC = () => {
               size="lg"
               target="_blank"
             >
-              View Schedule
+              View Current Offerings
             </Button>
             <Button
               className="shadow-lg transition-shadow duration-200 hover:shadow-xl"

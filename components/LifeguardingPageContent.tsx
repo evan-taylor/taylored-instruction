@@ -61,15 +61,16 @@ const LifeguardingPageContent: React.FC = () => {
             size="lg"
             target="_blank"
           >
-            Register for Lifeguard Certification
+            View Current Offerings
           </Button>
           <Button
             className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
             href="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended"
             size="lg"
             target="_blank"
+            variant="secondary"
           >
-            Register for Recertification
+            View Recertification Courses
           </Button>
         </div>
 
