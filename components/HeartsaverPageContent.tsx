@@ -55,6 +55,11 @@ export default function HeartsaverPageContent() {
               fitness trainers, and anyone who wants to be prepared for an
               emergency.
             </p>
+            <CourseRegistrationButton
+              buttonText="View Current Offerings"
+              courseName="Heartsaver Certification"
+              registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-heartsaver-first-aid-cpr-aed-2025"
+            />
           </section>
 
           <section>
@@ -105,11 +110,6 @@ export default function HeartsaverPageContent() {
                 you&apos;ve learned.
               </li>
             </ul>
-            <CourseRegistrationButton
-              buttonText="View Current Offerings"
-              courseName="Heartsaver Certification"
-              registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-heartsaver-first-aid-cpr-aed"
-            />
           </section>
 
           <section>

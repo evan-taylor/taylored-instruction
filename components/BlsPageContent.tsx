@@ -51,6 +51,11 @@ export default function BlsPageContent() {
               providers, first responders, and anyone required to have BLS
               certification as part of their job or studies.
             </p>
+            <CourseRegistrationButton
+              buttonText="View Current Offerings"
+              courseName="BLS Certification"
+              registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider-2025/"
+            />
           </section>
 
           <section>
@@ -91,11 +96,6 @@ export default function BlsPageContent() {
                 an in-person skills session.
               </li>
             </ul>
-            <CourseRegistrationButton
-              buttonText="View Current Offerings"
-              courseName="BLS Certification"
-              registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider"
-            />
           </section>
 
           <section>
