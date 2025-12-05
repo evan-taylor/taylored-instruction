@@ -6,7 +6,7 @@ import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverte
 import { getResendClient } from "@/lib/resend";
 
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
-const fromEmail = "info@tayloredinstruction.com"; // Use verified domain and desired from address
+const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend domain
 
 // Define schema for form validation - RESTORED
 const AlignmentInterestSchema = z

@@ -16,7 +16,7 @@ function getStripeClient(): Stripe {
   });
 }
 
-const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
+const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const adminEmail = process.env.ADMIN_EMAIL || "info@tayloredinstruction.com";
 
 type CartItem = {

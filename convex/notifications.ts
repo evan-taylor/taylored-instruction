@@ -4,7 +4,8 @@ import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const FROM_EMAIL = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
+const FROM_EMAIL =
+  process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const ADMIN_NOTIF_EMAIL =
   process.env.ADMIN_NOTIF_EMAIL ||
   process.env.ADMIN_EMAIL ||

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getResendClient } from "@/lib/resend";
 
-const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
+const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const adminEmail =
   process.env.ADMIN_NOTIF_EMAIL ||
   process.env.ADMIN_EMAIL ||
