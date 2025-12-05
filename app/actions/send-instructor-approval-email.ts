@@ -5,7 +5,7 @@ import { z } from "zod";
 import InstructorApprovalEmail from "@/emails/InstructorApprovalEmail";
 import { getResendClient } from "@/lib/resend";
 
-const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
+const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 
 const ApprovalEmailSchema = z.object({
   email: z.string().email("Invalid email address"),

@@ -9,7 +9,7 @@ import { getResendClient } from "@/lib/resend";
 
 // Resend client will be initialized lazily via getResendClient()
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
-const fromEmail = "info@tayloredinstruction.com"; // Use verified domain and desired from address
+const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend domain
 
 // Define schema for form validation
 const MIN_MESSAGE_LENGTH = 5;

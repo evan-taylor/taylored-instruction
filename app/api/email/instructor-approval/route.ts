@@ -4,7 +4,7 @@ import { z } from "zod";
 import InstructorApprovalEmail from "@/emails/InstructorApprovalEmail";
 import { getResendClient } from "@/lib/resend";
 
-const fromEmail = process.env.FROM_EMAIL || "info@tayloredinstruction.com";
+const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const internalSecret = process.env.INTERNAL_EMAIL_WEBHOOK_SECRET;
 
 const ApprovalEmailSchema = z.object({
