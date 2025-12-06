@@ -7,6 +7,12 @@ import {
   getBreadcrumbSchema,
   getFirstAidCPRAEDCourseSchema,
 } from "@/lib/structuredData";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "First Aid/CPR/AED Certification",
+  description: "Red Cross Training in Vancouver WA & San Luis Obispo CA",
+});
 
 export const metadata: Metadata = {
   title:
@@ -47,7 +53,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "First Aid, CPR, and AED Training - Taylored Instruction",
@@ -60,7 +66,7 @@ export const metadata: Metadata = {
       "First Aid/CPR/AED Certification | Vancouver WA & San Luis Obispo CA",
     description:
       "Learn lifesaving First Aid, CPR & AED skills with American Red Cross certification. Blended learning & in-person classes available.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/first-aid-cpr-aed",

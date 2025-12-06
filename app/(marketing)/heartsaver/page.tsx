@@ -8,6 +8,13 @@ import {
   getBreadcrumbSchema,
   getHeartsaverCourseSchema,
 } from "@/lib/structuredData";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "AHA Heartsaver First Aid CPR AED",
+  description: "Workplace Certification in Vancouver WA & San Luis Obispo CA",
+  type: "heartsaver",
+});
 
 export const metadata: Metadata = {
   title:
@@ -47,7 +54,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "AHA Heartsaver CPR AED Training - Taylored Instruction",
@@ -60,7 +67,7 @@ export const metadata: Metadata = {
       "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA",
     description:
       "American Heart Association Heartsaver® certification for workplace teams, schools, and personal preparedness. Blended learning available.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/heartsaver",
