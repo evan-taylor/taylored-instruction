@@ -2,6 +2,14 @@
 
 import type { Metadata } from "next";
 import BasicLifeSupportPageContent from "@/components/BasicLifeSupportPageContent";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Red Cross Basic Life Support (BLS)",
+  description:
+    "Healthcare Provider Certification in Vancouver WA & San Luis Obispo CA",
+  type: "bls",
+});
 
 export const metadata: Metadata = {
   title:
@@ -36,7 +44,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Red Cross BLS Certification - Taylored Instruction",
@@ -49,7 +57,7 @@ export const metadata: Metadata = {
       "Red Cross Basic Life Support (BLS) Certification | Vancouver WA & San Luis Obispo CA",
     description:
       "American Red Cross BLS certification for healthcare providers.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/basic-life-support",

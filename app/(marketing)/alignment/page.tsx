@@ -2,6 +2,12 @@
 
 import type { Metadata } from "next";
 import AlignmentPageContent from "@/components/AlignmentPageContent";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Instructor Alignment",
+  description: "Partner with Taylored Instruction - Red Cross & AHA Support",
+});
 
 export const metadata: Metadata = {
   title:
@@ -38,7 +44,7 @@ export const metadata: Metadata = {
     siteName: "Taylored Instruction",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Instructor Alignment - Taylored Instruction",
@@ -53,7 +59,7 @@ export const metadata: Metadata = {
       "Instructor Alignment with Taylored Instruction | Vancouver WA & San Luis Obispo CA",
     description:
       "Align with Taylored Instruction to enhance your training courses. Red Cross & AHA support available.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
 };
 

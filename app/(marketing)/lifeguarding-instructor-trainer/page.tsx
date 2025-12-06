@@ -3,6 +3,13 @@
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import { Button } from "@/components/ui/Button";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Lifeguarding Instructor Trainer",
+  description: "On-Site Red Cross Instructor Training",
+  type: "lifeguarding",
+});
 
 export const metadata: Metadata = {
   title:
@@ -28,7 +35,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Instructor Trainer",
@@ -41,7 +48,7 @@ export const metadata: Metadata = {
       "Red Cross Lifeguarding Instructor Trainer | Vancouver, WA & San Luis Obispo",
     description:
       "ARC Lifeguarding Instructor Trainer available to travel for on-site Lifeguarding Instructor courses.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical:

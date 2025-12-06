@@ -3,6 +3,13 @@
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import LifeguardingInstructorPageContent from "@/components/LifeguardingInstructorPageContent";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Lifeguarding Instructor Course",
+  description: "Become a Certified Red Cross Lifeguard Instructor",
+  type: "lifeguarding",
+});
 
 export const metadata: Metadata = {
   title:
@@ -35,7 +42,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Red Cross Lifeguarding Instructor Course - Taylored Instruction",
@@ -48,7 +55,7 @@ export const metadata: Metadata = {
       "Red Cross Lifeguarding Instructor Course | Vancouver WA & San Luis Obispo CA",
     description:
       "Become a certified American Red Cross Lifeguarding Instructor. Teach lifeguard courses today!",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/lifeguarding-instructor",

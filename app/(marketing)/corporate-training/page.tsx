@@ -14,6 +14,13 @@ import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Corporate CPR Training",
+  description:
+    "Workplace Safety Certification in Vancouver WA & San Luis Obispo CA",
+});
 
 export const metadata: Metadata = {
   title:
@@ -56,7 +63,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Corporate CPR Training - Taylored Instruction",
@@ -69,7 +76,7 @@ export const metadata: Metadata = {
       "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety",
     description:
       "Professional on-site corporate CPR, BLS & First Aid training. AHA & Red Cross certified.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/corporate-training",

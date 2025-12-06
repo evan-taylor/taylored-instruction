@@ -2,6 +2,12 @@
 
 import type { Metadata } from "next";
 import FaCprAedInstructorPageContent from "@/components/FaCprAedInstructorPageContent";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "First Aid/CPR/AED Instructor Course",
+  description: "Become a Certified Red Cross Instructor",
+});
 
 // Extract metadata from the provided HTML
 export const metadata: Metadata = {
@@ -36,7 +42,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Red Cross First Aid/CPR/AED Instructor Training - Taylored Instruction",
@@ -49,7 +55,7 @@ export const metadata: Metadata = {
       "Red Cross First Aid/CPR/AED Instructor Course | Vancouver WA & San Luis Obispo CA",
     description:
       "Become a certified American Red Cross First Aid/CPR/AED Instructor. Teach lifesaving skills today!",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/fa-cpr-aed-instructor",
