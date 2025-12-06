@@ -2,6 +2,12 @@
 
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Privacy Policy",
+  description: "How We Collect, Use & Safeguard Your Information",
+});
 
 export const metadata: Metadata = {
   title: "Privacy Policy | Taylored Instruction",
@@ -17,6 +23,32 @@ export const metadata: Metadata = {
     "Website privacy terms",
     "Personal information protection",
   ],
+  openGraph: {
+    title: "Privacy Policy | Taylored Instruction",
+    description:
+      "Learn how Taylored Instruction collects, uses, and safeguards your personal information.",
+    url: "https://tayloredinstruction.com/privacy-policy",
+    siteName: "Taylored Instruction",
+    type: "website",
+    images: [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "Privacy Policy - Taylored Instruction",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Privacy Policy | Taylored Instruction",
+    description:
+      "Learn how Taylored Instruction collects, uses, and safeguards your personal information.",
+    images: [ogImageUrl],
+  },
+  alternates: {
+    canonical: "https://tayloredinstruction.com/privacy-policy",
+  },
 };
 
 export default async function PrivacyPolicyPage() {

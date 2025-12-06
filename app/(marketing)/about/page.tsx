@@ -7,6 +7,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button"; // Import the Button component
 import { ChamberBadge } from "@/components/ui/ChamberBadge";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "About Taylored Instruction",
+  description: "Expert CPR, BLS & Lifeguard Training",
+});
 
 // --- Page Metadata ---
 export const metadata: Metadata = {
@@ -43,7 +49,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "About Taylored Instruction - Lifesaving Training Experts",
@@ -55,7 +61,7 @@ export const metadata: Metadata = {
     title: "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
     description:
       "Meet Evan Taylor and learn about our mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/about",

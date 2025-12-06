@@ -8,6 +8,14 @@ import {
   getBLSCourseSchema,
   getBreadcrumbSchema,
 } from "@/lib/structuredData";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "AHA BLS Certification Course",
+  description:
+    "Healthcare Provider Training in Vancouver WA & San Luis Obispo CA",
+  type: "bls",
+});
 
 export const metadata: Metadata = {
   title:
@@ -48,7 +56,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "AHA BLS Training for Healthcare Professionals - Taylored Instruction",
@@ -61,7 +69,7 @@ export const metadata: Metadata = {
       "AHA BLS Certification | Vancouver WA & San Luis Obispo CA - Healthcare Providers",
     description:
       "American Heart Association BLS certification for healthcare professionals. In-person & blended learning in Vancouver WA and San Luis Obispo CA.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/bls",

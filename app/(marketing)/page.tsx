@@ -6,6 +6,13 @@ import { AboutSection } from "@/components/home/AboutSection";
 import { CertificationsSection } from "@/components/home/CertificationsSection";
 import { Hero } from "@/components/home/Hero";
 import { ServicesSection } from "@/components/home/ServicesSection";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Professional CPR, BLS & Lifeguard Training",
+  description:
+    "American Red Cross & AHA Certified Training in Vancouver WA & San Luis Obispo CA",
+});
 
 export const metadata: Metadata = {
   title:
@@ -52,7 +59,7 @@ export const metadata: Metadata = {
     locale: "en_US",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Taylored Instruction - Professional CPR & Lifeguard Training",
@@ -64,7 +71,7 @@ export const metadata: Metadata = {
     title: "Taylored Instruction | Professional CPR, BLS & Lifeguard Training",
     description:
       "Get certified in CPR, BLS, First Aid & Lifeguarding. American Red Cross & AHA Training in Vancouver WA & San Luis Obispo CA.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
 };
 

@@ -6,6 +6,12 @@ import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm"; // Placeholder for the form component
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Contact Taylored Instruction",
+  description: "CPR, BLS & Lifeguard Training Support",
+});
 
 // --- Page Metadata ---
 export const metadata: Metadata = {
@@ -42,7 +48,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Contact Taylored Instruction - Expert Safety Training",
@@ -55,7 +61,7 @@ export const metadata: Metadata = {
       "Contact Taylored Instruction | CPR, BLS & Lifeguard Training Support",
     description:
       "Contact us for CPR, BLS, First Aid & Lifeguard training inquiries. Serving Vancouver WA & San Luis Obispo CA.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/contact",

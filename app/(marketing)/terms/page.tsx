@@ -2,6 +2,12 @@
 
 import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Terms and Conditions",
+  description: "Course Bookings, Refunds & Policies",
+});
 
 export const metadata: Metadata = {
   title: "Terms and Conditions | Taylored Instruction",
@@ -19,6 +25,32 @@ export const metadata: Metadata = {
     "Late arrival policy course",
     "Taylored Instruction policies",
   ],
+  openGraph: {
+    title: "Terms and Conditions | Taylored Instruction",
+    description:
+      "Read the terms and conditions for course bookings, refunds, liability, and media consent.",
+    url: "https://tayloredinstruction.com/terms",
+    siteName: "Taylored Instruction",
+    type: "website",
+    images: [
+      {
+        url: ogImageUrl,
+        width: 1200,
+        height: 630,
+        alt: "Terms and Conditions - Taylored Instruction",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Terms and Conditions | Taylored Instruction",
+    description:
+      "Read the terms and conditions for course bookings, refunds, liability, and media consent.",
+    images: [ogImageUrl],
+  },
+  alternates: {
+    canonical: "https://tayloredinstruction.com/terms",
+  },
 };
 
 export default async function TermsPage() {

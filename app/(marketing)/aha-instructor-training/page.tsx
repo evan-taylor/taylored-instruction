@@ -2,6 +2,13 @@
 
 import type { Metadata } from "next";
 import AhaInstructorTrainingPageContent from "@/components/AhaInstructorTrainingPageContent";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "AHA Instructor Training",
+  description: "Become a Certified CPR Instructor",
+  type: "aha",
+});
 
 export const metadata: Metadata = {
   title:
@@ -39,7 +46,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "AHA CPR Instructor Training - Taylored Instruction",
@@ -51,7 +58,7 @@ export const metadata: Metadata = {
     title: "AHA Instructor Training Vancouver WA & San Luis Obispo CA",
     description:
       "Become an American Heart Association CPR instructor. Teach lifesaving skills today!",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/aha-instructor-training",

@@ -4,6 +4,13 @@ import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "AED Sales & Distribution",
+  description:
+    "Automated External Defibrillators in Vancouver WA & San Luis Obispo CA",
+});
 
 export const metadata: Metadata = {
   title:
@@ -46,7 +53,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "AED Sales & Distribution - Taylored Instruction",
@@ -58,7 +65,7 @@ export const metadata: Metadata = {
     title: "AED Sales & Distribution Vancouver WA & San Luis Obispo CA",
     description:
       "Buy AEDs from authorized distributor. Expert guidance, competitive pricing, training included.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/aeds",

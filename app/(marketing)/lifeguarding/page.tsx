@@ -7,6 +7,13 @@ import {
   getBreadcrumbSchema,
   getLifeguardingCourseSchema,
 } from "@/lib/structuredData";
+import { generateOgImageUrl } from "@/lib/utils";
+
+const ogImageUrl = generateOgImageUrl({
+  title: "Red Cross Lifeguarding Certification",
+  description: "Professional Training in Vancouver WA & San Luis Obispo CA",
+  type: "lifeguarding",
+});
 
 export const metadata: Metadata = {
   title:
@@ -48,7 +55,7 @@ export const metadata: Metadata = {
     type: "article",
     images: [
       {
-        url: "/og-image.png",
+        url: ogImageUrl,
         width: 1200,
         height: 630,
         alt: "Red Cross Lifeguarding Certification - Taylored Instruction",
@@ -61,7 +68,7 @@ export const metadata: Metadata = {
       "Red Cross Lifeguarding Certification | Vancouver WA & San Luis Obispo CA",
     description:
       "Become a certified lifeguard with American Red Cross training. Learn rescue techniques, CPR, First Aid & water safety.",
-    images: ["/twitter-image.png"],
+    images: [ogImageUrl],
   },
   alternates: {
     canonical: "https://tayloredinstruction.com/lifeguarding",
