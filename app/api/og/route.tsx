@@ -1,8 +1,6 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 
-export const runtime = "edge";
-
 const BRAND_COLORS = {
   primary: "#2B5A8A",
   primaryDark: "#163f69",
@@ -24,7 +22,7 @@ export function GET(request: NextRequest) {
     "Professional CPR, BLS & Lifeguard Training";
   const type = searchParams.get("type") ?? "default";
 
-  const logoUrl = new URL("/public/Logo-Black.png", request.url)
+  const logoUrl = new URL("/Logo-Black.png", request.url)
     .toString()
     .replace("/api/og", "");
 
