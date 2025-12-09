@@ -43,6 +43,21 @@ const schema = defineSchema({
     .index("by_user", ["userId"])
     .index("by_url", ["url"]),
 
+  onboarding_steps: defineTable({
+    slug: v.string(),
+    title: v.string(),
+    summary: v.optional(v.string()),
+    content: v.string(),
+    order: v.number(),
+    isPublished: v.boolean(),
+    updatedAt: v.string(),
+    updatedByUserId: v.id("users"),
+    updatedByEmail: v.optional(v.string()),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_order", ["order"])
+    .index("by_published", ["isPublished"]),
+
   staging_profiles: defineTable({
     email: v.string(),
     supabaseUserId: v.string(), // Original Supabase auth.users.id
