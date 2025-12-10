@@ -196,25 +196,36 @@ function tryRenderHeading(
   return null;
 }
 
-function tryRenderListItem(
+type ListItemInfo = {
+  type: "ul" | "ol";
+  content: React.ReactNode;
+};
+
+function tryParseListItem(
   line: string,
   elementKey: number
-): React.ReactNode | null {
+): ListItemInfo | null {
   if (line.startsWith("- ") || line.startsWith("* ")) {
-    return (
-      <li className="mb-1 ml-6 list-disc text-gray-700" key={elementKey}>
-        {renderInlineElements(line.slice(LIST_ITEM_PREFIX_LENGTH))}
-      </li>
-    );
+    return {
+      type: "ul",
+      content: (
+        <li className="mb-1 text-gray-700" key={elementKey}>
+          {renderInlineElements(line.slice(LIST_ITEM_PREFIX_LENGTH))}
+        </li>
+      ),
+    };
   }
 
   const orderedMatch = line.match(ORDERED_LIST_MATCH_REGEX);
   if (orderedMatch) {
-    return (
-      <li className="mb-1 ml-6 list-decimal text-gray-700" key={elementKey}>
-        {renderInlineElements(orderedMatch[2])}
-      </li>
-    );
+    return {
+      type: "ol",
+      content: (
+        <li className="mb-1 text-gray-700" key={elementKey}>
+          {renderInlineElements(orderedMatch[2])}
+        </li>
+      ),
+    };
   }
 
   return null;
@@ -225,9 +236,32 @@ type ParserState = {
   currentParagraph: string[];
   inCodeBlock: boolean;
   codeBlockContent: string[];
+  currentList: React.ReactNode[];
+  currentListType: "ul" | "ol" | null;
 };
 
+function flushList(state: ParserState): void {
+  if (state.currentList.length > 0 && state.currentListType) {
+    if (state.currentListType === "ul") {
+      state.elements.push(
+        <ul className="mb-4 ml-6 list-disc" key={state.elements.length}>
+          {state.currentList}
+        </ul>
+      );
+    } else {
+      state.elements.push(
+        <ol className="mb-4 ml-6 list-decimal" key={state.elements.length}>
+          {state.currentList}
+        </ol>
+      );
+    }
+    state.currentList = [];
+    state.currentListType = null;
+  }
+}
+
 function flushParagraph(state: ParserState): void {
+  flushList(state);
   if (state.currentParagraph.length > 0) {
     const text = state.currentParagraph.join(" ");
     if (text.trim()) {
@@ -290,12 +324,18 @@ function processLine(line: string, state: ParserState): void {
     return;
   }
 
-  const listItem = tryRenderListItem(line, state.elements.length);
+  const listItem = tryParseListItem(line, state.currentList.length);
   if (listItem) {
     flushParagraph(state);
-    state.elements.push(listItem);
+    if (state.currentListType && state.currentListType !== listItem.type) {
+      flushList(state);
+    }
+    state.currentListType = listItem.type;
+    state.currentList.push(listItem.content);
     return;
   }
+
+  flushList(state);
 
   if (line.trim() === "") {
     flushParagraph(state);
@@ -312,12 +352,15 @@ function parseAndRenderMDX(content: string): React.ReactNode[] {
     currentParagraph: [],
     inCodeBlock: false,
     codeBlockContent: [],
+    currentList: [],
+    currentListType: null,
   };
 
   for (const line of lines) {
     processLine(line, state);
   }
 
+  flushList(state);
   flushParagraph(state);
 
   return state.elements;
