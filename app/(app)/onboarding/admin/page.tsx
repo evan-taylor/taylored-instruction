@@ -249,9 +249,10 @@ export default function OnboardingAdminPage() {
               </label>
               <div className="mb-2 rounded-lg bg-gray-50 p-3 text-gray-600 text-sm">
                 <p className="mb-2 font-medium">Available embed components:</p>
+                <code className="mb-1 block">{`<CapEmbed url="https://cap.so/embed/..." />`}</code>
                 <code className="mb-1 block">{`<LoomEmbed url="https://www.loom.com/share/..." />`}</code>
                 <code className="mb-1 block">{`<TypeformEmbed formId="abc123" />`}</code>
-                <code className="block">{`<CalComButton username="yourname" eventType="30min" buttonText="Book Now" />`}</code>
+                <code className="block">{`<CalComButton username="evan-taylor" eventType="hovn" namespace="hovn" buttonText="Book Now" />`}</code>
               </div>
               <textarea
                 className="h-96 w-full rounded-lg border border-gray-300 px-4 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"

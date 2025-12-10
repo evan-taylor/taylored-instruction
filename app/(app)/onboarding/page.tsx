@@ -5,6 +5,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import {
   CalComButton,
+  CapEmbed,
   LoomEmbed,
   TypeformEmbed,
 } from "@/components/mdx/EmbedComponents";
@@ -15,11 +16,12 @@ const BOLD_REGEX = /\*\*(.+?)\*\*/;
 const ITALIC_REGEX = /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/;
 const LINK_REGEX = /\[(.+?)\]\((.+?)\)/;
 const CODE_INLINE_REGEX = /`(.+?)`/;
+const CAP_REGEX = /<CapEmbed\s+url="([^"]+)"\s*\/>/;
 const LOOM_REGEX = /<LoomEmbed\s+url="([^"]+)"\s*\/>/;
 const TYPEFORM_REGEX =
   /<TypeformEmbed\s+formId="([^"]+)"(?:\s+height=\{(\d+)\})?\s*\/>/;
 const CALCOM_REGEX =
-  /<CalComButton\s+username="([^"]+)"(?:\s+eventType="([^"]+)")?(?:\s+buttonText="([^"]+)")?\s*\/>/;
+  /<CalComButton\s+username="([^"]+)"\s+eventType="([^"]+)"\s+namespace="([^"]+)"(?:\s+buttonText="([^"]+)")?\s*\/>/;
 const ORDERED_LIST_MATCH_REGEX = /^(\d+)\.\s(.+)/;
 
 const HEADING_H1_PREFIX_LENGTH = 2;
@@ -130,6 +132,11 @@ function tryRenderEmbed(
   line: string,
   elementKey: number
 ): React.ReactNode | null {
+  const capMatch = line.match(CAP_REGEX);
+  if (capMatch) {
+    return <CapEmbed key={elementKey} url={capMatch[1]} />;
+  }
+
   const loomMatch = line.match(LOOM_REGEX);
   if (loomMatch) {
     return <LoomEmbed key={elementKey} url={loomMatch[1]} />;
@@ -154,9 +161,10 @@ function tryRenderEmbed(
   if (calMatch) {
     return (
       <CalComButton
-        buttonText={calMatch[3]}
+        buttonText={calMatch[4]}
         eventType={calMatch[2]}
         key={elementKey}
+        namespace={calMatch[3]}
         username={calMatch[1]}
       />
     );
