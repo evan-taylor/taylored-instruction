@@ -16,6 +16,7 @@ const BOLD_REGEX = /\*\*(.+?)\*\*/;
 const ITALIC_REGEX = /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/;
 const LINK_REGEX = /\[(.+?)\]\((.+?)\)/;
 const CODE_INLINE_REGEX = /`(.+?)`/;
+const URL_REGEX = /(https?:\/\/[^\s<>[\]()]+)/;
 const CAP_REGEX = /<CapEmbed\s+url="([^"]+)"\s*\/>/;
 const LOOM_REGEX = /<LoomEmbed\s+url="([^"]+)"\s*\/>/;
 const TYPEFORM_REGEX =
@@ -63,6 +64,21 @@ function findFirstMatch(text: string): MatchInfo | null {
     candidates.push({ type: "code", match: codeMatch, index: codeMatch.index });
   }
 
+  const urlMatch = text.match(URL_REGEX);
+  if (urlMatch?.index !== undefined) {
+    const beforeUrl = text.slice(0, urlMatch.index);
+    const isInsideMarkdownLink =
+      beforeUrl.includes("[") &&
+      !beforeUrl.slice(beforeUrl.lastIndexOf("[")).includes("]");
+    const isAfterMarkdownLinkText =
+      beforeUrl.endsWith("](") ||
+      (beforeUrl.includes("](") &&
+        !beforeUrl.slice(beforeUrl.lastIndexOf("](")).includes(")"));
+    if (!(isInsideMarkdownLink || isAfterMarkdownLinkText)) {
+      candidates.push({ type: "url", match: urlMatch, index: urlMatch.index });
+    }
+  }
+
   if (candidates.length === 0) {
     return null;
   }
@@ -98,6 +114,18 @@ function renderMatchElement(info: MatchInfo, key: number): React.ReactNode {
         >
           {content}
         </code>
+      );
+    case "url":
+      return (
+        <a
+          className="text-primary hover:underline"
+          href={content}
+          key={key}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          {content}
+        </a>
       );
     default:
       return content;
@@ -226,10 +254,11 @@ function tryParseListItem(
 
   const orderedMatch = line.match(ORDERED_LIST_MATCH_REGEX);
   if (orderedMatch) {
+    const listNumber = Number.parseInt(orderedMatch[1], RADIX_DECIMAL);
     return {
       type: "ol",
       content: (
-        <li className="mb-1 text-gray-700" key={elementKey}>
+        <li className="mb-1 text-gray-700" key={elementKey} value={listNumber}>
           {renderInlineElements(orderedMatch[2])}
         </li>
       ),
@@ -329,6 +358,14 @@ function processLine(line: string, state: ParserState): void {
   if (heading) {
     flushParagraph(state);
     state.elements.push(heading);
+    return;
+  }
+
+  if (line.trim() === "---") {
+    flushParagraph(state);
+    state.elements.push(
+      <hr className="my-6 border-gray-300" key={state.elements.length} />
+    );
     return;
   }
 
