@@ -2,8 +2,21 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+const onboardingSteps = defineTable({
+  title: v.string(),
+  content: v.string(),
+  order: v.number(),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+  createdBy: v.string(),
+})
+  .index("by_order", ["order"])
+  .index("by_created_at", ["createdAt"]);
+
 const schema = defineSchema({
   ...authTables,
+
+  onboarding_steps: onboardingSteps,
 
   profiles: defineTable({
     userId: v.id("users"), // Reference to auth users table
