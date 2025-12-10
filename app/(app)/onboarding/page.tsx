@@ -2,7 +2,7 @@
 
 import { useQuery } from "convex/react";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CalComButton,
   LoomEmbed,
@@ -12,7 +12,7 @@ import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 
 const BOLD_REGEX = /\*\*(.+?)\*\*/;
-const ITALIC_REGEX = /\*(.+?)\*/;
+const ITALIC_REGEX = /(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/;
 const LINK_REGEX = /\[(.+?)\]\((.+?)\)/;
 const CODE_INLINE_REGEX = /`(.+?)`/;
 const LOOM_REGEX = /<LoomEmbed\s+url="([^"]+)"\s*\/>/;
@@ -334,9 +334,17 @@ export default function OnboardingPage() {
   const { isInstructor, loading: profileLoading, session } = useProfile();
   const [activeStep, setActiveStep] = useState(0);
 
-  const steps = useQuery(api.onboarding.getSteps) as
-    | OnboardingStep[]
-    | undefined;
+  const shouldFetchSteps = !profileLoading && !!session && !!isInstructor;
+  const steps = useQuery(
+    api.onboarding.getSteps,
+    shouldFetchSteps ? {} : "skip"
+  ) as OnboardingStep[] | undefined;
+
+  useEffect(() => {
+    if (steps && steps.length > 0 && activeStep >= steps.length) {
+      setActiveStep(steps.length - 1);
+    }
+  }, [steps, activeStep]);
 
   if (profileLoading) {
     return (

@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 type LoomEmbedProps = {
   url: string;
 };
@@ -68,19 +66,6 @@ export function CalComButton({
   eventType = "30min",
   buttonText = "Schedule a Call",
 }: CalComButtonProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://assets.calendly.com/assets/external/widget.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   const handleClick = () => {
     const calUrl = `https://cal.com/${username}/${eventType}`;
     window.open(calUrl, "_blank", "width=600,height=700");
@@ -90,7 +75,6 @@ export function CalComButton({
     <button
       className="my-4 inline-flex items-center justify-center rounded bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
       onClick={handleClick}
-      ref={buttonRef}
       type="button"
     >
       {buttonText}

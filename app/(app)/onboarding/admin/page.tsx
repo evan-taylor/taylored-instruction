@@ -35,14 +35,16 @@ export default function OnboardingAdminPage() {
   const [deleteConfirmId, setDeleteConfirmId] =
     useState<Id<"onboarding_steps"> | null>(null);
 
-  const steps = useQuery(api.onboarding.getStepsForAdmin) as
-    | OnboardingStep[]
-    | undefined;
+  const isAdmin = email && ADMIN_EMAILS.includes(email);
+  const shouldFetchSteps = !profileLoading && !!session && !!isAdmin;
+
+  const steps = useQuery(
+    api.onboarding.getStepsForAdmin,
+    shouldFetchSteps ? {} : "skip"
+  ) as OnboardingStep[] | undefined;
   const createStep = useMutation(api.onboarding.createStep);
   const updateStep = useMutation(api.onboarding.updateStep);
   const deleteStep = useMutation(api.onboarding.deleteStep);
-
-  const isAdmin = email && ADMIN_EMAILS.includes(email);
 
   if (profileLoading) {
     return (
@@ -113,18 +115,31 @@ export default function OnboardingAdminPage() {
       return;
     }
 
+    const trimmedTitle = editingStep.title.trim();
+    const trimmedContent = editingStep.content.trim();
+
+    if (!trimmedTitle) {
+      setErrorMessage("Title is required.");
+      return;
+    }
+
+    if (!trimmedContent) {
+      setErrorMessage("Content is required.");
+      return;
+    }
+
     try {
       if (isCreating) {
         await createStep({
-          title: editingStep.title,
-          content: editingStep.content,
+          title: trimmedTitle,
+          content: trimmedContent,
           order: editingStep.order,
         });
       } else if (editingStep.id) {
         await updateStep({
           id: editingStep.id,
-          title: editingStep.title,
-          content: editingStep.content,
+          title: trimmedTitle,
+          content: trimmedContent,
           order: editingStep.order,
         });
       }
