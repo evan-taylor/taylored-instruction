@@ -1,6 +1,7 @@
 "use client";
 
 import { getCalApi } from "@calcom/embed-react";
+import Script from "next/script";
 import { useEffect } from "react";
 
 type CapEmbedProps = {
@@ -84,14 +85,19 @@ export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
   }
 
   return (
-    <div className="my-4 w-full overflow-hidden rounded-lg">
-      <iframe
-        className="w-full"
-        height={height}
-        src={`https://form.typeform.com/to/${formId}`}
-        title="Typeform"
+    <>
+      <div
+        className="my-4 w-full overflow-hidden rounded-lg"
+        style={{ minHeight: height }}
+      >
+        <div data-tf-live={formId} />
+      </div>
+      <Script
+        id="typeform-embed"
+        src="https://embed.typeform.com/next/embed.js"
+        strategy="lazyOnload"
       />
-    </div>
+    </>
   );
 }
 
