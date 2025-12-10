@@ -97,16 +97,16 @@ export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
 
 type CalComButtonProps = {
   username: string;
-  eventType?: string;
+  eventType: string;
+  namespace: string;
   buttonText?: string;
-  namespace?: string;
 };
 
 export function CalComButton({
   username,
-  eventType = "hovn",
+  eventType,
+  namespace,
   buttonText = "Schedule a Call",
-  namespace = "hovn",
 }: CalComButtonProps) {
   useEffect(() => {
     const initCal = async () => {

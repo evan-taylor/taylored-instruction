@@ -21,7 +21,7 @@ const LOOM_REGEX = /<LoomEmbed\s+url="([^"]+)"\s*\/>/;
 const TYPEFORM_REGEX =
   /<TypeformEmbed\s+formId="([^"]+)"(?:\s+height=\{(\d+)\})?\s*\/>/;
 const CALCOM_REGEX =
-  /<CalComButton\s+username="([^"]+)"(?:\s+eventType="([^"]+)")?(?:\s+buttonText="([^"]+)")?\s*\/>/;
+  /<CalComButton\s+username="([^"]+)"\s+eventType="([^"]+)"\s+namespace="([^"]+)"(?:\s+buttonText="([^"]+)")?\s*\/>/;
 const ORDERED_LIST_MATCH_REGEX = /^(\d+)\.\s(.+)/;
 
 const HEADING_H1_PREFIX_LENGTH = 2;
@@ -161,9 +161,10 @@ function tryRenderEmbed(
   if (calMatch) {
     return (
       <CalComButton
-        buttonText={calMatch[3]}
+        buttonText={calMatch[4]}
         eventType={calMatch[2]}
         key={elementKey}
+        namespace={calMatch[3]}
         username={calMatch[1]}
       />
     );
