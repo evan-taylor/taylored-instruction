@@ -122,9 +122,16 @@ const generateNavLinks = (
   },
   {
     label: "Products",
+    href: "https://shop.tayloredinstruction.com/",
     dropdown: [
-      { label: "Shop", href: "https://shop.tayloredinstruction.com/" },
-      { label: "AEDs", href: "/aeds" },
+      {
+        label: "AEDs",
+        href: "https://shop.tayloredinstruction.com/search/aeds",
+      },
+      {
+        label: "Instructor Supplies",
+        href: "https://shop.tayloredinstruction.com/search/instructor-supplies",
+      },
     ],
   },
   {
