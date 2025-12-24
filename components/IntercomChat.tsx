@@ -25,6 +25,10 @@ export function IntercomChat() {
         app_id: INTERCOM_APP_ID,
       });
     }
+
+    return () => {
+      Intercom("shutdown");
+    };
   }, [profile, loading]);
 
   return null;
