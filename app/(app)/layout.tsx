@@ -2,7 +2,6 @@ import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 import { AuthEffects } from "@/components/auth-effects";
-import { IntercomChat } from "@/components/IntercomChat";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
@@ -23,7 +22,6 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Footer />
             </div>
             <PostHogPageViewWrapper />
-            <IntercomChat />
           </PostHogProvider>
         </ConvexClientProvider>
       </ConvexAuthNextjsServerProvider>
