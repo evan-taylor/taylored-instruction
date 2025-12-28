@@ -377,6 +377,33 @@ export const getLifeguardingCourseSchema = (): CourseSchema => ({
   },
 });
 
+export const getCalPolyCPRCourseSchema = (): CourseSchema => ({
+  "@context": "https://schema.org",
+  "@type": "Course",
+  name: "CPR Classes for Cal Poly SLO Students",
+  description:
+    "CPR and BLS certification courses for Cal Poly San Luis Obispo students. American Heart Association BLS and American Red Cross CPR/AED training available in San Luis Obispo.",
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: "https://tayloredinstruction.com",
+  },
+  courseCode: "CALPOLY-CPR",
+  educationalCredentialAwarded:
+    "AHA BLS or Red Cross CPR/AED Certification (Valid 2 Years)",
+  hasCourseInstance: {
+    "@type": "CourseInstance",
+    courseMode: ["Blended", "In-Person"],
+    duration: "PT4H",
+    inLanguage: "en-US",
+  },
+  offers: {
+    "@type": "Offer",
+    category: "Student Training",
+    priceCurrency: "USD",
+  },
+});
+
 // Breadcrumb Schema Generator
 export const getBreadcrumbSchema = (
   items: Array<{ name: string; url?: string }>
