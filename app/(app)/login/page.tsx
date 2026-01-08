@@ -5,6 +5,7 @@ import { useConvexAuth } from "convex/react";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
+import { trackVisitorsEvent } from "@/lib/analytics";
 
 type LoginStep = "email" | "code";
 
@@ -89,21 +90,9 @@ export default function LoginPage() {
         email: email.trim().toLowerCase(),
       });
 
-      // Track login with visitors.now
-      if (typeof window !== "undefined" && "visitors" in window) {
-        (
-          window as {
-            visitors: {
-              track: (
-                event: string,
-                props?: Record<string, string | number>
-              ) => void;
-            };
-          }
-        ).visitors.track("Login Success", {
-          method: "email_otp",
-        });
-      }
+      trackVisitorsEvent("Login Success", {
+        method: "email_otp",
+      });
     } catch (error) {
       setMessage("Invalid or expired code. Please try again.");
       posthog.capture("otp_verification_failed", {
@@ -152,21 +141,9 @@ export default function LoginPage() {
       await signIn("google");
       posthog.capture("google_signin_initiated");
 
-      // Track Google sign-in with visitors.now
-      if (typeof window !== "undefined" && "visitors" in window) {
-        (
-          window as {
-            visitors: {
-              track: (
-                event: string,
-                props?: Record<string, string | number>
-              ) => void;
-            };
-          }
-        ).visitors.track("Login Success", {
-          method: "google",
-        });
-      }
+      trackVisitorsEvent("Google Sign-in Initiated", {
+        method: "google",
+      });
     } catch (error) {
       setMessage("Failed to sign in with Google. Please try again.");
       posthog.capture("google_signin_error", { error: String(error) });

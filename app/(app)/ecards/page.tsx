@@ -9,6 +9,7 @@ import { usePostHog } from "posthog-js/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
+import { trackVisitorsEvent } from "@/lib/analytics";
 
 type Product = {
   id: string;
@@ -293,23 +294,11 @@ export default function ECardsPage() {
       setCartItems([...cartItems, { product, quantity }]);
     }
 
-    // Track add to cart with visitors.now
-    if (typeof window !== "undefined" && "visitors" in window) {
-      (
-        window as {
-          visitors: {
-            track: (
-              event: string,
-              props?: Record<string, string | number>
-            ) => void;
-          };
-        }
-      ).visitors.track("Add to Cart", {
-        productName: product.name,
-        quantity,
-        price: product.display_price,
-      });
-    }
+    trackVisitorsEvent("Add to Cart", {
+      productName: product.name,
+      quantity,
+      price: product.display_price,
+    });
 
     setSelectedQuantities((prev) => ({
       ...prev,
@@ -411,26 +400,13 @@ export default function ECardsPage() {
           userId: session?.user?.id,
         });
 
-        // Track checkout with visitors.now
-        if (typeof window !== "undefined" && "visitors" in window) {
-          (
-            window as {
-              visitors: {
-                track: (
-                  event: string,
-                  props?: Record<string, string | number>
-                ) => void;
-              };
-            }
-          ).visitors.track("Checkout Started", {
-            totalItems: cartItems.length,
-            totalValue: cartItems.reduce(
-              (total, item) =>
-                total + item.product.display_price * item.quantity,
-              0
-            ),
-          });
-        }
+        trackVisitorsEvent("Checkout Started", {
+          totalItems: cartItems.length,
+          totalValue: cartItems.reduce(
+            (total, item) => total + item.product.display_price * item.quantity,
+            0
+          ),
+        });
 
         window.location.href = data.url;
       } else {

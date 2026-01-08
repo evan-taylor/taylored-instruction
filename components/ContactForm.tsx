@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { trackVisitorsEvent } from "@/lib/analytics";
 
 export function ContactForm() {
   const posthog = usePostHog();
@@ -51,22 +52,10 @@ export function ContactForm() {
           smsOptIn: formData.get("smsOptIn") === "on",
         });
 
-        // Track with visitors.now
-        if (typeof window !== "undefined" && "visitors" in window) {
-          (
-            window as {
-              visitors: {
-                track: (
-                  event: string,
-                  props?: Record<string, string | number>
-                ) => void;
-              };
-            }
-          ).visitors.track("Contact Form Submitted", {
-            location: String(formData.get("location") ?? ""),
-            source: "contact_page",
-          });
-        }
+        trackVisitorsEvent("Contact Form Submitted", {
+          location: String(formData.get("location") ?? ""),
+          source: "contact_page",
+        });
 
         // Optionally reset the form
         (event.target as HTMLFormElement).reset();
