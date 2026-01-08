@@ -51,6 +51,23 @@ export function ContactForm() {
           smsOptIn: formData.get("smsOptIn") === "on",
         });
 
+        // Track with visitors.now
+        if (typeof window !== "undefined" && "visitors" in window) {
+          (
+            window as {
+              visitors: {
+                track: (
+                  event: string,
+                  props?: Record<string, string | number>
+                ) => void;
+              };
+            }
+          ).visitors.track("Contact Form Submitted", {
+            location: String(formData.get("location") ?? ""),
+            source: "contact_page",
+          });
+        }
+
         // Optionally reset the form
         (event.target as HTMLFormElement).reset();
         setLocationChoice("Vancouver, WA");

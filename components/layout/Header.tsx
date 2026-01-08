@@ -311,6 +311,8 @@ export const Header = () => {
               </Link> */}
               <Link
                 className="btn btn-primary px-4 py-2 text-sm"
+                data-visitors-event="Register Now Click"
+                data-visitors-source="header"
                 href="https://www.hovn.app/tayloredinstruction"
                 target="_blank"
               >
@@ -352,6 +354,8 @@ export const Header = () => {
             </Link> */}
             <Link
               className="btn btn-primary w-full text-center"
+              data-visitors-event="Register Now Click"
+              data-visitors-source="mobile_header"
               href="https://www.hovn.app/tayloredinstruction"
               onClick={closeMobileMenu}
               target="_blank"

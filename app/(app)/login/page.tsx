@@ -88,6 +88,22 @@ export default function LoginPage() {
       posthog.capture("otp_verified", {
         email: email.trim().toLowerCase(),
       });
+
+      // Track login with visitors.now
+      if (typeof window !== "undefined" && "visitors" in window) {
+        (
+          window as {
+            visitors: {
+              track: (
+                event: string,
+                props?: Record<string, string | number>
+              ) => void;
+            };
+          }
+        ).visitors.track("Login Success", {
+          method: "email_otp",
+        });
+      }
     } catch (error) {
       setMessage("Invalid or expired code. Please try again.");
       posthog.capture("otp_verification_failed", {
@@ -135,6 +151,22 @@ export default function LoginPage() {
     try {
       await signIn("google");
       posthog.capture("google_signin_initiated");
+
+      // Track Google sign-in with visitors.now
+      if (typeof window !== "undefined" && "visitors" in window) {
+        (
+          window as {
+            visitors: {
+              track: (
+                event: string,
+                props?: Record<string, string | number>
+              ) => void;
+            };
+          }
+        ).visitors.track("Login Success", {
+          method: "google",
+        });
+      }
     } catch (error) {
       setMessage("Failed to sign in with Google. Please try again.");
       posthog.capture("google_signin_error", { error: String(error) });
