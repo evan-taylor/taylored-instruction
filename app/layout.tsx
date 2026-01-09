@@ -142,7 +142,9 @@ export default function RootLayout({
         {/* Analytics Script - Deferred for performance */}
         <script defer src="https://assets.onedollarstats.com/stonks.js" />
         <script
+          data-persist
           data-token="e435884d-0dd1-4cd9-b1ae-a5e36a64e5f1"
+          defer
           src="https://cdn.visitors.now/v.js"
         />
 

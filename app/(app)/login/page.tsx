@@ -5,6 +5,7 @@ import { useConvexAuth } from "convex/react";
 import { useRouter } from "next/navigation";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
+import { trackVisitorsEvent } from "@/lib/analytics";
 
 type LoginStep = "email" | "code";
 
@@ -88,6 +89,10 @@ export default function LoginPage() {
       posthog.capture("otp_verified", {
         email: email.trim().toLowerCase(),
       });
+
+      trackVisitorsEvent("Login Success", {
+        method: "email_otp",
+      });
     } catch (error) {
       setMessage("Invalid or expired code. Please try again.");
       posthog.capture("otp_verification_failed", {
@@ -135,6 +140,10 @@ export default function LoginPage() {
     try {
       await signIn("google");
       posthog.capture("google_signin_initiated");
+
+      trackVisitorsEvent("Google Sign-in Initiated", {
+        method: "google",
+      });
     } catch (error) {
       setMessage("Failed to sign in with Google. Please try again.");
       posthog.capture("google_signin_error", { error: String(error) });

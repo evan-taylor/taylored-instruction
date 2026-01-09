@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { trackVisitorsEvent } from "@/lib/analytics";
 
 const AlignmentInterestForm: React.FC = () => {
   const posthog = usePostHog();
@@ -128,6 +129,11 @@ const AlignmentInterestForm: React.FC = () => {
           agencies: formData.agencies,
           smsOptIn: formData.smsOptIn,
           smsOptOut: formData.smsOptOut,
+        });
+
+        trackVisitorsEvent("Alignment Interest Submitted", {
+          hasCertification: formData.hasCertification,
+          source: "alignment_page",
         });
 
         setFormData({

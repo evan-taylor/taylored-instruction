@@ -9,6 +9,7 @@ import { usePostHog } from "posthog-js/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
+import { trackVisitorsEvent } from "@/lib/analytics";
 
 type Product = {
   id: string;
@@ -293,6 +294,12 @@ export default function ECardsPage() {
       setCartItems([...cartItems, { product, quantity }]);
     }
 
+    trackVisitorsEvent("Add to Cart", {
+      productName: product.name,
+      quantity,
+      price: product.display_price,
+    });
+
     setSelectedQuantities((prev) => ({
       ...prev,
       [product.id]: 1,
@@ -391,6 +398,14 @@ export default function ECardsPage() {
           })),
           totalItems: cartItems.length,
           userId: session?.user?.id,
+        });
+
+        trackVisitorsEvent("Checkout Started", {
+          totalItems: cartItems.length,
+          totalValue: cartItems.reduce(
+            (total, item) => total + item.product.display_price * item.quantity,
+            0
+          ),
         });
 
         window.location.href = data.url;
