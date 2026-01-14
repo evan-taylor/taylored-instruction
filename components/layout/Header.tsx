@@ -157,11 +157,6 @@ const generateNavLinks = (
               href: "/ecards",
               requiresInstructor: true,
             } as NavLinkItem,
-            {
-              label: "Onboarding",
-              href: "/onboarding",
-              requiresInstructor: true,
-            } as NavLinkItem,
           ]
         : []),
       { type: "divider", label: "Account" },
