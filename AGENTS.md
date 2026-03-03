@@ -322,6 +322,29 @@ try {
 try {
   return await fetchData();
 } catch (e) {
-  console.log(e);
+ console.log(e);
 }
 ```
+
+## Cursor Cloud specific instructions
+
+### Important: CLAUDE.md is outdated
+The `CLAUDE.md` references Supabase Auth + NextAuth.js, but the codebase has **migrated to Convex** for both database and auth. There are no Supabase client files. The `convex/` directory contains the full schema, auth config (email OTP via Resend + optional Google OAuth), and server functions.
+
+### Environment overview
+- **Node.js**: 20.11.0 (specified in `.nvmrc`)
+- **Package manager**: npm (`package-lock.json`)
+- **Backend**: Convex (requires `NEXT_PUBLIC_CONVEX_URL` in `.env.local`)
+- **Framework**: Next.js 16 with App Router, Turbopack, React 19
+
+### Running the app
+- `npm run dev` starts the Next.js dev server on port 3000
+- A `.env.local` file is required with at least `NEXT_PUBLIC_CONVEX_URL` (the `ConvexClientProvider` will throw without it)
+- For full backend functionality, Convex must be running (`npx convex dev`) and real credentials are needed for `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, etc.
+- Sentry DSN is hardcoded; no env var needed for error tracking
+
+### Lint / type-check / test
+- `npm run lint` → `npx ultracite check` (Biome-based, subsecond)
+- `npm run type-check` → `tsc --noEmit`
+- `npm test` → runs both lint and type-check (no unit test framework)
+- Pre-commit hook (lefthook): `npx ultracite fix` auto-formats staged files
