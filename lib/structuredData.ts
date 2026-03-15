@@ -2,6 +2,7 @@
  * Structured Data (JSON-LD) for SEO
  * Comprehensive schema markup for Taylored Instruction
  */
+import { SITE_URL } from "@/lib/seo";
 
 type LocalBusinessSchema = {
   "@context": string;
@@ -100,14 +101,6 @@ type WebSiteSchema = {
   "@id": string;
   name: string;
   url: string;
-  potentialAction: {
-    "@type": string;
-    target: {
-      "@type": string;
-      urlTemplate: string;
-    };
-    "query-input": string;
-  };
 };
 
 type WebPageSchema = {
@@ -216,8 +209,6 @@ type BreadcrumbSchema = {
     item?: string;
   }>;
 };
-
-import { SITE_URL } from "@/lib/seo";
 
 const BASE_URL = SITE_URL;
 const WEBSITE_ID = `${BASE_URL}/#website`;
@@ -359,21 +350,13 @@ export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
   sameAs: ["https://tayloredinstruction.com"],
 });
 
-// Website Schema with Search Action
+// Website Schema
 export const getWebSiteSchema = (): WebSiteSchema => ({
   "@context": "https://schema.org",
   "@type": "WebSite",
   "@id": WEBSITE_ID,
   name: "Taylored Instruction",
   url: BASE_URL,
-  potentialAction: {
-    "@type": "SearchAction",
-    target: {
-      "@type": "EntryPoint",
-      urlTemplate: `${BASE_URL}/?s={search_term_string}`,
-    },
-    "query-input": "required name=search_term_string",
-  },
 });
 
 export const getWebPageSchema = (params: {

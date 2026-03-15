@@ -1,7 +1,6 @@
 "use cache";
 
 import FaCprAedInstructorPageContent from "@/components/FaCprAedInstructorPageContent";
-import { getFAQSchema, instructorTrainingFAQs } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -56,7 +55,6 @@ const FaCprAedInstructorPage = async () => {
     audienceType:
       "Current provider-level cardholders pursuing instructor certification",
   });
-  const faqSchema = getFAQSchema(instructorTrainingFAQs);
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {
@@ -73,10 +71,6 @@ const FaCprAedInstructorPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <script

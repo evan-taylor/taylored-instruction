@@ -1,7 +1,6 @@
 "use cache";
 
 import LifeguardingPageContent from "@/components/LifeguardingPageContent";
-import { getFAQSchema, lifeguardFAQs } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -44,7 +43,6 @@ const LifeguardingPage = async () => {
     description: pageDescription,
     path: "/lifeguarding",
   });
-  const faqSchema = getFAQSchema(lifeguardFAQs);
 
   // Generate structured data
   const courseSchema = getLifeguardingCourseSchema();
@@ -68,10 +66,6 @@ const LifeguardingPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <LifeguardingPageContent />

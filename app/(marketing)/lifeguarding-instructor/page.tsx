@@ -2,7 +2,6 @@
 
 import { cacheLife } from "next/cache";
 import LifeguardingInstructorPageContent from "@/components/LifeguardingInstructorPageContent";
-import { getFAQSchema, instructorTrainingFAQs } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -58,7 +57,6 @@ export default async function Page() {
     ],
     audienceType: "Current lifeguards pursuing instructor credentials",
   });
-  const faqSchema = getFAQSchema(instructorTrainingFAQs);
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {
@@ -75,10 +73,6 @@ export default async function Page() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <script

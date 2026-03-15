@@ -11,7 +11,6 @@ import {
   getBreadcrumbSchema,
   getContactPageSchema,
   getServiceSchema,
-  getWebPageSchema,
 } from "@/lib/structuredData";
 
 const pageTitle =
@@ -44,12 +43,11 @@ export const metadata = buildPageMetadata({
 // --- Page Component ---
 export default async function ContactPage() {
   cacheLife("days");
-  const webPageSchema = getWebPageSchema({
+  const contactPageSchema = {
+    ...getContactPageSchema(),
     name: pageTitle,
     description: pageDescription,
-    path: "/contact",
-  });
-  const contactPageSchema = getContactPageSchema();
+  };
   const contactServiceSchema = getServiceSchema({
     name: "CPR and Safety Training Consultation",
     description:
@@ -69,10 +67,6 @@ export default async function ContactPage() {
 
   return (
     <>
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
-        type="application/ld+json"
-      />
       <script
         dangerouslySetInnerHTML={generateJSONLD(contactPageSchema)}
         type="application/ld+json"

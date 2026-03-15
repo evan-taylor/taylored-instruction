@@ -2,7 +2,6 @@
 
 import { cacheLife } from "next/cache";
 import BlsPageContent from "@/components/BlsPageContent";
-import { blsFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -46,7 +45,6 @@ export default async function BlsPage() {
     description: pageDescription,
     path: "/bls",
   });
-  const faqSchema = getFAQSchema(blsFAQs);
 
   // Generate structured data
   const courseSchema = getBLSCourseSchema();
@@ -67,10 +65,6 @@ export default async function BlsPage() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <BlsPageContent />

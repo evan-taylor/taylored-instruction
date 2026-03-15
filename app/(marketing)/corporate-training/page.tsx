@@ -13,7 +13,6 @@ import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { corporateFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -68,7 +67,6 @@ export default async function CorporateTrainingPage() {
     ],
     audienceType: "Employers, Schools, and Organizations",
   });
-  const faqSchema = getFAQSchema(corporateFAQs);
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {
@@ -85,10 +83,6 @@ export default async function CorporateTrainingPage() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <script

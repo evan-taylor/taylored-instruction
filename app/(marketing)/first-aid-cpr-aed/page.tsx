@@ -1,7 +1,6 @@
 "use cache";
 
 import FirstAidCprAedPageContent from "@/components/FirstAidCprAedPageContent";
-import { firstAidFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -43,7 +42,6 @@ const FirstAidCprAedPage = async () => {
     description: pageDescription,
     path: "/first-aid-cpr-aed",
   });
-  const faqSchema = getFAQSchema(firstAidFAQs);
 
   // Generate structured data
   const courseSchema = getFirstAidCPRAEDCourseSchema();
@@ -67,10 +65,6 @@ const FirstAidCprAedPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <FirstAidCprAedPageContent />

@@ -2,7 +2,6 @@
 
 import { cacheLife } from "next/cache";
 import HeartsaverPageContent from "@/components/HeartsaverPageContent";
-import { getFAQSchema, heartsaverFAQs } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -46,7 +45,6 @@ export default async function HeartsaverPage() {
     description: pageDescription,
     path: "/heartsaver",
   });
-  const faqSchema = getFAQSchema(heartsaverFAQs);
 
   // Generate structured data
   const courseSchema = getHeartsaverCourseSchema();
@@ -70,10 +68,6 @@ export default async function HeartsaverPage() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
-        type="application/ld+json"
-      />
-      <script
-        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <HeartsaverPageContent />
