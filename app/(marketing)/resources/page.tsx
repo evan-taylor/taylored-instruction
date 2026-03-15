@@ -73,10 +73,15 @@ export default async function ResourcesPage() {
     convexResources && convexResources.length > 0
   );
 
-  cacheLife(hasPublishedConvexResources ? "hours" : "minutes");
+  if (hasPublishedConvexResources) {
+    cacheLife("hours");
+  } else {
+    cacheLife("minutes");
+  }
 
-  const resources =
-    hasPublishedConvexResources ? convexResources : getFallbackSeoPageSummaries();
+  const resources = hasPublishedConvexResources
+    ? convexResources
+    : getFallbackSeoPageSummaries();
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,

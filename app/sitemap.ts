@@ -192,19 +192,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   );
   const allRoutes = [...pageRoutes, ...dynamicResourceRoutes];
 
-  const sitemapEntries: MetadataRoute.Sitemap = allRoutes.map((routeOrEntry) => {
-    const route =
-      typeof routeOrEntry === "string" ? routeOrEntry : routeOrEntry.route;
-    const config = getRouteConfig(route);
-    const lastModified = resourceLastModifiedByRoute.get(route) ?? new Date();
+  const sitemapEntries: MetadataRoute.Sitemap = allRoutes.map(
+    (routeOrEntry) => {
+      const route =
+        typeof routeOrEntry === "string" ? routeOrEntry : routeOrEntry.route;
+      const config = getRouteConfig(route);
+      const lastModified = resourceLastModifiedByRoute.get(route) ?? new Date();
 
-    return {
-      url: `${baseUrl}${route === "/" ? "" : route}`,
-      lastModified,
-      changeFrequency: config.changeFrequency,
-      priority: config.priority,
-    };
-  });
+      return {
+        url: `${baseUrl}${route === "/" ? "" : route}`,
+        lastModified,
+        changeFrequency: config.changeFrequency,
+        priority: config.priority,
+      };
+    }
+  );
 
   // Ensure the root path is included if not already
   if (!sitemapEntries.some((entry) => entry.url === baseUrl)) {

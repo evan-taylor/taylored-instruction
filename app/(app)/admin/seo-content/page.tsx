@@ -28,6 +28,8 @@ export default function AdminSeoContentPage() {
   const [workingMode, setWorkingMode] = useState<
     "generate" | "overwrite" | null
   >(null);
+  const [showOverwriteConfirmation, setShowOverwriteConfirmation] =
+    useState(false);
 
   const isAdmin = isAdminEmail(email);
 
@@ -59,13 +61,16 @@ export default function AdminSeoContentPage() {
   };
 
   const handleOverwriteGeneration = () => {
-    const confirmed = window.confirm(
-      "This will regenerate and overwrite all generated SEO templates. Continue?"
-    );
-    if (!confirmed) {
-      return;
-    }
+    setShowOverwriteConfirmation(true);
+  };
+
+  const handleConfirmOverwriteGeneration = () => {
+    setShowOverwriteConfirmation(false);
     runGeneration(true);
+  };
+
+  const handleCancelOverwriteGeneration = () => {
+    setShowOverwriteConfirmation(false);
   };
 
   if (profileLoading) {
@@ -208,6 +213,30 @@ export default function AdminSeoContentPage() {
           <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-700 text-sm">
             {errorMessage}
           </p>
+        ) : null}
+        {showOverwriteConfirmation ? (
+          <div className="mt-4 rounded-md border border-amber-300 bg-amber-50 p-3 text-amber-900 text-sm">
+            <p className="font-medium">
+              Confirm overwrite: this will regenerate and replace all generated
+              SEO templates.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                className="rounded-md bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
+                onClick={handleConfirmOverwriteGeneration}
+                type="button"
+              >
+                Yes, overwrite all templates
+              </button>
+              <button
+                className="rounded-md border border-amber-400 bg-white px-3 py-1.5 font-medium text-amber-900 hover:bg-amber-100"
+                onClick={handleCancelOverwriteGeneration}
+                type="button"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
         ) : null}
       </div>
 

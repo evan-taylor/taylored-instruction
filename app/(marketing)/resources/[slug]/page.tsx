@@ -274,7 +274,9 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
                     className="rounded-lg border border-gray-200 bg-white p-4"
                     key={`faq-${item.question}-${questionOccurrence}`}
                   >
-                    <h3 className="font-medium text-gray-900">{item.question}</h3>
+                    <h3 className="font-medium text-gray-900">
+                      {item.question}
+                    </h3>
                     <p className="mt-2 text-gray-700">{item.answer}</p>
                   </div>
                 );
