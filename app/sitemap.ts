@@ -159,15 +159,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appDirPath = path.join(process.cwd(), "app");
   const pageRoutes = getPagePaths(appDirPath);
   const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
-  const fallbackResources = getFallbackSeoPages();
-
-  for (const page of fallbackResources) {
-    const route = `/resources/${page.slug}`;
-    dynamicResourceRouteMap.set(route, {
-      route,
-      lastModified: new Date(page.updatedAt),
-    });
-  }
 
   try {
     const resources = await fetchQuery(
@@ -183,7 +174,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
   } catch (_error) {
-    // Keep fallback baseline when Convex is unavailable.
+    const fallbackResources = getFallbackSeoPages();
+    for (const page of fallbackResources) {
+      const route = `/resources/${page.slug}`;
+      dynamicResourceRouteMap.set(route, {
+        route,
+        lastModified: new Date(page.updatedAt),
+      });
+    }
   }
 
   const dynamicResourceRoutes = Array.from(dynamicResourceRouteMap.values());

@@ -11,6 +11,7 @@ const WORD_SEPARATOR_REGEX = /\s+/;
 const DEFAULT_PUBLISHED_PAGES_LIMIT = 1000;
 const MAX_PUBLISHED_PAGES_LIMIT = 1000;
 const MAX_PUBLISHED_PAGES_SCAN_LIMIT = 1000;
+const MAX_ADMIN_PAGES_SCAN_LIMIT = 2000;
 const DEFAULT_GENERATION_BATCH_SIZE = 100;
 const MAX_GENERATION_BATCH_SIZE = 250;
 const ESTIMATED_DB_OPERATIONS_PER_TEMPLATE = 2;
@@ -1031,7 +1032,9 @@ export const listPagesForAdmin = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const pages = await ctx.db.query("seo_pages").collect();
+    const pages = await ctx.db
+      .query("seo_pages")
+      .take(MAX_ADMIN_PAGES_SCAN_LIMIT);
     return pages
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .map((page) => ({
