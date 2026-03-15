@@ -949,20 +949,30 @@ export const listPublishedPages = query({
     const safeLimit = clampLimit(args.limit);
     let candidates: Doc<"seo_pages">[];
 
-    if (args.locationCity) {
+    if (args.locationCity && args.serviceLine) {
       candidates = await ctx.db
         .query("seo_pages")
-        .withIndex("by_location_city", (q) =>
-          q.eq("locationCity", args.locationCity as string)
+        .withIndex("by_published_location_city_service_line", (q) =>
+          q
+            .eq("published", true)
+            .eq("locationCity", args.locationCity)
+            .eq("serviceLine", args.serviceLine)
         )
-        .collect();
+        .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
+    } else if (args.locationCity) {
+      candidates = await ctx.db
+        .query("seo_pages")
+        .withIndex("by_published_location_city", (q) =>
+          q.eq("published", true).eq("locationCity", args.locationCity)
+        )
+        .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
     } else if (args.serviceLine) {
       candidates = await ctx.db
         .query("seo_pages")
-        .withIndex("by_service_line", (q) =>
-          q.eq("serviceLine", args.serviceLine as string)
+        .withIndex("by_published_service_line", (q) =>
+          q.eq("published", true).eq("serviceLine", args.serviceLine)
         )
-        .collect();
+        .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
     } else {
       candidates = await ctx.db
         .query("seo_pages")
@@ -972,9 +982,6 @@ export const listPublishedPages = query({
 
     const filtered = candidates
       .filter((page) => {
-        if (!page.published) {
-          return false;
-        }
         const locationMatches = args.locationCity
           ? page.locationCity === args.locationCity
           : true;

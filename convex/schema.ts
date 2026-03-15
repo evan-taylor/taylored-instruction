@@ -54,6 +54,13 @@ const seoPages = defineTable({
   .index("by_slug", ["slug"])
   .index("by_published", ["published"])
   .index("by_published_slug", ["published", "slug"])
+  .index("by_published_location_city", ["published", "locationCity"])
+  .index("by_published_service_line", ["published", "serviceLine"])
+  .index("by_published_location_city_service_line", [
+    "published",
+    "locationCity",
+    "serviceLine",
+  ])
   .index("by_location_city", ["locationCity"])
   .index("by_service_line", ["serviceLine"]);
 

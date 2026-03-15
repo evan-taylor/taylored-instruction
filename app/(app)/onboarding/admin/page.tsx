@@ -5,11 +5,7 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { useProfile } from "@/hooks/useProfile";
-
-const ADMIN_EMAILS = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
+import { isAdminEmail } from "@/lib/admin";
 
 type OnboardingStep = {
   _id: Id<"onboarding_steps">;
@@ -35,7 +31,7 @@ export default function OnboardingAdminPage() {
   const [deleteConfirmId, setDeleteConfirmId] =
     useState<Id<"onboarding_steps"> | null>(null);
 
-  const isAdmin = email && ADMIN_EMAILS.includes(email);
+  const isAdmin = isAdminEmail(email);
   const shouldFetchSteps = !profileLoading && !!session && !!isAdmin;
 
   const steps = useQuery(
