@@ -1,7 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { cacheLife } from "next/cache";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { buildPageMetadata } from "@/lib/seo";
@@ -182,7 +182,10 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
           </h2>
           <div className="mt-5 space-y-4">
             {page.faqItems.map((item) => (
-              <div className="rounded-lg border border-gray-200 bg-white p-4" key={item.question}>
+              <div
+                className="rounded-lg border border-gray-200 bg-white p-4"
+                key={item.question}
+              >
                 <h3 className="font-medium text-gray-900">{item.question}</h3>
                 <p className="mt-2 text-gray-700">{item.answer}</p>
               </div>

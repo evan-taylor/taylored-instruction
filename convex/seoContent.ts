@@ -4,13 +4,14 @@ import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 
-const ADMIN_EMAILS = [
+const ADMIN_EMAILS: readonly string[] = [
   "admin@tayloredinstruction.com",
   "evan@tayloredinstruction.com",
-] as const;
+];
 
 const READING_TIME_WORDS_PER_MINUTE = 200;
 const MINIMUM_READING_TIME_MINUTES = 4;
+const WORD_SEPARATOR_REGEX = /\s+/;
 
 const BASE_RESEARCH_NOTES = [
   "American Heart Association CPR & ECC guidance: https://cpr.heart.org/",
@@ -132,7 +133,8 @@ const LOCATION_PROFILES: LocationProfile[] = [
       "air quality impacts from regional wildfire smoke",
       "winter driving and weather-related incident risk",
     ],
-    localReference: "Clark County Public Health: https://www.clark.wa.gov/public-health",
+    localReference:
+      "Clark County Public Health: https://www.clark.wa.gov/public-health",
     seoWeight: "primary",
   },
   {
@@ -258,7 +260,8 @@ const LOCATION_PROFILES: LocationProfile[] = [
       "summer heat and air quality concerns",
       "winter weather disruptions",
     ],
-    localReference: "Clark County Public Health: https://www.clark.wa.gov/public-health",
+    localReference:
+      "Clark County Public Health: https://www.clark.wa.gov/public-health",
     seoWeight: "primary",
   },
   {
@@ -395,7 +398,8 @@ const SERVICE_PROFILES: ServiceProfile[] = [
     serviceLine: "BLS Certification",
     titleLabel: "AHA BLS Certification",
     shortName: "BLS",
-    audience: "healthcare professionals, first responders, and clinical support teams",
+    audience:
+      "healthcare professionals, first responders, and clinical support teams",
     credential: "AHA Basic Life Support Provider eCard",
     classFormats: [
       "in-person instructor-led sessions",
@@ -436,7 +440,8 @@ const SERVICE_PROFILES: ServiceProfile[] = [
     serviceLine: "First Aid CPR AED",
     titleLabel: "First Aid / CPR / AED Certification",
     shortName: "First Aid CPR AED",
-    audience: "workplace teams, educators, coaches, parents, and community volunteers",
+    audience:
+      "workplace teams, educators, coaches, parents, and community volunteers",
     credential: "American Red Cross First Aid/CPR/AED certification",
     classFormats: [
       "traditional in-person classes",
@@ -477,7 +482,8 @@ const SERVICE_PROFILES: ServiceProfile[] = [
     serviceLine: "Heartsaver CPR AED",
     titleLabel: "AHA Heartsaver CPR AED",
     shortName: "Heartsaver",
-    audience: "non-clinical professionals, employers, instructors, and community leaders",
+    audience:
+      "non-clinical professionals, employers, instructors, and community leaders",
     credential: "AHA Heartsaver First Aid CPR AED certification",
     classFormats: [
       "in-person certification sessions",
@@ -518,8 +524,10 @@ const SERVICE_PROFILES: ServiceProfile[] = [
     serviceLine: "Corporate Group Training",
     titleLabel: "Corporate CPR & First Aid Group Training",
     shortName: "Corporate Training",
-    audience: "employers, HR leaders, operations managers, and safety coordinators",
-    credential: "group CPR/first aid certification pathways aligned to team needs",
+    audience:
+      "employers, HR leaders, operations managers, and safety coordinators",
+    credential:
+      "group CPR/first aid certification pathways aligned to team needs",
     classFormats: [
       "on-site private group classes",
       "blended group pathways to reduce time away from operations",
@@ -558,7 +566,8 @@ const SERVICE_PROFILES: ServiceProfile[] = [
     serviceLine: "AED Program Services",
     titleLabel: "AED Program Planning & CPR Integration",
     shortName: "AED Services",
-    audience: "facility managers, safety leaders, and organizational decision makers",
+    audience:
+      "facility managers, safety leaders, and organizational decision makers",
     credential: "AED readiness program design with responder training support",
     classFormats: [
       "consultative planning sessions",
@@ -598,7 +607,8 @@ const SERVICE_PROFILES: ServiceProfile[] = [
     serviceLine: "Lifeguarding Certification",
     titleLabel: "Lifeguarding Certification",
     shortName: "Lifeguarding",
-    audience: "aquatic staff, seasonal lifeguards, and recreation program leaders",
+    audience:
+      "aquatic staff, seasonal lifeguards, and recreation program leaders",
     credential:
       "American Red Cross Lifeguarding with First Aid/CPR/AED credentials",
     classFormats: [
@@ -690,7 +700,7 @@ const estimateReadingTime = (sections: GeneratedPage["sections"]): number => {
   const words = sections
     .flatMap((section) => [...section.paragraphs, ...(section.bullets ?? [])])
     .join(" ")
-    .split(/\s+/)
+    .split(WORD_SEPARATOR_REGEX)
     .filter(Boolean).length;
 
   const estimated = Math.ceil(words / READING_TIME_WORDS_PER_MINUTE);
@@ -734,7 +744,7 @@ const buildSections = (
       heading: "What participants learn",
       paragraphs: [
         `This program is built for ${service.audience} and follows recognized training standards. Participants build the skills needed to assess emergencies quickly, prioritize actions, and communicate effectively under pressure.`,
-        `Instruction emphasizes repetition and applied practice, not passive lecture-only learning. That approach improves retention and makes skills easier to use in real situations.`,
+        "Instruction emphasizes repetition and applied practice, not passive lecture-only learning. That approach improves retention and makes skills easier to use in real situations.",
       ],
       bullets: [
         `Credential pathway: ${service.credential}`,
@@ -746,7 +756,7 @@ const buildSections = (
       heading: `How training is delivered in ${location.label}`,
       paragraphs: [
         `Flexible delivery is critical for organizations and individuals in ${location.region}. Class planning can support shift schedules, school calendars, hiring cycles, and renewal deadlines without sacrificing instructional quality.`,
-        `When possible, private and group options reduce administrative complexity while helping teams train together on shared protocols.`,
+        "When possible, private and group options reduce administrative complexity while helping teams train together on shared protocols.",
       ],
       bullets: [
         "Public classes for individuals and small teams",
@@ -757,8 +767,8 @@ const buildSections = (
     {
       heading: "Compliance, renewal, and readiness planning",
       paragraphs: [
-        `For many roles, certification is only one part of a broader readiness system. Leaders should pair credential tracking with refreshers, drills, and clear emergency action steps.`,
-        `Programs are strongest when card validity, shift coverage, and practical scenario readiness are managed together instead of as separate tasks.`,
+        "For many roles, certification is only one part of a broader readiness system. Leaders should pair credential tracking with refreshers, drills, and clear emergency action steps.",
+        "Programs are strongest when card validity, shift coverage, and practical scenario readiness are managed together instead of as separate tasks.",
       ],
       bullets: service.complianceNotes,
     },
@@ -952,7 +962,7 @@ export const getPublishedPageBySlug = query({
   },
   handler: async (ctx, args) => {
     const page = await findPageBySlug(ctx, args.slug);
-    if (!page || !page.published) {
+    if (!page?.published) {
       return null;
     }
     return page;
@@ -1017,7 +1027,9 @@ export const upsertPage = mutation({
       ...args.page,
       generatedBy: user.email ?? user._id,
       updatedAt: now,
-      publishedAt: args.page.published ? (existing.publishedAt ?? now) : undefined,
+      publishedAt: args.page.published
+        ? (existing.publishedAt ?? now)
+        : undefined,
     });
 
     return { id: existing._id, status: "updated" as const };

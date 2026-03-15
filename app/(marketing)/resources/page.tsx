@@ -1,7 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import { BookOpen, MapPin, Stethoscope } from "lucide-react";
-import Link from "next/link";
 import { cacheLife } from "next/cache";
+import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -107,7 +107,7 @@ export default async function ResourcesPage() {
       <section className="border-gray-100 border-b bg-gray-50">
         <div className="container mx-auto px-4 py-14">
           <div className="mx-auto max-w-4xl text-center">
-            <h1 className="font-bold text-4xl tracking-tight text-gray-900 md:text-5xl">
+            <h1 className="font-bold text-4xl text-gray-900 tracking-tight md:text-5xl">
               CPR, BLS & Workplace Safety Resource Library
             </h1>
             <p className="mt-5 text-gray-700 text-lg leading-relaxed">
@@ -144,7 +144,7 @@ export default async function ResourcesPage() {
 
       <section className="container mx-auto px-4 py-12">
         {resources.length === 0 ? (
-          <div className="mx-auto max-w-3xl rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
+          <div className="mx-auto max-w-3xl rounded-xl border border-gray-300 border-dashed bg-gray-50 p-10 text-center">
             <h2 className="font-semibold text-2xl text-gray-900">
               Content is being prepared
             </h2>

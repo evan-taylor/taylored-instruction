@@ -155,7 +155,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicResourceRoutes: string[] = [];
 
   try {
-    const resources = await fetchQuery(api.seoContent.getPublishedPageSlugs, {});
+    const resources = await fetchQuery(
+      api.seoContent.getPublishedPageSlugs,
+      {}
+    );
     dynamicResourceRoutes.push(
       ...resources.map((resource) => `/resources/${resource.slug}`)
     );
