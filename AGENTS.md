@@ -339,7 +339,7 @@ source ~/.nvm/nvm.sh && nvm use 20.11.0
 npm run dev          # starts Next.js on port 3000
 ```
 
-A `.env.local` file must exist with at least `NEXT_PUBLIC_CONVEX_URL` set — the Convex client provider throws at module load time if it is missing. Other expected env vars: `CONVEX_DEPLOYMENT`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `NEXT_PUBLIC_BASE_URL`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`. These are injected as VM secrets and must be written to `.env.local` before starting the dev server.
+A `.env.local` file must exist with at least `NEXT_PUBLIC_CONVEX_URL` set — the Convex client provider throws at module load time if it is missing. All available VM secrets must be written to `.env.local` before starting the dev server. Key vars: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `NEXT_PUBLIC_BASE_URL`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_EMAIL_FROM`, `JWKS`, `JWT_PRIVATE_KEY`, `SITE_URL`, `INTERNAL_EMAIL_WEBHOOK_SECRET`.
 
 ### Lint / Type-check / Test
 
@@ -360,3 +360,5 @@ Lefthook is configured (`lefthook.yml`) with a pre-commit hook that runs `npx ul
 - The `ConvexClientProvider` (`providers/ConvexClientProvider.tsx`) will **throw** if `NEXT_PUBLIC_CONVEX_URL` is not set, crashing the app at compile time for any route that uses Convex (both `(marketing)` and `(app)` layouts).
 - Sentry config in `next.config.js` uses `withSentryConfig`; if `SENTRY_AUTH_TOKEN` is missing, source-map upload will silently fail but the build/dev server still works.
 - There is no unit test framework — `npm run test` only lints and type-checks.
+- The contact form (`/contact`) is a good end-to-end smoke test: it exercises a server action (`app/actions/send-contact-email.ts`) that sends email via Resend. If `RESEND_API_KEY` is set, submission returns a green "Message sent successfully!" banner.
+- Auth uses Convex Auth with email OTP (via Resend) and Google OAuth. The `JWKS` and `JWT_PRIVATE_KEY` secrets are needed for Convex Auth token verification. The login page is at `/login`.
