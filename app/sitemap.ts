@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
+import { api } from "@/convex/_generated/api";
 
 // TODO: Replace with your actual domain
 const baseUrl = "https://tayloredinstruction.com";
@@ -31,6 +33,9 @@ const shouldSkipRelativePath = (relativePath: string): boolean =>
 const isRouteGroupSegment = (segment: string): boolean =>
   segment.startsWith("(") && segment.endsWith(")");
 
+const isDynamicSegment = (segment: string): boolean =>
+  segment.startsWith("[") && segment.endsWith("]");
+
 const isPageFile = (fileName: string): boolean =>
   pageFilePrefixes.some((prefix) => fileName.startsWith(prefix));
 
@@ -46,6 +51,10 @@ const normalizeRoutePath = (relativePath: string): string => {
 
   if (cleanedSegments.length === 0) {
     return "/";
+  }
+
+  if (cleanedSegments.some(isDynamicSegment)) {
+    return "";
   }
 
   return `/${cleanedSegments.join("/")}`;
@@ -73,7 +82,10 @@ const gatherPageRoutes = (dir: string, baseDir: string): string[] => {
     }
 
     if (entry.isFile() && isPageFile(entry.name)) {
-      routes.push(normalizeRoutePath(relativePath));
+      const normalized = normalizeRoutePath(relativePath);
+      if (normalized) {
+        routes.push(normalized);
+      }
     }
   }
 
@@ -85,23 +97,23 @@ const getPagePaths = (dir: string, baseDir: string = dir): string[] =>
   gatherPageRoutes(dir, baseDir);
 
 // Route-specific configuration for priority and change frequency
-const routeConfig: Record<
-  string,
-  {
-    priority: number;
-    changeFrequency:
-      | "always"
-      | "hourly"
-      | "daily"
-      | "weekly"
-      | "monthly"
-      | "yearly"
-      | "never";
-  }
-> = {
+type RouteConfig = {
+  priority: number;
+  changeFrequency:
+    | "always"
+    | "hourly"
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "yearly"
+    | "never";
+};
+
+const routeConfig: Record<string, RouteConfig> = {
   "/": { priority: 1.0, changeFrequency: "weekly" },
   "/about": { priority: 0.9, changeFrequency: "monthly" },
   "/contact": { priority: 0.9, changeFrequency: "monthly" },
+  "/resources": { priority: 0.95, changeFrequency: "weekly" },
   "/bls": { priority: 0.95, changeFrequency: "weekly" },
   "/basic-life-support": { priority: 0.95, changeFrequency: "weekly" },
   "/first-aid-cpr-aed": { priority: 0.95, changeFrequency: "weekly" },
@@ -121,15 +133,40 @@ const routeConfig: Record<
   "/terms": { priority: 0.3, changeFrequency: "yearly" },
 };
 
-export default function sitemap(): MetadataRoute.Sitemap {
+const getRouteConfig = (route: string): RouteConfig => {
+  if (route.startsWith("/resources/")) {
+    return {
+      priority: 0.85,
+      changeFrequency: "weekly",
+    };
+  }
+
+  return (
+    routeConfig[route] || {
+      priority: 0.7,
+      changeFrequency: "monthly",
+    }
+  );
+};
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appDirPath = path.join(process.cwd(), "app");
   const pageRoutes = getPagePaths(appDirPath);
+  const dynamicResourceRoutes: string[] = [];
 
-  const sitemapEntries: MetadataRoute.Sitemap = pageRoutes.map((route) => {
-    const config = routeConfig[route] || {
-      priority: 0.7,
-      changeFrequency: "monthly" as const,
-    };
+  try {
+    const resources = await fetchQuery(api.seoContent.getPublishedPageSlugs, {});
+    dynamicResourceRoutes.push(
+      ...resources.map((resource) => `/resources/${resource.slug}`)
+    );
+  } catch (_error) {
+    // Keep sitemap generation resilient if Convex is temporarily unavailable.
+  }
+
+  const allRoutes = [...pageRoutes, ...dynamicResourceRoutes];
+
+  const sitemapEntries: MetadataRoute.Sitemap = allRoutes.map((route) => {
+    const config = getRouteConfig(route);
 
     return {
       url: `${baseUrl}${route === "/" ? "" : route}`,

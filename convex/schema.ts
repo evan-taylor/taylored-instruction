@@ -13,10 +13,55 @@ const onboardingSteps = defineTable({
   .index("by_order", ["order"])
   .index("by_created_at", ["createdAt"]);
 
+const seoPages = defineTable({
+  slug: v.string(),
+  title: v.string(),
+  metaTitle: v.string(),
+  metaDescription: v.string(),
+  excerpt: v.string(),
+  primaryKeyword: v.string(),
+  secondaryKeywords: v.array(v.string()),
+  locationLabel: v.string(),
+  locationCity: v.string(),
+  locationRegion: v.string(),
+  locationState: v.string(),
+  serviceLine: v.string(),
+  audience: v.string(),
+  readingTimeMinutes: v.number(),
+  sections: v.array(
+    v.object({
+      heading: v.string(),
+      paragraphs: v.array(v.string()),
+      bullets: v.optional(v.array(v.string())),
+    })
+  ),
+  faqItems: v.array(
+    v.object({
+      question: v.string(),
+      answer: v.string(),
+    })
+  ),
+  ctaLabel: v.string(),
+  ctaHref: v.string(),
+  ctaText: v.string(),
+  researchNotes: v.array(v.string()),
+  published: v.boolean(),
+  generatedBy: v.string(),
+  createdAt: v.string(),
+  updatedAt: v.string(),
+  publishedAt: v.optional(v.string()),
+})
+  .index("by_slug", ["slug"])
+  .index("by_published", ["published"])
+  .index("by_published_slug", ["published", "slug"])
+  .index("by_location_city", ["locationCity"])
+  .index("by_service_line", ["serviceLine"]);
+
 const schema = defineSchema({
   ...authTables,
 
   onboarding_steps: onboardingSteps,
+  seo_pages: seoPages,
 
   profiles: defineTable({
     userId: v.id("users"), // Reference to auth users table
