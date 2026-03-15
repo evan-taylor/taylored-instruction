@@ -5,6 +5,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { buildPageMetadata } from "@/lib/seo";
+import {
+  getFallbackSeoPageBySlug,
+  getFallbackSeoPages,
+} from "@/lib/seoFallbackContent";
 import { generateJSONLD, getBreadcrumbSchema } from "@/lib/structuredData";
 
 type ResourcePageProps = {
@@ -13,11 +17,29 @@ type ResourcePageProps = {
   }>;
 };
 
-const getResourcePage = async (slug: string) =>
-  fetchQuery(api.seoContent.getPublishedPageBySlug, { slug });
+const getResourcePage = async (slug: string) => {
+  const convexPage = await fetchQuery(api.seoContent.getPublishedPageBySlug, {
+    slug,
+  }).catch(() => null);
+
+  if (convexPage) {
+    return convexPage;
+  }
+
+  return getFallbackSeoPageBySlug(slug);
+};
 
 export async function generateStaticParams() {
-  const slugs = await fetchQuery(api.seoContent.getPublishedPageSlugs, {});
+  const convexSlugs = await fetchQuery(api.seoContent.getPublishedPageSlugs, {})
+    .then((items) => items)
+    .catch(() => []);
+  const slugs =
+    convexSlugs.length > 0
+      ? convexSlugs
+      : getFallbackSeoPages().map((page) => ({
+          slug: page.slug,
+          updatedAt: page.updatedAt,
+        }));
   return slugs.map((item) => ({
     slug: item.slug,
   }));

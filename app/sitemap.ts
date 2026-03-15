@@ -3,6 +3,7 @@ import path from "node:path";
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
+import { getFallbackSeoPages } from "@/lib/seoFallbackContent";
 
 // TODO: Replace with your actual domain
 const baseUrl = "https://tayloredinstruction.com";
@@ -153,17 +154,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appDirPath = path.join(process.cwd(), "app");
   const pageRoutes = getPagePaths(appDirPath);
   const dynamicResourceRoutes: string[] = [];
+  const fallbackResourceRoutes = getFallbackSeoPages().map(
+    (page) => `/resources/${page.slug}`
+  );
 
   try {
     const resources = await fetchQuery(
       api.seoContent.getPublishedPageSlugs,
       {}
     );
-    dynamicResourceRoutes.push(
-      ...resources.map((resource) => `/resources/${resource.slug}`)
-    );
+    if (resources.length > 0) {
+      dynamicResourceRoutes.push(
+        ...resources.map((resource) => `/resources/${resource.slug}`)
+      );
+    } else {
+      dynamicResourceRoutes.push(...fallbackResourceRoutes);
+    }
   } catch (_error) {
-    // Keep sitemap generation resilient if Convex is temporarily unavailable.
+    dynamicResourceRoutes.push(...fallbackResourceRoutes);
   }
 
   const allRoutes = [...pageRoutes, ...dynamicResourceRoutes];

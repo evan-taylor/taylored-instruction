@@ -4,6 +4,7 @@ import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { buildPageMetadata } from "@/lib/seo";
+import { getFallbackSeoPageSummaries } from "@/lib/seoFallbackContent";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
@@ -62,7 +63,13 @@ const getServiceLineCount = (resources: ResourceCard[]) =>
 export default async function ResourcesPage() {
   cacheLife("hours");
 
-  const resources = await fetchQuery(api.seoContent.listPublishedPages, {});
+  const convexResources = await fetchQuery(api.seoContent.listPublishedPages, {})
+    .then((pages) => pages)
+    .catch(() => null);
+  const resources =
+    convexResources && convexResources.length > 0
+      ? convexResources
+      : getFallbackSeoPageSummaries();
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,
