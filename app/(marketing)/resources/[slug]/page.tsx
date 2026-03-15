@@ -22,7 +22,7 @@ type ResourcePageProps = {
 const FALLBACK_CTA_HREF = "/contact";
 
 const sanitizeCtaHref = (href: string): string => {
-  if (href.startsWith("/")) {
+  if (href.startsWith("/") && !href.startsWith("//")) {
     return href;
   }
 

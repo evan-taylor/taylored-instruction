@@ -42,6 +42,7 @@ export default function AdminSeoContentPage() {
   const runGeneration = async (overwriteExisting: boolean) => {
     setErrorMessage(null);
     setResultMessage(null);
+    setShowOverwriteConfirmation(false);
     setWorkingMode(overwriteExisting ? "overwrite" : "generate");
 
     try {
@@ -61,10 +62,16 @@ export default function AdminSeoContentPage() {
   };
 
   const handleOverwriteGeneration = () => {
+    if (workingMode !== null) {
+      return;
+    }
     setShowOverwriteConfirmation(true);
   };
 
   const handleConfirmOverwriteGeneration = () => {
+    if (workingMode !== null) {
+      return;
+    }
     setShowOverwriteConfirmation(false);
     runGeneration(true);
   };
@@ -223,6 +230,7 @@ export default function AdminSeoContentPage() {
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 className="rounded-md bg-amber-600 px-3 py-1.5 font-medium text-white hover:bg-amber-700"
+                disabled={workingMode !== null}
                 onClick={handleConfirmOverwriteGeneration}
                 type="button"
               >
@@ -230,6 +238,7 @@ export default function AdminSeoContentPage() {
               </button>
               <button
                 className="rounded-md border border-amber-400 bg-white px-3 py-1.5 font-medium text-amber-900 hover:bg-amber-100"
+                disabled={workingMode !== null}
                 onClick={handleCancelOverwriteGeneration}
                 type="button"
               >

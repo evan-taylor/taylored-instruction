@@ -1,7 +1,9 @@
-export const ADMIN_EMAILS: readonly string[] = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
+import {
+  ADMIN_EMAILS as SHARED_ADMIN_EMAILS,
+  isAdminEmail as sharedIsAdminEmail,
+} from "@/shared/adminEmails";
+
+export const ADMIN_EMAILS = SHARED_ADMIN_EMAILS;
 
 export const isAdminEmail = (email: string | null | undefined): boolean =>
-  !!email && ADMIN_EMAILS.includes(email);
+  sharedIsAdminEmail(email);

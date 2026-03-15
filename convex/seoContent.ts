@@ -1,20 +1,16 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { isAdminEmail } from "../shared/adminEmails";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 
-const ADMIN_EMAILS: readonly string[] = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
-
 const READING_TIME_WORDS_PER_MINUTE = 200;
 const MINIMUM_READING_TIME_MINUTES = 4;
 const WORD_SEPARATOR_REGEX = /\s+/;
-const DEFAULT_PUBLISHED_PAGES_LIMIT = 60;
-const MAX_PUBLISHED_PAGES_LIMIT = 200;
-const MAX_PUBLISHED_PAGES_SCAN_LIMIT = 500;
+const DEFAULT_PUBLISHED_PAGES_LIMIT = 1000;
+const MAX_PUBLISHED_PAGES_LIMIT = 1000;
+const MAX_PUBLISHED_PAGES_SCAN_LIMIT = 1000;
 const DEFAULT_GENERATION_BATCH_SIZE = 100;
 const MAX_GENERATION_BATCH_SIZE = 250;
 const ESTIMATED_DB_OPERATIONS_PER_TEMPLATE = 2;
@@ -890,7 +886,11 @@ const requireAdmin = async (ctx: QueryCtx | MutationCtx) => {
   }
 
   const user = await ctx.db.get(userId);
-  if (!(user?.email && ADMIN_EMAILS.includes(user.email))) {
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!isAdminEmail(user.email)) {
     throw new Error("Admin access required");
   }
 
@@ -947,13 +947,34 @@ export const listPublishedPages = query({
   },
   handler: async (ctx, args) => {
     const safeLimit = clampLimit(args.limit);
-    const allPublished = await ctx.db
-      .query("seo_pages")
-      .withIndex("by_published_slug", (q) => q.eq("published", true))
-      .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
+    let candidates: Doc<"seo_pages">[];
 
-    const filtered = allPublished
+    if (args.locationCity) {
+      candidates = await ctx.db
+        .query("seo_pages")
+        .withIndex("by_location_city", (q) =>
+          q.eq("locationCity", args.locationCity as string)
+        )
+        .collect();
+    } else if (args.serviceLine) {
+      candidates = await ctx.db
+        .query("seo_pages")
+        .withIndex("by_service_line", (q) =>
+          q.eq("serviceLine", args.serviceLine as string)
+        )
+        .collect();
+    } else {
+      candidates = await ctx.db
+        .query("seo_pages")
+        .withIndex("by_published_slug", (q) => q.eq("published", true))
+        .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
+    }
+
+    const filtered = candidates
       .filter((page) => {
+        if (!page.published) {
+          return false;
+        }
         const locationMatches = args.locationCity
           ? page.locationCity === args.locationCity
           : true;
@@ -988,7 +1009,7 @@ export const getPublishedPageSlugs = query({
     const pages = await ctx.db
       .query("seo_pages")
       .withIndex("by_published_slug", (q) => q.eq("published", true))
-      .collect();
+      .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
 
     return pages.map((page) => ({
       slug: page.slug,
@@ -1042,7 +1063,7 @@ export const upsertPage = mutation({
       updatedAt: now,
       publishedAt: args.page.published
         ? (existing.publishedAt ?? now)
-        : undefined,
+        : existing.publishedAt,
     });
 
     return { id: existing._id, status: "updated" as const };
