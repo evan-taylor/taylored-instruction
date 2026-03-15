@@ -1,81 +1,88 @@
 "use cache";
 
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getAedProductSchema,
+  getBreadcrumbSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "AED Sales & Distribution",
-  description:
-    "Automated External Defibrillators in Vancouver WA & San Luis Obispo CA",
-});
+const pageTitle =
+  "AED Sales & Distribution | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "Buy Automated External Defibrillators (AEDs) in Vancouver WA and San Luis Obispo CA with product guidance, training integration, and implementation support.";
 
-export const metadata: Metadata = {
-  title:
-    "AED Sales & Distribution Vancouver WA & San Luis Obispo CA | Automated External Defibrillators",
-  description:
-    "Buy AEDs (Automated External Defibrillators) in Vancouver WA, Clark County & San Luis Obispo CA. Authorized distributor of ZOLL, Cardiac Science & leading AED brands. Expert guidance, competitive pricing, training included. Equip your business, school or facility with lifesaving AEDs.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/aeds",
   keywords: [
     "AED distributor Vancouver WA",
-    "Automated External Defibrillator",
-    "AED sales Vancouver WA",
-    "Buy AED Vancouver",
-    "AED for business",
-    "AED for school",
-    "Lifesaving equipment",
-    "Taylored Instruction AED",
-    "Vancouver AED",
-    "Vancouver WA AED distributor",
-    "Vancouver AED sales",
-    "Vancouver AED for sale",
-    "Vancouver AED for business",
-    "Vancouver AED for school",
-    "ZOLL AED Vancouver",
-    "Cardiac Science AED",
-    "AED sales San Luis Obispo",
-    "AED distributor Clark County",
-    "Buy defibrillator Vancouver",
-    "AED training included",
-    "AED for workplace",
-    "AED for gym",
-    "AED for church",
-    "AED Portland OR",
+    "buy AED for business",
+    "workplace AED sales and support",
+    "AED for schools and churches",
+    "ZOLL AED distributor Clark County",
+    "Cardiac Science AED sales",
+    "AED sales San Luis Obispo CA",
+    "AED implementation and training",
   ],
-  openGraph: {
-    title:
-      "AED Sales & Distribution Vancouver WA & San Luis Obispo CA | Buy Defibrillators",
+  image: {
+    title: "AED Sales & Distribution",
     description:
-      "Buy AEDs in Vancouver WA & San Luis Obispo CA. Authorized distributor of leading brands. Expert guidance, competitive pricing, training included.",
-    url: "https://tayloredinstruction.com/aeds",
-    siteName: "Taylored Instruction",
-    type: "website",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "AED Sales & Distribution - Taylored Instruction",
-      },
-    ],
+      "Automated External Defibrillator sales, consultation, and support",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "AED Sales & Distribution Vancouver WA & San Luis Obispo CA",
-    description:
-      "Buy AEDs from authorized distributor. Expert guidance, competitive pricing, training included.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/aeds",
-  },
-};
+});
 
 export default async function AedPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/aeds",
+  });
+  const aedServiceSchema = getServiceSchema({
+    name: "AED Sales and Distribution",
+    description:
+      "Consultative AED product selection, purchasing support, and implementation guidance for organizations.",
+    path: "/aeds",
+    serviceType: "Medical Device Sales and Support",
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
+    audienceType:
+      "Businesses, Schools, Facilities, and Community Organizations",
+  });
+  const productSchema = getAedProductSchema();
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    { name: "AED Sales", url: "https://tayloredinstruction.com/aeds" },
+  ]);
+
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(aedServiceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(productSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
       {/* Hero Section with Background Image (matching contact page style) */}
       <section className="relative flex min-h-[400px] items-center justify-center md:min-h-[500px]">
         <div className="absolute inset-0 h-full w-full overflow-hidden">

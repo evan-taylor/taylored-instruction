@@ -1,78 +1,74 @@
 "use cache";
 
 import { Mail, Phone } from "lucide-react"; // Import icons
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button"; // Import the Button component
 import { ChamberBadge } from "@/components/ui/ChamberBadge";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getAboutPersonSchema,
+  getBreadcrumbSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "About Taylored Instruction",
-  description: "Expert CPR, BLS & Lifeguard Training",
-});
+const pageTitle =
+  "About Taylored Instruction | CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "Meet Evan Taylor and learn how Taylored Instruction delivers Red Cross and AHA safety training, including CPR, BLS, First Aid, and Lifeguard courses.";
 
 // --- Page Metadata ---
-export const metadata: Metadata = {
-  title:
-    "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA",
-  description:
-    "Meet Evan Taylor and learn about Taylored Instruction's mission to teach lifesaving skills. American Red Cross Licensed Training Provider, AHA Training Site & HSI Training Center. Expert CPR, BLS, First Aid & Lifeguard training in Vancouver, WA, Clark County & San Luis Obispo, CA.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/about",
   keywords: [
-    "About Taylored Instruction",
+    "about Taylored Instruction",
     "Evan Taylor CPR instructor",
-    "Lifesaving skills training Vancouver WA",
-    "CPR classes San Luis Obispo",
-    "Red Cross Licensed Training Provider",
-    "AHA Training Site Vancouver WA",
-    "HSI Training Center",
-    "Water Safety Instructor Vancouver WA",
-    "Adaptive swim lessons",
-    "Taylored Instruction mission",
-    "CPR training Clark County",
-    "Red Cross Instructor Trainer",
-    "AHA BLS Instructor Vancouver",
-    "CPR instructor Vancouver WA",
-    "Lifeguard instructor Vancouver",
-    "About us CPR training",
-    "Vancouver WA safety training company",
-    "SLO CPR instructor",
+    "Red Cross Licensed Training Provider Vancouver WA",
+    "AHA training site Vancouver WA",
+    "HSI training center Vancouver WA",
+    "lifesaving skills training company",
+    "CPR instructors Clark County WA",
+    "CPR and lifeguard training San Luis Obispo",
   ],
-  openGraph: {
-    title: "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
+  image: {
     description:
-      "Meet Evan Taylor and learn about Taylored Instruction's mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA. Red Cross & AHA certified.",
-    url: "https://tayloredinstruction.com/about",
-    siteName: "Taylored Instruction",
-    type: "website",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "About Taylored Instruction - Lifesaving Training Experts",
-      },
-    ],
+      "About Taylored Instruction and founder Evan Taylor, serving Vancouver WA and San Luis Obispo CA",
+    title: "About Taylored Instruction",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "About Taylored Instruction | Expert CPR, BLS & Lifeguard Training",
-    description:
-      "Meet Evan Taylor and learn about our mission to teach lifesaving skills in Vancouver, WA and San Luis Obispo, CA.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/about",
-  },
-};
+});
 
 // --- Page Component ---
 export default async function AboutPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/about",
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    { name: "About", url: "https://tayloredinstruction.com/about" },
+  ]);
+  const personSchema = getAboutPersonSchema();
+
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(personSchema)}
+        type="application/ld+json"
+      />
       {/* Hero Section with Background Image */}
       <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[550px]">
         <div className="absolute inset-0 h-full w-full overflow-hidden">
@@ -166,7 +162,7 @@ export default async function AboutPage() {
                     <a
                       aria-label="Call Evan Taylor"
                       className="text-gray-500 transition-colors duration-200 hover:text-primary"
-                      href="tel:3602071844"
+                      href="tel:3606858199"
                     >
                       <Phone size={20} />
                     </a>

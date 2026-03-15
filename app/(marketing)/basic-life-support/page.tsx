@@ -1,69 +1,74 @@
 "use cache";
 
-import type { Metadata } from "next";
 import BasicLifeSupportPageContent from "@/components/BasicLifeSupportPageContent";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getRedCrossBLSCourseSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Red Cross Basic Life Support (BLS)",
-  description:
-    "Healthcare Provider Certification in Vancouver WA & San Luis Obispo CA",
-  type: "bls",
+const pageTitle =
+  "Red Cross Basic Life Support (BLS) Certification | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "American Red Cross Basic Life Support (BLS) certification for healthcare providers in Vancouver WA, Clark County, and San Luis Obispo CA.";
+
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/basic-life-support",
+  ogType: "article",
+  keywords: [
+    "Red Cross BLS class Vancouver WA",
+    "basic life support certification Clark County",
+    "healthcare provider BLS course",
+    "professional rescuer CPR class",
+    "airway obstruction response training",
+    "opioid overdose response BLS class",
+    "Red Cross BLS class San Luis Obispo",
+    "BLS classes Portland metro",
+  ],
+  image: {
+    title: "Red Cross Basic Life Support (BLS)",
+    description:
+      "Red Cross BLS training for healthcare providers in Vancouver WA and San Luis Obispo CA",
+    type: "bls",
+  },
 });
 
-export const metadata: Metadata = {
-  title:
-    "Red Cross Basic Life Support (BLS) Certification | Vancouver WA & San Luis Obispo CA - Healthcare Providers",
-  description:
-    "American Red Cross Basic Life Support (BLS) certification for healthcare providers in Vancouver WA, Clark County & San Luis Obispo CA. Learn CPR, respiratory & cardiac arrest care, airway obstruction & opioid overdose response. Professional BLS training.",
-  keywords: [
-    "Basic Life Support Vancouver WA",
-    "Red Cross BLS certification",
-    "BLS for healthcare providers",
-    "CPR for healthcare professionals",
-    "BLS training",
-    "American Red Cross BLS",
-    "Respiratory arrest care",
-    "Cardiac arrest care",
-    "Airway obstruction training",
-    "Opioid overdose response",
-    "BLS course Vancouver WA",
-    "Taylored Instruction BLS",
-    "Vancouver WA BLS",
-    "Red Cross BLS San Luis Obispo",
-    "BLS Clark County",
-    "Healthcare BLS certification",
-  ],
-  openGraph: {
-    title:
-      "Red Cross Basic Life Support (BLS) Certification | Vancouver WA & San Luis Obispo CA",
-    description:
-      "American Red Cross BLS certification for healthcare providers. Learn CPR, cardiac arrest care & emergency response in Vancouver WA & San Luis Obispo CA.",
-    url: "https://tayloredinstruction.com/basic-life-support",
-    siteName: "Taylored Instruction",
-    type: "article",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Red Cross BLS Certification - Taylored Instruction",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "Red Cross Basic Life Support (BLS) Certification | Vancouver WA & San Luis Obispo CA",
-    description:
-      "American Red Cross BLS certification for healthcare providers.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/basic-life-support",
-  },
-};
+const BasicLifeSupportPage = async () => {
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/basic-life-support",
+  });
+  const courseSchema = getRedCrossBLSCourseSchema();
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "Red Cross Basic Life Support",
+      url: "https://tayloredinstruction.com/basic-life-support",
+    },
+  ]);
 
-const BasicLifeSupportPage = async () => <BasicLifeSupportPageContent />;
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <BasicLifeSupportPageContent />
+    </>
+  );
+};
 
 export default BasicLifeSupportPage;

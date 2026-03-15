@@ -8,6 +8,7 @@ const baseUrl = "https://tayloredinstruction.com";
 // Directories/segments to exclude from the sitemap
 const excludedSegments = [
   "api", // Exclude API routes
+  "(app)", // Exclude authenticated application routes
   "(auth)", // Example: Exclude routes in an auth group
   "opengraph-image", // Exclude opengraph image generation files
   "twitter-image", // Exclude twitter image generation files
@@ -116,8 +117,6 @@ const routeConfig: Record<
     changeFrequency: "monthly",
   },
   "/alignment": { priority: 0.8, changeFrequency: "monthly" },
-  "/instructor-resources": { priority: 0.7, changeFrequency: "monthly" },
-  "/ecards": { priority: 0.75, changeFrequency: "monthly" },
   "/privacy-policy": { priority: 0.3, changeFrequency: "yearly" },
   "/terms": { priority: 0.3, changeFrequency: "yearly" },
 };

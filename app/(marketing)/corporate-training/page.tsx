@@ -9,84 +9,86 @@ import {
   LifeBuoy,
   Users,
 } from "lucide-react";
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Corporate CPR Training",
-  description:
-    "Workplace Safety Certification in Vancouver WA & San Luis Obispo CA",
-});
+const pageTitle =
+  "Corporate CPR Training | Vancouver WA & San Luis Obispo CA Workplace Safety";
+const pageDescription =
+  "On-site corporate CPR, BLS, and First Aid training for businesses, schools, and organizations in Vancouver WA, Clark County, Portland metro, and San Luis Obispo CA.";
 
-export const metadata: Metadata = {
-  title:
-    "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety Certification",
-  description:
-    "Professional on-site corporate CPR, BLS & First Aid training in Vancouver WA, Clark County & San Luis Obispo CA. AHA & Red Cross certified workplace safety training for businesses, schools & organizations. OSHA compliant. Flexible scheduling. Group discounts available.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/corporate-training",
   keywords: [
-    "Corporate CPR training Vancouver WA",
-    "Workplace CPR certification",
-    "Business CPR classes",
-    "School CPR training",
-    "Organization CPR training",
-    "On-site CPR training",
-    "Group CPR training",
-    "AHA corporate training",
-    "Red Cross corporate training",
-    "OSHA compliance CPR",
-    "Employee CPR certification",
-    "Team CPR training Vancouver WA",
-    "Taylored Instruction corporate",
-    "Vancouver WA corporate CPR",
-    "Corporate BLS training",
-    "Workplace First Aid training",
-    "Company CPR certification",
-    "Business safety training",
-    "Corporate CPR San Luis Obispo",
-    "On-site training Clark County",
-    "Corporate training Portland OR",
-    "Group CPR classes Vancouver",
-    "Employee safety training",
-    "Workplace emergency response",
+    "corporate CPR training Vancouver WA",
+    "on-site CPR and first aid training",
+    "workplace BLS training program",
+    "OSHA workplace emergency training",
+    "employee CPR certification classes",
+    "group CPR classes Clark County WA",
+    "corporate CPR training San Luis Obispo",
+    "business emergency response training",
   ],
-  openGraph: {
-    title:
-      "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety",
+  image: {
+    title: "Corporate CPR Training",
     description:
-      "Professional on-site corporate CPR, BLS & First Aid training. AHA & Red Cross certified. Serving businesses, schools & organizations in Vancouver WA & San Luis Obispo CA.",
-    url: "https://tayloredinstruction.com/corporate-training",
-    siteName: "Taylored Instruction",
-    type: "website",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Corporate CPR Training - Taylored Instruction",
-      },
-    ],
+      "On-site workplace CPR, BLS, and First Aid certification for teams",
   },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "Corporate CPR Training Vancouver WA & San Luis Obispo CA | Workplace Safety",
-    description:
-      "Professional on-site corporate CPR, BLS & First Aid training. AHA & Red Cross certified.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/corporate-training",
-  },
-};
+});
 
 export default async function CorporateTrainingPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/corporate-training",
+  });
+  const serviceSchema = getServiceSchema({
+    name: "Corporate CPR, BLS, and First Aid Training",
+    description:
+      "Custom workplace safety training for employee teams, including CPR, BLS, and First Aid certification delivered on-site.",
+    path: "/corporate-training",
+    serviceType: "On-site Workplace Safety Training",
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
+    audienceType: "Employers, Schools, and Organizations",
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "Corporate Training",
+      url: "https://tayloredinstruction.com/corporate-training",
+    },
+  ]);
+
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
       {/* Hero Section - Improved with better image handling and text styling */}
       <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[600px]">
         <div className="absolute inset-0 h-full w-full overflow-hidden">
