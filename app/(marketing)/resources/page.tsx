@@ -63,18 +63,20 @@ const getServiceLineCount = (resources: ResourceCard[]) =>
   new Set(resources.map((resource) => resource.serviceLine)).size;
 
 export default async function ResourcesPage() {
-  cacheLife("hours");
-
   const convexResources = await fetchQuery(
     api.seoContent.listPublishedPages,
     {}
   )
     .then((pages) => pages)
     .catch(() => null);
-  const resources =
+  const hasPublishedConvexResources = !!(
     convexResources && convexResources.length > 0
-      ? convexResources
-      : getFallbackSeoPageSummaries();
+  );
+
+  cacheLife(hasPublishedConvexResources ? "hours" : "minutes");
+
+  const resources =
+    hasPublishedConvexResources ? convexResources : getFallbackSeoPageSummaries();
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,
@@ -155,60 +157,48 @@ export default async function ResourcesPage() {
       </section>
 
       <section className="container mx-auto px-4 py-12">
-        {resources.length === 0 ? (
-          <div className="mx-auto max-w-3xl rounded-xl border border-gray-300 border-dashed bg-gray-50 p-10 text-center">
-            <h2 className="font-semibold text-2xl text-gray-900">
-              Content is being prepared
-            </h2>
-            <p className="mt-3 text-gray-700">
-              No resources are published yet. Use the admin content generation
-              workflow to create and publish SEO content at scale.
-            </p>
-          </div>
-        ) : (
-          <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
-            {resources.map((resource) => (
-              <article
-                className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-                key={resource.slug}
-              >
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 text-xs">
-                    {resource.locationLabel}
-                  </span>
-                  <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-700 text-xs">
-                    {resource.serviceLine}
-                  </span>
-                  <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">
-                    {resource.readingTimeMinutes} min read
-                  </span>
-                </div>
-                <h2 className="mt-4 font-semibold text-2xl text-gray-900 leading-tight">
-                  <Link
-                    className="hover:text-primary"
-                    href={`/resources/${resource.slug}`}
-                  >
-                    {resource.title}
-                  </Link>
-                </h2>
-                <p className="mt-3 text-gray-700 leading-relaxed">
-                  {resource.excerpt}
-                </p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">
-                    Updated {formatUpdatedDate(resource.updatedAt)}
-                  </span>
-                  <Link
-                    className="font-medium text-primary text-sm hover:underline"
-                    href={`/resources/${resource.slug}`}
-                  >
-                    Read article
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
+          {resources.map((resource) => (
+            <article
+              className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+              key={resource.slug}
+            >
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 text-xs">
+                  {resource.locationLabel}
+                </span>
+                <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-700 text-xs">
+                  {resource.serviceLine}
+                </span>
+                <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">
+                  {resource.readingTimeMinutes} min read
+                </span>
+              </div>
+              <h2 className="mt-4 font-semibold text-2xl text-gray-900 leading-tight">
+                <Link
+                  className="hover:text-primary"
+                  href={`/resources/${resource.slug}`}
+                >
+                  {resource.title}
+                </Link>
+              </h2>
+              <p className="mt-3 text-gray-700 leading-relaxed">
+                {resource.excerpt}
+              </p>
+              <div className="mt-4 flex items-center justify-between">
+                <span className="text-gray-500 text-sm">
+                  Updated {formatUpdatedDate(resource.updatedAt)}
+                </span>
+                <Link
+                  className="font-medium text-primary text-sm hover:underline"
+                  href={`/resources/${resource.slug}`}
+                >
+                  Read article
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
     </div>
   );

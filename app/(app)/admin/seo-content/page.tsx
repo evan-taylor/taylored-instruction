@@ -5,11 +5,7 @@ import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
-
-const ADMIN_EMAILS: readonly string[] = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
+import { isAdminEmail } from "@/lib/admin";
 
 type GenerationResult = {
   totalTemplates: number;
@@ -33,7 +29,7 @@ export default function AdminSeoContentPage() {
     "generate" | "overwrite" | null
   >(null);
 
-  const isAdmin = email ? ADMIN_EMAILS.includes(email) : false;
+  const isAdmin = isAdminEmail(email);
 
   const pages = useQuery(
     api.seoContent.listPagesForAdmin,
@@ -60,6 +56,16 @@ export default function AdminSeoContentPage() {
     } finally {
       setWorkingMode(null);
     }
+  };
+
+  const handleOverwriteGeneration = () => {
+    const confirmed = window.confirm(
+      "This will regenerate and overwrite all generated SEO templates. Continue?"
+    );
+    if (!confirmed) {
+      return;
+    }
+    runGeneration(true);
   };
 
   if (profileLoading) {
@@ -177,7 +183,7 @@ export default function AdminSeoContentPage() {
           <button
             className="rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={workingMode !== null}
-            onClick={() => runGeneration(true)}
+            onClick={handleOverwriteGeneration}
             type="button"
           >
             {workingMode === "overwrite"

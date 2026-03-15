@@ -150,38 +150,57 @@ const getRouteConfig = (route: string): RouteConfig => {
   );
 };
 
+type ResourceRouteEntry = {
+  route: string;
+  lastModified: Date;
+};
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const appDirPath = path.join(process.cwd(), "app");
   const pageRoutes = getPagePaths(appDirPath);
-  const dynamicResourceRoutes: string[] = [];
-  const fallbackResourceRoutes = getFallbackSeoPages().map(
-    (page) => `/resources/${page.slug}`
-  );
+  const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
+  const fallbackResources = getFallbackSeoPages();
+
+  for (const page of fallbackResources) {
+    const route = `/resources/${page.slug}`;
+    dynamicResourceRouteMap.set(route, {
+      route,
+      lastModified: new Date(page.updatedAt),
+    });
+  }
 
   try {
     const resources = await fetchQuery(
       api.seoContent.getPublishedPageSlugs,
       {}
     );
-    if (resources.length > 0) {
-      dynamicResourceRoutes.push(
-        ...resources.map((resource) => `/resources/${resource.slug}`)
-      );
-    } else {
-      dynamicResourceRoutes.push(...fallbackResourceRoutes);
+
+    for (const resource of resources) {
+      const route = `/resources/${resource.slug}`;
+      dynamicResourceRouteMap.set(route, {
+        route,
+        lastModified: new Date(resource.updatedAt),
+      });
     }
   } catch (_error) {
-    dynamicResourceRoutes.push(...fallbackResourceRoutes);
+    // Keep fallback-only entries when Convex is unavailable.
   }
 
+  const dynamicResourceRoutes = Array.from(dynamicResourceRouteMap.values());
+  const resourceLastModifiedByRoute = new Map(
+    dynamicResourceRoutes.map((entry) => [entry.route, entry.lastModified])
+  );
   const allRoutes = [...pageRoutes, ...dynamicResourceRoutes];
 
-  const sitemapEntries: MetadataRoute.Sitemap = allRoutes.map((route) => {
+  const sitemapEntries: MetadataRoute.Sitemap = allRoutes.map((routeOrEntry) => {
+    const route =
+      typeof routeOrEntry === "string" ? routeOrEntry : routeOrEntry.route;
     const config = getRouteConfig(route);
+    const lastModified = resourceLastModifiedByRoute.get(route) ?? new Date();
 
     return {
       url: `${baseUrl}${route === "/" ? "" : route}`,
-      lastModified: new Date(),
+      lastModified,
       changeFrequency: config.changeFrequency,
       priority: config.priority,
     };

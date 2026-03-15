@@ -19,6 +19,44 @@ type ResourcePageProps = {
   }>;
 };
 
+const FALLBACK_CTA_HREF = "/contact";
+
+const sanitizeCtaHref = (href: string): string => {
+  if (href.startsWith("/")) {
+    return href;
+  }
+
+  try {
+    const parsedUrl = new URL(href);
+    if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
+      return href;
+    }
+  } catch (_error) {
+    return FALLBACK_CTA_HREF;
+  }
+
+  return FALLBACK_CTA_HREF;
+};
+
+const isExternalHref = (href: string): boolean =>
+  href.startsWith("http://") || href.startsWith("https://");
+
+const withOccurrenceKeys = (items: string[], prefix: string) => {
+  const counts = new Map<string, number>();
+  const keyedItems: Array<{ key: string; value: string }> = [];
+
+  for (const item of items) {
+    const currentCount = (counts.get(item) ?? 0) + 1;
+    counts.set(item, currentCount);
+    keyedItems.push({
+      key: `${prefix}-${item}-${currentCount}`,
+      value: item,
+    });
+  }
+
+  return keyedItems;
+};
+
 const getResourcePage = async (slug: string) => {
   const convexPage = await fetchQuery(api.seoContent.getPublishedPageBySlug, {
     slug,
@@ -77,7 +115,7 @@ export async function generateMetadata(
 }
 
 export default async function ResourceDetailPage(props: ResourcePageProps) {
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const params = await props.params;
   const page = await getResourcePage(params.slug);
@@ -85,6 +123,9 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
   if (!page) {
     notFound();
   }
+
+  const safeCtaHref = sanitizeCtaHref(page.ctaHref);
+  const ctaIsExternal = isExternalHref(safeCtaHref);
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -177,25 +218,41 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
 
       <section className="container mx-auto max-w-4xl px-4 py-12">
         <div className="space-y-10">
-          {page.sections.map((section) => (
-            <section key={section.heading}>
-              <h2 className="font-semibold text-2xl text-gray-900">
-                {section.heading}
-              </h2>
-              <div className="mt-4 space-y-4 text-gray-700 leading-relaxed">
-                {section.paragraphs.map((paragraph) => (
-                  <p key={paragraph}>{paragraph}</p>
-                ))}
-              </div>
-              {section.bullets && section.bullets.length > 0 ? (
-                <ul className="mt-5 list-disc space-y-2 pl-6 text-gray-700">
-                  {section.bullets.map((bullet) => (
-                    <li key={bullet}>{bullet}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </section>
-          ))}
+          {(() => {
+            const sectionHeadingCounts = new Map<string, number>();
+            return page.sections.map((section) => {
+              const sectionOccurrence =
+                (sectionHeadingCounts.get(section.heading) ?? 0) + 1;
+              sectionHeadingCounts.set(section.heading, sectionOccurrence);
+              const sectionKey = `section-${section.heading}-${sectionOccurrence}`;
+
+              return (
+                <section key={sectionKey}>
+                  <h2 className="font-semibold text-2xl text-gray-900">
+                    {section.heading}
+                  </h2>
+                  <div className="mt-4 space-y-4 text-gray-700 leading-relaxed">
+                    {withOccurrenceKeys(
+                      section.paragraphs,
+                      `${sectionKey}-paragraph`
+                    ).map(({ key: paragraphKey, value: paragraph }) => (
+                      <p key={paragraphKey}>{paragraph}</p>
+                    ))}
+                  </div>
+                  {section.bullets && section.bullets.length > 0 ? (
+                    <ul className="mt-5 list-disc space-y-2 pl-6 text-gray-700">
+                      {withOccurrenceKeys(
+                        section.bullets,
+                        `${sectionKey}-bullet`
+                      ).map(({ key: bulletKey, value: bullet }) => (
+                        <li key={bulletKey}>{bullet}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </section>
+              );
+            });
+          })()}
         </div>
       </section>
 
@@ -205,15 +262,24 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
             Frequently asked questions
           </h2>
           <div className="mt-5 space-y-4">
-            {page.faqItems.map((item) => (
-              <div
-                className="rounded-lg border border-gray-200 bg-white p-4"
-                key={item.question}
-              >
-                <h3 className="font-medium text-gray-900">{item.question}</h3>
-                <p className="mt-2 text-gray-700">{item.answer}</p>
-              </div>
-            ))}
+            {(() => {
+              const questionCounts = new Map<string, number>();
+              return page.faqItems.map((item) => {
+                const questionOccurrence =
+                  (questionCounts.get(item.question) ?? 0) + 1;
+                questionCounts.set(item.question, questionOccurrence);
+
+                return (
+                  <div
+                    className="rounded-lg border border-gray-200 bg-white p-4"
+                    key={`faq-${item.question}-${questionOccurrence}`}
+                  >
+                    <h3 className="font-medium text-gray-900">{item.question}</h3>
+                    <p className="mt-2 text-gray-700">{item.answer}</p>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
       </section>
@@ -227,7 +293,10 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
               className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
-              href={page.ctaHref}
+              href={safeCtaHref}
+              {...(ctaIsExternal
+                ? { rel: "noopener noreferrer", target: "_blank" }
+                : {})}
             >
               {page.ctaLabel}
             </Link>

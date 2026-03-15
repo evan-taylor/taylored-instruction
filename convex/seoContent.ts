@@ -2,7 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { mutation, query } from "./_generated/server";
+import { internalMutation, mutation, query } from "./_generated/server";
 
 const ADMIN_EMAILS: readonly string[] = [
   "admin@tayloredinstruction.com",
@@ -12,6 +12,13 @@ const ADMIN_EMAILS: readonly string[] = [
 const READING_TIME_WORDS_PER_MINUTE = 200;
 const MINIMUM_READING_TIME_MINUTES = 4;
 const WORD_SEPARATOR_REGEX = /\s+/;
+const DEFAULT_PUBLISHED_PAGES_LIMIT = 60;
+const MAX_PUBLISHED_PAGES_LIMIT = 200;
+const MAX_PUBLISHED_PAGES_SCAN_LIMIT = 500;
+const DEFAULT_GENERATION_BATCH_SIZE = 100;
+const MAX_GENERATION_BATCH_SIZE = 250;
+const ESTIMATED_DB_OPERATIONS_PER_TEMPLATE = 2;
+const MAX_ESTIMATED_BATCH_DB_OPERATIONS = 700;
 
 const BASE_RESEARCH_NOTES = [
   "American Heart Association CPR & ECC guidance: https://cpr.heart.org/",
@@ -696,6 +703,11 @@ const summarizePublishedPage = (page: Doc<"seo_pages">) => ({
   publishedAt: page.publishedAt ?? page.updatedAt,
 });
 
+const clampLimit = (limit?: number): number => {
+  const requested = limit ?? DEFAULT_PUBLISHED_PAGES_LIMIT;
+  return Math.min(Math.max(requested, 1), MAX_PUBLISHED_PAGES_LIMIT);
+};
+
 const estimateReadingTime = (sections: GeneratedPage["sections"]): number => {
   const words = sections
     .flatMap((section) => [...section.paragraphs, ...(section.bullets ?? [])])
@@ -934,10 +946,11 @@ export const listPublishedPages = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const safeLimit = clampLimit(args.limit);
     const allPublished = await ctx.db
       .query("seo_pages")
-      .withIndex("by_published", (q) => q.eq("published", true))
-      .collect();
+      .withIndex("by_published_slug", (q) => q.eq("published", true))
+      .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
 
     const filtered = allPublished
       .filter((page) => {
@@ -951,7 +964,7 @@ export const listPublishedPages = query({
       })
       .sort((a, b) => a.slug.localeCompare(b.slug));
 
-    const limited = args.limit ? filtered.slice(0, args.limit) : filtered;
+    const limited = filtered.slice(0, safeLimit);
     return limited.map(summarizePublishedPage);
   },
 });
@@ -1055,10 +1068,27 @@ export const deletePage = mutation({
 export const generateSeoContentBatch = mutation({
   args: {
     overwriteExisting: v.optional(v.boolean()),
+    offset: v.optional(v.number()),
+    batchSize: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const user = await requireAdmin(ctx);
-    const pages = buildSeoSeedPages();
+    const allPages = buildSeoSeedPages();
+    const safeOffset = Math.max(0, args.offset ?? 0);
+    const safeBatchSize = Math.min(
+      Math.max(args.batchSize ?? DEFAULT_GENERATION_BATCH_SIZE, 1),
+      MAX_GENERATION_BATCH_SIZE
+    );
+    const pages = allPages.slice(safeOffset, safeOffset + safeBatchSize);
+    const estimatedOperations =
+      pages.length * ESTIMATED_DB_OPERATIONS_PER_TEMPLATE;
+
+    if (estimatedOperations > MAX_ESTIMATED_BATCH_DB_OPERATIONS) {
+      throw new Error(
+        "Batch too large for a single mutation transaction. Reduce batchSize and retry."
+      );
+    }
+
     let inserted = 0;
     let updated = 0;
     let skipped = 0;
@@ -1081,7 +1111,11 @@ export const generateSeoContentBatch = mutation({
     }
 
     return {
-      totalTemplates: pages.length,
+      totalTemplates: allPages.length,
+      processed: pages.length,
+      offset: safeOffset,
+      batchSize: safeBatchSize,
+      hasMore: safeOffset + pages.length < allPages.length,
       inserted,
       updated,
       skipped,
@@ -1089,9 +1123,9 @@ export const generateSeoContentBatch = mutation({
   },
 });
 
-// Public bootstrap helper for one-time initial content load through CLI.
+// Internal bootstrap helper for one-time initial content load.
 // Existing data is not overwritten unless explicitly requested.
-export const seedInitialSeoContent = mutation({
+export const seedInitialSeoContent = internalMutation({
   args: {
     overwriteExisting: v.optional(v.boolean()),
   },
