@@ -217,7 +217,9 @@ type BreadcrumbSchema = {
   }>;
 };
 
-const BASE_URL = "https://tayloredinstruction.com";
+import { SITE_URL } from "@/lib/seo";
+
+const BASE_URL = SITE_URL;
 const WEBSITE_ID = `${BASE_URL}/#website`;
 const ORGANIZATION_ID = `${BASE_URL}/#organization`;
 
