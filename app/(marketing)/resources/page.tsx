@@ -1,3 +1,5 @@
+"use cache";
+
 import { fetchQuery } from "convex/nextjs";
 import { BookOpen, MapPin, Stethoscope } from "lucide-react";
 import { cacheLife } from "next/cache";
