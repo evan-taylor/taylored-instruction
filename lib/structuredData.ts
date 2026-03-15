@@ -233,7 +233,7 @@ export const getOrganizationSchema = (): OrganizationSchema => ({
   description:
     "Taylored Instruction provides professional CPR, BLS, First Aid, Lifeguard training, and AED sales in Vancouver, WA and San Luis Obispo, CA. American Red Cross Licensed Training Provider and AHA Training Site.",
   email: "evan@tayloredinstruction.com",
-  telephone: "+1-360-207-1844",
+  telephone: "+1-360-685-8199",
   address: {
     "@type": "PostalAddress",
     addressLocality: "Vancouver",
@@ -271,7 +271,7 @@ export const getVancouverLocalBusinessSchema = (): LocalBusinessSchema => ({
   description:
     "Professional CPR, BLS, First Aid, and Lifeguard training in Vancouver, WA. American Red Cross Licensed Training Provider and AHA Training Site serving Clark County and surrounding areas.",
   url: "https://tayloredinstruction.com",
-  telephone: "+1-360-207-1844",
+  telephone: "+1-360-685-8199",
   email: "evan@tayloredinstruction.com",
   address: {
     "@type": "PostalAddress",
@@ -320,7 +320,7 @@ export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
   description:
     "Seasonal CPR, BLS, First Aid, and Lifeguard training in San Luis Obispo, CA. Professional instruction from American Red Cross and AHA certified trainers.",
   url: "https://tayloredinstruction.com",
-  telephone: "+1-360-207-1844",
+  telephone: "+1-360-685-8199",
   email: "evan@tayloredinstruction.com",
   address: {
     "@type": "PostalAddress",
@@ -474,7 +474,7 @@ export const getAboutPersonSchema = (): PersonSchema => ({
     "@id": ORGANIZATION_ID,
   },
   email: "evan@tayloredinstruction.com",
-  telephone: "+1-360-207-1844",
+  telephone: "+1-360-685-8199",
   url: `${BASE_URL}/about`,
 });
 

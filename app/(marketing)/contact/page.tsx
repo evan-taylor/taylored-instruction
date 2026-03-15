@@ -17,7 +17,7 @@ import {
 const pageTitle =
   "Contact Taylored Instruction | CPR, BLS, First Aid & Lifeguard Training";
 const pageDescription =
-  "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver WA and San Luis Obispo CA. Call (360) 207-1844.";
+  "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver WA and San Luis Obispo CA. Call (360) 685-8199.";
 
 // --- Page Metadata ---
 export const metadata = buildPageMetadata({
@@ -148,8 +148,8 @@ export default async function ContactPage() {
                 <div className="space-y-3 text-left text-text-light">
                   <p className="flex items-center justify-center">
                     <Phone className="mr-2 text-primary" />
-                    <a className="hover:text-primary" href="tel:3602071844">
-                      (360) 207-1844
+                    <a className="hover:text-primary" href="tel:3606858199">
+                      (360) 685-8199
                     </a>
                   </p>
                   <p className="flex items-center justify-center">

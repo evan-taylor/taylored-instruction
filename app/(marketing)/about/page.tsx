@@ -162,7 +162,7 @@ export default async function AboutPage() {
                     <a
                       aria-label="Call Evan Taylor"
                       className="text-gray-500 transition-colors duration-200 hover:text-primary"
-                      href="tel:3602071844"
+                      href="tel:3606858199"
                     >
                       <Phone size={20} />
                     </a>
