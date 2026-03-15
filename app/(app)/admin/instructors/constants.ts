@@ -13,8 +13,7 @@ export const MILLISECONDS_PER_DAY =
 export const DAYS_IN_WEEK = 7;
 export const DAYS_IN_MONTH = 30;
 
-// Admin email addresses
-export const ADMIN_EMAILS: readonly string[] = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
+// Admin email addresses shared across admin surfaces.
+import { ADMIN_EMAILS as SHARED_ADMIN_EMAILS } from "@/shared/adminEmails";
+
+export const ADMIN_EMAILS = SHARED_ADMIN_EMAILS;

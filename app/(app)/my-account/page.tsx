@@ -5,11 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/useProfile";
-
-const ADMIN_EMAILS = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-] as const;
+import { isAdminEmail } from "@/lib/admin";
 
 const _getProfileStatus = (
   profile: unknown,
@@ -23,10 +19,6 @@ const _getProfileStatus = (
   }
   return "Not found";
 };
-
-const isAdminEmail = (email: string | null | undefined): boolean =>
-  typeof email === "string" &&
-  ADMIN_EMAILS.some((adminEmail) => adminEmail === email);
 
 export default function MyAccountPage() {
   const router = useRouter();

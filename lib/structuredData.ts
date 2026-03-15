@@ -213,6 +213,11 @@ type BreadcrumbSchema = {
 const BASE_URL = SITE_URL;
 const WEBSITE_ID = `${BASE_URL}/#website`;
 const ORGANIZATION_ID = `${BASE_URL}/#organization`;
+const LESS_THAN_REGEX = /</g;
+const GREATER_THAN_REGEX = />/g;
+const AMPERSAND_REGEX = /&/g;
+const LINE_SEPARATOR_REGEX = /\u2028/g;
+const PARAGRAPH_SEPARATOR_REGEX = /\u2029/g;
 
 // Organization Schema - Main company information
 export const getOrganizationSchema = (): OrganizationSchema => ({
@@ -635,5 +640,10 @@ export const getBreadcrumbSchema = (
 
 // Utility function to generate script tag for JSON-LD
 export const generateJSONLD = (data: unknown) => ({
-  __html: JSON.stringify(data),
+  __html: JSON.stringify(data)
+    .replace(LESS_THAN_REGEX, "\\u003c")
+    .replace(GREATER_THAN_REGEX, "\\u003e")
+    .replace(AMPERSAND_REGEX, "\\u0026")
+    .replace(LINE_SEPARATOR_REGEX, "\\u2028")
+    .replace(PARAGRAPH_SEPARATOR_REGEX, "\\u2029"),
 });

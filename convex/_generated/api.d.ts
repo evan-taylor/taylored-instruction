@@ -17,6 +17,7 @@ import type * as notifications from "../notifications.js";
 import type * as onboarding from "../onboarding.js";
 import type * as products from "../products.js";
 import type * as profiles from "../profiles.js";
+import type * as seoContent from "../seoContent.js";
 
 import type {
   ApiFromModules,
@@ -42,6 +43,7 @@ declare const fullApi: ApiFromModules<{
   onboarding: typeof onboarding;
   products: typeof products;
   profiles: typeof profiles;
+  seoContent: typeof seoContent;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

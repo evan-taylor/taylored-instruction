@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { isAdminEmail } from "../shared/adminEmails";
 import { internal } from "./_generated/api";
 import {
   internalMutation,
@@ -133,13 +134,7 @@ export const getProfileByUserId = query({
       throw new Error("User not found");
     }
 
-    const adminEmails = [
-      "admin@tayloredinstruction.com",
-      "evan@tayloredinstruction.com",
-    ];
-    const isAdmin = user.email && adminEmails.includes(user.email);
-
-    if (!isAdmin) {
+    if (!isAdminEmail(user.email)) {
       throw new Error("Forbidden");
     }
 
@@ -173,13 +168,7 @@ const assertAdmin = async (ctx: MutationCtx) => {
     throw new Error("User not found");
   }
 
-  const adminEmails = [
-    "admin@tayloredinstruction.com",
-    "evan@tayloredinstruction.com",
-  ];
-  const isAdmin = user.email && adminEmails.includes(user.email);
-
-  if (!isAdmin) {
+  if (!isAdminEmail(user.email)) {
     throw new Error("Forbidden: Admin access required");
   }
 };

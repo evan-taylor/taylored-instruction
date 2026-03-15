@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
@@ -45,13 +46,7 @@ export const getAnalytics = query({
       throw new Error("User not found");
     }
 
-    const adminEmails = [
-      "admin@tayloredinstruction.com",
-      "evan@tayloredinstruction.com",
-    ];
-    const isAdmin = user.email && adminEmails.includes(user.email);
-
-    if (!isAdmin) {
+    if (!isAdminEmail(user.email)) {
       throw new Error("Forbidden: Admin access required");
     }
 

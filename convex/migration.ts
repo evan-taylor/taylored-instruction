@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 
 export const attachUserDataOnLogin = mutation({
@@ -111,11 +112,7 @@ export const getMigrationStats = query({
     const identity = await ctx.auth.getUserIdentity();
     const email = user?.email ?? identity?.email ?? "";
 
-    const isAdmin =
-      email === "admin@tayloredinstruction.com" ||
-      email === "evan@tayloredinstruction.com";
-
-    if (!isAdmin) {
+    if (!isAdminEmail(email)) {
       throw new Error("Admin access required");
     }
 

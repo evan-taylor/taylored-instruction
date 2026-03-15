@@ -1,11 +1,7 @@
 import { v } from "convex/values";
+import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
-
-const ADMIN_EMAILS = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
 
 const SHORT_ID_PREFIX_LENGTH = 6;
 const SHORT_ID_SUFFIX_LENGTH = 4;
@@ -22,8 +18,7 @@ async function requireAdmin(ctx: { db: any; auth: any }) {
     throw new Error("User not found");
   }
 
-  const isAdmin = user.email && ADMIN_EMAILS.includes(user.email);
-  if (!isAdmin) {
+  if (!isAdminEmail(user.email)) {
     throw new Error("Forbidden: Admin access required");
   }
 

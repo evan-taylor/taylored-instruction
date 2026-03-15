@@ -1,12 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { isAdminEmail } from "../shared/adminEmails";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-
-const ADMIN_EMAILS = [
-  "admin@tayloredinstruction.com",
-  "evan@tayloredinstruction.com",
-];
 
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
@@ -15,7 +11,11 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   }
 
   const user = await ctx.db.get(userId);
-  if (!(user?.email && ADMIN_EMAILS.includes(user.email))) {
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!isAdminEmail(user.email)) {
     throw new Error("Admin access required");
   }
 
