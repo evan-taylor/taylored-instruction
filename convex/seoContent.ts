@@ -947,30 +947,32 @@ export const listPublishedPages = query({
   },
   handler: async (ctx, args) => {
     const safeLimit = clampLimit(args.limit);
+    const locationCity = args.locationCity;
+    const serviceLine = args.serviceLine;
     let candidates: Doc<"seo_pages">[];
 
-    if (args.locationCity && args.serviceLine) {
+    if (locationCity && serviceLine) {
       candidates = await ctx.db
         .query("seo_pages")
         .withIndex("by_published_location_city_service_line", (q) =>
           q
             .eq("published", true)
-            .eq("locationCity", args.locationCity)
-            .eq("serviceLine", args.serviceLine)
+            .eq("locationCity", locationCity)
+            .eq("serviceLine", serviceLine)
         )
         .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
-    } else if (args.locationCity) {
+    } else if (locationCity) {
       candidates = await ctx.db
         .query("seo_pages")
         .withIndex("by_published_location_city", (q) =>
-          q.eq("published", true).eq("locationCity", args.locationCity)
+          q.eq("published", true).eq("locationCity", locationCity)
         )
         .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
-    } else if (args.serviceLine) {
+    } else if (serviceLine) {
       candidates = await ctx.db
         .query("seo_pages")
         .withIndex("by_published_service_line", (q) =>
-          q.eq("published", true).eq("serviceLine", args.serviceLine)
+          q.eq("published", true).eq("serviceLine", serviceLine)
         )
         .take(MAX_PUBLISHED_PAGES_SCAN_LIMIT);
     } else {
@@ -982,11 +984,11 @@ export const listPublishedPages = query({
 
     const filtered = candidates
       .filter((page) => {
-        const locationMatches = args.locationCity
-          ? page.locationCity === args.locationCity
+        const locationMatches = locationCity
+          ? page.locationCity === locationCity
           : true;
-        const serviceMatches = args.serviceLine
-          ? page.serviceLine === args.serviceLine
+        const serviceMatches = serviceLine
+          ? page.serviceLine === serviceLine
           : true;
         return locationMatches && serviceMatches;
       })

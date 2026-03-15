@@ -11,7 +11,11 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   }
 
   const user = await ctx.db.get(userId);
-  if (!isAdminEmail(user?.email)) {
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  if (!isAdminEmail(user.email)) {
     throw new Error("Admin access required");
   }
 
