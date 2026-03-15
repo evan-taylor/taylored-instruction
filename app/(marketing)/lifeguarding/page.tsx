@@ -9,6 +9,7 @@ import {
   getLifeguardingCourseSchema,
   getWebPageSchema,
 } from "@/lib/structuredData";
+
 const pageTitle =
   "Red Cross Lifeguarding Certification | Vancouver WA & San Luis Obispo CA";
 const pageDescription =

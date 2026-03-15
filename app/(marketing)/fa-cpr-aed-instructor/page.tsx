@@ -32,8 +32,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "First Aid/CPR/AED Instructor Course",
-    description:
-      "Become a certified Red Cross First Aid CPR AED instructor",
+    description: "Become a certified Red Cross First Aid CPR AED instructor",
   },
 });
 
@@ -49,8 +48,13 @@ const FaCprAedInstructorPage = async () => {
       "Instructor training program for professionals pursuing Red Cross First Aid/CPR/AED instructor credentials.",
     path: "/fa-cpr-aed-instructor",
     serviceType: "Instructor Certification Training",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
-    audienceType: "Current provider-level cardholders pursuing instructor certification",
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
+    audienceType:
+      "Current provider-level cardholders pursuing instructor certification",
   });
   const faqSchema = getFAQSchema(instructorTrainingFAQs);
   const breadcrumbSchema = getBreadcrumbSchema([

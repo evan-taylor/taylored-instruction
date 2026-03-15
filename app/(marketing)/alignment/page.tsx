@@ -27,7 +27,7 @@ export const metadata = buildPageMetadata({
     "lifeguard instructor alignment support",
     "instructor alignment Clark County WA",
     "instructor alignment San Luis Obispo CA",
-  },
+  ],
   image: {
     title: "Instructor Alignment",
     description: "Partner with Taylored Instruction for instructor support",
@@ -46,12 +46,19 @@ const AlignmentPage = async () => {
       "Instructor alignment services for CPR, First Aid, BLS, and Lifeguard instructors, including operational guidance and certification processing support.",
     path: "/alignment",
     serviceType: "Instructor Alignment Program",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
     audienceType: "Independent and organizational instructors",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
-    { name: "Instructor Alignment", url: "https://tayloredinstruction.com/alignment" },
+    {
+      name: "Instructor Alignment",
+      url: "https://tayloredinstruction.com/alignment",
+    },
   ]);
 
   return (

@@ -51,8 +51,13 @@ export default async function AedPage() {
       "Consultative AED product selection, purchasing support, and implementation guidance for organizations.",
     path: "/aeds",
     serviceType: "Medical Device Sales and Support",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
-    audienceType: "Businesses, Schools, Facilities, and Community Organizations",
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
+    audienceType:
+      "Businesses, Schools, Facilities, and Community Organizations",
   });
   const productSchema = getAedProductSchema();
   const breadcrumbSchema = getBreadcrumbSchema([

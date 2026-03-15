@@ -139,7 +139,6 @@ export default function RootLayout({
           key="website-jsonld"
           type="application/ld+json"
         />
-
       </head>
       <body className={readexPro.variable}>
         {children}

@@ -10,8 +10,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "AHA Instructor Training | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "AHA Instructor Training | Vancouver WA & San Luis Obispo CA";
 const pageDescription =
   "Become an American Heart Association BLS or Heartsaver instructor through Taylored Instruction in Vancouver WA and San Luis Obispo CA.";
 
@@ -32,8 +31,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "AHA Instructor Training",
-    description:
-      "Become a certified AHA BLS or Heartsaver instructor",
+    description: "Become a certified AHA BLS or Heartsaver instructor",
     type: "aha",
   },
 });
@@ -50,8 +48,13 @@ const AhaInstructorTrainingPage = async () => {
       "Instructor development and certification preparation for AHA BLS and Heartsaver instructors.",
     path: "/aha-instructor-training",
     serviceType: "Instructor Certification Training",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
-    audienceType: "Current provider-level cardholders pursuing instructor certification",
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
+    audienceType:
+      "Current provider-level cardholders pursuing instructor certification",
   });
   const faqSchema = getFAQSchema(instructorTrainingFAQs);
   const breadcrumbSchema = getBreadcrumbSchema([

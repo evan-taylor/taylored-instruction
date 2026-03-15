@@ -56,7 +56,11 @@ export default async function ContactPage() {
       "Course consultation, scheduling support, and custom training quotes for CPR, BLS, First Aid, Lifeguarding, and AED programs.",
     path: "/contact",
     serviceType: "Training Consultation",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

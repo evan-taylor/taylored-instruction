@@ -33,8 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Lifeguarding Instructor Course",
-    description:
-      "Become a certified Red Cross lifeguarding instructor",
+    description: "Become a certified Red Cross lifeguarding instructor",
     type: "lifeguarding",
   },
 });
@@ -52,7 +51,11 @@ export default async function Page() {
       "Instructor development course for candidates pursuing Red Cross Lifeguarding Instructor certification.",
     path: "/lifeguarding-instructor",
     serviceType: "Aquatic Instructor Certification Training",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
     audienceType: "Current lifeguards pursuing instructor credentials",
   });
   const faqSchema = getFAQSchema(instructorTrainingFAQs);

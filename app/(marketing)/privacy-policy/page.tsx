@@ -37,7 +37,10 @@ export default async function PrivacyPolicyPage() {
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
-    { name: "Privacy Policy", url: "https://tayloredinstruction.com/privacy-policy" },
+    {
+      name: "Privacy Policy",
+      url: "https://tayloredinstruction.com/privacy-policy",
+    },
   ]);
 
   return (

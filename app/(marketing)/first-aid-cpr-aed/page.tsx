@@ -9,6 +9,7 @@ import {
   getFirstAidCPRAEDCourseSchema,
   getWebPageSchema,
 } from "@/lib/structuredData";
+
 const pageTitle =
   "First Aid/CPR/AED Certification | Vancouver WA & San Luis Obispo CA";
 const pageDescription =

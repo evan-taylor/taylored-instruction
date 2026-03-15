@@ -61,7 +61,11 @@ export default async function CorporateTrainingPage() {
       "Custom workplace safety training for employee teams, including CPR, BLS, and First Aid certification delivered on-site.",
     path: "/corporate-training",
     serviceType: "On-site Workplace Safety Training",
-    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    areaServed: [
+      "Clark County, WA",
+      "Portland Metro, OR",
+      "San Luis Obispo County, CA",
+    ],
     audienceType: "Employers, Schools, and Organizations",
   });
   const faqSchema = getFAQSchema(corporateFAQs);

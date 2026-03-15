@@ -40,7 +40,9 @@ const BASE_KEYWORDS = [
 ];
 
 const dedupeKeywords = (keywords: string[]): string[] =>
-  Array.from(new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean)));
+  Array.from(
+    new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean))
+  );
 
 export const absoluteUrl = (path: string): string =>
   new URL(path, SITE_URL).toString();
