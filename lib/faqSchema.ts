@@ -112,6 +112,29 @@ export const firstAidFAQs: FAQItem[] = [
   },
 ];
 
+export const heartsaverFAQs: FAQItem[] = [
+  {
+    question: "Who should take the AHA Heartsaver First Aid CPR AED course?",
+    answer:
+      "Heartsaver is designed for workplace teams, coaches, teachers, childcare providers, and community members who need CPR and First Aid certification but are not in a clinical healthcare role.",
+  },
+  {
+    question: "How long does Heartsaver certification last?",
+    answer:
+      "AHA Heartsaver First Aid CPR AED certification is valid for 2 years from completion.",
+  },
+  {
+    question: "Is there an online option for Heartsaver?",
+    answer:
+      "Yes. Heartsaver can be completed through a blended format where students complete online learning first and then attend an in-person skills session.",
+  },
+  {
+    question: "Does the course include adult, child, and infant CPR?",
+    answer:
+      "Yes, the course covers CPR and AED skills for adults, children, and infants along with first aid essentials.",
+  },
+];
+
 export const lifeguardFAQs: FAQItem[] = [
   {
     question: "What are the prerequisites for lifeguard training?",

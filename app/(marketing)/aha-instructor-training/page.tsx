@@ -1,72 +1,88 @@
 "use cache";
 
-import type { Metadata } from "next";
 import AhaInstructorTrainingPageContent from "@/components/AhaInstructorTrainingPageContent";
-import { generateOgImageUrl } from "@/lib/utils";
+import { getFAQSchema, instructorTrainingFAQs } from "@/lib/faqSchema";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "AHA Instructor Training",
-  description: "Become a Certified CPR Instructor",
-  type: "aha",
-});
+const pageTitle =
+  "AHA Instructor Training | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "Become an American Heart Association BLS or Heartsaver instructor through Taylored Instruction in Vancouver WA and San Luis Obispo CA.";
 
-export const metadata: Metadata = {
-  title:
-    "AHA Instructor Training Vancouver WA & San Luis Obispo CA | Become a Certified CPR Instructor",
-  description:
-    "Become an American Heart Association (AHA) BLS or Heartsaver® instructor in Vancouver WA, Clark County & San Luis Obispo CA. Teach lifesaving CPR skills with Taylored Instruction. AHA Training Faculty approved. Start your CPR instructor career today!",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/aha-instructor-training",
+  ogType: "article",
   keywords: [
     "AHA instructor training Vancouver WA",
-    "Become CPR instructor",
-    "BLS instructor course Vancouver WA",
+    "BLS instructor course Clark County",
     "Heartsaver instructor course Vancouver WA",
-    "Teach CPR classes",
-    "American Heart Association instructor certification",
-    "Lifesaving skills instructor",
-    "CPR instructor prerequisites",
-    "AHA Training Faculty",
-    "Taylored Instruction AHA instructor",
-    "Vancouver WA instructor training",
-    "Clark County CPR instructor",
-    "AHA instructor San Luis Obispo",
-    "Become BLS instructor",
-    "Become Heartsaver instructor",
-    "CPR instructor certification",
-    "AHA instructor course",
-    "Teach BLS classes",
-    "AHA Training Center Vancouver",
+    "become AHA CPR instructor",
+    "AHA instructor essentials support",
+    "AHA instructor training San Luis Obispo CA",
+    "teach BLS and Heartsaver classes",
+    "CPR instructor mentorship program",
   ],
-  openGraph: {
-    title:
-      "AHA Instructor Training Vancouver WA & San Luis Obispo CA | Become a CPR Instructor",
+  image: {
+    title: "AHA Instructor Training",
     description:
-      "Become an American Heart Association BLS or Heartsaver® instructor. Teach lifesaving CPR skills in Vancouver WA & San Luis Obispo CA.",
-    url: "https://tayloredinstruction.com/aha-instructor-training",
-    siteName: "Taylored Instruction",
-    type: "article",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "AHA CPR Instructor Training - Taylored Instruction",
-      },
-    ],
+      "Become a certified AHA BLS or Heartsaver instructor",
+    type: "aha",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "AHA Instructor Training Vancouver WA & San Luis Obispo CA",
-    description:
-      "Become an American Heart Association CPR instructor. Teach lifesaving skills today!",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/aha-instructor-training",
-  },
-};
+});
 
-const AhaInstructorTrainingPage = async () => (
-  <AhaInstructorTrainingPageContent />
-);
+const AhaInstructorTrainingPage = async () => {
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/aha-instructor-training",
+  });
+  const serviceSchema = getServiceSchema({
+    name: "AHA Instructor Training",
+    description:
+      "Instructor development and certification preparation for AHA BLS and Heartsaver instructors.",
+    path: "/aha-instructor-training",
+    serviceType: "Instructor Certification Training",
+    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    audienceType: "Current provider-level cardholders pursuing instructor certification",
+  });
+  const faqSchema = getFAQSchema(instructorTrainingFAQs);
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "AHA Instructor Training",
+      url: "https://tayloredinstruction.com/aha-instructor-training",
+    },
+  ]);
+
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <AhaInstructorTrainingPageContent />
+    </>
+  );
+};
 
 export default AhaInstructorTrainingPage;

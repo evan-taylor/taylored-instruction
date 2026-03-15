@@ -1,68 +1,76 @@
 "use cache";
 
-import type { Metadata } from "next";
 import AlignmentPageContent from "@/components/AlignmentPageContent";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Instructor Alignment",
-  description: "Partner with Taylored Instruction - Red Cross & AHA Support",
+const pageTitle =
+  "Instructor Alignment with Taylored Instruction | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "Align with Taylored Instruction as an independent CPR, First Aid, BLS, or Lifeguard instructor and receive support from a Red Cross LTP and AHA-aligned training site.";
+
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/alignment",
+  keywords: [
+    "instructor alignment Vancouver WA",
+    "CPR instructor affiliation program",
+    "AHA training site alignment",
+    "Red Cross LTP instructor support",
+    "independent CPR instructor resources",
+    "lifeguard instructor alignment support",
+    "instructor alignment Clark County WA",
+    "instructor alignment San Luis Obispo CA",
+  },
+  image: {
+    title: "Instructor Alignment",
+    description: "Partner with Taylored Instruction for instructor support",
+  },
 });
 
-export const metadata: Metadata = {
-  title:
-    "Instructor Alignment with Taylored Instruction | Vancouver WA & San Luis Obispo CA - Red Cross & AHA",
-  description:
-    "Align with Taylored Instruction in Vancouver WA, Clark County & San Luis Obispo CA. American Red Cross Licensed Training Provider & AHA Training Site. Strong support for CPR, First Aid & Lifeguard instructors. Enhance your training courses with professional resources.",
-  keywords: [
-    "Instructor alignment Taylored Instruction",
-    "Teach with Taylored Instruction",
-    "CPR instructor affiliation Vancouver WA",
-    "First Aid instructor alignment",
-    "Lifeguard instructor opportunities Vancouver WA",
-    "AHA Training Site alignment Vancouver WA",
-    "Red Cross LTP alignment Vancouver WA",
-    "Join Taylored Instruction team",
-    "Safety training instructor partnership",
-    "Clark County instructor alignment",
-    "Instructor alignment San Luis Obispo",
-    "Red Cross instructor support",
-    "AHA instructor alignment",
-    "CPR instructor resources",
-    "Teach CPR Vancouver WA",
-    "Independent instructor support",
-  ],
-  alternates: {
-    canonical: "https://tayloredinstruction.com/alignment",
-  },
-  openGraph: {
-    title:
-      "Instructor Alignment with Taylored Instruction | Vancouver WA & San Luis Obispo CA",
+const AlignmentPage = async () => {
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/alignment",
+  });
+  const alignmentServiceSchema = getServiceSchema({
+    name: "Instructor Alignment and Administrative Support",
     description:
-      "Align with Taylored Instruction to enhance your CPR, First Aid, or Lifeguard training courses. Red Cross & AHA support in Vancouver, WA & San Luis Obispo, CA.",
-    url: "https://tayloredinstruction.com/alignment",
-    siteName: "Taylored Instruction",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Instructor Alignment - Taylored Instruction",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "Instructor Alignment with Taylored Instruction | Vancouver WA & San Luis Obispo CA",
-    description:
-      "Align with Taylored Instruction to enhance your training courses. Red Cross & AHA support available.",
-    images: [ogImageUrl],
-  },
-};
+      "Instructor alignment services for CPR, First Aid, BLS, and Lifeguard instructors, including operational guidance and certification processing support.",
+    path: "/alignment",
+    serviceType: "Instructor Alignment Program",
+    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    audienceType: "Independent and organizational instructors",
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    { name: "Instructor Alignment", url: "https://tayloredinstruction.com/alignment" },
+  ]);
 
-const AlignmentPage = async () => <AlignmentPageContent />;
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(alignmentServiceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <AlignmentPageContent />
+    </>
+  );
+};
 
 export default AlignmentPage;

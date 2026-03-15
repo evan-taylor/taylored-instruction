@@ -1,62 +1,55 @@
 "use cache";
 
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Terms and Conditions",
-  description: "Course Bookings, Refunds & Policies",
-});
+const pageTitle = "Terms and Conditions | Taylored Instruction";
+const pageDescription =
+  "Read terms and conditions for course bookings, rescheduling, refunds, liability, and media consent at Taylored Instruction LLC.";
 
-export const metadata: Metadata = {
-  title: "Terms and Conditions | Taylored Instruction",
-  description:
-    "Read the terms and conditions for course bookings, refunds, liability, and media consent at Taylored Instruction LLC.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/terms",
   keywords: [
     "Taylored Instruction terms and conditions",
-    "Terms of service Taylored Instruction",
-    "Course booking terms",
-    "Cancellation policy CPR course",
-    "Refund policy Taylored Instruction",
-    "Liability waiver CPR training",
-    "Media consent training",
-    "eLearning policy",
-    "Late arrival policy course",
-    "Taylored Instruction policies",
+    "CPR class cancellation policy",
+    "CPR course rescheduling policy",
+    "training liability waiver terms",
   ],
-  openGraph: {
-    title: "Terms and Conditions | Taylored Instruction",
-    description:
-      "Read the terms and conditions for course bookings, refunds, liability, and media consent.",
-    url: "https://tayloredinstruction.com/terms",
-    siteName: "Taylored Instruction",
-    type: "website",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Terms and Conditions - Taylored Instruction",
-      },
-    ],
+  image: {
+    title: "Terms and Conditions",
+    description: "Course booking, refund, and policy terms",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Terms and Conditions | Taylored Instruction",
-    description:
-      "Read the terms and conditions for course bookings, refunds, liability, and media consent.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/terms",
-  },
-};
+});
 
 export default async function TermsPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/terms",
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    { name: "Terms", url: "https://tayloredinstruction.com/terms" },
+  ]);
+
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
       {/* Hero/Title Section */}
       <section className="relative py-16 md:py-24">
         <div className="container relative mx-auto px-4 text-center">

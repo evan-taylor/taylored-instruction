@@ -1,69 +1,85 @@
 "use cache";
 
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import { Button } from "@/components/ui/Button";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Lifeguarding Instructor Trainer",
-  description: "On-Site Red Cross Instructor Training",
-  type: "lifeguarding",
-});
+const pageTitle =
+  "Red Cross Lifeguarding Instructor Trainer | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "On-site Red Cross Lifeguarding Instructor Trainer services for aquatic facilities, schools, and organizations in Vancouver WA, Portland metro, and San Luis Obispo County.";
 
-export const metadata: Metadata = {
-  title:
-    "Red Cross Lifeguarding Instructor Trainer | Vancouver, WA & San Luis Obispo",
-  description:
-    "American Red Cross Lifeguarding Instructor Trainer available to travel for on-site Lifeguarding Instructor courses. Serving Vancouver, WA; San Luis Obispo, CA; and surrounding areas.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/lifeguarding-instructor-trainer",
+  ogType: "article",
   keywords: [
-    "Lifeguarding Instructor Trainer",
-    "Red Cross Instructor Trainer",
-    "Lifeguard Instructor Trainer Vancouver WA",
-    "Lifeguard Instructor Trainer San Luis Obispo",
-    "On-site lifeguard instructor training",
-    "Aquatic safety training for facilities",
-    "University lifeguard instructor course",
+    "lifeguarding instructor trainer",
+    "Red Cross instructor trainer",
+    "on-site lifeguard instructor training",
+    "aquatic facility instructor development",
+    "lifeguard instructor trainer Vancouver WA",
+    "lifeguard instructor trainer San Luis Obispo CA",
+    "municipal aquatics instructor training",
+    "university lifeguard instructor courses",
   ],
-  openGraph: {
-    title:
-      "Red Cross Lifeguarding Instructor Trainer | Vancouver, WA & San Luis Obispo",
-    description:
-      "ARC Lifeguarding Instructor Trainer available to travel for on-site Lifeguarding Instructor courses. Serving Vancouver, WA; San Luis Obispo, CA; and surrounding areas.",
-    url: "https://tayloredinstruction.com/lifeguarding-instructor-trainer/",
-    siteName: "Taylored Instruction",
-    type: "article",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Instructor Trainer",
-      },
-    ],
+  image: {
+    title: "Lifeguarding Instructor Trainer",
+    description: "On-site Red Cross instructor trainer services",
+    type: "lifeguarding",
   },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "Red Cross Lifeguarding Instructor Trainer | Vancouver, WA & San Luis Obispo",
-    description:
-      "ARC Lifeguarding Instructor Trainer available to travel for on-site Lifeguarding Instructor courses.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical:
-      "https://www.tayloredinstruction.com/lifeguarding-instructor-trainer/",
-  },
-};
+});
 
 export default async function Page() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/lifeguarding-instructor-trainer",
+  });
+  const serviceSchema = getServiceSchema({
+    name: "On-Site Lifeguarding Instructor Trainer Services",
+    description:
+      "Travel-based instructor trainer services for organizations building or expanding Red Cross Lifeguarding Instructor teams.",
+    path: "/lifeguarding-instructor-trainer",
+    serviceType: "Instructor Trainer Services",
+    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    audienceType: "Aquatic facilities, schools, and municipalities",
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "Instructor Trainer",
+      url: "https://tayloredinstruction.com/lifeguarding-instructor-trainer",
+    },
+  ]);
+
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-12">
-      <h1 className="mb-6 font-bold text-3xl md:text-4xl">
-        Red Cross Lifeguarding Instructor Trainer — Vancouver, WA & San Luis
-        Obispo
-      </h1>
+    <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <div className="container mx-auto max-w-4xl px-4 py-12">
+        <h1 className="mb-6 font-bold text-3xl md:text-4xl">
+          Red Cross Lifeguarding Instructor Trainer — Vancouver, WA & San Luis
+          Obispo
+        </h1>
       <p className="mb-6 text-gray-700">
         As a certified American Red Cross Lifeguarding Instructor Trainer, I
         prepare and authorize Lifeguarding Instructors to teach Red Cross
@@ -158,10 +174,11 @@ export default async function Page() {
         </Button>
       </div>
 
-      <p className="mt-8 text-gray-500 text-xs">
-        Note: All training is delivered in alignment with the American Red Cross
-        Lifeguarding program.
-      </p>
-    </div>
+        <p className="mt-8 text-gray-500 text-xs">
+          Note: All training is delivered in alignment with the American Red
+          Cross Lifeguarding program.
+        </p>
+      </div>
+    </>
   );
 }

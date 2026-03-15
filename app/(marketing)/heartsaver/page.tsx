@@ -1,81 +1,53 @@
 "use cache";
 
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import HeartsaverPageContent from "@/components/HeartsaverPageContent";
+import { getFAQSchema, heartsaverFAQs } from "@/lib/faqSchema";
+import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
   getHeartsaverCourseSchema,
+  getWebPageSchema,
 } from "@/lib/structuredData";
-import { generateOgImageUrl } from "@/lib/utils";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "AHA Heartsaver First Aid CPR AED",
-  description: "Workplace Certification in Vancouver WA & San Luis Obispo CA",
-  type: "heartsaver",
-});
+const pageTitle =
+  "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "American Heart Association Heartsaver First Aid CPR AED certification in Vancouver WA, Clark County, and San Luis Obispo CA for workplace teams and community learners.";
 
-export const metadata: Metadata = {
-  title:
-    "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA - Workplace Certification",
-  description:
-    "American Heart Association Heartsaver® First Aid, CPR & AED certification in Vancouver WA, Clark County, and San Luis Obispo CA. Perfect for workplace teams, schools, childcare providers & personal preparedness. Blended learning available.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/heartsaver",
+  ogType: "article",
   keywords: [
-    "Heartsaver CPR AED Vancouver WA",
-    "AHA Heartsaver certification",
-    "First Aid training Vancouver WA",
-    "CPR for non-medical personnel",
-    "AED for lay responders",
-    "Workplace first aid CPR",
-    "Community CPR classes",
-    "Infant child CPR Vancouver WA",
-    "Blended learning Heartsaver",
-    "Taylored Instruction Heartsaver",
-    "Clark County Heartsaver",
-    "Heartsaver San Luis Obispo",
-    "Heartsaver certification San Luis Obispo CA",
-    "Childcare CPR certification",
-    "Daycare CPR training Vancouver",
-    "School CPR training",
-    "Heartsaver Total",
-    "Heartsaver K-12",
-    "Heartsaver Portland OR",
-    "Heartsaver Camas WA",
-    "SLO County Heartsaver",
+    "AHA Heartsaver class Vancouver WA",
+    "Heartsaver first aid CPR AED certification",
+    "CPR class for teachers and coaches",
+    "childcare CPR first aid certification",
+    "workplace CPR certification class",
+    "Heartsaver blended learning class",
+    "Heartsaver class San Luis Obispo CA",
+    "community CPR class Clark County WA",
   ],
-  openGraph: {
-    title:
-      "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA",
+  image: {
+    title: "AHA Heartsaver First Aid CPR AED",
     description:
-      "American Heart Association Heartsaver® certification in Vancouver WA and San Luis Obispo CA. Perfect for workplace teams, schools, and personal preparedness.",
-    url: "https://tayloredinstruction.com/heartsaver",
-    siteName: "Taylored Instruction",
-    type: "article",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "AHA Heartsaver CPR AED Training - Taylored Instruction",
-      },
-    ],
+      "Workplace and community Heartsaver certification in Vancouver WA and San Luis Obispo CA",
+    type: "heartsaver",
   },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA",
-    description:
-      "American Heart Association Heartsaver® certification for workplace teams, schools, and personal preparedness. Blended learning available.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/heartsaver",
-  },
-};
+});
 
 export default async function HeartsaverPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/heartsaver",
+  });
+  const faqSchema = getFAQSchema(heartsaverFAQs);
+
   // Generate structured data
   const courseSchema = getHeartsaverCourseSchema();
   const breadcrumbSchema = getBreadcrumbSchema([
@@ -89,11 +61,19 @@ export default async function HeartsaverPage() {
   return (
     <>
       <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
         dangerouslySetInnerHTML={generateJSONLD(courseSchema)}
         type="application/ld+json"
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
         type="application/ld+json"
       />
       <HeartsaverPageContent />

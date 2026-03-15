@@ -10,6 +10,8 @@ export default function robots(): MetadataRoute.Robots {
           "/api/",
           "/admin/",
           "/my-account/",
+          "/ecards/",
+          "/instructor-resources/",
           "/auth/",
           "/login/",
           "/_next/",
@@ -19,14 +21,31 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/api/", "/admin/", "/my-account/", "/auth/", "/login/"],
+        disallow: [
+          "/api/",
+          "/admin/",
+          "/my-account/",
+          "/ecards/",
+          "/instructor-resources/",
+          "/auth/",
+          "/login/",
+        ],
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/api/", "/admin/", "/my-account/", "/auth/", "/login/"],
+        disallow: [
+          "/api/",
+          "/admin/",
+          "/my-account/",
+          "/ecards/",
+          "/instructor-resources/",
+          "/auth/",
+          "/login/",
+        ],
       },
     ],
+    host: "https://tayloredinstruction.com",
     sitemap: "https://tayloredinstruction.com/sitemap.xml",
   };
 }

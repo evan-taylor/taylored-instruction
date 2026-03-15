@@ -1,68 +1,88 @@
 "use cache";
 
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import LifeguardingInstructorPageContent from "@/components/LifeguardingInstructorPageContent";
-import { generateOgImageUrl } from "@/lib/utils";
+import { getFAQSchema, instructorTrainingFAQs } from "@/lib/faqSchema";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Lifeguarding Instructor Course",
-  description: "Become a Certified Red Cross Lifeguard Instructor",
-  type: "lifeguarding",
-});
+const pageTitle =
+  "Red Cross Lifeguarding Instructor Course | Vancouver WA & San Luis Obispo CA";
+const pageDescription =
+  "Become a certified American Red Cross Lifeguarding Instructor in Vancouver WA, Clark County, and San Luis Obispo CA with blended and in-person training.";
 
-export const metadata: Metadata = {
-  title:
-    "Red Cross Lifeguarding Instructor Course | Vancouver WA & San Luis Obispo CA - Become a Lifeguard Instructor",
-  description:
-    "Become a certified American Red Cross Lifeguarding Instructor in Vancouver WA, Clark County & San Luis Obispo CA. Teach lifeguard certification courses with Taylored Instruction. Blended learning with online & in-person sessions. CPR for Professional Rescuers & aquatic safety training included.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/lifeguarding-instructor",
+  ogType: "article",
   keywords: [
-    "Lifeguarding Instructor",
-    "Red Cross Lifeguarding Instructor course",
-    "Lifeguard Instructor training",
-    "Vancouver WA lifeguard instructor",
-    "San Luis Obispo lifeguard instructor",
-    "CPR AED for Professional Rescuers",
-    "Aquatic safety instructor training",
-    "Become lifeguard instructor",
-    "Teach lifeguarding",
-    "LGI course",
-    "Lifeguard Instructor certification",
-    "Red Cross LGI Vancouver",
-    "Lifeguard Instructor Clark County",
-    "Teach aquatic safety",
+    "Red Cross lifeguarding instructor course",
+    "LGI course Vancouver WA",
+    "lifeguard instructor training Clark County",
+    "aquatic safety instructor certification",
+    "CPR AED for professional rescuers instructor",
+    "lifeguarding instructor course San Luis Obispo CA",
+    "teach lifeguarding classes",
+    "become lifeguard instructor",
   ],
-  openGraph: {
-    title:
-      "Red Cross Lifeguarding Instructor Course | Vancouver WA & San Luis Obispo CA",
+  image: {
+    title: "Lifeguarding Instructor Course",
     description:
-      "Become a certified American Red Cross Lifeguarding Instructor. Teach lifeguard courses in Vancouver WA & San Luis Obispo CA. Blended learning available.",
-    url: "https://tayloredinstruction.com/lifeguarding-instructor",
-    siteName: "Taylored Instruction",
-    type: "article",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Red Cross Lifeguarding Instructor Course - Taylored Instruction",
-      },
-    ],
+      "Become a certified Red Cross lifeguarding instructor",
+    type: "lifeguarding",
   },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "Red Cross Lifeguarding Instructor Course | Vancouver WA & San Luis Obispo CA",
-    description:
-      "Become a certified American Red Cross Lifeguarding Instructor. Teach lifeguard courses today!",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/lifeguarding-instructor",
-  },
-};
+});
 
 export default async function Page() {
   cacheLife("days");
-  return <LifeguardingInstructorPageContent />;
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/lifeguarding-instructor",
+  });
+  const serviceSchema = getServiceSchema({
+    name: "Red Cross Lifeguarding Instructor Training",
+    description:
+      "Instructor development course for candidates pursuing Red Cross Lifeguarding Instructor certification.",
+    path: "/lifeguarding-instructor",
+    serviceType: "Aquatic Instructor Certification Training",
+    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+    audienceType: "Current lifeguards pursuing instructor credentials",
+  });
+  const faqSchema = getFAQSchema(instructorTrainingFAQs);
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    {
+      name: "Lifeguarding Instructor",
+      url: "https://tayloredinstruction.com/lifeguarding-instructor",
+    },
+  ]);
+
+  return (
+    <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(serviceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(faqSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <LifeguardingInstructorPageContent />
+    </>
+  );
 }

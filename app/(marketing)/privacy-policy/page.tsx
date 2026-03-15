@@ -1,60 +1,55 @@
 "use cache";
 
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Privacy Policy",
-  description: "How We Collect, Use & Safeguard Your Information",
-});
+const pageTitle = "Privacy Policy | Taylored Instruction";
+const pageDescription =
+  "Learn how Taylored Instruction collects, uses, and safeguards your personal information.";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy | Taylored Instruction",
-  description:
-    "Learn how Taylored Instruction collects, uses, and safeguards your personal information.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/privacy-policy",
   keywords: [
     "Taylored Instruction privacy policy",
-    "Privacy policy Taylored Instruction",
-    "Data privacy Taylored Instruction",
-    "Information collection policy",
-    "Data usage policy",
-    "SMS privacy policy",
-    "Website privacy terms",
-    "Personal information protection",
+    "CPR training company privacy policy",
+    "SMS privacy policy Taylored Instruction",
+    "student data privacy policy",
   ],
-  openGraph: {
-    title: "Privacy Policy | Taylored Instruction",
-    description:
-      "Learn how Taylored Instruction collects, uses, and safeguards your personal information.",
-    url: "https://tayloredinstruction.com/privacy-policy",
-    siteName: "Taylored Instruction",
-    type: "website",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Privacy Policy - Taylored Instruction",
-      },
-    ],
+  image: {
+    title: "Privacy Policy",
+    description: "How Taylored Instruction protects your information",
   },
-  twitter: {
-    card: "summary_large_image",
-    title: "Privacy Policy | Taylored Instruction",
-    description:
-      "Learn how Taylored Instruction collects, uses, and safeguards your personal information.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/privacy-policy",
-  },
-};
+});
 
 export default async function PrivacyPolicyPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/privacy-policy",
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    { name: "Privacy Policy", url: "https://tayloredinstruction.com/privacy-policy" },
+  ]);
+
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
       {/* Hero/Title Section */}
       <section className="relative py-16 md:py-24">
         <div className="container relative mx-auto px-4 text-center">

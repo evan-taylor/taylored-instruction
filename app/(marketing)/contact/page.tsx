@@ -1,78 +1,86 @@
 "use cache";
 
 import { Mail, Phone } from "lucide-react";
-import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm"; // Placeholder for the form component
-import { generateOgImageUrl } from "@/lib/utils";
+import { buildPageMetadata } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getContactPageSchema,
+  getServiceSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const ogImageUrl = generateOgImageUrl({
-  title: "Contact Taylored Instruction",
-  description: "CPR, BLS & Lifeguard Training Support",
-});
+const pageTitle =
+  "Contact Taylored Instruction | CPR, BLS, First Aid & Lifeguard Training";
+const pageDescription =
+  "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver WA and San Luis Obispo CA. Call (360) 207-1844.";
 
 // --- Page Metadata ---
-export const metadata: Metadata = {
-  title:
-    "Contact Taylored Instruction | CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA",
-  description:
-    "Contact Taylored Instruction for CPR, BLS, First Aid & Lifeguard training inquiries in Vancouver WA, Clark County & San Luis Obispo CA. Call (360) 207-1844 or email evan@tayloredinstruction.com. Expert safety training support available.",
+export const metadata = buildPageMetadata({
+  title: pageTitle,
+  description: pageDescription,
+  path: "/contact",
   keywords: [
-    "Contact Taylored Instruction",
-    "Taylored Instruction phone number",
-    "Taylored Instruction email",
-    "CPR training inquiry Vancouver WA",
-    "Lifeguard course questions Vancouver WA",
-    "Safety training support",
-    "Vancouver WA CPR contact",
-    "Get in touch Taylored Instruction",
-    "BLS course contact",
-    "First Aid training contact",
-    "Contact CPR instructor Vancouver",
-    "San Luis Obispo CPR contact",
-    "Clark County CPR inquiry",
-    "Schedule CPR training",
-    "CPR class registration",
-    "Contact Evan Taylor",
-    "360-207-1844",
+    "contact CPR instructor Vancouver WA",
+    "CPR class scheduling Vancouver WA",
+    "BLS training contact Clark County WA",
+    "first aid course registration support",
+    "lifeguard training contact San Luis Obispo CA",
+    "corporate CPR training quote",
+    "AED consultation contact",
+    "call Taylored Instruction",
   ],
-  openGraph: {
-    title:
-      "Contact Taylored Instruction | CPR, BLS & Lifeguard Training Support",
+  image: {
     description:
-      "Contact us for CPR, BLS, First Aid & Lifeguard training inquiries in Vancouver WA & San Luis Obispo CA. Call (360) 207-1844 or email evan@tayloredinstruction.com.",
-    url: "https://tayloredinstruction.com/contact",
-    siteName: "Taylored Instruction",
-    type: "website",
-    images: [
-      {
-        url: ogImageUrl,
-        width: 1200,
-        height: 630,
-        alt: "Contact Taylored Instruction - Expert Safety Training",
-      },
-    ],
+      "Call or email Taylored Instruction for CPR, BLS, First Aid, and Lifeguard classes",
+    title: "Contact Taylored Instruction",
   },
-  twitter: {
-    card: "summary_large_image",
-    title:
-      "Contact Taylored Instruction | CPR, BLS & Lifeguard Training Support",
-    description:
-      "Contact us for CPR, BLS, First Aid & Lifeguard training inquiries. Serving Vancouver WA & San Luis Obispo CA.",
-    images: [ogImageUrl],
-  },
-  alternates: {
-    canonical: "https://tayloredinstruction.com/contact",
-  },
-};
+});
 
 // --- Page Component ---
 export default async function ContactPage() {
   cacheLife("days");
+  const webPageSchema = getWebPageSchema({
+    name: pageTitle,
+    description: pageDescription,
+    path: "/contact",
+  });
+  const contactPageSchema = getContactPageSchema();
+  const contactServiceSchema = getServiceSchema({
+    name: "CPR and Safety Training Consultation",
+    description:
+      "Course consultation, scheduling support, and custom training quotes for CPR, BLS, First Aid, Lifeguarding, and AED programs.",
+    path: "/contact",
+    serviceType: "Training Consultation",
+    areaServed: ["Clark County, WA", "Portland Metro, OR", "San Luis Obispo County, CA"],
+  });
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "https://tayloredinstruction.com" },
+    { name: "Contact", url: "https://tayloredinstruction.com/contact" },
+  ]);
+
   return (
     <>
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(webPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(contactPageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(contactServiceSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
       {/* Hero Section with Background Image */}
       <section className="relative flex min-h-[400px] items-center justify-center md:min-h-[500px]">
         <div className="absolute inset-0 h-full w-full overflow-hidden">

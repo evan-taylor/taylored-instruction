@@ -46,6 +46,7 @@ type LocalBusinessSchema = {
 type OrganizationSchema = {
   "@context": string;
   "@type": string;
+  "@id": string;
   name: string;
   alternateName?: string;
   url: string;
@@ -96,6 +97,7 @@ type CourseSchema = {
 type WebSiteSchema = {
   "@context": string;
   "@type": string;
+  "@id": string;
   name: string;
   url: string;
   potentialAction: {
@@ -106,6 +108,102 @@ type WebSiteSchema = {
     };
     "query-input": string;
   };
+};
+
+type WebPageSchema = {
+  "@context": string;
+  "@type": string;
+  "@id": string;
+  name: string;
+  description: string;
+  url: string;
+  isPartOf: {
+    "@id": string;
+  };
+  about?: {
+    "@id": string;
+  };
+  primaryImageOfPage?: {
+    "@type": string;
+    url: string;
+  };
+  inLanguage: string;
+};
+
+type ServiceSchema = {
+  "@context": string;
+  "@type": string;
+  "@id": string;
+  name: string;
+  serviceType: string;
+  description: string;
+  provider: {
+    "@id": string;
+  };
+  areaServed: Array<{
+    "@type": string;
+    name: string;
+  }>;
+  url: string;
+  audience?: {
+    "@type": string;
+    audienceType: string;
+  };
+  availableChannel?: {
+    "@type": string;
+    serviceUrl: string;
+  };
+};
+
+type ContactPageSchema = {
+  "@context": string;
+  "@type": string;
+  "@id": string;
+  name: string;
+  description: string;
+  url: string;
+  isPartOf: {
+    "@id": string;
+  };
+  about: {
+    "@id": string;
+  };
+  inLanguage: string;
+};
+
+type PersonSchema = {
+  "@context": string;
+  "@type": string;
+  "@id": string;
+  name: string;
+  jobTitle: string;
+  worksFor: {
+    "@id": string;
+  };
+  email: string;
+  telephone: string;
+  url: string;
+};
+
+type ProductSchema = {
+  "@context": string;
+  "@type": string;
+  "@id": string;
+  name: string;
+  description: string;
+  category: string;
+  brand: {
+    "@type": string;
+    name: string;
+  };
+  seller: {
+    "@id": string;
+  };
+  areaServed: Array<{
+    "@type": string;
+    name: string;
+  }>;
+  url: string;
 };
 
 type BreadcrumbSchema = {
@@ -119,10 +217,15 @@ type BreadcrumbSchema = {
   }>;
 };
 
+const BASE_URL = "https://tayloredinstruction.com";
+const WEBSITE_ID = `${BASE_URL}/#website`;
+const ORGANIZATION_ID = `${BASE_URL}/#organization`;
+
 // Organization Schema - Main company information
 export const getOrganizationSchema = (): OrganizationSchema => ({
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
+  "@id": ORGANIZATION_ID,
   name: "Taylored Instruction",
   alternateName: "Taylored Instruction CPR Training",
   url: "https://tayloredinstruction.com",
@@ -258,16 +361,144 @@ export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
 export const getWebSiteSchema = (): WebSiteSchema => ({
   "@context": "https://schema.org",
   "@type": "WebSite",
+  "@id": WEBSITE_ID,
   name: "Taylored Instruction",
-  url: "https://tayloredinstruction.com",
+  url: BASE_URL,
   potentialAction: {
     "@type": "SearchAction",
     target: {
       "@type": "EntryPoint",
-      urlTemplate: "https://tayloredinstruction.com/?s={search_term_string}",
+      urlTemplate: `${BASE_URL}/?s={search_term_string}`,
     },
     "query-input": "required name=search_term_string",
   },
+});
+
+export const getWebPageSchema = (params: {
+  name: string;
+  description: string;
+  path: string;
+  imageUrl?: string;
+}): WebPageSchema => {
+  const url = new URL(params.path, BASE_URL).toString();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "@id": `${url}#webpage`,
+    name: params.name,
+    description: params.description,
+    url,
+    isPartOf: {
+      "@id": WEBSITE_ID,
+    },
+    about: {
+      "@id": ORGANIZATION_ID,
+    },
+    ...(params.imageUrl
+      ? {
+          primaryImageOfPage: {
+            "@type": "ImageObject",
+            url: params.imageUrl,
+          },
+        }
+      : {}),
+    inLanguage: "en-US",
+  };
+};
+
+export const getServiceSchema = (params: {
+  name: string;
+  description: string;
+  path: string;
+  serviceType: string;
+  areaServed: string[];
+  audienceType?: string;
+}): ServiceSchema => {
+  const url = new URL(params.path, BASE_URL).toString();
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "@id": `${url}#service`,
+    name: params.name,
+    serviceType: params.serviceType,
+    description: params.description,
+    provider: {
+      "@id": ORGANIZATION_ID,
+    },
+    areaServed: params.areaServed.map((area) => ({
+      "@type": "AdministrativeArea",
+      name: area,
+    })),
+    url,
+    ...(params.audienceType
+      ? {
+          audience: {
+            "@type": "Audience",
+            audienceType: params.audienceType,
+          },
+        }
+      : {}),
+    availableChannel: {
+      "@type": "ServiceChannel",
+      serviceUrl: `${BASE_URL}/contact`,
+    },
+  };
+};
+
+export const getContactPageSchema = (): ContactPageSchema => ({
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  "@id": `${BASE_URL}/contact#webpage`,
+  name: "Contact Taylored Instruction",
+  description:
+    "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver, WA and San Luis Obispo, CA.",
+  url: `${BASE_URL}/contact`,
+  isPartOf: {
+    "@id": WEBSITE_ID,
+  },
+  about: {
+    "@id": ORGANIZATION_ID,
+  },
+  inLanguage: "en-US",
+});
+
+export const getAboutPersonSchema = (): PersonSchema => ({
+  "@context": "https://schema.org",
+  "@type": "Person",
+  "@id": `${BASE_URL}/about#evan-taylor`,
+  name: "Evan Taylor",
+  jobTitle: "Owner, Instructor Trainer",
+  worksFor: {
+    "@id": ORGANIZATION_ID,
+  },
+  email: "evan@tayloredinstruction.com",
+  telephone: "+1-360-207-1844",
+  url: `${BASE_URL}/about`,
+});
+
+export const getAedProductSchema = (): ProductSchema => ({
+  "@context": "https://schema.org",
+  "@type": "Product",
+  "@id": `${BASE_URL}/aeds#product`,
+  name: "Automated External Defibrillators (AEDs)",
+  description:
+    "AED sales, consultation, and implementation support for workplaces, schools, and community organizations in Southwest Washington and San Luis Obispo County.",
+  category: "Medical Device",
+  brand: {
+    "@type": "Brand",
+    name: "ZOLL, Cardiac Science, and other leading AED manufacturers",
+  },
+  seller: {
+    "@id": ORGANIZATION_ID,
+  },
+  areaServed: [
+    { "@type": "AdministrativeArea", name: "Clark County, WA" },
+    { "@type": "AdministrativeArea", name: "Portland Metro, OR" },
+    { "@type": "AdministrativeArea", name: "San Luis Obispo County, CA" },
+  ],
+  url: `${BASE_URL}/aeds`,
 });
 
 // Course Schemas for different training programs
@@ -293,6 +524,32 @@ export const getBLSCourseSchema = (): CourseSchema => ({
   offers: {
     "@type": "Offer",
     category: "Professional Development",
+    priceCurrency: "USD",
+  },
+});
+
+export const getRedCrossBLSCourseSchema = (): CourseSchema => ({
+  "@context": "https://schema.org",
+  "@type": "Course",
+  name: "American Red Cross Basic Life Support (BLS)",
+  description:
+    "American Red Cross Basic Life Support course for healthcare providers, first responders, and professional rescuers in Vancouver, WA and San Luis Obispo, CA.",
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: BASE_URL,
+  },
+  courseCode: "ARC-BLS",
+  educationalCredentialAwarded: "Red Cross Basic Life Support Certification",
+  hasCourseInstance: {
+    "@type": "CourseInstance",
+    courseMode: ["Blended", "In-Person"],
+    duration: "PT4H",
+    inLanguage: "en-US",
+  },
+  offers: {
+    "@type": "Offer",
+    category: "Healthcare Training",
     priceCurrency: "USD",
   },
 });
