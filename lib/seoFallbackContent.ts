@@ -66,7 +66,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Clark County",
     state: "WA",
     nearbyAreas: ["Salmon Creek", "Hazel Dell", "Camas", "Washougal"],
-    priorities: ["healthcare staffing", "workplace preparedness", "family safety"],
+    priorities: [
+      "healthcare staffing",
+      "workplace preparedness",
+      "family safety",
+    ],
     seoWeight: "primary",
   },
   {
@@ -86,7 +90,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Clark County",
     state: "WA",
     nearbyAreas: ["Prune Hill", "Washougal", "East Vancouver"],
-    priorities: ["parent and caregiver training", "education staffing", "team renewals"],
+    priorities: [
+      "parent and caregiver training",
+      "education staffing",
+      "team renewals",
+    ],
     seoWeight: "primary",
   },
   {
@@ -96,7 +104,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Clark County",
     state: "WA",
     nearbyAreas: ["Camas", "East County", "Columbia corridor"],
-    priorities: ["outdoor recreation safety", "workplace training", "youth program readiness"],
+    priorities: [
+      "outdoor recreation safety",
+      "workplace training",
+      "youth program readiness",
+    ],
     seoWeight: "primary",
   },
   {
@@ -106,7 +118,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Clark County",
     state: "WA",
     nearbyAreas: ["Hockinson", "Ridgefield", "North County"],
-    priorities: ["growing residential demand", "small business safety", "school district staffing"],
+    priorities: [
+      "growing residential demand",
+      "small business safety",
+      "school district staffing",
+    ],
     seoWeight: "primary",
   },
   {
@@ -116,7 +132,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Clark County",
     state: "WA",
     nearbyAreas: ["Salmon Creek", "Battle Ground", "I-5 corridor"],
-    priorities: ["new employer onboarding", "staff renewal cycles", "community event safety"],
+    priorities: [
+      "new employer onboarding",
+      "staff renewal cycles",
+      "community event safety",
+    ],
     seoWeight: "primary",
   },
   {
@@ -126,7 +146,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Clark County",
     state: "WA",
     nearbyAreas: ["North Vancouver", "Salmon Creek", "Downtown Vancouver"],
-    priorities: ["retail and service teams", "community centers", "caregiver readiness"],
+    priorities: [
+      "retail and service teams",
+      "community centers",
+      "caregiver readiness",
+    ],
     seoWeight: "primary",
   },
   {
@@ -136,7 +160,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "Portland Metro",
     state: "OR/WA",
     nearbyAreas: ["North Portland", "Delta Park", "Jantzen Beach"],
-    priorities: ["cross-river employers", "multi-site team training", "healthcare renewals"],
+    priorities: [
+      "cross-river employers",
+      "multi-site team training",
+      "healthcare renewals",
+    ],
     seoWeight: "primary",
   },
   {
@@ -156,7 +184,11 @@ const fallbackLocations: FallbackLocation[] = [
     region: "San Luis Obispo County",
     state: "CA",
     nearbyAreas: ["Shell Beach", "Arroyo Grande", "Grover Beach"],
-    priorities: ["tourism operations", "seasonal workforce onboarding", "waterfront safety"],
+    priorities: [
+      "tourism operations",
+      "seasonal workforce onboarding",
+      "waterfront safety",
+    ],
     seoWeight: "secondary",
   },
 ];
@@ -345,4 +377,3 @@ export const getFallbackSeoPageSummaries = () =>
     updatedAt: page.updatedAt,
     publishedAt: page.publishedAt,
   }));
-

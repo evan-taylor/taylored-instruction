@@ -63,7 +63,10 @@ const getServiceLineCount = (resources: ResourceCard[]) =>
 export default async function ResourcesPage() {
   cacheLife("hours");
 
-  const convexResources = await fetchQuery(api.seoContent.listPublishedPages, {})
+  const convexResources = await fetchQuery(
+    api.seoContent.listPublishedPages,
+    {}
+  )
     .then((pages) => pages)
     .catch(() => null);
   const resources =
