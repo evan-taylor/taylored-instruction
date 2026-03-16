@@ -104,6 +104,97 @@ export default async function ResourcesPage() {
       },
     })),
   };
+  const resourcesSection = (() => {
+    if (hasResourceQueryError) {
+      return (
+        <div className="mx-auto max-w-3xl rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
+          <h2 className="font-semibold text-2xl text-gray-900">
+            Resource library is temporarily unavailable
+          </h2>
+          <p className="mt-3 text-gray-700 leading-relaxed">
+            We couldn&apos;t load the resource library right now. Please try
+            again shortly or contact us directly and we&apos;ll help you find
+            what you need.
+          </p>
+          <div className="mt-6">
+            <Link
+              className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
+              href="/contact"
+            >
+              Contact Taylored Instruction
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    if (resources.length === 0) {
+      return (
+        <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
+          <h2 className="font-semibold text-2xl text-gray-900">
+            New resources are being prepared
+          </h2>
+          <p className="mt-3 text-gray-700 leading-relaxed">
+            We are updating this library with published guides. In the
+            meantime, you can reach us directly for course-specific questions.
+          </p>
+          <div className="mt-6">
+            <Link
+              className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
+              href="/contact"
+            >
+              Contact Taylored Instruction
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
+        {resources.map((resource) => (
+          <article
+            className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+            key={resource.slug}
+          >
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 text-xs">
+                {resource.locationLabel}
+              </span>
+              <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-700 text-xs">
+                {resource.serviceLine}
+              </span>
+              <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">
+                {resource.readingTimeMinutes} min read
+              </span>
+            </div>
+            <h2 className="mt-4 font-semibold text-2xl text-gray-900 leading-tight">
+              <Link
+                className="hover:text-primary"
+                href={`/resources/${resource.slug}`}
+              >
+                {resource.title}
+              </Link>
+            </h2>
+            <p className="mt-3 text-gray-700 leading-relaxed">
+              {resource.excerpt}
+            </p>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-gray-500 text-sm">
+                Updated {formatUpdatedDate(resource.updatedAt)}
+              </span>
+              <Link
+                className="font-medium text-primary text-sm hover:underline"
+                href={`/resources/${resource.slug}`}
+              >
+                Read article
+              </Link>
+            </div>
+          </article>
+        ))}
+      </div>
+    );
+  })();
 
   return (
     <div className="bg-white">
@@ -145,7 +236,8 @@ export default async function ResourcesPage() {
             <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
               <MapPin className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
-                {hasResourceQueryError ? "—" : getCityCount(resources)} locations
+                {hasResourceQueryError ? "—" : getCityCount(resources)}{" "}
+                locations
               </p>
               <p className="text-gray-600 text-sm">City-specific coverage</p>
             </div>
@@ -164,87 +256,7 @@ export default async function ResourcesPage() {
       </section>
 
       <section className="container mx-auto px-4 py-12">
-        {hasResourceQueryError ? (
-          <div className="mx-auto max-w-3xl rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
-            <h2 className="font-semibold text-2xl text-gray-900">
-              Resource library is temporarily unavailable
-            </h2>
-            <p className="mt-3 text-gray-700 leading-relaxed">
-              We couldn&apos;t load the resource library right now. Please try
-              again shortly or contact us directly and we&apos;ll help you find
-              what you need.
-            </p>
-            <div className="mt-6">
-              <Link
-                className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
-                href="/contact"
-              >
-                Contact Taylored Instruction
-              </Link>
-            </div>
-          </div>
-        ) : resources.length === 0 ? (
-          <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
-            <h2 className="font-semibold text-2xl text-gray-900">
-              New resources are being prepared
-            </h2>
-            <p className="mt-3 text-gray-700 leading-relaxed">
-              We are updating this library with published guides. In the
-              meantime, you can reach us directly for course-specific questions.
-            </p>
-            <div className="mt-6">
-              <Link
-                className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
-                href="/contact"
-              >
-                Contact Taylored Instruction
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
-            {resources.map((resource) => (
-              <article
-                className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
-                key={resource.slug}
-              >
-                <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 text-xs">
-                    {resource.locationLabel}
-                  </span>
-                  <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-700 text-xs">
-                    {resource.serviceLine}
-                  </span>
-                  <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">
-                    {resource.readingTimeMinutes} min read
-                  </span>
-                </div>
-                <h2 className="mt-4 font-semibold text-2xl text-gray-900 leading-tight">
-                  <Link
-                    className="hover:text-primary"
-                    href={`/resources/${resource.slug}`}
-                  >
-                    {resource.title}
-                  </Link>
-                </h2>
-                <p className="mt-3 text-gray-700 leading-relaxed">
-                  {resource.excerpt}
-                </p>
-                <div className="mt-4 flex items-center justify-between">
-                  <span className="text-gray-500 text-sm">
-                    Updated {formatUpdatedDate(resource.updatedAt)}
-                  </span>
-                  <Link
-                    className="font-medium text-primary text-sm hover:underline"
-                    href={`/resources/${resource.slug}`}
-                  >
-                    Read article
-                  </Link>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+        {resourcesSection}
       </section>
     </div>
   );
