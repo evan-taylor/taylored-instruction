@@ -29,7 +29,7 @@ const getLegacyInstructorRedirectUrl = (
   }
 
   const redirectUrl = new URL("/aha-instructor-training", requestUrl);
-  for (const [key, value] of url.searchParams) {
+  for (const [key, value] of Array.from(url.searchParams.entries())) {
     if (key !== "taxonomy" && key !== "term") {
       redirectUrl.searchParams.append(key, value);
     }
