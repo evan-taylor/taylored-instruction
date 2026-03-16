@@ -62,11 +62,12 @@ const getServiceLineCount = (resources: ResourceCard[]) =>
   new Set(resources.map((resource) => resource.serviceLine)).size;
 
 export default async function ResourcesPage() {
-  const resources = await fetchQuery(api.seoContent.listPublishedPages, {}).catch(
-    (_error) => {
-      throw new Error("Published resources are temporarily unavailable.");
-    }
-  );
+  const resources = await fetchQuery(
+    api.seoContent.listPublishedPages,
+    {}
+  ).catch((_error) => {
+    throw new Error("Published resources are temporarily unavailable.");
+  });
 
   if (resources.length > 0) {
     cacheLife("hours");
