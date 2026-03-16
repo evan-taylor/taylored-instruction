@@ -37,9 +37,10 @@ const resourcePageMetadata = {
 } as const;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const resources = await fetchQuery(api.seoContent.listPublishedPages, {}).catch(
-    (_error) => null
-  );
+  const resources = await fetchQuery(
+    api.seoContent.listPublishedPages,
+    {}
+  ).catch((_error) => null);
 
   return buildPageMetadata({
     ...resourcePageMetadata,
