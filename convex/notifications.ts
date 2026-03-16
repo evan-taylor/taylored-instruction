@@ -14,6 +14,14 @@ const ADMIN_NOTIF_EMAIL =
 const WEBSITE_NAME = process.env.WEBSITE_NAME || "Taylored Instruction";
 const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID;
 
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
 export const sendNewUserAdminNotification = internalAction({
   args: {
     userId: v.id("users"),
@@ -28,6 +36,8 @@ export const sendNewUserAdminNotification = internalAction({
     }
 
     const userEmail = args.userEmail || "No email provided";
+    const escapedUserId = escapeHtml(args.userId);
+    const escapedUserEmail = escapeHtml(userEmail);
 
     try {
       const resend = new Resend(RESEND_API_KEY);
@@ -36,10 +46,10 @@ export const sendNewUserAdminNotification = internalAction({
         <h1>New Instructor Signup</h1>
         <p>A new instructor has signed up:</p>
         <ul>
-          <li><strong>User ID:</strong> ${args.userId}</li>
-          <li><strong>Email:</strong> ${userEmail}</li>
+          <li><strong>User ID:</strong> ${escapedUserId}</li>
+          <li><strong>Email:</strong> ${escapedUserEmail}</li>
         </ul>
-        <p>You can manage this instructor and others by visiting the <a href="https://www.tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
+        <p>You can manage this instructor and others by visiting the <a href="https://tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
       `;
 
       const result = await resend.emails.send({

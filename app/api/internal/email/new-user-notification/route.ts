@@ -14,6 +14,14 @@ const NewUserNotificationSchema = z.object({
   userEmail: z.string().optional(),
 });
 
+const escapeHtml = (value: string): string =>
+  value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+
 export async function POST(req: NextRequest) {
   try {
     const secretHeader = req.headers.get("x-internal-email-secret");
@@ -47,6 +55,8 @@ export async function POST(req: NextRequest) {
 
     const { userId, userEmail } = validatedFields.data;
     const displayEmail = userEmail || "No email provided";
+    const escapedUserId = escapeHtml(userId);
+    const escapedDisplayEmail = escapeHtml(displayEmail);
 
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
@@ -65,10 +75,10 @@ export async function POST(req: NextRequest) {
         <h1>New Instructor Signup</h1>
         <p>A new instructor has signed up:</p>
         <ul>
-          <li><strong>User ID:</strong> ${userId}</li>
-          <li><strong>Email:</strong> ${displayEmail}</li>
+          <li><strong>User ID:</strong> ${escapedUserId}</li>
+          <li><strong>Email:</strong> ${escapedDisplayEmail}</li>
         </ul>
-        <p>You can manage this instructor and others by visiting the <a href="https://www.tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
+        <p>You can manage this instructor and others by visiting the <a href="https://tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
       `;
 
       const emailData = await getResendClient().emails.send({
