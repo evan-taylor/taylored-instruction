@@ -99,13 +99,8 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
           </li>
           <li>
             Fill out an{" "}
-            <a
-              className="text-primary hover:underline"
-              href="/Instructor-Candidate-Application.pdf"
-              rel="noopener noreferrer"
-              target="_blank"
-            >
-              AHA Instructor Candidate Application
+            <a className="text-primary hover:underline" href="/contact">
+              AHA Instructor Candidate Application request
             </a>{" "}
             and send it to Taylored Instruction (
             <a

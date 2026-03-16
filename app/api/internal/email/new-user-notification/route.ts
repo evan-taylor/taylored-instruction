@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
           <li><strong>User ID:</strong> ${userId}</li>
           <li><strong>Email:</strong> ${displayEmail}</li>
         </ul>
-        <p>You can manage this instructor and others by visiting the <a href="https://www.tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
+        <p>You can manage this instructor and others by visiting the <a href="https://tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
       `;
 
       const emailData = await getResendClient().emails.send({

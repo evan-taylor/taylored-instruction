@@ -39,7 +39,7 @@ export const sendNewUserAdminNotification = internalAction({
           <li><strong>User ID:</strong> ${args.userId}</li>
           <li><strong>Email:</strong> ${userEmail}</li>
         </ul>
-        <p>You can manage this instructor and others by visiting the <a href="https://www.tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
+        <p>You can manage this instructor and others by visiting the <a href="https://tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
       `;
 
       const result = await resend.emails.send({

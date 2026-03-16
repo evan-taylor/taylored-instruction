@@ -37,27 +37,21 @@ const FaCprAedInstructorPageContent: React.FC = () => {
         <div className="mb-8 flex flex-col items-center justify-center gap-4 text-center sm:flex-row">
           <Link
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
-            href="/First-Aid-CPR-AED-Instructor-Fact-Sheet.pdf"
-            rel="noopener noreferrer"
-            target="_blank"
+            href="/contact"
           >
-            Course Fact Sheet
+            Request Course Fact Sheet
           </Link>
           <Link
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
-            href="/First-Aid-CPR-AED-Instructor-Manual-Dec-2021.pdf"
-            rel="noopener noreferrer"
-            target="_blank"
+            href="/contact"
           >
-            Instructor Manual
+            Request Instructor Manual
           </Link>
           <Link
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
-            href="/Practice-Teaching-Workbook.pdf"
-            rel="noopener noreferrer"
-            target="_blank"
+            href="/contact"
           >
-            Practice Teaching Workbook
+            Request Practice Teaching Workbook
           </Link>
         </div>
 

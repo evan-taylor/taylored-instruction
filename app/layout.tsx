@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
   description:
     "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified. Serving Clark County, Portland metro, and SLO County.",
+  alternates: {
+    canonical: "/",
+  },
   keywords: [
     "CPR training Vancouver WA",
     "BLS certification Vancouver WA",

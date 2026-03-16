@@ -363,7 +363,7 @@ const AlignmentInterestForm: React.FC = () => {
             assistance. Contact support at 360-685-8199. Please review our{" "}
             <a
               className="text-primary hover:underline"
-              href="/privacy-policy/"
+              href="/privacy-policy"
               rel="noopener noreferrer"
               target="_blank"
             >

@@ -37,19 +37,15 @@ const LifeguardingPageContent: React.FC = () => {
         <div className="mb-8 flex flex-col items-center justify-center gap-4 text-center sm:flex-row">
           <Link
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
-            href="/Lifeguarding-Fact-Sheet.pdf"
-            rel="noopener noreferrer"
-            target="_blank"
+            href="/contact"
           >
-            Course Fact Sheet
+            Request Course Fact Sheet
           </Link>
           <Link
             className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm shadow-sm transition-colors hover:bg-gray-50" // Extracted from HTML
-            href="/LG-Ebook-Link-r.24.pdf"
-            rel="noopener noreferrer"
-            target="_blank"
+            href="/contact"
           >
-            Ebook Access Instructions
+            Request eBook Access Instructions
           </Link>
         </div>
 
@@ -189,7 +185,7 @@ const LifeguardingPageContent: React.FC = () => {
             If you have any questions, please{" "}
             <Link
               className="font-medium text-primary hover:underline"
-              href="/contact/"
+              href="/contact"
             >
               contact us
             </Link>

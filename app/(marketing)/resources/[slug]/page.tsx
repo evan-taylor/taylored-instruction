@@ -7,10 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { api } from "@/convex/_generated/api";
 import { buildPageMetadata } from "@/lib/seo";
-import {
-  getFallbackSeoPageBySlug,
-  getFallbackSeoPages,
-} from "@/lib/seoFallbackContent";
+import { getFallbackSeoPageBySlug } from "@/lib/seoFallbackContent";
 import { generateJSONLD, getBreadcrumbSchema } from "@/lib/structuredData";
 
 type ResourcePageProps = {
@@ -63,35 +60,24 @@ const getResourcePage = async (slug: string) => {
   }).catch(() => null);
 
   if (convexPage) {
-    return convexPage;
+    return { isFallback: false as const, page: convexPage };
   }
 
-  return getFallbackSeoPageBySlug(slug);
-};
+  const fallbackPage = getFallbackSeoPageBySlug(slug);
+  if (!fallbackPage) {
+    return null;
+  }
 
-export async function generateStaticParams() {
-  const convexSlugs = await fetchQuery(api.seoContent.getPublishedPageSlugs, {})
-    .then((items) => items)
-    .catch(() => []);
-  const slugs =
-    convexSlugs.length > 0
-      ? convexSlugs
-      : getFallbackSeoPages().map((page) => ({
-          slug: page.slug,
-          updatedAt: page.updatedAt,
-        }));
-  return slugs.map((item) => ({
-    slug: item.slug,
-  }));
-}
+  return { isFallback: true as const, page: fallbackPage };
+};
 
 export async function generateMetadata(
   props: ResourcePageProps
 ): Promise<Metadata> {
   const params = await props.params;
-  const page = await getResourcePage(params.slug);
+  const resource = await getResourcePage(params.slug);
 
-  if (!page) {
+  if (!resource) {
     return buildPageMetadata({
       title: "Resource Not Found",
       description:
@@ -101,12 +87,14 @@ export async function generateMetadata(
     });
   }
 
+  const { isFallback, page } = resource;
   return buildPageMetadata({
     title: page.metaTitle,
     description: page.metaDescription,
     path: `/resources/${page.slug}`,
     ogType: "article",
     keywords: [page.primaryKeyword, ...page.secondaryKeywords],
+    noIndex: isFallback,
     image: {
       title: page.title,
       description: page.metaDescription,
@@ -118,12 +106,13 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
   cacheLife("minutes");
 
   const params = await props.params;
-  const page = await getResourcePage(params.slug);
+  const resource = await getResourcePage(params.slug);
 
-  if (!page) {
+  if (!resource) {
     notFound();
   }
 
+  const { page } = resource;
   const safeCtaHref = sanitizeCtaHref(page.ctaHref);
   const ctaIsExternal = isExternalHref(safeCtaHref);
 

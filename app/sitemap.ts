@@ -1,101 +1,28 @@
-import fs from "node:fs";
-import path from "node:path";
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
-import { getFallbackSeoPages } from "@/lib/seoFallbackContent";
 
-// TODO: Replace with your actual domain
 const baseUrl = "https://tayloredinstruction.com";
-
-// Directories/segments to exclude from the sitemap
-const excludedSegments = [
-  "api", // Exclude API routes
-  "(app)", // Exclude authenticated application routes
-  "(auth)", // Example: Exclude routes in an auth group
-  "opengraph-image", // Exclude opengraph image generation files
-  "twitter-image", // Exclude twitter image generation files
-  "icon", // Exclude icon generation files
-  "apple-icon", // Exclude apple-icon generation files
-  "sitemap", // Exclude the sitemap itself
-  "robots", // Exclude robots.txt generation
-];
-
-const pageFilePrefixes = [
-  "page.tsx",
-  "page.jsx",
-  "page.ts",
-  "page.js",
+const staticRoutePaths = [
+  "/",
+  "/about",
+  "/contact",
+  "/resources",
+  "/bls",
+  "/basic-life-support",
+  "/first-aid-cpr-aed",
+  "/heartsaver",
+  "/lifeguarding",
+  "/corporate-training",
+  "/aeds",
+  "/aha-instructor-training",
+  "/fa-cpr-aed-instructor",
+  "/lifeguarding-instructor",
+  "/lifeguarding-instructor-trainer",
+  "/alignment",
+  "/privacy-policy",
+  "/terms",
 ] as const;
-
-const shouldSkipRelativePath = (relativePath: string): boolean =>
-  excludedSegments.some((segment) => relativePath.includes(segment));
-
-const isRouteGroupSegment = (segment: string): boolean =>
-  segment.startsWith("(") && segment.endsWith(")");
-
-const isDynamicSegment = (segment: string): boolean =>
-  segment.startsWith("[") && segment.endsWith("]");
-
-const isPageFile = (fileName: string): boolean =>
-  pageFilePrefixes.some((prefix) => fileName.startsWith(prefix));
-
-const normalizeRoutePath = (relativePath: string): string => {
-  const directory = path.dirname(relativePath).replace(/\\\\/g, "/");
-
-  const cleanedSegments = directory
-    .split("/")
-    .filter(
-      (segment) =>
-        segment !== "." && segment !== "" && !isRouteGroupSegment(segment)
-    );
-
-  if (cleanedSegments.length === 0) {
-    return "/";
-  }
-
-  if (cleanedSegments.some(isDynamicSegment)) {
-    return "";
-  }
-
-  return `/${cleanedSegments.join("/")}`;
-};
-
-const gatherPageRoutes = (dir: string, baseDir: string): string[] => {
-  const routes: string[] = [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    const relativePath = path.relative(baseDir, fullPath);
-
-    if (shouldSkipRelativePath(relativePath)) {
-      continue;
-    }
-
-    if (entry.isDirectory()) {
-      if (entry.name.startsWith("_")) {
-        continue;
-      }
-
-      routes.push(...gatherPageRoutes(fullPath, baseDir));
-      continue;
-    }
-
-    if (entry.isFile() && isPageFile(entry.name)) {
-      const normalized = normalizeRoutePath(relativePath);
-      if (normalized) {
-        routes.push(normalized);
-      }
-    }
-  }
-
-  return routes;
-};
-
-// Function to recursively find page files
-const getPagePaths = (dir: string, baseDir: string = dir): string[] =>
-  gatherPageRoutes(dir, baseDir);
 
 // Route-specific configuration for priority and change frequency
 type RouteConfig = {
@@ -110,7 +37,7 @@ type RouteConfig = {
     | "never";
 };
 
-const routeConfig: Record<string, RouteConfig> = {
+const routeConfigByPath: Record<string, RouteConfig> = {
   "/": { priority: 1.0, changeFrequency: "weekly" },
   "/about": { priority: 0.9, changeFrequency: "monthly" },
   "/contact": { priority: 0.9, changeFrequency: "monthly" },
@@ -134,8 +61,8 @@ const routeConfig: Record<string, RouteConfig> = {
   "/terms": { priority: 0.3, changeFrequency: "yearly" },
 };
 
-const getRouteConfig = (route: string): RouteConfig => {
-  if (route.startsWith("/resources/")) {
+const getRouteConfig = (routePath: string): RouteConfig => {
+  if (routePath.startsWith("/resources/")) {
     return {
       priority: 0.85,
       changeFrequency: "weekly",
@@ -143,7 +70,7 @@ const getRouteConfig = (route: string): RouteConfig => {
   }
 
   return (
-    routeConfig[route] || {
+    routeConfigByPath[routePath] || {
       priority: 0.7,
       changeFrequency: "monthly",
     }
@@ -151,13 +78,29 @@ const getRouteConfig = (route: string): RouteConfig => {
 };
 
 type ResourceRouteEntry = {
-  route: string;
+  path: string;
   lastModified: Date;
 };
 
+const buildEntry = ({
+  path,
+  lastModified,
+}: {
+  path: string;
+  lastModified: Date;
+}): MetadataRoute.Sitemap[number] => {
+  const config = getRouteConfig(path);
+
+  return {
+    url: `${baseUrl}${path === "/" ? "" : path}`,
+    lastModified,
+    changeFrequency: config.changeFrequency,
+    priority: config.priority,
+  };
+};
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const appDirPath = path.join(process.cwd(), "app");
-  const pageRoutes = getPagePaths(appDirPath);
+  const generatedAt = new Date();
   const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
 
   try {
@@ -167,60 +110,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     );
 
     for (const resource of resources) {
-      const route = `/resources/${resource.slug}`;
-      dynamicResourceRouteMap.set(route, {
-        route,
+      const path = `/resources/${resource.slug}`;
+      dynamicResourceRouteMap.set(path, {
+        path,
         lastModified: new Date(resource.updatedAt),
       });
     }
   } catch (_error) {
-    const fallbackResources = getFallbackSeoPages();
-    for (const page of fallbackResources) {
-      const route = `/resources/${page.slug}`;
-      dynamicResourceRouteMap.set(route, {
-        route,
-        lastModified: new Date(page.updatedAt),
-      });
-    }
+    // If Convex is unavailable, still return a valid sitemap for static routes.
   }
 
-  const dynamicResourceRoutes = Array.from(dynamicResourceRouteMap.values());
-  const resourceLastModifiedByRoute = new Map(
-    dynamicResourceRoutes.map((entry) => [entry.route, entry.lastModified])
-  );
-  const allRoutes = [...pageRoutes, ...dynamicResourceRoutes];
+  const entries = [
+    ...staticRoutePaths.map((path) =>
+      buildEntry({ path, lastModified: generatedAt })
+    ),
+    ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
+      buildEntry({
+        path: resourceRoute.path,
+        lastModified: resourceRoute.lastModified,
+      })
+    ),
+  ];
 
-  const sitemapEntries: MetadataRoute.Sitemap = allRoutes.map(
-    (routeOrEntry) => {
-      const route =
-        typeof routeOrEntry === "string" ? routeOrEntry : routeOrEntry.route;
-      const config = getRouteConfig(route);
-      const lastModified = resourceLastModifiedByRoute.get(route) ?? new Date();
-
-      return {
-        url: `${baseUrl}${route === "/" ? "" : route}`,
-        lastModified,
-        changeFrequency: config.changeFrequency,
-        priority: config.priority,
-      };
-    }
-  );
-
-  // Ensure the root path is included if not already
-  if (!sitemapEntries.some((entry) => entry.url === baseUrl)) {
-    sitemapEntries.unshift({
-      url: baseUrl,
-      lastModified: new Date(),
-      changeFrequency: "weekly",
-      priority: 1.0,
-    });
+  const uniqueByUrl = new Map<string, MetadataRoute.Sitemap[number]>();
+  for (const entry of entries) {
+    uniqueByUrl.set(entry.url, entry);
   }
 
-  // Deduplicate entries just in case
-  const uniqueUrls = Array.from(new Set(sitemapEntries.map((e) => e.url)));
-  const uniqueEntries = uniqueUrls
-    .map((url) => sitemapEntries.find((e) => e.url === url))
-    .filter((entry): entry is NonNullable<typeof entry> => entry !== undefined);
-
-  return uniqueEntries;
+  return Array.from(uniqueByUrl.values());
 }
