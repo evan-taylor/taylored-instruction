@@ -44,7 +44,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   return buildPageMetadata({
     ...resourcePageMetadata,
-    noIndex: false,
+    noIndex: resources === null,
   });
 }
 
