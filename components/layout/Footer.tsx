@@ -115,8 +115,8 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Copyright - Adjusted border and text color */}
-        <div className="border-gray-300 border-t pt-6 text-center text-gray-500 text-xs">
+        {/* Copyright - text-gray-600 for WCAG 4.5:1 contrast on gray-100 */}
+        <div className="border-gray-300 border-t pt-6 text-center text-gray-600 text-xs">
           <p>
             &copy; {new Date().getFullYear()} Taylored Instruction. All Rights
             Reserved.

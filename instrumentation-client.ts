@@ -1,6 +1,3 @@
-// This file configures the initialization of PostHog on the client.
-// The added config here will be used whenever a users loads a page in their browser.
-
 // This file configures the initialization of Sentry on the client.
 // The added config here will be used whenever a users loads a page in their browser.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
@@ -12,14 +9,6 @@ import {
 } from "@sentry/nextjs";
 
 export const onRouterTransitionStart = captureRouterTransitionStart;
-
-import posthog from "posthog-js";
-
-// Initialize PostHog
-posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY as string, {
-  api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-  defaults: "2025-05-24",
-});
 
 init({
   dsn: "https://f31f65850f94006f5f71c6a16458e0aa@o4510288242933760.ingest.us.sentry.io/4510288256958464",
