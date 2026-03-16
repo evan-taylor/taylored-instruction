@@ -34,7 +34,7 @@ const resourcePageMetadata = {
     description:
       "Local training guides for Vancouver WA, Clark County, and San Luis Obispo",
   },
-} as const;
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const resources = await fetchQuery(
