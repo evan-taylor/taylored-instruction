@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
-import { buildPageMetadata, type BuildPageMetadataInput } from "@/lib/seo";
+import { type BuildPageMetadataInput, buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
