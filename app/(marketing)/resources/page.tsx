@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
-import { buildPageMetadata } from "@/lib/seo";
+import { buildPageMetadata, type BuildPageMetadataInput } from "@/lib/seo";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
@@ -17,7 +17,7 @@ const pageTitle = "CPR, BLS, and Safety Training Resources";
 const pageDescription =
   "Explore local CPR, BLS, first aid, AED, and workplace safety resources focused on Vancouver, Washington and surrounding communities, with additional San Luis Obispo content.";
 
-const resourcePageMetadata = {
+const resourcePageMetadata: BuildPageMetadataInput = {
   title: `${pageTitle} | Vancouver WA Focus`,
   description: pageDescription,
   path: "/resources",
