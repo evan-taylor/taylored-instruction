@@ -62,29 +62,6 @@ const nextConfig = {
         permanent: true,
       },
 
-      // Strip legacy AMP/debug query variants that create duplicate URLs.
-      {
-        source: "/:path*",
-        has: [{ type: "query", key: "amp" }],
-        destination: "/:path*",
-        permanent: true,
-      },
-      {
-        source: "/:path*",
-        has: [{ type: "query", key: "__a" }],
-        destination: "/:path*",
-        permanent: true,
-      },
-      {
-        source: "/:path*",
-        has: [
-          { type: "query", key: "taxonomy", value: "nav_menu" },
-          { type: "query", key: "term", value: "instructors" },
-        ],
-        destination: "/aha-instructor-training",
-        permanent: true,
-      },
-
       // Legacy WordPress feed/admin URLs.
       {
         source: "/feed/:path*",

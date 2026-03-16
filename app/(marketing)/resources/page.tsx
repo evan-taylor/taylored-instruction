@@ -62,12 +62,18 @@ const getServiceLineCount = (resources: ResourceCard[]) =>
   new Set(resources.map((resource) => resource.serviceLine)).size;
 
 export default async function ResourcesPage() {
-  const resources = await fetchQuery(
-    api.seoContent.listPublishedPages,
-    {}
-  ).catch(() => []);
+  let resources: ResourceCard[] = [];
+  let hasResourceQueryError = false;
 
-  if (resources.length > 0) {
+  try {
+    resources = await fetchQuery(api.seoContent.listPublishedPages, {});
+  } catch (_error) {
+    hasResourceQueryError = true;
+  }
+
+  if (hasResourceQueryError) {
+    cacheLife("minutes");
+  } else if (resources.length > 0) {
     cacheLife("hours");
   } else {
     cacheLife("minutes");
@@ -109,7 +115,7 @@ export default async function ResourcesPage() {
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
         type="application/ld+json"
       />
-      {resources.length > 0 ? (
+      {!hasResourceQueryError && resources.length > 0 ? (
         <script
           dangerouslySetInnerHTML={generateJSONLD(itemListSchema)}
           type="application/ld+json"
@@ -132,21 +138,24 @@ export default async function ResourcesPage() {
             <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
               <BookOpen className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
-                {resources.length} resources
+                {hasResourceQueryError ? "—" : resources.length} resources
               </p>
               <p className="text-gray-600 text-sm">Published pages</p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
               <MapPin className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
-                {getCityCount(resources)} locations
+                {hasResourceQueryError ? "—" : getCityCount(resources)} locations
               </p>
               <p className="text-gray-600 text-sm">City-specific coverage</p>
             </div>
             <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
               <Stethoscope className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
-                {getServiceLineCount(resources)} service lines
+                {hasResourceQueryError
+                  ? "—"
+                  : getServiceLineCount(resources)}{" "}
+                service lines
               </p>
               <p className="text-gray-600 text-sm">Training categories</p>
             </div>
@@ -155,7 +164,26 @@ export default async function ResourcesPage() {
       </section>
 
       <section className="container mx-auto px-4 py-12">
-        {resources.length === 0 ? (
+        {hasResourceQueryError ? (
+          <div className="mx-auto max-w-3xl rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
+            <h2 className="font-semibold text-2xl text-gray-900">
+              Resource library is temporarily unavailable
+            </h2>
+            <p className="mt-3 text-gray-700 leading-relaxed">
+              We couldn&apos;t load the resource library right now. Please try
+              again shortly or contact us directly and we&apos;ll help you find
+              what you need.
+            </p>
+            <div className="mt-6">
+              <Link
+                className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
+                href="/contact"
+              >
+                Contact Taylored Instruction
+              </Link>
+            </div>
+          </div>
+        ) : resources.length === 0 ? (
           <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
             <h2 className="font-semibold text-2xl text-gray-900">
               New resources are being prepared

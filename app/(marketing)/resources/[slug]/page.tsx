@@ -87,14 +87,14 @@ export async function generateMetadata(
     });
   }
 
-  const { isFallback, page } = resource;
+  const { page } = resource;
   return buildPageMetadata({
     title: page.metaTitle,
     description: page.metaDescription,
     path: `/resources/${page.slug}`,
     ogType: "article",
     keywords: [page.primaryKeyword, ...page.secondaryKeywords],
-    noIndex: isFallback,
+    noIndex: false,
     image: {
       title: page.title,
       description: page.metaDescription,

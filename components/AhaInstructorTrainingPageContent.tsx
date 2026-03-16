@@ -98,18 +98,18 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
             mentor students.
           </li>
           <li>
-            Fill out an{" "}
+            Submit an{" "}
             <a className="text-primary hover:underline" href="/contact">
               AHA Instructor Candidate Application request
             </a>{" "}
-            and send it to Taylored Instruction (
+            through our contact form, or email Taylored Instruction at{" "}
             <a
               className="text-primary hover:underline"
               href="mailto:info@tayloredinstruction.com"
             >
               info@tayloredinstruction.com
             </a>
-            )
+            .
           </li>
         </ul>
 

@@ -87,20 +87,19 @@ const buildEntry = ({
   lastModified,
 }: {
   path: string;
-  lastModified: Date;
+  lastModified?: Date;
 }): MetadataRoute.Sitemap[number] => {
   const config = getRouteConfig(path);
 
   return {
     url: `${baseUrl}${path === "/" ? "" : path}`,
-    lastModified,
+    ...(lastModified ? { lastModified } : {}),
     changeFrequency: config.changeFrequency,
     priority: config.priority,
   };
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const generatedAt = new Date();
   const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
 
   try {
@@ -121,9 +120,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   const entries = [
-    ...staticRoutePaths.map((path) =>
-      buildEntry({ path, lastModified: generatedAt })
-    ),
+    ...staticRoutePaths.map((path) => buildEntry({ path })),
     ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
       buildEntry({
         path: resourceRoute.path,
