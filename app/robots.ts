@@ -5,17 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: [
-        "/api/",
-        "/admin/",
-        "/my-account/",
-        "/ecards/",
-        "/instructor-resources/",
-        "/auth/",
-        "/login/",
-        "/_next/",
-        "/private/",
-      ],
+      disallow: ["/api/", "/admin/", "/private/"],
     },
     host: "https://tayloredinstruction.com",
     sitemap: "https://tayloredinstruction.com/sitemap.xml",

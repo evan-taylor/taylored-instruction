@@ -15,12 +15,14 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 const queryParamsToStrip = ["amp", "__a"] as const;
 const permanentRedirectStatus = 308;
+const redirectEligibleMethods = new Set(["GET", "HEAD"]);
 
 const getLegacyInstructorRedirectUrl = (
   url: URL,
   requestUrl: string
 ): URL | null => {
   const isLegacyInstructorTaxonomyRequest =
+    url.pathname === "/" &&
     url.searchParams.get("taxonomy") === "nav_menu" &&
     url.searchParams.get("term") === "instructors";
 
@@ -58,23 +60,25 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
     return;
   }
 
-  const legacyInstructorRedirectUrl = getLegacyInstructorRedirectUrl(
-    url,
-    request.url
-  );
-  if (legacyInstructorRedirectUrl) {
-    return NextResponse.redirect(
-      legacyInstructorRedirectUrl,
-      permanentRedirectStatus
+  if (redirectEligibleMethods.has(request.method)) {
+    const legacyInstructorRedirectUrl = getLegacyInstructorRedirectUrl(
+      url,
+      request.url
     );
-  }
+    if (legacyInstructorRedirectUrl) {
+      return NextResponse.redirect(
+        legacyInstructorRedirectUrl,
+        permanentRedirectStatus
+      );
+    }
 
-  const cleanedQueryRedirectUrl = getCleanedQueryRedirectUrl(url);
-  if (cleanedQueryRedirectUrl) {
-    return NextResponse.redirect(
-      cleanedQueryRedirectUrl,
-      permanentRedirectStatus
-    );
+    const cleanedQueryRedirectUrl = getCleanedQueryRedirectUrl(url);
+    if (cleanedQueryRedirectUrl) {
+      return NextResponse.redirect(
+        cleanedQueryRedirectUrl,
+        permanentRedirectStatus
+      );
+    }
   }
 
   if (isDebugRoute(request)) {

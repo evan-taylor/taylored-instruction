@@ -94,7 +94,7 @@ export async function generateMetadata(
     path: `/resources/${page.slug}`,
     ogType: "article",
     keywords: [page.primaryKeyword, ...page.secondaryKeywords],
-    noIndex: false,
+    noIndex: resource.isFallback,
     image: {
       title: page.title,
       description: page.metaDescription,
