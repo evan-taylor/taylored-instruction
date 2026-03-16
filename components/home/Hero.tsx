@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -9,9 +7,11 @@ export const Hero = () => (
     <Image
       alt="Life buoy in water - CPR and safety training background"
       className="object-cover"
+      fetchPriority="high"
       fill
       priority
       quality={75}
+      sizes="100vw"
       src="/life-buoy-1.jpeg"
     />
     <div className="absolute inset-0 bg-gray-700/85" />
@@ -20,7 +20,11 @@ export const Hero = () => (
         Safety tailored to your needs.
       </h1>
 
-      <Link href="https://www.hovn.app/tayloredinstruction" target="_blank">
+      <Link
+        href="https://www.hovn.app/tayloredinstruction"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
         <Button className="mt-4 px-8 py-3 text-lg" size="lg">
           Register for Classes
         </Button>

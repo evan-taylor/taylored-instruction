@@ -54,6 +54,7 @@
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "autoprefixer": "^10.4.16",
+    "baseline-browser-mapping": "^2.10.8",
     "dotenv": "^16.6.1",
     "lefthook": "^1.13.6",
     "papaparse": "^5.5.2",

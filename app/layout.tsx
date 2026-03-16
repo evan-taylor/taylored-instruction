@@ -3,7 +3,6 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import type { Metadata } from "next";
 import { Readex_Pro } from "next/font/google";
-import Script from "next/script";
 import {
   generateJSONLD,
   getOrganizationSchema,
@@ -107,15 +106,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Preconnect to external domains for performance */}
-        <link href="https://fonts.googleapis.com" rel="preconnect" />
-        <link
-          crossOrigin=""
-          href="https://fonts.gstatic.com"
-          rel="preconnect"
-        />
-        <link href="https://assets.onedollarstats.com" rel="preconnect" />
-
         <script
           dangerouslySetInnerHTML={generateJSONLD(organizationSchema)}
           key="organization-jsonld"
@@ -142,19 +132,6 @@ export default function RootLayout({
       </head>
       <body className={readexPro.variable}>
         {children}
-        <Script
-          src="https://assets.onedollarstats.com/stonks.js"
-          strategy="lazyOnload"
-        />
-        <Script
-          data-persist
-          data-token="e435884d-0dd1-4cd9-b1ae-a5e36a64e5f1"
-          src="https://cdn.visitors.now/v.js"
-          strategy="lazyOnload"
-        />
-        <Script id="apollo-lead-tracking" strategy="lazyOnload">
-          {`function initApollo(){var n=Math.random().toString(36).substring(7),o=document.createElement("script");o.src="https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache="+n,o.async=!0,o.defer=!0,o.onload=function(){window.trackingFunctions.onLoad({appId:"6943536a93fbdf001d996156"})},document.head.appendChild(o)}initApollo();`}
-        </Script>
         <Analytics />
         <SpeedInsights />
       </body>
