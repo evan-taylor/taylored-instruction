@@ -1,0 +1,33 @@
+components/analytics/MarketingTrackerScripts.tsx
+  80df38655cba3696 1-27
+app/(marketing)/layout.tsx
+  80df38655cba3696 3,22
+public/apollo-tracker-init.js
+  80df38655cba3696 1-17
+next.config.js
+  80df38655cba3696 7-8,28,45-66,70
+components/home/Hero.tsx
+  80df38655cba3696 10,14,25
+components/layout/Footer.tsx
+  80df38655cba3696 118-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.1.12",
+  "base_commit_sha": "3b44ddb0fd4360959436fd4cf35f3a397394d370",
+  "prompts": {
+    "80df38655cba3696": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "04546c69-3d3f-4333-b70b-6fc9fc93cde8",
+        "model": "composer-1.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>",
+      "messages": [],
+      "total_additions": 106,
+      "total_deletions": 68,
+      "accepted_lines": 77,
+      "overriden_lines": 0
+    }
+  }
+}
