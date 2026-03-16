@@ -135,8 +135,8 @@ export default async function ResourcesPage() {
             New resources are being prepared
           </h2>
           <p className="mt-3 text-gray-700 leading-relaxed">
-            We are updating this library with published guides. In the
-            meantime, you can reach us directly for course-specific questions.
+            We are updating this library with published guides. In the meantime,
+            you can reach us directly for course-specific questions.
           </p>
           <div className="mt-6">
             <Link
@@ -244,9 +244,7 @@ export default async function ResourcesPage() {
             <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
               <Stethoscope className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
-                {hasResourceQueryError
-                  ? "—"
-                  : getServiceLineCount(resources)}{" "}
+                {hasResourceQueryError ? "—" : getServiceLineCount(resources)}{" "}
                 service lines
               </p>
               <p className="text-gray-600 text-sm">Training categories</p>

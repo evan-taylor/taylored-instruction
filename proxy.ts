@@ -71,7 +71,10 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
 
   const cleanedQueryRedirectUrl = getCleanedQueryRedirectUrl(url);
   if (cleanedQueryRedirectUrl) {
-    return NextResponse.redirect(cleanedQueryRedirectUrl, permanentRedirectStatus);
+    return NextResponse.redirect(
+      cleanedQueryRedirectUrl,
+      permanentRedirectStatus
+    );
   }
 
   if (isDebugRoute(request)) {

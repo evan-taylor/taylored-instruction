@@ -115,8 +115,8 @@ const FaCprAedInstructorPageContent: React.FC = () => {
             so that they may teach them themselves. In addition, each
             participant must have a copy of the American Red Cross First
             Aid/CPR/AED Instructor&#8217;s Manual. You can request a manual copy
-            using the link at the top of this page, or purchase one from the
-            Red Cross store.
+            using the link at the top of this page, or purchase one from the Red
+            Cross store.
           </p>
           <p className="text-gray-700">
             You may view all instructor candidate resources on the{" "}
