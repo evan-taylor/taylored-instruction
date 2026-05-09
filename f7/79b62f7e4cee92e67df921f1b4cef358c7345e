@@ -1,0 +1,20 @@
+components/LifeguardingPageContent.tsx
+  s_0ec9337c553dfd::t_dbea2ad800a551 12-13
+  s_0ec9337c553dfd::t_9483fc323923de 53-55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "f779b62f7e4cee92e67df921f1b4cef358c7345e",
+  "prompts": {},
+  "sessions": {
+    "s_0ec9337c553dfd": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e0e48-eac1-7473-a49a-0ccdc044d2ca",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
