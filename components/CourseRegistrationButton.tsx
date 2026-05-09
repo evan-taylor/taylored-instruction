@@ -8,7 +8,9 @@ type CourseRegistrationButtonProps = {
   courseName: string;
   registrationUrl: string;
   buttonText?: string;
+  buttonClassName?: string;
   className?: string;
+  size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "outline";
 };
 
@@ -16,7 +18,9 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   courseName,
   registrationUrl,
   buttonText,
+  buttonClassName = "",
   className = "",
+  size = "lg",
   variant = "primary",
 }) => {
   const posthog = usePostHog();
@@ -34,11 +38,11 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   return (
     <div className={`mb-12 text-center ${className}`}>
       <Button
-        className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
+        className={`shadow-lg transition-shadow duration-200 hover:shadow-xl ${buttonClassName}`}
         href={registrationUrl}
         onClick={handleClick}
         rel="noopener noreferrer"
-        size="lg"
+        size={size}
         target="_blank"
         variant={variant}
       >
