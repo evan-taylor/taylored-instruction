@@ -5,6 +5,7 @@ import ClassPageLayout, {
 export default function AhaInstructorTrainingPageContent() {
   return (
     <ClassPageLayout
+      badgeLabel="Instructor Training"
       courseName="AHA Instructor Training"
       image={{
         alt: "CPR instructor training session",

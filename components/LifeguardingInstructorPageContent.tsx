@@ -5,6 +5,7 @@ import ClassPageLayout, {
 export default function LifeguardingInstructorPageContent() {
   return (
     <ClassPageLayout
+      badgeLabel="Instructor Training"
       courseName="Lifeguarding Instructor"
       image={{
         alt: "Lifeguarding instructor course training",

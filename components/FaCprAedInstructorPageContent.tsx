@@ -6,6 +6,7 @@ import ClassPageLayout, {
 export default function FaCprAedInstructorPageContent() {
   return (
     <ClassPageLayout
+      badgeLabel="Instructor Training"
       courseName="First Aid/CPR/AED Instructor"
       image={{
         alt: "CPR instructor training session",

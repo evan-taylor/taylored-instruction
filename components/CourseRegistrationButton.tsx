@@ -3,6 +3,7 @@
 import { usePostHog } from "posthog-js/react";
 import type React from "react";
 import { Button } from "@/components/ui/Button";
+import { cn } from "@/lib/utils";
 
 type CourseRegistrationButtonProps = {
   courseName: string;
@@ -36,9 +37,12 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   };
 
   return (
-    <div className={`mb-12 text-center ${className}`}>
+    <div className={cn("mb-12 text-center", className)}>
       <Button
-        className={`shadow-lg transition-shadow duration-200 hover:shadow-xl ${buttonClassName}`}
+        className={cn(
+          "shadow-lg transition-shadow duration-200 hover:shadow-xl",
+          buttonClassName
+        )}
         href={registrationUrl}
         onClick={handleClick}
         rel="noopener noreferrer"

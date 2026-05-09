@@ -23,6 +23,7 @@ type SecondaryAction = {
 };
 
 type ClassPageLayoutProps = {
+  badgeLabel?: string;
   children: ReactNode;
   courseName: string;
   image: HeroImage;
@@ -48,6 +49,7 @@ export function ClassPageSection({ children, title }: ClassPageSectionProps) {
 }
 
 export default function ClassPageLayout({
+  badgeLabel = "Certification Course",
   children,
   courseName,
   image,
@@ -76,7 +78,7 @@ export default function ClassPageLayout({
         <div className="container relative z-10 mx-auto max-w-6xl px-4 pt-20 pb-24 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
             <p className="mb-4 font-semibold text-sm text-white/80 uppercase tracking-[0.18em]">
-              Certification Course
+              {badgeLabel}
             </p>
             <h1 className="mb-0 max-w-4xl text-balance font-bold text-4xl text-white leading-tight md:text-6xl">
               {title}
