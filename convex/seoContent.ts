@@ -462,7 +462,7 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Regular skills refreshers can improve confidence between certification cycles.",
     ],
     ctaHref:
-      "https://www.hovn.app/tayloredinstruction/courses/arc-adult-pediatric-first-aid-cpr-aed/o/cm408sfgn0000ggkzk66s7no4",
+      "https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/",
     faqTemplates: [
       {
         question: "What is covered in First Aid/CPR/AED training?",

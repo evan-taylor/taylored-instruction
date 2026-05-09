@@ -51,7 +51,7 @@ const FirstAidCprAedPageContent: React.FC = () => {
         <CourseRegistrationButton
           buttonText="View Current Offerings"
           courseName="First Aid/CPR/AED"
-          registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-adult-pediatric-first-aid-cpr-aed/o/cm408sfgn0000ggkzk66s7no4"
+          registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/"
         />
 
         {/* Course Purpose Section */}
@@ -105,7 +105,7 @@ const FirstAidCprAedPageContent: React.FC = () => {
             Search for open class on our{" "}
             <Link
               className="font-medium text-primary hover:underline"
-              href="https://www.hovn.app/tayloredinstruction/courses/arc-adult-pediatric-first-aid-cpr-aed/o/cm408sfgn0000ggkzk66s7no4"
+              href="https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/"
             >
               registration page
             </Link>

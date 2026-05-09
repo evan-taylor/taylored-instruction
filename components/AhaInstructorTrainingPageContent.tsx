@@ -48,7 +48,7 @@ const AhaInstructorTrainingPageContent: React.FC = () => {
         <CourseRegistrationButton
           buttonText="View Current Offerings"
           courseName="AHA Instructor Training"
-          registrationUrl="https://www.hovn.app/tayloredinstruction/courses/aha-bls-instructor"
+          registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-instructor-2025/"
         />
 
         <h3 className="mb-3 font-bold text-xl lg:text-2xl">Course Overview</h3>
