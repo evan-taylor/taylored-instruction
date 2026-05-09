@@ -1,0 +1,28 @@
+components/ClassPageLayout.tsx
+  s_5a59fbe0d3f1fa::t_3d19dcabd34210 26,52,81
+components/LifeguardingInstructorPageContent.tsx
+  s_5a59fbe0d3f1fa::t_e40e572988c24a 8
+components/FaCprAedInstructorPageContent.tsx
+  s_5a59fbe0d3f1fa::t_e40e572988c24a 9
+components/CourseRegistrationButton.tsx
+  s_5a59fbe0d3f1fa::t_bb9b9f83ccf7e1 43-45
+  s_5a59fbe0d3f1fa::t_e02afa8be015a7 6,40,42
+components/AhaInstructorTrainingPageContent.tsx
+  s_5a59fbe0d3f1fa::t_e40e572988c24a 8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.4",
+  "base_commit_sha": "577cccd42ce73f8afedcc6e86bb064b6c46c3b2d",
+  "prompts": {},
+  "sessions": {
+    "s_5a59fbe0d3f1fa": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e0e27-8301-7850-b045-ccdc331bb45b",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
