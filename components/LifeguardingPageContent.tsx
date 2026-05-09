@@ -9,7 +9,8 @@ export default function LifeguardingPageContent() {
       courseName="Lifeguarding"
       image={{
         alt: "Lifeguarding training session",
-        src: "/IMG_1872.jpeg",
+        position: "center 42%",
+        src: "/lifeguard-training.jpeg",
       }}
       registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
       resources={[
@@ -49,7 +50,9 @@ export default function LifeguardingPageContent() {
             <h3 className="mb-2 font-semibold text-gray-950 text-lg">
               Swim-Tread-Swim Sequence
             </h3>
-            <p className="mb-2 text-sm">Complete this sequence within 1 minute, 40 seconds:</p>
+            <p className="mb-2 text-sm">
+              Complete this sequence within 1 minute, 40 seconds:
+            </p>
             <ol className="list-decimal space-y-2 pl-5 text-sm">
               <li>
                 Jump into the water, fully submerge, resurface, then swim 150
