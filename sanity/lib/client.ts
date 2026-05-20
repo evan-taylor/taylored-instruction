@@ -5,7 +5,7 @@ export const client = createClient({
   apiVersion,
   dataset,
   projectId,
-  useCdn: process.env.NODE_ENV === "production",
+  useCdn: false,
 });
 
 type SanityFetchOptions = {
@@ -13,7 +13,7 @@ type SanityFetchOptions = {
   tags?: string[];
 };
 
-const defaultRevalidateSeconds = 3600;
+const defaultRevalidateSeconds = 60;
 
 export const sanityFetch = async <Response>(
   query: string,

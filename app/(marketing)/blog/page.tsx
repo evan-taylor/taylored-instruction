@@ -46,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BlogPage() {
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const posts = await sanityFetch<BlogPostSummary[]>(POSTS_QUERY, {
     tags: ["post"],

@@ -126,7 +126,7 @@ export async function generateMetadata(
 }
 
 export default async function BlogPostPage(props: BlogPostPageProps) {
-  cacheLife("hours");
+  cacheLife("minutes");
 
   const params = await props.params;
   const post = await getPost(params.slug);
