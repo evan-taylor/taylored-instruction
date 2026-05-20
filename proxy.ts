@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 
 const isLoginPage = createRouteMatcher(["/login"]);
 const isDebugRoute = createRouteMatcher(["/debug-auth"]);
+const isSanityStudioRoute = createRouteMatcher(["/admin/studio(.*)"]);
 const isProtectedRoute = createRouteMatcher([
   "/my-account(.*)",
   "/ecards(.*)",
@@ -82,6 +83,10 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   }
 
   if (isDebugRoute(request)) {
+    return;
+  }
+
+  if (isSanityStudioRoute(request)) {
     return;
   }
 
