@@ -25,6 +25,7 @@ type BlogPostPageProps = {
 
 const heroImageWidth = 1200;
 const heroImageHeight = 675;
+const emptyBlogStaticParamsSlug = "__empty-blog-static-param__";
 
 const formatPublishedDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
@@ -106,6 +107,10 @@ export async function generateStaticParams() {
     tags: ["post"],
   }).catch(() => []);
 
+  if (posts.length === 0) {
+    return [{ slug: emptyBlogStaticParamsSlug }];
+  }
+
   return posts.map((post) => ({ slug: post.slug }));
 }
 
@@ -163,6 +168,10 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
   cacheTag("post");
 
   const params = await props.params;
+  if (params.slug === emptyBlogStaticParamsSlug) {
+    notFound();
+  }
+
   cacheTag(`post:${params.slug}`);
   const post = await getPost(params.slug);
 
