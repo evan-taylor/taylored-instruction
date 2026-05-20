@@ -2,6 +2,8 @@
  * Structured Data (JSON-LD) for SEO
  * Comprehensive schema markup for Taylored Instruction
  */
+
+import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 import { SITE_URL } from "@/lib/seo";
 
 type LocalBusinessSchema = {
@@ -243,10 +245,7 @@ export const getOrganizationSchema = (): OrganizationSchema => ({
     name: "Evan Taylor",
     jobTitle: "Instructor Trainer, Owner",
   },
-  sameAs: [
-    // Add social media links when available
-    "https://tayloredinstruction.com",
-  ],
+  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
   knowsAbout: [
     "CPR Training",
     "BLS Certification",
@@ -305,7 +304,7 @@ export const getVancouverLocalBusinessSchema = (): LocalBusinessSchema => ({
       "Sunday",
     ],
   },
-  sameAs: ["https://tayloredinstruction.com"],
+  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
 });
 
 // Local Business Schema - San Luis Obispo, CA
@@ -352,7 +351,7 @@ export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
       "Sunday",
     ],
   },
-  sameAs: ["https://tayloredinstruction.com"],
+  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
 });
 
 // Website Schema
