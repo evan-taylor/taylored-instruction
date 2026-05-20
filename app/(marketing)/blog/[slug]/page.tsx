@@ -25,6 +25,7 @@ type BlogPostPageProps = {
 
 const heroImageWidth = 1200;
 const heroImageHeight = 675;
+const staticParamsValidationSlug = "__blog_static_params_validation__";
 
 const formatPublishedDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
@@ -105,6 +106,10 @@ export async function generateStaticParams() {
   const posts = await sanityFetch<BlogPostSlug[]>(POST_SLUGS_QUERY, {
     tags: ["post"],
   }).catch(() => []);
+
+  if (posts.length === 0) {
+    return [{ slug: staticParamsValidationSlug }];
+  }
 
   return posts.map((post) => ({ slug: post.slug }));
 }
