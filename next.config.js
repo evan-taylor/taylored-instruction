@@ -25,14 +25,19 @@ const nextConfig = {
   },
   // Headers for better SEO and security
   async headers() {
-    const securityHeaders = [
+    const contentSecurityPolicy = [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://embed.typeform.com https://vancouverusa.chambermaster.com https://*.cal.com",
+      "connect-src 'self' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://cdn.sanity.io https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com",
+      "img-src 'self' data: blob: https:",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com",
+      "frame-src 'self' https://cap.so https://www.loom.com https://embed.typeform.com https://*.cal.com",
+    ];
+    const sharedSecurityHeaders = [
       {
         key: "X-DNS-Prefetch-Control",
         value: "on",
-      },
-      {
-        key: "X-Frame-Options",
-        value: "SAMEORIGIN",
       },
       {
         key: "X-Content-Type-Options",
@@ -50,23 +55,41 @@ const nextConfig = {
         key: "Cross-Origin-Opener-Policy",
         value: "same-origin",
       },
+    ];
+    const securityHeaders = [
+      ...sharedSecurityHeaders,
+      {
+        key: "Content-Security-Policy",
+        value: "frame-ancestors 'self'",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "SAMEORIGIN",
+      },
       {
         key: "Content-Security-Policy-Report-Only",
-        value: [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://embed.typeform.com https://vancouverusa.chambermaster.com https://*.cal.com",
-          "connect-src 'self' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://cdn.sanity.io https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com",
-          "img-src 'self' data: blob: https:",
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-          "font-src 'self' https://fonts.gstatic.com",
-          "frame-src 'self' https://cap.so https://www.loom.com https://embed.typeform.com https://*.cal.com",
-        ].join("; "),
+        value: contentSecurityPolicy.join("; "),
+      },
+    ];
+    const studioSecurityHeaders = [
+      ...sharedSecurityHeaders,
+      {
+        key: "Content-Security-Policy",
+        value: "frame-ancestors 'self' https://www.sanity.io https://sanity.io",
+      },
+      {
+        key: "Content-Security-Policy-Report-Only",
+        value: contentSecurityPolicy.join("; "),
       },
     ];
 
     return [
       {
-        source: "/:path*",
+        source: "/admin/studio/:path*",
+        headers: studioSecurityHeaders,
+      },
+      {
+        source: "/((?!admin/studio).*)",
         headers: securityHeaders,
       },
     ];
