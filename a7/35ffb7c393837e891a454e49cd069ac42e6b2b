@@ -1,0 +1,40 @@
+sanity/lib/queries.ts
+  s_049674368e3105::t_0b0752ecea6e32 5,10-11,14-15,27-50,63-65,69-70
+app/layout.tsx
+  s_049674368e3105::t_17017d01542bcd 93-97
+app/rss.xml/route.ts
+  s_049674368e3105::t_3fb276707bca6a 1-56
+app/(marketing)/blog/page.tsx
+  s_049674368e3105::t_ccd69a7a9b75d2 5,50,77-78
+app/(marketing)/blog/[slug]/page.tsx
+  s_049674368e3105::t_a649f45ebdb488 132-134,139,146-158
+  s_049674368e3105::t_bd809800e24e9f 5,13-18,104-111,128-130,143,163,166,182,184,189-190
+lib/seo.ts
+  s_049674368e3105::t_3815febe1dd040 15,63-69
+sanity/schemaTypes/postType.ts
+  s_049674368e3105::t_44aeff5caef467 4,43-57,119-127
+sanity/types.ts
+  s_049674368e3105::t_7e0bbe64615438 13,18-19,23,36-43
+app/sitemap.ts
+  s_049674368e3105::t_f8911d11208d54 48
+  s_049674368e3105::t_7a9eb519f6605c 4-6,13,77-83,116,135-153,162-165
+app/api/revalidate/sanity/route.ts
+  s_049674368e3105::t_7e6918abfb3f16 1-14,16-26,28-68
+  s_049674368e3105::t_bcfec356ab6047 15,27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "a735ffb7c393837e891a454e49cd069ac42e6b2b",
+  "prompts": {},
+  "sessions": {
+    "s_049674368e3105": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e465d-2d11-7f52-8ec6-16ee1410655e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
