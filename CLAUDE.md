@@ -10,12 +10,12 @@ Taylored Instruction is a Next.js 14 website for a CPR/BLS training company in V
 
 ```bash
 # Development
-npm run dev              # Start development server
-npm run build           # Build for production  
-npm run start           # Start production server
-npm run lint            # Run ESLint
-npm run type-check      # Run TypeScript compiler check
-npm run test            # Run both lint and type-check (no separate test suite)
+bun run dev             # Start development server
+bun run build           # Build for production
+bun run start           # Start production server
+bun run lint            # Run Ultracite
+bun run type-check      # Run TypeScript compiler check
+bun run test            # Run both lint and type-check (no separate test suite)
 ```
 
 ## Architecture
@@ -142,7 +142,7 @@ SENTRY_DSN=
 4. Add Stripe product integration if paid
 
 ### Adding New UI Components
-1. Use Shadcn/ui CLI: `npx shadcn@latest add [component]`
+1. Use Shadcn/ui CLI: `bunx shadcn@latest add [component]`
 2. Customize in `/components/ui/`
 3. Follow existing Tailwind patterns
 
