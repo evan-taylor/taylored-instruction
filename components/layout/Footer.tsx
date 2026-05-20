@@ -1,5 +1,6 @@
 import { Facebook, Instagram } from "lucide-react";
 import Link from "next/link";
+import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 
 export const Footer = () => {
   return (
@@ -82,6 +83,16 @@ export const Footer = () => {
                   href="tel:3606588199"
                 >
                   (360) 658-8199
+                </a>
+              </li>
+              <li>
+                <a
+                  className="transition-colors hover:text-primary"
+                  href={GOOGLE_BUSINESS_PROFILE_URL}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Taylored Instruction on Google
                 </a>
               </li>
             </ul>
