@@ -1,7 +1,6 @@
 const defaultDataset = "production";
 
-const optionalEnv = (key: string): string | undefined => {
-  const value = process.env[key];
+const optionalEnv = (value: string | undefined): string | undefined => {
   if (!value?.trim()) {
     return;
   }
@@ -9,9 +8,7 @@ const optionalEnv = (key: string): string | undefined => {
   return value;
 };
 
-const requiredEnv = (key: string, fallbackKey?: string): string => {
-  const value =
-    optionalEnv(key) ?? (fallbackKey ? optionalEnv(fallbackKey) : "");
+const requiredEnv = (key: string, value: string | undefined): string => {
   if (!value) {
     throw new Error(`Missing required Sanity environment variable: ${key}`);
   }
@@ -21,10 +18,11 @@ const requiredEnv = (key: string, fallbackKey?: string): string => {
 
 export const apiVersion = "2024-01-01";
 export const dataset =
-  optionalEnv("NEXT_PUBLIC_SANITY_DATASET") ??
-  optionalEnv("SANITY_DATASET") ??
+  optionalEnv(process.env.NEXT_PUBLIC_SANITY_DATASET) ??
+  optionalEnv(process.env.SANITY_DATASET) ??
   defaultDataset;
 export const projectId = requiredEnv(
   "NEXT_PUBLIC_SANITY_PROJECT_ID",
-  "SANITY_PROJECT_ID"
+  optionalEnv(process.env.NEXT_PUBLIC_SANITY_PROJECT_ID) ??
+    optionalEnv(process.env.SANITY_PROJECT_ID)
 );
