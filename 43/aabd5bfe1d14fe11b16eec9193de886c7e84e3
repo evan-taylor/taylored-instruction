@@ -1,0 +1,19 @@
+shared/adminEmails.ts
+  s_f41c0737f04ee6::t_b790915a21212d 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "43aabd5bfe1d14fe11b16eec9193de886c7e84e3",
+  "prompts": {},
+  "sessions": {
+    "s_f41c0737f04ee6": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e46d4-0035-7f32-b3ec-02c4ea8fe28a",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
