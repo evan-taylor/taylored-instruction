@@ -54,6 +54,16 @@ const getCleanedQueryRedirectUrl = (url: URL): URL | null => {
   return removedLegacyQueryParam ? cleanedUrl : null;
 };
 
+const getSanityDashboardRedirectUrl = (url: URL): URL | null => {
+  if (url.pathname !== "/" || !url.searchParams.has("_context")) {
+    return null;
+  }
+
+  const redirectUrl = new URL(url.toString());
+  redirectUrl.pathname = "/admin/studio";
+  return redirectUrl;
+};
+
 export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   const url = new URL(request.url);
 
@@ -79,6 +89,11 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
         cleanedQueryRedirectUrl,
         permanentRedirectStatus
       );
+    }
+
+    const sanityDashboardRedirectUrl = getSanityDashboardRedirectUrl(url);
+    if (sanityDashboardRedirectUrl) {
+      return NextResponse.redirect(sanityDashboardRedirectUrl);
     }
   }
 

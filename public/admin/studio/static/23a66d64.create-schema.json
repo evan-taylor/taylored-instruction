@@ -1,0 +1,306 @@
+[
+  {
+    "fields": [
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "name": "title",
+        "type": "string"
+      },
+      {
+        "options": {
+          "maxLength": 96,
+          "source": "title"
+        },
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "custom"
+              },
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "name": "slug",
+        "type": "slug"
+      },
+      {
+        "rows": 3,
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              },
+              {
+                "flag": "max",
+                "constraint": 180
+              }
+            ]
+          }
+        ],
+        "name": "excerpt",
+        "type": "text"
+      },
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "name": "publishedAt",
+        "type": "datetime",
+        "title": "Published at"
+      },
+      {
+        "initialValue": "Taylored Instruction",
+        "name": "author",
+        "type": "string"
+      },
+      {
+        "options": {
+          "layout": "tags"
+        },
+        "of": [
+          {
+            "type": "string"
+          }
+        ],
+        "name": "categories",
+        "type": "array"
+      },
+      {
+        "options": {
+          "hotspot": true
+        },
+        "fields": [
+          {
+            "validation": [
+              {
+                "level": "error",
+                "rules": [
+                  {
+                    "flag": "presence",
+                    "constraint": "required"
+                  }
+                ]
+              }
+            ],
+            "name": "alt",
+            "type": "string",
+            "title": "Alternative text"
+          }
+        ],
+        "name": "mainImage",
+        "type": "image",
+        "title": "Main image"
+      },
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "presence",
+                "constraint": "required"
+              }
+            ]
+          }
+        ],
+        "of": [
+          {
+            "lists": [
+              {
+                "value": "bullet",
+                "title": "Bulleted list"
+              },
+              {
+                "value": "number",
+                "title": "Numbered list"
+              }
+            ],
+            "marks": {
+              "annotations": [
+                {
+                  "fields": [
+                    {
+                      "validation": [
+                        {
+                          "level": "error",
+                          "rules": [
+                            {
+                              "flag": "uri",
+                              "constraint": {
+                                "options": {
+                                  "scheme": [
+                                    "/^http$/",
+                                    "/^https$/",
+                                    "/^mailto$/",
+                                    "/^tel$/"
+                                  ],
+                                  "allowRelative": true,
+                                  "relativeOnly": false,
+                                  "allowCredentials": false
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "name": "href",
+                      "type": "url",
+                      "title": "URL"
+                    }
+                  ],
+                  "name": "link",
+                  "type": "object"
+                }
+              ],
+              "decorators": [
+                {
+                  "value": "strong",
+                  "title": "Strong"
+                },
+                {
+                  "value": "em",
+                  "title": "Italic"
+                },
+                {
+                  "value": "code",
+                  "title": "Code"
+                },
+                {
+                  "value": "underline",
+                  "title": "Underline"
+                },
+                {
+                  "value": "strike-through",
+                  "title": "Strike"
+                }
+              ]
+            },
+            "of": [],
+            "styles": [
+              {
+                "value": "normal",
+                "title": "Normal"
+              },
+              {
+                "value": "h1",
+                "title": "Heading 1"
+              },
+              {
+                "value": "h2",
+                "title": "Heading 2"
+              },
+              {
+                "value": "h3",
+                "title": "Heading 3"
+              },
+              {
+                "value": "h4",
+                "title": "Heading 4"
+              },
+              {
+                "value": "h5",
+                "title": "Heading 5"
+              },
+              {
+                "value": "h6",
+                "title": "Heading 6"
+              },
+              {
+                "value": "blockquote",
+                "title": "Quote"
+              }
+            ],
+            "type": "block"
+          }
+        ],
+        "name": "body",
+        "type": "array"
+      },
+      {
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "max",
+                "constraint": 70
+              }
+            ]
+          }
+        ],
+        "name": "seoTitle",
+        "type": "string",
+        "title": "SEO title"
+      },
+      {
+        "rows": 3,
+        "validation": [
+          {
+            "level": "error",
+            "rules": [
+              {
+                "flag": "max",
+                "constraint": 160
+              }
+            ]
+          }
+        ],
+        "name": "seoDescription",
+        "type": "text",
+        "title": "SEO description"
+      },
+      {
+        "options": {
+          "layout": "tags"
+        },
+        "of": [
+          {
+            "validation": [
+              {
+                "level": "error",
+                "rules": [
+                  {
+                    "flag": "max",
+                    "constraint": 40
+                  }
+                ]
+              }
+            ],
+            "type": "string"
+          }
+        ],
+        "name": "seoKeywords",
+        "type": "array",
+        "title": "SEO keywords"
+      }
+    ],
+    "name": "post",
+    "type": "document"
+  }
+]

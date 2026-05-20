@@ -75,7 +75,7 @@ const nextConfig = {
       ...sharedSecurityHeaders,
       {
         key: "Content-Security-Policy",
-        value: "frame-ancestors 'self' https://www.sanity.io https://sanity.io",
+        value: "frame-ancestors 'self' https://sanity.io https://*.sanity.io",
       },
       {
         key: "Content-Security-Policy-Report-Only",
