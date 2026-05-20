@@ -303,9 +303,9 @@ Ultracite enforces strict type safety, accessibility standards, and consistent c
 - Don't use disabled tests.
 
 ## Common Tasks
-- `npx ultracite init` - Initialize Ultracite in your project
-- `npx ultracite fix` - Format and fix code automatically
-- `npx ultracite check` - Check for issues without fixing
+- `bunx ultracite init` - Initialize Ultracite in your project
+- `bunx ultracite fix` - Format and fix code automatically
+- `bunx ultracite check` - Check for issues without fixing
 
 ## Example: Error Handling
 ```typescript
@@ -335,30 +335,29 @@ This is a Next.js 16 website (Taylored Instruction — CPR/BLS training company)
 ### Running the dev server
 
 ```bash
-source ~/.nvm/nvm.sh && nvm use 20.11.0
-npm run dev          # starts Next.js on port 3000
+bun run dev          # starts Next.js on port 3000
 ```
 
 A `.env.local` file must exist with at least `NEXT_PUBLIC_CONVEX_URL` set — the Convex client provider throws at module load time if it is missing. All available VM secrets must be written to `.env.local` before starting the dev server. Key vars: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `NEXT_PUBLIC_BASE_URL`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_EMAIL_FROM`, `JWKS`, `JWT_PRIVATE_KEY`, `SITE_URL`, `INTERNAL_EMAIL_WEBHOOK_SECRET`.
 
 ### Lint / Type-check / Test
 
-- `npm run lint` — runs `npx ultracite check` (Biome-based)
-- `npm run type-check` — runs `tsc --noEmit`
-- `npm run test` — runs both lint and type-check (no unit test suite)
+- `bun run lint` — runs `bunx ultracite check` (Biome-based)
+- `bun run type-check` — runs `tsc --noEmit`
+- `bun run test` — runs both lint and type-check (no unit test suite)
 
-### Node.js version
+### Runtime and package manager
 
-The project requires Node.js **20.11.0** (specified in `.nvmrc`). Use `nvm use 20.11.0` before running any commands. The VM comes with nvm pre-installed.
+The project uses **Bun** for installing dependencies and running scripts. Use `bun install` and `bun run <script>` instead of npm commands.
 
 ### Git hooks
 
-Lefthook is configured (`lefthook.yml`) with a pre-commit hook that runs `npx ultracite fix` on staged JS/TS/JSON/CSS files.
+Lefthook is configured (`lefthook.yml`) with a pre-commit hook that runs `bunx ultracite fix` on staged JS/TS/JSON/CSS files.
 
 ### Gotchas
 
 - The `ConvexClientProvider` (`providers/ConvexClientProvider.tsx`) will **throw** if `NEXT_PUBLIC_CONVEX_URL` is not set, crashing the app at compile time for any route that uses Convex (both `(marketing)` and `(app)` layouts).
 - Sentry config in `next.config.js` uses `withSentryConfig`; if `SENTRY_AUTH_TOKEN` is missing, source-map upload will silently fail but the build/dev server still works.
-- There is no unit test framework — `npm run test` only lints and type-checks.
+- There is no unit test framework — `bun run test` only lints and type-checks.
 - The contact form (`/contact`) is a good end-to-end smoke test: it exercises a server action (`app/actions/send-contact-email.ts`) that sends email via Resend. If `RESEND_API_KEY` is set, submission returns a green "Message sent successfully!" banner.
 - Auth uses Convex Auth with email OTP (via Resend) and Google OAuth. The `JWKS` and `JWT_PRIVATE_KEY` secrets are needed for Convex Auth token verification. The login page is at `/login`.
