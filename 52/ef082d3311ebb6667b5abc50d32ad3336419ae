@@ -1,0 +1,19 @@
+proxy.ts
+  s_00959d5222ab6f::t_b05e9414a8036c 10,89
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "52ef082d3311ebb6667b5abc50d32ad3336419ae",
+  "prompts": {},
+  "sessions": {
+    "s_00959d5222ab6f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e47bc-662d-7a80-8f33-0f0c17377dfc",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
