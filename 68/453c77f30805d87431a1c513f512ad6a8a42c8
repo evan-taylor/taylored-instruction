@@ -1,0 +1,20 @@
+next.config.js
+  s_f726eedc00d309::t_ebeac33112c820 28-37,58-68,71-82,88-90
+  s_f726eedc00d309::t_8e0bcdbe78e39f 92
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "68453c77f30805d87431a1c513f512ad6a8a42c8",
+  "prompts": {},
+  "sessions": {
+    "s_f726eedc00d309": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e46dc-e996-75b0-b934-3b1bdce6b6f2",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
