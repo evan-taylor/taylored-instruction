@@ -1,0 +1,35 @@
+proxy.ts
+  s_00959d5222ab6f::t_53f439aec34cbb 57-66,93-96
+public/admin/studio/static/create-manifest.json
+  s_00959d5222ab6f::t_439d8d6dbd0c34 1,3-20
+  s_00959d5222ab6f::t_9cabea849870ac 2
+  s_00959d5222ab6f::t_277a3c8983d4b1 21
+package.json
+  s_00959d5222ab6f::t_87120bce5bab6a 11
+app/(studio)/admin/studio/layout.tsx
+  s_00959d5222ab6f::t_9e1a40550d8a79 1-18
+next.config.js
+  s_00959d5222ab6f::t_17e2251cc8fc0a 78
+public/admin/studio/static/a1fd46b5.create-tools.json
+  s_00959d5222ab6f::t_439d8d6dbd0c34 1-19
+  s_00959d5222ab6f::t_277a3c8983d4b1 20
+public/admin/studio/static/23a66d64.create-schema.json
+  s_00959d5222ab6f::t_277a3c8983d4b1 306
+  s_00959d5222ab6f::t_439d8d6dbd0c34 1-305
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "29b85b7e557df8c2dc896b3ddab658299aac0309",
+  "prompts": {},
+  "sessions": {
+    "s_00959d5222ab6f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e47bc-662d-7a80-8f33-0f0c17377dfc",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
