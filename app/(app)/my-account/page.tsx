@@ -146,6 +146,12 @@ export default function MyAccountPage() {
                     >
                       Manage Instructors
                     </Link>
+                    <Link
+                      className="block text-primary hover:underline"
+                      href="/admin/studio"
+                    >
+                      Sanity Studio
+                    </Link>
                   </div>
                 )}
               </div>
