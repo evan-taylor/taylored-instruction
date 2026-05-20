@@ -2,7 +2,7 @@
 
 import { BookOpen, CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { Image } from "next-sanity/image";
 import { type BuildPageMetadataInput, buildPageMetadata } from "@/lib/seo";
@@ -46,7 +46,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function BlogPage() {
-  cacheLife("hours");
+  cacheLife("minutes");
+  cacheTag("post");
 
   const posts = await sanityFetch<BlogPostSummary[]>(POSTS_QUERY, {
     tags: ["post"],
@@ -73,6 +74,8 @@ export default async function BlogPage() {
         "@type": "Article",
         description: post.excerpt,
         name: post.title,
+        dateModified: post._updatedAt,
+        datePublished: post.publishedAt,
         url: `https://tayloredinstruction.com/blog/${post.slug}`,
       },
     })),
