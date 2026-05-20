@@ -1,0 +1,25 @@
+public/admin/studio/static/a1fd46b5.create-tools.json
+  s_00959d5222ab6f::t_aeea033abfd144 1-20
+next.config.js
+  s_00959d5222ab6f::t_c4f9fa88aa4b47 30,36
+public/admin/studio/static/23a66d64.create-schema.json
+  s_00959d5222ab6f::t_aeea033abfd144 1-306
+public/admin/studio/static/create-manifest.json
+  s_00959d5222ab6f::t_aeea033abfd144 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "046989824f131022269ccb1452953f2bd3d88c2a",
+  "prompts": {},
+  "sessions": {
+    "s_00959d5222ab6f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e47bc-662d-7a80-8f33-0f0c17377dfc",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
