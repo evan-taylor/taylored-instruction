@@ -120,11 +120,15 @@ export const postType = defineType({
       name: "seoKeywords",
       title: "SEO keywords",
       type: "array",
-      of: [{ type: "string" }],
+      of: [
+        {
+          type: "string",
+          validation: (rule) => rule.max(keywordMaxLength),
+        },
+      ],
       options: {
         layout: "tags",
       },
-      validation: (rule) => rule.max(keywordMaxLength),
     }),
   ],
   preview: {
