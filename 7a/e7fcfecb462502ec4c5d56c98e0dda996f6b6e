@@ -1,0 +1,19 @@
+app/(app)/my-account/page.tsx
+  s_049674368e3105::t_1c1bd774ce8bcf 149-154
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "7ae7fcfecb462502ec4c5d56c98e0dda996f6b6e",
+  "prompts": {},
+  "sessions": {
+    "s_049674368e3105": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e465d-2d11-7f52-8ec6-16ee1410655e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
