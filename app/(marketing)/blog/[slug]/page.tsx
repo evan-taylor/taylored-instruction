@@ -2,7 +2,7 @@
 
 import { PortableText, type PortableTextComponents } from "@portabletext/react";
 import type { Metadata } from "next";
-import { cacheLife } from "next/cache";
+import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Image } from "next-sanity/image";
@@ -10,8 +10,12 @@ import { buildPageMetadata } from "@/lib/seo";
 import { generateJSONLD, getBreadcrumbSchema } from "@/lib/structuredData";
 import { sanityFetch } from "@/sanity/lib/client";
 import { urlFor } from "@/sanity/lib/image";
-import { POST_QUERY } from "@/sanity/lib/queries";
-import type { BlogPortableTextBlock, BlogPost } from "@/sanity/types";
+import { POST_QUERY, POST_SLUGS_QUERY } from "@/sanity/lib/queries";
+import type {
+  BlogPortableTextBlock,
+  BlogPost,
+  BlogPostSlug,
+} from "@/sanity/types";
 
 type BlogPostPageProps = {
   params: Promise<{
@@ -97,6 +101,14 @@ const getPost = async (slug: string) =>
     tags: [`post:${slug}`, "post"],
   }).catch(() => null);
 
+export async function generateStaticParams() {
+  const posts = await sanityFetch<BlogPostSlug[]>(POST_SLUGS_QUERY, {
+    tags: ["post"],
+  }).catch(() => []);
+
+  return posts.map((post) => ({ slug: post.slug }));
+}
+
 export async function generateMetadata(
   props: BlogPostPageProps
 ): Promise<Metadata> {
@@ -113,22 +125,45 @@ export async function generateMetadata(
     });
   }
 
-  return buildPageMetadata({
+  const imageUrl = post.mainImage
+    ? urlFor(post.mainImage).width(heroImageWidth).height(heroImageHeight).url()
+    : undefined;
+
+  const authorName = post.author ?? "Taylored Instruction";
+  const keywords = [...(post.categories ?? []), ...(post.seoKeywords ?? [])];
+  const metadata = buildPageMetadata({
     title: post.seoTitle ?? post.title,
     description: post.seoDescription ?? post.excerpt,
     ogType: "article",
     path: `/blog/${post.slug}`,
+    keywords,
     image: {
       title: post.title,
       description: post.seoDescription ?? post.excerpt,
+      url: imageUrl,
     },
   });
+
+  return {
+    ...metadata,
+    authors: [{ name: authorName }],
+    openGraph: {
+      ...metadata.openGraph,
+      authors: [authorName],
+      modifiedTime: post._updatedAt,
+      publishedTime: post.publishedAt,
+      tags: keywords,
+      type: "article",
+    },
+  };
 }
 
 export default async function BlogPostPage(props: BlogPostPageProps) {
   cacheLife("minutes");
+  cacheTag("post");
 
   const params = await props.params;
+  cacheTag(`post:${params.slug}`);
   const post = await getPost(params.slug);
 
   if (!post) {
@@ -144,13 +179,15 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
     "@type": "Article",
     author: {
       "@type": "Organization",
-      name: "Taylored Instruction",
+      name: post.author ?? "Taylored Instruction",
     },
-    dateModified: post.publishedAt,
+    dateModified: post._updatedAt,
     datePublished: post.publishedAt,
     description: post.seoDescription ?? post.excerpt,
     headline: post.title,
     image: imageUrl ? [imageUrl] : undefined,
+    inLanguage: "en-US",
+    keywords: [...(post.categories ?? []), ...(post.seoKeywords ?? [])],
     mainEntityOfPage: {
       "@id": `https://tayloredinstruction.com/blog/${post.slug}`,
       "@type": "WebPage",

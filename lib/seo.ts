@@ -12,6 +12,7 @@ type OgImageType =
 type PageImageOptions = {
   title: string;
   description?: string;
+  url?: string;
   type?: OgImageType;
 };
 
@@ -59,11 +60,13 @@ export const buildPageMetadata = ({
   const canonicalUrl = absoluteUrl(path);
   const ogTitle = image?.title ?? title;
   const ogDescription = image?.description ?? description;
-  const ogImageUrl = generateOgImageUrl({
-    title: ogTitle,
-    description: ogDescription,
-    type: image?.type,
-  });
+  const ogImageUrl =
+    image?.url ??
+    generateOgImageUrl({
+      title: ogTitle,
+      description: ogDescription,
+      type: image?.type,
+    });
 
   return {
     title,

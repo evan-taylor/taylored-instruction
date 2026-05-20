@@ -1,12 +1,16 @@
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
+import { sanityFetch } from "@/sanity/lib/client";
+import { POSTS_SITEMAP_QUERY } from "@/sanity/lib/queries";
+import type { BlogPostSitemapEntry } from "@/sanity/types";
 
 const baseUrl = "https://tayloredinstruction.com";
 const staticRoutePaths = [
   "/",
   "/about",
   "/contact",
+  "/blog",
   "/resources",
   "/bls",
   "/basic-life-support",
@@ -41,6 +45,7 @@ const routeConfigByPath: Record<string, RouteConfig> = {
   "/": { priority: 1.0, changeFrequency: "weekly" },
   "/about": { priority: 0.9, changeFrequency: "monthly" },
   "/contact": { priority: 0.9, changeFrequency: "monthly" },
+  "/blog": { priority: 0.9, changeFrequency: "weekly" },
   "/resources": { priority: 0.95, changeFrequency: "weekly" },
   "/bls": { priority: 0.95, changeFrequency: "weekly" },
   "/basic-life-support": { priority: 0.95, changeFrequency: "weekly" },
@@ -65,6 +70,13 @@ const getRouteConfig = (routePath: string): RouteConfig => {
   if (routePath.startsWith("/resources/")) {
     return {
       priority: 0.85,
+      changeFrequency: "weekly",
+    };
+  }
+
+  if (routePath.startsWith("/blog/")) {
+    return {
+      priority: 0.8,
       changeFrequency: "weekly",
     };
   }
@@ -101,6 +113,7 @@ const buildEntry = ({
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
+  const dynamicBlogRouteMap = new Map<string, ResourceRouteEntry>();
 
   try {
     const resources = await fetchQuery(
@@ -119,12 +132,37 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If Convex is unavailable, still return a valid sitemap for static routes.
   }
 
+  try {
+    const posts = await sanityFetch<BlogPostSitemapEntry[]>(
+      POSTS_SITEMAP_QUERY,
+      {
+        tags: ["post"],
+      }
+    );
+
+    for (const post of posts) {
+      const path = `/blog/${post.slug}`;
+      dynamicBlogRouteMap.set(path, {
+        path,
+        lastModified: new Date(post._updatedAt ?? post.publishedAt),
+      });
+    }
+  } catch (_error) {
+    // If Sanity is unavailable, still return a valid sitemap.
+  }
+
   const entries = [
     ...staticRoutePaths.map((path) => buildEntry({ path })),
     ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
       buildEntry({
         path: resourceRoute.path,
         lastModified: resourceRoute.lastModified,
+      })
+    ),
+    ...Array.from(dynamicBlogRouteMap.values()).map((blogRoute) =>
+      buildEntry({
+        path: blogRoute.path,
+        lastModified: blogRoute.lastModified,
       })
     ),
   ];

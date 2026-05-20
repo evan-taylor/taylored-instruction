@@ -1,6 +1,7 @@
 import { defineField, defineType } from "sanity";
 
 const excerptMaxLength = 180;
+const keywordMaxLength = 40;
 const seoDescriptionMaxLength = 160;
 const seoTitleMaxLength = 70;
 const textAreaRows = 3;
@@ -38,6 +39,21 @@ export const postType = defineType({
       title: "Published at",
       type: "datetime",
       validation: (rule) => rule.required(),
+    }),
+    defineField({
+      name: "author",
+      title: "Author",
+      type: "string",
+      initialValue: "Taylored Instruction",
+    }),
+    defineField({
+      name: "categories",
+      title: "Categories",
+      type: "array",
+      of: [{ type: "string" }],
+      options: {
+        layout: "tags",
+      },
     }),
     defineField({
       name: "mainImage",
@@ -99,6 +115,16 @@ export const postType = defineType({
       type: "text",
       rows: textAreaRows,
       validation: (rule) => rule.max(seoDescriptionMaxLength),
+    }),
+    defineField({
+      name: "seoKeywords",
+      title: "SEO keywords",
+      type: "array",
+      of: [{ type: "string" }],
+      options: {
+        layout: "tags",
+      },
+      validation: (rule) => rule.max(keywordMaxLength),
     }),
   ],
   preview: {
