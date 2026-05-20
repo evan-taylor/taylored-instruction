@@ -1,0 +1,23 @@
+app/(marketing)/blog/page.tsx
+  s_049674368e3105::t_fb473d7f631ab0 49
+sanity/lib/client.ts
+  s_049674368e3105::t_6a12f98e01bd60 8,16
+app/(marketing)/blog/[slug]/page.tsx
+  s_049674368e3105::t_b7ec45549ba0db 129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "0c4551e913da369d91f1102106f754271dc98741",
+  "prompts": {},
+  "sessions": {
+    "s_049674368e3105": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e465d-2d11-7f52-8ec6-16ee1410655e",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
