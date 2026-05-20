@@ -1,0 +1,19 @@
+app/(marketing)/blog/[slug]/page.tsx
+  s_f726eedc00d309::t_79cc453b6c1a85 28,110-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "7a1955be8dff95e99233c22576f4c017527386f5",
+  "prompts": {},
+  "sessions": {
+    "s_f726eedc00d309": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e46dc-e996-75b0-b934-3b1bdce6b6f2",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
