@@ -27,12 +27,13 @@ const nextConfig = {
   async headers() {
     const contentSecurityPolicy = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://embed.typeform.com https://vancouverusa.chambermaster.com https://*.cal.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://core.sanity-cdn.com https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://embed.typeform.com https://vancouverusa.chambermaster.com https://*.cal.com",
       "connect-src 'self' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://cdn.sanity.io https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com",
       "img-src 'self' data: blob: https:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
       "frame-src 'self' https://cap.so https://www.loom.com https://embed.typeform.com https://*.cal.com",
+      "worker-src 'self' blob:",
     ];
     const sharedSecurityHeaders = [
       {
