@@ -125,8 +125,6 @@ const hasWebhookConfiguration = (
 const makeKey = () =>
   randomUUID().replaceAll("-", "").slice(0, sanityKeyLength);
 
-const normalizeText = (text: string) => text.replace(/\s+/g, " ").trim();
-
 const isElement = (node: HtmlNode): node is HTMLElement =>
   "tagName" in node && typeof node.tagName === "string";
 
@@ -138,9 +136,15 @@ const getNodeText = (node: HtmlNode): string => {
   return node.rawText;
 };
 
-const createSpan = (text: string, marks: string[] = []) => {
-  const normalizedText = normalizeText(text);
-  if (!normalizedText) {
+const createSpan = (
+  text: string,
+  marks: string[] = [],
+  options: { trim?: boolean } = {}
+) => {
+  const normalizedText = text.replace(/\s+/g, " ");
+  const spanText = options.trim ? normalizedText.trim() : normalizedText;
+
+  if (!spanText) {
     return null;
   }
 
@@ -148,7 +152,7 @@ const createSpan = (text: string, marks: string[] = []) => {
     _key: makeKey(),
     _type: "span",
     marks,
-    text: normalizedText,
+    text: spanText,
   } satisfies PortableTextSpan;
 };
 
@@ -156,7 +160,7 @@ const createTextBlock = (
   text: string,
   style: PortableTextBlock["style"] = "normal"
 ): PortableTextBlock | null => {
-  const span = createSpan(text);
+  const span = createSpan(text, [], { trim: true });
   if (!span) {
     return null;
   }

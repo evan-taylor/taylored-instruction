@@ -26,6 +26,9 @@ type BlogPostPageProps = {
 const heroImageWidth = 1200;
 const heroImageHeight = 675;
 const emptyBlogStaticParamsSlug = "__empty-blog-static-param__";
+const trailingWhitespacePattern = /\s$/;
+const leadingWhitespacePattern = /^\s/;
+const joiningPunctuationPattern = /^[,.;:!?)]/;
 
 const formatPublishedDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
@@ -36,6 +39,50 @@ const formatPublishedDate = (date: string) =>
 
 const isExternalHref = (href: string) =>
   href.startsWith("http://") || href.startsWith("https://");
+
+type PortableTextChildWithText = {
+  marks?: string[];
+  text?: string;
+};
+
+const shouldInsertBoundarySpace = (
+  previous: PortableTextChildWithText | undefined,
+  current: PortableTextChildWithText
+) =>
+  Boolean(
+    previous?.text &&
+      current.text &&
+      !trailingWhitespacePattern.test(previous.text) &&
+      !leadingWhitespacePattern.test(current.text) &&
+      !joiningPunctuationPattern.test(current.text) &&
+      ((previous.marks?.length ?? 0) > 0 || (current.marks?.length ?? 0) > 0)
+  );
+
+const normalizePortableTextSpacing = (
+  body: BlogPortableTextBlock[]
+): BlogPortableTextBlock[] =>
+  body.map((block) => {
+    if (!block.children) {
+      return block;
+    }
+
+    let changed = false;
+    const children: typeof block.children = [];
+
+    for (const child of block.children) {
+      const previous = children.at(-1) as PortableTextChildWithText | undefined;
+      const current = child as PortableTextChildWithText;
+
+      if (shouldInsertBoundarySpace(previous, current) && current.text) {
+        children.push({ ...child, text: ` ${current.text}` });
+        changed = true;
+      } else {
+        children.push(child);
+      }
+    }
+
+    return changed ? { ...block, children } : block;
+  });
 
 const portableTextComponents: PortableTextComponents<BlogPortableTextBlock> = {
   block: {
@@ -271,7 +318,7 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
           {post.body && post.body.length > 0 ? (
             <PortableText
               components={portableTextComponents}
-              value={post.body}
+              value={normalizePortableTextSpacing(post.body)}
             />
           ) : (
             <p className="text-gray-700">
