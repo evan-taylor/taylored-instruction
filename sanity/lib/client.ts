@@ -8,6 +8,22 @@ export const client = createClient({
   useCdn: false,
 });
 
+let writeClient: ReturnType<typeof createClient> | null = null;
+
+export const getWriteClient = () => {
+  if (!writeClient) {
+    writeClient = createClient({
+      apiVersion,
+      dataset,
+      projectId,
+      token: process.env.SANITY_API_WRITE_TOKEN,
+      useCdn: false,
+    });
+  }
+
+  return writeClient;
+};
+
 type SanityFetchOptions = {
   params?: Record<string, string>;
   tags?: string[];

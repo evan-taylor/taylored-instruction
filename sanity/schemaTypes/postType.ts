@@ -18,6 +18,13 @@ export const postType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      name: "sightAiId",
+      title: "Sight AI ID",
+      type: "string",
+      hidden: true,
+      readOnly: true,
+    }),
+    defineField({
       name: "slug",
       title: "Slug",
       type: "slug",
