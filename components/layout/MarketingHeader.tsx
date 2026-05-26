@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
 
@@ -30,6 +29,11 @@ type NavTopLevelLink = {
   label: string;
   dropdown?: DropdownItem[];
   href?: string;
+};
+
+export type MarketingHeaderAuthState = {
+  isAuthenticated: boolean;
+  isInstructor: boolean;
 };
 
 // Helper function for active link class
@@ -157,17 +161,21 @@ const generateNavLinks = (
   },
 ];
 
-export const MarketingHeader = () => {
+export const MarketingHeader = ({
+  authState = { isAuthenticated: false, isInstructor: false },
+}: {
+  authState?: MarketingHeaderAuthState;
+}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeDesktopDropdown, setActiveDesktopDropdown] = useState<
     string | null
   >(null);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname() ?? "";
-  const { session, isInstructor } = useProfile();
-
-  const isAuthenticated = !!session;
-  const navLinks = generateNavLinks(isAuthenticated, isInstructor);
+  const navLinks = generateNavLinks(
+    authState.isAuthenticated,
+    authState.isInstructor
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {

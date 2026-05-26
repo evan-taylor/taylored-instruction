@@ -2,6 +2,8 @@ import { Facebook, Instagram } from "lucide-react";
 import Link from "next/link";
 import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 
+const copyrightYear = 2026;
+
 export const Footer = () => {
   return (
     <footer className="bg-gray-100 pt-16 pb-8 text-text-light">
@@ -129,8 +131,7 @@ export const Footer = () => {
         {/* Copyright - text-gray-600 for WCAG 4.5:1 contrast on gray-100 */}
         <div className="border-gray-300 border-t pt-6 text-center text-gray-600 text-xs">
           <p>
-            &copy; {new Date().getFullYear()} Taylored Instruction. All Rights
-            Reserved.
+            &copy; {copyrightYear} Taylored Instruction. All Rights Reserved.
           </p>
         </div>
       </div>

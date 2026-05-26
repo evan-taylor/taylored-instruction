@@ -42,6 +42,8 @@ const formatPublishedDate = (date: string) =>
   });
 
 export async function generateMetadata(): Promise<Metadata> {
+  await Promise.resolve();
+
   return buildPageMetadata(blogPageMetadata);
 }
 
