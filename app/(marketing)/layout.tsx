@@ -1,8 +1,8 @@
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Suspense } from "react";
 import { MarketingTrackerScripts } from "@/components/analytics/MarketingTrackerScripts";
+import { AuthenticatedMarketingHeader } from "@/components/layout/AuthenticatedMarketingHeader";
 import { Footer } from "@/components/layout/Footer";
-import { MarketingHeader } from "@/components/layout/MarketingHeader";
 import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
 export default function MarketingLayout({
@@ -15,7 +15,7 @@ export default function MarketingLayout({
       <ConvexAuthNextjsServerProvider>
         <ConvexClientProvider>
           <div className="flex min-h-screen flex-col">
-            <MarketingHeader />
+            <AuthenticatedMarketingHeader />
             <main className="flex-grow">{children}</main>
             <Footer />
           </div>
