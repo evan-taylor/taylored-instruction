@@ -41,7 +41,9 @@ const formatPublishedDate = (date: string) =>
     year: "numeric",
   });
 
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
+  await Promise.resolve();
+
   return buildPageMetadata(blogPageMetadata);
 }
 
