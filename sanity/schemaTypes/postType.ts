@@ -1,6 +1,5 @@
 import { defineField, defineType } from "sanity";
 
-const excerptMaxLength = 180;
 const keywordMaxLength = 40;
 const seoDescriptionMaxLength = 160;
 const seoTitleMaxLength = 70;
@@ -39,7 +38,7 @@ export const postType = defineType({
       title: "Excerpt",
       type: "text",
       rows: textAreaRows,
-      validation: (rule) => rule.required().max(excerptMaxLength),
+      validation: (rule) => rule.required(),
     }),
     defineField({
       name: "publishedAt",

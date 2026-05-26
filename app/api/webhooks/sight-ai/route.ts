@@ -16,7 +16,7 @@ const replayWindowMs =
 const sanityKeyLength = 12;
 const signaturePrefix = "sha256=";
 const defaultAuthor = "Taylored Instruction";
-const fallbackExcerptLength = 180;
+const fallbackExcerptLength = 320;
 
 type PortableTextSpan = {
   _key: string;
@@ -156,6 +156,24 @@ const createSpan = (
   } satisfies PortableTextSpan;
 };
 
+const normalizePlainText = (text: string) => text.replace(/\s+/g, " ").trim();
+
+const truncateAtWordBoundary = (text: string, maxLength: number) => {
+  const normalizedText = normalizePlainText(text);
+  if (normalizedText.length <= maxLength) {
+    return normalizedText;
+  }
+
+  const truncatedText = normalizedText.slice(0, maxLength);
+  const lastSpaceIndex = truncatedText.lastIndexOf(" ");
+
+  if (lastSpaceIndex > 0) {
+    return `${truncatedText.slice(0, lastSpaceIndex)}...`;
+  }
+
+  return `${truncatedText}...`;
+};
+
 const createTextBlock = (
   text: string,
   style: PortableTextBlock["style"] = "normal"
@@ -280,18 +298,16 @@ const htmlToPortableText = (html: string): PortableTextBlock[] => {
 };
 
 const makeExcerpt = (article: RequiredSightAiArticle) => {
-  const summary = article.summary?.trim();
+  const summary = article.summary ? normalizePlainText(article.summary) : "";
   if (summary) {
-    return summary.slice(0, fallbackExcerptLength);
+    return summary;
   }
 
   const firstBlock = htmlToPortableText(article.content).at(0);
-  return (
-    firstBlock?.children
-      .map((child) => child.text)
-      .join(" ")
-      .slice(0, fallbackExcerptLength) || article.title
-  );
+  const fallbackText =
+    firstBlock?.children.map((child) => child.text).join(" ") || article.title;
+
+  return truncateAtWordBoundary(fallbackText, fallbackExcerptLength);
 };
 
 const verifySignature = (
