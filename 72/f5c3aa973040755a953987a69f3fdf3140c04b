@@ -1,0 +1,22 @@
+app/api/webhooks/sight-ai/route.ts
+  s_00959d5222ab6f::t_b7f8ff54075e25 308
+  s_00959d5222ab6f::t_075ad91d260b38 19,159-176,301,303,307,309-310
+sanity/schemaTypes/postType.ts
+  s_00959d5222ab6f::t_cee980143631f8 41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "72f5c3aa973040755a953987a69f3fdf3140c04b",
+  "prompts": {},
+  "sessions": {
+    "s_00959d5222ab6f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019e47bc-662d-7a80-8f33-0f0c17377dfc",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
