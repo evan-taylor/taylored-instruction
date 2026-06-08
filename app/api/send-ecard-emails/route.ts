@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
+      replyTo: customerEmail,
       subject: "New Multi-Item eCard Purchase",
       react: React.createElement(EcardPurchaseAdminEmail, {
         itemName: "Multiple Products",
@@ -111,6 +112,7 @@ export async function POST(req: NextRequest) {
     const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
+      replyTo: customerEmail,
       subject: `New eCard Purchase: ${itemName}`,
       react: React.createElement(EcardPurchaseAdminEmail, {
         itemName,
