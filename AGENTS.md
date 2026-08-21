@@ -351,6 +351,8 @@ Set `INFISICAL_ENV` to `dev` (default), `staging`, or `prod`. Hosts that already
 
 The Convex client provider still throws if `NEXT_PUBLIC_CONVEX_URL` is missing after injection. Do not copy Infisical machine-identity credentials into Infisical itself.
 
+Sanity, Notion, Stripe publishable, and other app vars that were never in Cloud Agent secrets are not in Infisical yet. Add them in the Infisical dashboard if a command needs them.
+
 ### Lint / Type-check / Test
 
 - `bun run lint` — runs `bunx ultracite check` (Biome-based)
