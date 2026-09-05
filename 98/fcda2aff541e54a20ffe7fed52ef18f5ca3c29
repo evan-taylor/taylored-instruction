@@ -1,0 +1,21 @@
+app/layout.tsx
+  s_0d190cdbd6e54a::t_a6b72ff885d63c 13,140-143
+app/(app)/layout.tsx
+  s_0d190cdbd6e54a::t_a6b72ff885d63c 29-34
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.0",
+  "base_commit_sha": "98fcda2aff541e54a20ffe7fed52ef18f5ca3c29",
+  "prompts": {},
+  "sessions": {
+    "s_0d190cdbd6e54a": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c386ffa0-f29f-4888-88aa-9c9e5369c820",
+        "model": "claude-fable-5-1"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
