@@ -5,21 +5,16 @@ import type { Product } from "../types";
 
 // Helper to get the first image URL or a placeholder
 const getImageUrl = (imageUrls: string[] | null | undefined): string => {
-  if (
-    imageUrls &&
-    imageUrls.length > 0 &&
-    imageUrls[0] &&
-    imageUrls[0].startsWith("http")
-  ) {
+  if (imageUrls && imageUrls.length > 0 && imageUrls[0]?.startsWith("http")) {
     return imageUrls[0];
   }
   return "/placeholder-image.png"; // Provide a path to a placeholder image in your public folder
 };
 
-type ProductCardProps = {
-  product: Product | null | undefined;
+interface ProductCardProps {
   isInstructor: boolean;
-};
+  product: Product | null | undefined;
+}
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, isInstructor }) => {
   if (!product) {

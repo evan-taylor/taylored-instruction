@@ -17,11 +17,11 @@ import type {
   BlogPostSlug,
 } from "@/sanity/types";
 
-type BlogPostPageProps = {
+interface BlogPostPageProps {
   params: Promise<{
     slug: string;
   }>;
-};
+}
 
 const heroImageWidth = 1200;
 const heroImageHeight = 675;
@@ -40,10 +40,10 @@ const formatPublishedDate = (date: string) =>
 const isExternalHref = (href: string) =>
   href.startsWith("http://") || href.startsWith("https://");
 
-type PortableTextChildWithText = {
+interface PortableTextChildWithText {
   marks?: string[];
   text?: string;
-};
+}
 
 const shouldInsertBoundarySpace = (
   previous: PortableTextChildWithText | undefined,
@@ -86,6 +86,11 @@ const normalizePortableTextSpacing = (
 
 const portableTextComponents: PortableTextComponents<BlogPortableTextBlock> = {
   block: {
+    blockquote: ({ children }) => (
+      <blockquote className="mt-6 border-primary border-l-4 pl-5 text-gray-700 italic leading-relaxed">
+        {children}
+      </blockquote>
+    ),
     h2: ({ children }) => (
       <h2 className="mt-10 font-semibold text-3xl text-gray-900 leading-tight">
         {children}
@@ -98,11 +103,6 @@ const portableTextComponents: PortableTextComponents<BlogPortableTextBlock> = {
     ),
     normal: ({ children }) => (
       <p className="mt-5 text-gray-700 leading-relaxed">{children}</p>
-    ),
-    blockquote: ({ children }) => (
-      <blockquote className="mt-6 border-primary border-l-4 pl-5 text-gray-700 italic leading-relaxed">
-        {children}
-      </blockquote>
     ),
   },
   list: {
@@ -169,11 +169,11 @@ export async function generateMetadata(
 
   if (!post) {
     return buildPageMetadata({
-      title: "Blog Post Not Found",
       description:
         "The requested blog post could not be found on Taylored Instruction.",
       noIndex: true,
       path: `/blog/${params.slug}`,
+      title: "Blog Post Not Found",
     });
   }
 
@@ -184,16 +184,16 @@ export async function generateMetadata(
   const authorName = post.author ?? "Taylored Instruction";
   const keywords = [...(post.categories ?? []), ...(post.seoKeywords ?? [])];
   const metadata = buildPageMetadata({
-    title: post.seoTitle ?? post.title,
     description: post.seoDescription ?? post.excerpt,
-    ogType: "article",
-    path: `/blog/${post.slug}`,
-    keywords,
     image: {
-      title: post.title,
       description: post.seoDescription ?? post.excerpt,
+      title: post.title,
       url: imageUrl,
     },
+    keywords,
+    ogType: "article",
+    path: `/blog/${post.slug}`,
+    title: post.seoTitle ?? post.title,
   });
 
   return {

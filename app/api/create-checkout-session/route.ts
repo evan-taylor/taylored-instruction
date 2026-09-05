@@ -9,7 +9,7 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2026-08-26.dahlia",
   });
 }
 
@@ -52,18 +52,19 @@ export async function POST(req: NextRequest) {
       distinctId: email,
       event: "checkout_session_created",
       properties: {
-        priceId,
-        quantity: numQuantity,
         email,
         metadata,
+        priceId,
+        quantity: numQuantity,
       },
     });
 
     // Stripe API parameters use snake_case as required by their API
     const session = await getStripeClient().checkout.sessions.create({
-      mode: "payment",
-      payment_method_types: ["card"],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
+      allow_promotion_codes: true,
+      automatic_tax: {
+        enabled: true,
+      },
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
       customer_email: email,
       line_items: [
@@ -76,13 +77,12 @@ export async function POST(req: NextRequest) {
         ...metadata,
         quantity: numQuantity.toString(),
       },
-      automatic_tax: {
-        enabled: true,
-      },
+      mode: "payment",
+      payment_method_types: ["card"],
+      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
       tax_id_collection: {
         enabled: true,
       },
-      allow_promotion_codes: true,
     });
 
     if (session.url) {
@@ -91,11 +91,11 @@ export async function POST(req: NextRequest) {
         distinctId: email,
         event: "checkout_session_created_success",
         properties: {
+          email,
+          metadata,
           priceId,
           quantity: numQuantity,
-          email,
           sessionId: session.id,
-          metadata,
         },
       });
       await posthog?.shutdown();
@@ -117,10 +117,10 @@ export async function POST(req: NextRequest) {
       distinctId: email,
       event: "checkout_session_error",
       properties: {
+        email,
         error: errorMessage,
         priceId,
         quantity: numQuantity,
-        email,
       },
     });
     await posthog?.shutdown();

@@ -6,83 +6,77 @@
 import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 import { SITE_URL } from "@/lib/seo";
 
-type LocalBusinessSchema = {
+interface LocalBusinessSchema {
   "@context": string;
-  "@type": string;
   "@id": string;
-  name: string;
-  image: string;
-  description: string;
-  url: string;
-  telephone: string;
-  email: string;
+  "@type": string;
   address: {
     "@type": string;
     addressLocality: string;
     addressRegion: string;
     addressCountry: string;
   };
-  geo?: {
+  aggregateRating?: {
     "@type": string;
-    latitude: number;
-    longitude: number;
+    ratingValue: string;
+    reviewCount: string;
   };
   areaServed: Array<{
     "@type": string;
     name: string;
   }>;
-  priceRange: string;
+  description: string;
+  email: string;
+  geo?: {
+    "@type": string;
+    latitude: number;
+    longitude: number;
+  };
+  image: string;
+  name: string;
   openingHoursSpecification?: {
     "@type": string;
     dayOfWeek: string[];
     opens?: string;
     closes?: string;
   };
+  priceRange: string;
   sameAs: string[];
-  aggregateRating?: {
-    "@type": string;
-    ratingValue: string;
-    reviewCount: string;
-  };
-};
-
-type OrganizationSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
-  name: string;
-  alternateName?: string;
-  url: string;
-  logo: string;
-  description: string;
-  email: string;
   telephone: string;
+  url: string;
+}
+
+interface OrganizationSchema {
+  "@context": string;
+  "@id": string;
+  "@type": string;
   address: {
     "@type": string;
     addressLocality: string;
     addressRegion: string;
     addressCountry: string;
   };
+  alternateName?: string;
+  description: string;
+  email: string;
   founder: {
     "@type": string;
     name: string;
     jobTitle: string;
   };
-  sameAs: string[];
   knowsAbout: string[];
-};
+  logo: string;
+  name: string;
+  sameAs: string[];
+  telephone: string;
+  url: string;
+}
 
-type CourseSchema = {
+interface CourseSchema {
   "@context": string;
   "@type": string;
-  name: string;
-  description: string;
-  provider: {
-    "@type": string;
-    name: string;
-    url: string;
-  };
   courseCode?: string;
+  description: string;
   educationalCredentialAwarded?: string;
   hasCourseInstance?: {
     "@type": string;
@@ -90,56 +84,55 @@ type CourseSchema = {
     duration: string;
     inLanguage: string;
   };
+  name: string;
   offers?: {
     "@type": string;
     category: string;
     priceCurrency?: string;
   };
-};
-
-type WebSiteSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
-  name: string;
-  url: string;
-};
-
-type WebPageSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
-  name: string;
-  description: string;
-  url: string;
-  isPartOf: {
-    "@id": string;
+  provider: {
+    "@type": string;
+    name: string;
+    url: string;
   };
+}
+
+interface WebSiteSchema {
+  "@context": string;
+  "@id": string;
+  "@type": string;
+  name: string;
+  url: string;
+}
+
+interface WebPageSchema {
+  "@context": string;
+  "@id": string;
+  "@type": string;
   about?: {
     "@id": string;
   };
+  description: string;
+  inLanguage: string;
+  isPartOf: {
+    "@id": string;
+  };
+  name: string;
   primaryImageOfPage?: {
     "@type": string;
     url: string;
   };
-  inLanguage: string;
-};
+  url: string;
+}
 
-type ServiceSchema = {
+interface ServiceSchema {
   "@context": string;
-  "@type": string;
   "@id": string;
-  name: string;
-  serviceType: string;
-  description: string;
-  provider: {
-    "@id": string;
-  };
+  "@type": string;
   areaServed: Array<{
     "@type": string;
     name: string;
   }>;
-  url: string;
   audience?: {
     "@type": string;
     audienceType: string;
@@ -148,60 +141,67 @@ type ServiceSchema = {
     "@type": string;
     serviceUrl: string;
   };
-};
-
-type ContactPageSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
-  name: string;
   description: string;
-  url: string;
-  isPartOf: {
+  name: string;
+  provider: {
     "@id": string;
   };
+  serviceType: string;
+  url: string;
+}
+
+interface ContactPageSchema {
+  "@context": string;
+  "@id": string;
+  "@type": string;
   about: {
     "@id": string;
   };
+  description: string;
   inLanguage: string;
-};
-
-type PersonSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
+  isPartOf: {
+    "@id": string;
+  };
   name: string;
+  url: string;
+}
+
+interface PersonSchema {
+  "@context": string;
+  "@id": string;
+  "@type": string;
+  email: string;
   jobTitle: string;
+  name: string;
+  telephone: string;
+  url: string;
   worksFor: {
     "@id": string;
   };
-  email: string;
-  telephone: string;
-  url: string;
-};
+}
 
-type ProductSchema = {
+interface ProductSchema {
   "@context": string;
-  "@type": string;
   "@id": string;
-  name: string;
-  description: string;
-  category: string;
-  brand: {
-    "@type": string;
-    name: string;
-  };
-  seller: {
-    "@id": string;
-  };
+  "@type": string;
   areaServed: Array<{
     "@type": string;
     name: string;
   }>;
+  brand: {
+    "@type": string;
+    name: string;
+  };
+  category: string;
+  description: string;
+  name: string;
+  seller: {
+    "@id": string;
+  };
   url: string;
-};
+}
 
-type BreadcrumbSchema = {
+interface BreadcrumbSchema {
   "@context": string;
   "@type": string;
   itemListElement: Array<{
@@ -210,7 +210,7 @@ type BreadcrumbSchema = {
     name: string;
     item?: string;
   }>;
-};
+}
 
 const BASE_URL = SITE_URL;
 const WEBSITE_ID = `${BASE_URL}/#website`;
@@ -224,28 +224,23 @@ const PARAGRAPH_SEPARATOR_REGEX = /\u2029/g;
 // Organization Schema - Main company information
 export const getOrganizationSchema = (): OrganizationSchema => ({
   "@context": "https://schema.org",
-  "@type": "EducationalOrganization",
   "@id": ORGANIZATION_ID,
-  name: "Taylored Instruction",
+  "@type": "EducationalOrganization",
+  address: {
+    "@type": "PostalAddress",
+    addressCountry: "US",
+    addressLocality: "Vancouver",
+    addressRegion: "WA",
+  },
   alternateName: "Taylored Instruction CPR Training",
-  url: "https://tayloredinstruction.com",
-  logo: "https://tayloredinstruction.com/horizontal-logo-black.png",
   description:
     "Taylored Instruction provides professional CPR, BLS, First Aid, Lifeguard training, and AED sales in Vancouver, WA and San Luis Obispo, CA. American Red Cross Licensed Training Provider and AHA Training Site.",
   email: "evan@tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Vancouver",
-    addressRegion: "WA",
-    addressCountry: "US",
-  },
   founder: {
     "@type": "Person",
-    name: "Evan Taylor",
     jobTitle: "Instructor Trainer, Owner",
+    name: "Evan Taylor",
   },
-  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
   knowsAbout: [
     "CPR Training",
     "BLS Certification",
@@ -256,30 +251,23 @@ export const getOrganizationSchema = (): OrganizationSchema => ({
     "Emergency Response",
     "Workplace Safety",
   ],
+  logo: "https://tayloredinstruction.com/horizontal-logo-black.png",
+  name: "Taylored Instruction",
+  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
+  telephone: "+1-360-685-8199",
+  url: "https://tayloredinstruction.com",
 });
 
 // Local Business Schema - Vancouver, WA
 export const getVancouverLocalBusinessSchema = (): LocalBusinessSchema => ({
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
   "@id": "https://tayloredinstruction.com/#vancouver-wa",
-  name: "Taylored Instruction - Vancouver WA",
-  image: "https://tayloredinstruction.com/og-image.png",
-  description:
-    "Professional CPR, BLS, First Aid, and Lifeguard training in Vancouver, WA. American Red Cross Licensed Training Provider and AHA Training Site serving Clark County and surrounding areas.",
-  url: "https://tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  email: "evan@tayloredinstruction.com",
+  "@type": "LocalBusiness",
   address: {
     "@type": "PostalAddress",
+    addressCountry: "US",
     addressLocality: "Vancouver",
     addressRegion: "WA",
-    addressCountry: "US",
-  },
-  geo: {
-    "@type": "GeoCoordinates",
-    latitude: 45.6387,
-    longitude: -122.6615,
   },
   areaServed: [
     { "@type": "City", name: "Vancouver, WA" },
@@ -291,7 +279,16 @@ export const getVancouverLocalBusinessSchema = (): LocalBusinessSchema => ({
     { "@type": "AdministrativeArea", name: "Clark County, WA" },
     { "@type": "City", name: "Portland, OR" },
   ],
-  priceRange: "$$",
+  description:
+    "Professional CPR, BLS, First Aid, and Lifeguard training in Vancouver, WA. American Red Cross Licensed Training Provider and AHA Training Site serving Clark County and surrounding areas.",
+  email: "evan@tayloredinstruction.com",
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 45.6387,
+    longitude: -122.6615,
+  },
+  image: "https://tayloredinstruction.com/og-image.png",
+  name: "Taylored Instruction - Vancouver WA",
   openingHoursSpecification: {
     "@type": "OpeningHoursSpecification",
     dayOfWeek: [
@@ -304,31 +301,22 @@ export const getVancouverLocalBusinessSchema = (): LocalBusinessSchema => ({
       "Sunday",
     ],
   },
+  priceRange: "$$",
   sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
+  telephone: "+1-360-685-8199",
+  url: "https://tayloredinstruction.com",
 });
 
 // Local Business Schema - San Luis Obispo, CA
 export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
   "@id": "https://tayloredinstruction.com/#san-luis-obispo-ca",
-  name: "Taylored Instruction - San Luis Obispo CA",
-  image: "https://tayloredinstruction.com/og-image.png",
-  description:
-    "Seasonal CPR, BLS, First Aid, and Lifeguard training in San Luis Obispo, CA. Professional instruction from American Red Cross and AHA certified trainers.",
-  url: "https://tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  email: "evan@tayloredinstruction.com",
+  "@type": "LocalBusiness",
   address: {
     "@type": "PostalAddress",
+    addressCountry: "US",
     addressLocality: "San Luis Obispo",
     addressRegion: "CA",
-    addressCountry: "US",
-  },
-  geo: {
-    "@type": "GeoCoordinates",
-    latitude: 35.2828,
-    longitude: -120.6596,
   },
   areaServed: [
     { "@type": "City", name: "San Luis Obispo, CA" },
@@ -338,7 +326,16 @@ export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
     { "@type": "City", name: "Atascadero, CA" },
     { "@type": "AdministrativeArea", name: "San Luis Obispo County, CA" },
   ],
-  priceRange: "$$",
+  description:
+    "Seasonal CPR, BLS, First Aid, and Lifeguard training in San Luis Obispo, CA. Professional instruction from American Red Cross and AHA certified trainers.",
+  email: "evan@tayloredinstruction.com",
+  geo: {
+    "@type": "GeoCoordinates",
+    latitude: 35.2828,
+    longitude: -120.6596,
+  },
+  image: "https://tayloredinstruction.com/og-image.png",
+  name: "Taylored Instruction - San Luis Obispo CA",
   openingHoursSpecification: {
     "@type": "OpeningHoursSpecification",
     dayOfWeek: [
@@ -351,14 +348,17 @@ export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
       "Sunday",
     ],
   },
+  priceRange: "$$",
   sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
+  telephone: "+1-360-685-8199",
+  url: "https://tayloredinstruction.com",
 });
 
 // Website Schema
 export const getWebSiteSchema = (): WebSiteSchema => ({
   "@context": "https://schema.org",
-  "@type": "WebSite",
   "@id": WEBSITE_ID,
+  "@type": "WebSite",
   name: "Taylored Instruction",
   url: BASE_URL,
 });
@@ -373,17 +373,17 @@ export const getWebPageSchema = (params: {
 
   return {
     "@context": "https://schema.org",
-    "@type": "WebPage",
     "@id": `${url}#webpage`,
-    name: params.name,
-    description: params.description,
-    url,
-    isPartOf: {
-      "@id": WEBSITE_ID,
-    },
+    "@type": "WebPage",
     about: {
       "@id": ORGANIZATION_ID,
     },
+    description: params.description,
+    isPartOf: {
+      "@id": WEBSITE_ID,
+    },
+    name: params.name,
+    url,
     ...(params.imageUrl
       ? {
           primaryImageOfPage: {
@@ -408,18 +408,18 @@ export const getServiceSchema = (params: {
 
   return {
     "@context": "https://schema.org",
-    "@type": "Service",
     "@id": `${url}#service`,
-    name: params.name,
-    serviceType: params.serviceType,
-    description: params.description,
-    provider: {
-      "@id": ORGANIZATION_ID,
-    },
+    "@type": "Service",
     areaServed: params.areaServed.map((area) => ({
       "@type": "AdministrativeArea",
       name: area,
     })),
+    description: params.description,
+    name: params.name,
+    provider: {
+      "@id": ORGANIZATION_ID,
+    },
+    serviceType: params.serviceType,
     url,
     ...(params.audienceType
       ? {
@@ -438,55 +438,55 @@ export const getServiceSchema = (params: {
 
 export const getContactPageSchema = (): ContactPageSchema => ({
   "@context": "https://schema.org",
-  "@type": "ContactPage",
   "@id": `${BASE_URL}/contact#webpage`,
-  name: "Contact Taylored Instruction",
-  description:
-    "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver, WA and San Luis Obispo, CA.",
-  url: `${BASE_URL}/contact`,
-  isPartOf: {
-    "@id": WEBSITE_ID,
-  },
+  "@type": "ContactPage",
   about: {
     "@id": ORGANIZATION_ID,
   },
+  description:
+    "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver, WA and San Luis Obispo, CA.",
   inLanguage: "en-US",
+  isPartOf: {
+    "@id": WEBSITE_ID,
+  },
+  name: "Contact Taylored Instruction",
+  url: `${BASE_URL}/contact`,
 });
 
 export const getAboutPersonSchema = (): PersonSchema => ({
   "@context": "https://schema.org",
-  "@type": "Person",
   "@id": `${BASE_URL}/about#evan-taylor`,
-  name: "Evan Taylor",
+  "@type": "Person",
+  email: "evan@tayloredinstruction.com",
   jobTitle: "Owner, Instructor Trainer",
+  name: "Evan Taylor",
+  telephone: "+1-360-685-8199",
+  url: `${BASE_URL}/about`,
   worksFor: {
     "@id": ORGANIZATION_ID,
   },
-  email: "evan@tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  url: `${BASE_URL}/about`,
 });
 
 export const getAedProductSchema = (): ProductSchema => ({
   "@context": "https://schema.org",
-  "@type": "Product",
   "@id": `${BASE_URL}/aeds#product`,
-  name: "Automated External Defibrillators (AEDs)",
-  description:
-    "AED sales, consultation, and implementation support for workplaces, schools, and community organizations in Southwest Washington and San Luis Obispo County.",
-  category: "Medical Device",
-  brand: {
-    "@type": "Brand",
-    name: "ZOLL, Cardiac Science, and other leading AED manufacturers",
-  },
-  seller: {
-    "@id": ORGANIZATION_ID,
-  },
+  "@type": "Product",
   areaServed: [
     { "@type": "AdministrativeArea", name: "Clark County, WA" },
     { "@type": "AdministrativeArea", name: "Portland Metro, OR" },
     { "@type": "AdministrativeArea", name: "San Luis Obispo County, CA" },
   ],
+  brand: {
+    "@type": "Brand",
+    name: "ZOLL, Cardiac Science, and other leading AED manufacturers",
+  },
+  category: "Medical Device",
+  description:
+    "AED sales, consultation, and implementation support for workplaces, schools, and community organizations in Southwest Washington and San Luis Obispo County.",
+  name: "Automated External Defibrillators (AEDs)",
+  seller: {
+    "@id": ORGANIZATION_ID,
+  },
   url: `${BASE_URL}/aeds`,
 });
 
@@ -494,15 +494,9 @@ export const getAedProductSchema = (): ProductSchema => ({
 export const getBLSCourseSchema = (): CourseSchema => ({
   "@context": "https://schema.org",
   "@type": "Course",
-  name: "Basic Life Support (BLS) for Healthcare Providers",
+  courseCode: "AHA-BLS",
   description:
     "American Heart Association BLS certification course for healthcare professionals and first responders in Vancouver, WA and San Luis Obispo, CA.",
-  provider: {
-    "@type": "Organization",
-    name: "Taylored Instruction",
-    url: "https://tayloredinstruction.com",
-  },
-  courseCode: "AHA-BLS",
   educationalCredentialAwarded: "AHA BLS Certification (Valid 2 Years)",
   hasCourseInstance: {
     "@type": "CourseInstance",
@@ -510,25 +504,25 @@ export const getBLSCourseSchema = (): CourseSchema => ({
     duration: "PT4H",
     inLanguage: "en-US",
   },
+  name: "Basic Life Support (BLS) for Healthcare Providers",
   offers: {
     "@type": "Offer",
     category: "Professional Development",
     priceCurrency: "USD",
+  },
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: "https://tayloredinstruction.com",
   },
 });
 
 export const getRedCrossBLSCourseSchema = (): CourseSchema => ({
   "@context": "https://schema.org",
   "@type": "Course",
-  name: "American Red Cross Basic Life Support (BLS)",
+  courseCode: "ARC-BLS",
   description:
     "American Red Cross Basic Life Support course for healthcare providers, first responders, and professional rescuers in Vancouver, WA and San Luis Obispo, CA.",
-  provider: {
-    "@type": "Organization",
-    name: "Taylored Instruction",
-    url: BASE_URL,
-  },
-  courseCode: "ARC-BLS",
   educationalCredentialAwarded: "Red Cross Basic Life Support Certification",
   hasCourseInstance: {
     "@type": "CourseInstance",
@@ -536,25 +530,25 @@ export const getRedCrossBLSCourseSchema = (): CourseSchema => ({
     duration: "PT4H",
     inLanguage: "en-US",
   },
+  name: "American Red Cross Basic Life Support (BLS)",
   offers: {
     "@type": "Offer",
     category: "Healthcare Training",
     priceCurrency: "USD",
+  },
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: BASE_URL,
   },
 });
 
 export const getFirstAidCPRAEDCourseSchema = (): CourseSchema => ({
   "@context": "https://schema.org",
   "@type": "Course",
-  name: "First Aid/CPR/AED Certification",
+  courseCode: "ARC-FACPRAED",
   description:
     "American Red Cross First Aid, CPR, and AED certification course for workplace teams and individuals in Vancouver, WA and San Luis Obispo, CA.",
-  provider: {
-    "@type": "Organization",
-    name: "Taylored Instruction",
-    url: "https://tayloredinstruction.com",
-  },
-  courseCode: "ARC-FACPRAED",
   educationalCredentialAwarded:
     "Red Cross First Aid/CPR/AED Certification (Valid 2 Years)",
   hasCourseInstance: {
@@ -563,25 +557,25 @@ export const getFirstAidCPRAEDCourseSchema = (): CourseSchema => ({
     duration: "PT5H",
     inLanguage: "en-US",
   },
+  name: "First Aid/CPR/AED Certification",
   offers: {
     "@type": "Offer",
     category: "Safety Training",
     priceCurrency: "USD",
+  },
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: "https://tayloredinstruction.com",
   },
 });
 
 export const getHeartsaverCourseSchema = (): CourseSchema => ({
   "@context": "https://schema.org",
   "@type": "Course",
-  name: "Heartsaver First Aid CPR AED",
+  courseCode: "AHA-HEARTSAVER",
   description:
     "American Heart Association Heartsaver course for workplace teams, schools, and individuals needing CPR and First Aid certification in Vancouver, WA and San Luis Obispo, CA.",
-  provider: {
-    "@type": "Organization",
-    name: "Taylored Instruction",
-    url: "https://tayloredinstruction.com",
-  },
-  courseCode: "AHA-HEARTSAVER",
   educationalCredentialAwarded: "AHA Heartsaver Certification (Valid 2 Years)",
   hasCourseInstance: {
     "@type": "CourseInstance",
@@ -589,25 +583,25 @@ export const getHeartsaverCourseSchema = (): CourseSchema => ({
     duration: "PT5H",
     inLanguage: "en-US",
   },
+  name: "Heartsaver First Aid CPR AED",
   offers: {
     "@type": "Offer",
     category: "Safety Training",
     priceCurrency: "USD",
+  },
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: "https://tayloredinstruction.com",
   },
 });
 
 export const getLifeguardingCourseSchema = (): CourseSchema => ({
   "@context": "https://schema.org",
   "@type": "Course",
-  name: "American Red Cross Lifeguarding Certification",
+  courseCode: "ARC-LIFEGUARDING",
   description:
     "Professional lifeguard training and certification through the American Red Cross in Vancouver, WA and San Luis Obispo, CA. Learn rescue techniques, CPR, and water safety.",
-  provider: {
-    "@type": "Organization",
-    name: "Taylored Instruction",
-    url: "https://tayloredinstruction.com",
-  },
-  courseCode: "ARC-LIFEGUARDING",
   educationalCredentialAwarded:
     "Red Cross Lifeguarding/First Aid/CPR/AED Certification (Valid 2 Years)",
   hasCourseInstance: {
@@ -616,10 +610,16 @@ export const getLifeguardingCourseSchema = (): CourseSchema => ({
     duration: "PT25H",
     inLanguage: "en-US",
   },
+  name: "American Red Cross Lifeguarding Certification",
   offers: {
     "@type": "Offer",
     category: "Professional Certification",
     priceCurrency: "USD",
+  },
+  provider: {
+    "@type": "Organization",
+    name: "Taylored Instruction",
+    url: "https://tayloredinstruction.com",
   },
 });
 
@@ -631,8 +631,8 @@ export const getBreadcrumbSchema = (
   "@type": "BreadcrumbList",
   itemListElement: items.map((item, index) => ({
     "@type": "ListItem",
-    position: index + 1,
     name: item.name,
+    position: index + 1,
     ...(item.url && { item: item.url }),
   })),
 });

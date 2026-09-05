@@ -2,12 +2,12 @@ import type { MetadataRoute } from "next";
 
 export default function robots(): MetadataRoute.Robots {
   return {
+    host: "https://tayloredinstruction.com",
     rules: {
-      userAgent: "*",
       allow: "/",
       disallow: ["/api/", "/admin/", "/private/"],
+      userAgent: "*",
     },
-    host: "https://tayloredinstruction.com",
     sitemap: "https://tayloredinstruction.com/sitemap.xml",
   };
 }

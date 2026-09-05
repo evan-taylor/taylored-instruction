@@ -19,7 +19,7 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
     throw new Error("Admin access required");
   }
 
-  return { userId, email: user.email };
+  return { email: user.email, userId };
 }
 
 async function requireInstructor(ctx: QueryCtx | MutationCtx) {
@@ -37,7 +37,7 @@ async function requireInstructor(ctx: QueryCtx | MutationCtx) {
     throw new Error("Instructor access required");
   }
 
-  return { userId, profile };
+  return { profile, userId };
 }
 
 export const getSteps = query({
@@ -66,9 +66,9 @@ export const getStep = query({
 
 export const createStep = mutation({
   args: {
-    title: v.string(),
     content: v.string(),
     order: v.number(),
+    title: v.string(),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAdmin(ctx);
@@ -76,12 +76,12 @@ export const createStep = mutation({
     const now = new Date().toISOString();
 
     const stepId = await ctx.db.insert("onboarding_steps", {
-      title: args.title,
       content: args.content,
-      order: args.order,
       createdAt: now,
-      updatedAt: now,
       createdBy: userId,
+      order: args.order,
+      title: args.title,
+      updatedAt: now,
     });
 
     return stepId;
@@ -90,10 +90,10 @@ export const createStep = mutation({
 
 export const updateStep = mutation({
   args: {
-    id: v.id("onboarding_steps"),
-    title: v.optional(v.string()),
     content: v.optional(v.string()),
+    id: v.id("onboarding_steps"),
     order: v.optional(v.number()),
+    title: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);

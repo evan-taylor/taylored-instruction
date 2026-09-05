@@ -5,15 +5,15 @@ import type React from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
-type CourseRegistrationButtonProps = {
+interface CourseRegistrationButtonProps {
+  buttonClassName?: string;
+  buttonText?: string;
+  className?: string;
   courseName: string;
   registrationUrl: string;
-  buttonText?: string;
-  buttonClassName?: string;
-  className?: string;
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "outline";
-};
+}
 
 const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   courseName,
@@ -29,9 +29,9 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
 
   const handleClick = () => {
     posthog.capture("course_registration_clicked", {
+      buttonText: defaultButtonText,
       courseName,
       registrationUrl,
-      buttonText: defaultButtonText,
       variant,
     });
   };

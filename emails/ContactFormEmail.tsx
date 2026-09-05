@@ -12,18 +12,18 @@ import {
   Text,
 } from "@react-email/components";
 
-type ContactFormEmailProps = {
+interface ContactFormEmailProps {
+  contactMethods?: string[];
+  email: string;
   firstName: string;
   lastName: string;
-  email: string;
-  phone?: string;
   location?: string;
-  otherLocation?: string;
   message: string;
+  otherLocation?: string;
+  phone?: string;
   smsOptIn?: boolean;
   smsOptOut?: boolean;
-  contactMethods?: string[];
-};
+}
 
 export const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
   firstName,
@@ -123,25 +123,25 @@ const main = {
 
 const container = {
   backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
   border: "1px solid #f0f0f0",
   borderRadius: "4px",
+  margin: "0 auto",
+  marginBottom: "64px",
+  padding: "20px 0 48px",
 };
 
 const heading = {
-  fontSize: "24px",
-  lineHeight: "1.3",
-  fontWeight: "700",
   color: "#484848",
+  fontSize: "24px",
+  fontWeight: "700",
+  lineHeight: "1.3",
   padding: "0 20px",
 };
 
 const paragraph = {
+  color: "#484848",
   fontSize: "16px",
   lineHeight: "1.4",
-  color: "#484848",
   padding: "0 20px",
 };
 
@@ -150,25 +150,25 @@ const section = {
 };
 
 const labelColumn = {
-  width: "150px",
-  verticalAlign: "top",
-  paddingBottom: "8px",
-  fontWeight: "600",
   color: "#555",
+  fontWeight: "600",
+  paddingBottom: "8px",
+  verticalAlign: "top",
+  width: "150px",
 };
 
 const valueColumn = {
-  verticalAlign: "top",
-  paddingBottom: "8px",
   color: "#333",
+  paddingBottom: "8px",
+  verticalAlign: "top",
 };
 
 const messageValueColumn = {
-  paddingBottom: "8px",
-  color: "#333",
-  paddingLeft: "10px",
   borderLeft: "2px solid #eee",
+  color: "#333",
   marginTop: "5px",
+  paddingBottom: "8px",
+  paddingLeft: "10px",
 };
 
 const hr = {

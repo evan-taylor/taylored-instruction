@@ -13,9 +13,9 @@ import {
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
-type InstructorApprovalEmailProps = {
+interface InstructorApprovalEmailProps {
   firstName: string;
-};
+}
 
 export default function InstructorApprovalEmail({
   firstName,

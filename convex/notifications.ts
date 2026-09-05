@@ -24,8 +24,8 @@ const escapeHtml = (value: string): string =>
 
 export const sendNewUserAdminNotification = internalAction({
   args: {
-    userId: v.id("users"),
     userEmail: v.optional(v.string()),
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
     if (!RESEND_API_KEY) {
@@ -54,9 +54,9 @@ export const sendNewUserAdminNotification = internalAction({
 
       const result = await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,
-        to: [ADMIN_NOTIF_EMAIL],
-        subject,
         html: htmlBody,
+        subject,
+        to: [ADMIN_NOTIF_EMAIL],
       });
 
       if (result.error) {
@@ -92,9 +92,9 @@ export const sendInstructorApprovalEmail = internalAction({
 
       await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,
-        to: [args.email],
         subject,
         text: textBody,
+        to: [args.email],
       });
 
       if (RESEND_AUDIENCE_ID) {
@@ -103,11 +103,11 @@ export const sendInstructorApprovalEmail = internalAction({
             audienceId: RESEND_AUDIENCE_ID,
             email: args.email,
           });
-        } catch (_audienceError) {
+        } catch {
           // Intentionally ignore audience errors
         }
       }
-    } catch (_error) {
+    } catch {
       // Intentionally ignore email errors to not block approval flow
     }
   },

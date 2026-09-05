@@ -15,10 +15,12 @@ const pageDescription =
   "American Red Cross First Aid, CPR, and AED certification classes in Vancouver WA, Clark County, and San Luis Obispo CA with blended and in-person options.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/first-aid-cpr-aed",
-  ogType: "article",
+  image: {
+    description:
+      "Red Cross First Aid CPR AED classes in Vancouver WA and San Luis Obispo CA",
+    title: "First Aid/CPR/AED Certification",
+  },
   keywords: [
     "first aid CPR AED classes Vancouver WA",
     "Red Cross CPR certification Clark County",
@@ -29,17 +31,15 @@ export const metadata = buildPageMetadata({
     "CPR AED course Portland metro",
     "emergency response certification course",
   ],
-  image: {
-    title: "First Aid/CPR/AED Certification",
-    description:
-      "Red Cross First Aid CPR AED classes in Vancouver WA and San Luis Obispo CA",
-  },
+  ogType: "article",
+  path: "/first-aid-cpr-aed",
+  title: pageTitle,
 });
 
 const FirstAidCprAedPage = async () => {
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/first-aid-cpr-aed",
   });
 

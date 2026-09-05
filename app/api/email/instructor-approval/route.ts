@@ -61,11 +61,11 @@ export async function POST(req: NextRequest) {
     try {
       const emailData = await getResendClient().emails.send({
         from: `Taylored Instruction <${fromEmail}>`,
-        to: [email],
-        subject: "You're approved as an instructor at Taylored Instruction",
         react: React.createElement(InstructorApprovalEmail, {
           firstName: name,
         }),
+        subject: "You're approved as an instructor at Taylored Instruction",
+        to: [email],
       });
 
       if (emailData.error) {

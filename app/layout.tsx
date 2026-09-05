@@ -13,18 +13,29 @@ import {
 import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
 
 const readexPro = Readex_Pro({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
   display: "swap",
+  subsets: ["latin"],
   variable: "--font-readex",
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://tayloredinstruction.com"),
-  title:
-    "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
+  alternates: {
+    types: {
+      "application/rss+xml": "/rss.xml",
+    },
+  },
+  authors: [
+    { name: "Evan Taylor", url: "https://tayloredinstruction.com/about" },
+  ],
+  creator: "Taylored Instruction",
   description:
     "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified. Serving Clark County, Portland metro, and SLO County.",
+  formatDetection: {
+    address: false,
+    email: false,
+    telephone: false,
+  },
   keywords: [
     "CPR training Vancouver WA",
     "BLS certification Vancouver WA",
@@ -39,62 +50,51 @@ export const metadata: Metadata = {
     "Healthcare CPR certification",
     "AED sales Vancouver WA",
   ],
-  authors: [
-    { name: "Evan Taylor", url: "https://tayloredinstruction.com/about" },
-  ],
-  creator: "Taylored Instruction",
-  publisher: "Taylored Instruction",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
+  metadataBase: new URL("https://tayloredinstruction.com"),
   openGraph: {
-    type: "website",
-    locale: "en_US",
-    url: "https://tayloredinstruction.com",
-    siteName: "Taylored Instruction",
-    title:
-      "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
     description:
       "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified. Serving Clark County, Portland metro, and SLO County.",
     images: [
       {
+        alt: "Taylored Instruction - Professional CPR & Lifeguard Training",
+        height: 630,
         url: "/og-image.png",
         width: 1200,
-        height: 630,
-        alt: "Taylored Instruction - Professional CPR & Lifeguard Training",
       },
     ],
-  },
-  twitter: {
-    card: "summary_large_image",
+    locale: "en_US",
+    siteName: "Taylored Instruction",
     title:
       "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
+    type: "website",
+    url: "https://tayloredinstruction.com",
+  },
+  publisher: "Taylored Instruction",
+  robots: {
+    follow: true,
+    googleBot: {
+      follow: true,
+      index: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+    index: true,
+  },
+  title:
+    "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
+  twitter: {
+    card: "summary_large_image",
     description:
       "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified.",
     images: ["/twitter-image.png"],
-  },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      "max-video-preview": -1,
-      "max-image-preview": "large",
-      "max-snippet": -1,
-    },
+    title:
+      "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
   },
   verification: {
     // Add when available: google: 'your-google-verification-code',
     // yandex: 'your-yandex-verification-code',
     // bing: 'your-bing-verification-code',
-  },
-  alternates: {
-    types: {
-      "application/rss+xml": "/rss.xml",
-    },
   },
 };
 

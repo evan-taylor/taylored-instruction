@@ -13,18 +13,18 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2026-08-26.dahlia",
   });
 }
 
 const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const adminEmail = process.env.ADMIN_EMAIL || "info@tayloredinstruction.com";
 
-type CartItem = {
+interface CartItem {
   productId: string;
   productName: string;
   quantity: number;
-};
+}
 
 const validateSessionId = (sessionId: unknown): string | null => {
   if (!sessionId || typeof sessionId !== "string") {
@@ -40,7 +40,7 @@ const parseCartItems = (cartItemsJson: string): CartItem[] | null => {
       return null;
     }
     return items;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -63,41 +63,41 @@ export async function POST(req: NextRequest) {
   ) => {
     const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      to: [adminEmail],
-      replyTo: customerEmail,
-      subject: "New Multi-Item eCard Purchase",
       react: React.createElement(EcardPurchaseAdminEmail, {
-        itemName: "Multiple Products",
-        quantity: cartItems
-          .reduce((sum, item) => sum + item.quantity, 0)
-          .toString(),
-        price: totalPrice,
-        customerEmail,
-        sessionId,
         cartItems: cartItems.map((item) => ({
           name: item.productName,
           quantity: item.quantity.toString(),
         })),
+        customerEmail,
+        itemName: "Multiple Products",
+        price: totalPrice,
+        quantity: cartItems
+          .reduce((sum, item) => sum + item.quantity, 0)
+          .toString(),
+        sessionId,
       }),
+      replyTo: customerEmail,
+      subject: "New Multi-Item eCard Purchase",
+      to: [adminEmail],
     });
     if (adminEmailData.error) {
       // Intentionally not failing request on email notification issues
     }
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      to: [customerEmail],
-      subject: "Your eCard Purchase Confirmation",
       react: React.createElement(EcardPurchaseUserEmail, {
-        itemName: "Multiple Products",
-        quantity: cartItems
-          .reduce((sum, item) => sum + item.quantity, 0)
-          .toString(),
-        price: totalPrice,
         cartItems: cartItems.map((item) => ({
           name: item.productName,
           quantity: item.quantity.toString(),
         })),
+        itemName: "Multiple Products",
+        price: totalPrice,
+        quantity: cartItems
+          .reduce((sum, item) => sum + item.quantity, 0)
+          .toString(),
       }),
+      subject: "Your eCard Purchase Confirmation",
+      to: [customerEmail],
     });
     if (userEmailData.error) {
       // Intentionally not failing request on email notification issues
@@ -112,29 +112,29 @@ export async function POST(req: NextRequest) {
   ) => {
     const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      to: [adminEmail],
-      replyTo: customerEmail,
-      subject: `New eCard Purchase: ${itemName}`,
       react: React.createElement(EcardPurchaseAdminEmail, {
-        itemName,
-        quantity,
-        price: totalPrice,
         customerEmail,
+        itemName,
+        price: totalPrice,
+        quantity,
         sessionId,
       }),
+      replyTo: customerEmail,
+      subject: `New eCard Purchase: ${itemName}`,
+      to: [adminEmail],
     });
     if (adminEmailData.error) {
       // Intentionally not failing request on email notification issues
     }
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      to: [customerEmail],
-      subject: "Your eCard Purchase Confirmation",
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName,
-        quantity,
         price: totalPrice,
+        quantity,
       }),
+      subject: "Your eCard Purchase Confirmation",
+      to: [customerEmail],
     });
     if (userEmailData.error) {
       // Intentionally not failing request on email notification issues

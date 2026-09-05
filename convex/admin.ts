@@ -22,7 +22,7 @@ async function requireAdmin(ctx: { db: any; auth: any }) {
     throw new Error("Forbidden: Admin access required");
   }
 
-  return { userId, user };
+  return { user, userId };
 }
 
 export const getAllInstructors = query({
@@ -37,12 +37,12 @@ export const getAllInstructors = query({
         const user = await ctx.db.get(profile.userId);
         return {
           id: profile._id,
-          userId: profile.userId,
           is_instructor: profile.isInstructor,
-          updated_at: profile.updatedAt,
           last_login: profile.lastLogin,
-          user_email: user?.email || null,
           short_id: `${profile._id.slice(0, SHORT_ID_PREFIX_LENGTH)}...${profile._id.slice(-SHORT_ID_SUFFIX_LENGTH)}`,
+          updated_at: profile.updatedAt,
+          user_email: user?.email || null,
+          userId: profile.userId,
         };
       })
     );
@@ -61,8 +61,8 @@ export const getAllInstructors = query({
 
 export const updateInstructorStatus = mutation({
   args: {
-    profileId: v.id("profiles"),
     newStatus: v.boolean(),
+    profileId: v.id("profiles"),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
@@ -89,10 +89,10 @@ export const getAllUsers = query({
 
     const users = await ctx.db.query("users").collect();
     return users.map((user) => ({
-      id: user._id,
       email: user.email,
-      name: user.name,
       emailVerified: user.emailVerificationTime,
+      id: user._id,
+      name: user.name,
     }));
   },
 });

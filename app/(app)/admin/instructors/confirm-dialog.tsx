@@ -1,10 +1,10 @@
-type ConfirmDialogProps = {
+interface ConfirmDialogProps {
   isOpen: boolean;
-  userId: string | null;
-  userEmail: string | null;
-  onConfirm: () => void;
   onCancel: () => void;
-};
+  onConfirm: () => void;
+  userEmail: string | null;
+  userId: string | null;
+}
 
 export function ConfirmDialog({
   isOpen,

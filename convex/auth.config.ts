@@ -3,6 +3,7 @@ import type { AuthConfig } from "convex/server";
 export default {
   providers: [
     {
+      applicationID: "convex",
       domain: (() => {
         const siteUrl = process.env.CONVEX_SITE_URL ?? process.env.SITE_URL;
         if (!siteUrl) {
@@ -10,7 +11,6 @@ export default {
         }
         return siteUrl;
       })(),
-      applicationID: "convex",
     },
   ],
 } satisfies AuthConfig;

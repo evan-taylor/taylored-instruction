@@ -10,27 +10,27 @@ import { useProfile } from "../../hooks/useProfile";
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
 
 // --- Type Definitions ---
-type NavLinkItem = {
-  label: string;
+interface NavLinkItem {
   href: string;
   indent?: boolean;
-  type?: undefined;
-};
-
-type NavDivider = {
   label: string;
-  type: "divider";
+  type?: undefined;
+}
+
+interface NavDivider {
   href?: string; // Optional href for clickable dividers
   indent?: undefined;
-};
+  label: string;
+  type: "divider";
+}
 
 type DropdownItem = NavLinkItem | NavDivider;
 
-type NavTopLevelLink = {
-  label: string;
+interface NavTopLevelLink {
   dropdown?: DropdownItem[];
   href?: string;
-};
+  label: string;
+}
 
 // Helper function for active link class
 const getLinkClass = (href: string, pathname: string, isMobile = false) => {
@@ -60,100 +60,100 @@ const generateNavLinks = (
   isInstructor: boolean
 ): NavTopLevelLink[] => [
   {
-    label: "About Us",
     dropdown: [
-      { label: "About Taylored Instruction", href: "/about" },
-      { label: "Training Resources", href: "/resources" },
-      { label: "Blog", href: "/blog" },
-      { label: "Contact Us", href: "/contact" },
+      { href: "/about", label: "About Taylored Instruction" },
+      { href: "/resources", label: "Training Resources" },
+      { href: "/blog", label: "Blog" },
+      { href: "/contact", label: "Contact Us" },
     ],
+    label: "About Us",
   },
   {
-    label: "Classes",
     dropdown: [
       {
-        label: "Register for Classes",
         href: "https://www.hovn.app/tayloredinstruction",
+        label: "Register for Classes",
       },
       {
-        type: "divider",
-        label: "American Heart Association Courses",
         href: "https://www.hovn.app/tayloredinstruction/agencies/aha",
+        label: "American Heart Association Courses",
+        type: "divider",
       },
-      { label: "BLS", href: "/bls", indent: true },
-      { label: "Heartsaver", href: "/heartsaver", indent: true },
+      { href: "/bls", indent: true, label: "BLS" },
+      { href: "/heartsaver", indent: true, label: "Heartsaver" },
       {
-        label: "Instructor Training",
         href: "/aha-instructor-training",
         indent: true,
+        label: "Instructor Training",
       },
       {
-        type: "divider",
-        label: "American Red Cross Courses",
         href: "https://www.hovn.app/tayloredinstruction/agencies/arc",
+        label: "American Red Cross Courses",
+        type: "divider",
       },
       {
-        label: "Adult and Pediatric First Aid/CPR/AED",
         href: "/first-aid-cpr-aed",
         indent: true,
+        label: "Adult and Pediatric First Aid/CPR/AED",
       },
-      { label: "Lifeguarding", href: "/lifeguarding", indent: true },
+      { href: "/lifeguarding", indent: true, label: "Lifeguarding" },
       {
-        label: "Lifeguarding Instructor",
         href: "/lifeguarding-instructor",
         indent: true,
+        label: "Lifeguarding Instructor",
       },
       {
-        label: "First Aid/CPR/AED Instructor",
         href: "/fa-cpr-aed-instructor",
         indent: true,
+        label: "First Aid/CPR/AED Instructor",
       },
     ],
+    label: "Classes",
   },
   {
-    label: "Products",
     dropdown: [
       {
-        label: "Shop All Products",
         href: "https://shop.tayloredinstruction.com/",
+        label: "Shop All Products",
       },
       {
-        label: "AEDs",
         href: "https://shop.tayloredinstruction.com/search/aeds",
+        label: "AEDs",
       },
       {
-        label: "Instructor Supplies",
         href: "https://shop.tayloredinstruction.com/search/instructor-supplies",
+        label: "Instructor Supplies",
       },
     ],
+    label: "Products",
   },
   {
-    label: "Instructors",
     dropdown: [
       ...(isInstructor
         ? ([] as NavLinkItem[])
-        : ([{ label: "Alignment", href: "/alignment" }] as NavLinkItem[])),
+        : ([{ href: "/alignment", label: "Alignment" }] as NavLinkItem[])),
       ...(isInstructor
         ? [
             {
-              label: "Instructor Resources",
               href: "https://docs.tayloredinstruction.com/",
+              label: "Instructor Resources",
             } as NavLinkItem,
           ]
         : []),
       ...(isInstructor
         ? [
             {
-              label: "eCards",
               href: "/ecards",
+              label: "eCards",
             } as NavLinkItem,
           ]
         : []),
-      { type: "divider", label: "Account" },
+      { label: "Account", type: "divider" },
       ...(isAuthenticated
-        ? [{ label: "My Account", href: "/my-account" }]
-        : [{ label: "Login", href: "/login" }]),
+        ? [{ href: "/my-account", label: "My Account" }]
+        : [{ href: "/login", label: "Login" }]),
     ],
+    label: "Instructors",
   },
 ];
 
@@ -304,7 +304,7 @@ const NavMenu = ({
             key={`divider-${item.label}`}
             onClick={onItemClick}
             {...(isExternal
-              ? { target: "_blank", rel: "noopener noreferrer" }
+              ? { rel: "noopener noreferrer", target: "_blank" }
               : {})}
           >
             {item.label}
@@ -331,7 +331,7 @@ const NavMenu = ({
         key={item.label}
         onClick={onItemClick}
         {...(isExternal
-          ? { target: "_blank", rel: "noopener noreferrer" }
+          ? { rel: "noopener noreferrer", target: "_blank" }
           : {})}
       >
         {item.label}
@@ -420,7 +420,7 @@ const MobileNavMenu = ({
             key={`divider-${item.label}`}
             onClick={closeMenu}
             {...(isExternal
-              ? { target: "_blank", rel: "noopener noreferrer" }
+              ? { rel: "noopener noreferrer", target: "_blank" }
               : {})}
           >
             {item.label}
@@ -447,7 +447,7 @@ const MobileNavMenu = ({
         key={item.label}
         onClick={closeMenu}
         {...(isExternal
-          ? { target: "_blank", rel: "noopener noreferrer" }
+          ? { rel: "noopener noreferrer", target: "_blank" }
           : {})}
       >
         {item.label}

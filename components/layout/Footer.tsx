@@ -1,5 +1,5 @@
-import { Facebook, Instagram } from "lucide-react";
 import Link from "next/link";
+import { FaFacebook, FaInstagram } from "react-icons/fa";
 import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 
 export const Footer = () => {
@@ -111,7 +111,7 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <Facebook size={20} />
+                <FaFacebook size={20} />
               </a>
               <a
                 aria-label="Instagram"
@@ -120,7 +120,7 @@ export const Footer = () => {
                 rel="noopener noreferrer"
                 target="_blank"
               >
-                <Instagram size={20} />
+                <FaInstagram size={20} />
               </a>
             </div>
           </div>

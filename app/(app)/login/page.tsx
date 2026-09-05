@@ -115,9 +115,7 @@ export default function LoginPage() {
     setCode("");
     setMessage("");
     const event = {
-      preventDefault: () => {
-        return;
-      },
+      preventDefault: () => {},
     } as React.FormEvent;
     await handleSendCode(event);
   };

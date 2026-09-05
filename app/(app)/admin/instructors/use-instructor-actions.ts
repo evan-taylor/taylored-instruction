@@ -16,7 +16,7 @@ export function useInstructorActions(
     isOpen: boolean;
     userId: string | null;
     userEmail: string | null;
-  }>({ isOpen: false, userId: null, userEmail: null });
+  }>({ isOpen: false, userEmail: null, userId: null });
 
   const approveInstructorMutation = useMutation(api.profiles.approveInstructor);
   const deleteUserAndProfileMutation = useMutation(
@@ -56,9 +56,9 @@ export function useInstructorActions(
 
     try {
       await approveInstructorMutation({
+        approve: !currentStatus,
         // biome-ignore lint/suspicious/noExplicitAny: Convex ID type conversion required (important-comment)
         userId: userId as unknown as any,
-        approve: !currentStatus,
       });
       posthog.capture("instructor_status_updated", {
         is_instructor: !currentStatus,
@@ -91,8 +91,8 @@ export function useInstructorActions(
   const initiateRejectUser = (profileId: string, userEmail: string | null) => {
     setConfirmDialogState({
       isOpen: true,
-      userId: profileId,
       userEmail,
+      userId: profileId,
     });
   };
 
@@ -102,7 +102,7 @@ export function useInstructorActions(
       return;
     }
 
-    setConfirmDialogState({ isOpen: false, userId: null, userEmail: null });
+    setConfirmDialogState({ isOpen: false, userEmail: null, userId: null });
     setActionMessage(null);
     setError(null);
 
@@ -124,17 +124,17 @@ export function useInstructorActions(
   };
 
   const cancelRejectUser = () => {
-    setConfirmDialogState({ isOpen: false, userId: null, userEmail: null });
+    setConfirmDialogState({ isOpen: false, userEmail: null, userId: null });
   };
 
   return {
     actionMessage,
-    error,
-    setError,
-    toggleInstructorStatus,
-    initiateRejectUser,
-    confirmRejectUser,
     cancelRejectUser,
     confirmDialogState,
+    confirmRejectUser,
+    error,
+    initiateRejectUser,
+    setError,
+    toggleInstructorStatus,
   };
 }

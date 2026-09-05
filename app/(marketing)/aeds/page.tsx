@@ -18,9 +18,12 @@ const pageDescription =
   "Buy Automated External Defibrillators (AEDs) in Vancouver WA and San Luis Obispo CA with product guidance, training integration, and implementation support.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/aeds",
+  image: {
+    description:
+      "Automated External Defibrillator sales, consultation, and support",
+    title: "AED Sales & Distribution",
+  },
   keywords: [
     "AED distributor Vancouver WA",
     "buy AED for business",
@@ -31,26 +34,18 @@ export const metadata = buildPageMetadata({
     "AED sales San Luis Obispo CA",
     "AED implementation and training",
   ],
-  image: {
-    title: "AED Sales & Distribution",
-    description:
-      "Automated External Defibrillator sales, consultation, and support",
-  },
+  path: "/aeds",
+  title: pageTitle,
 });
 
 export default async function AedPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/aeds",
   });
   const aedServiceSchema = getServiceSchema({
-    name: "AED Sales and Distribution",
-    description:
-      "Consultative AED product selection, purchasing support, and implementation guidance for organizations.",
-    path: "/aeds",
-    serviceType: "Medical Device Sales and Support",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
@@ -58,6 +53,11 @@ export default async function AedPage() {
     ],
     audienceType:
       "Businesses, Schools, Facilities, and Community Organizations",
+    description:
+      "Consultative AED product selection, purchasing support, and implementation guidance for organizations.",
+    name: "AED Sales and Distribution",
+    path: "/aeds",
+    serviceType: "Medical Device Sales and Support",
   });
   const productSchema = getAedProductSchema();
   const breadcrumbSchema = getBreadcrumbSchema([

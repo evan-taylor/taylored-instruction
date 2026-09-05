@@ -7,18 +7,18 @@ import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
 
-type GenerationResult = {
-  totalTemplates: number;
+interface GenerationResult {
   inserted: number;
-  updated: number;
   skipped: number;
-};
+  totalTemplates: number;
+  updated: number;
+}
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
     day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 
 export default function AdminSeoContentPage() {
@@ -35,7 +35,7 @@ export default function AdminSeoContentPage() {
 
   const pages = useQuery(
     api.seoContent.listPagesForAdmin,
-    !profileLoading && !!session && isAdmin ? {} : "skip"
+    !profileLoading && session && isAdmin ? {} : "skip"
   );
   const generateContent = useMutation(api.seoContent.generateSeoContentBatch);
 
@@ -52,7 +52,7 @@ export default function AdminSeoContentPage() {
       setResultMessage(
         `Generated ${result.totalTemplates} templates · inserted ${result.inserted} · updated ${result.updated} · skipped ${result.skipped}`
       );
-    } catch (_error) {
+    } catch {
       setErrorMessage(
         "Content generation failed. Confirm you are logged in as an admin account and try again."
       );

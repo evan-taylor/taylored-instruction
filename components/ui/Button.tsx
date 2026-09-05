@@ -4,18 +4,18 @@ import Link from "next/link";
 import type React from "react";
 import { twMerge } from "tailwind-merge";
 
-type ButtonProps = {
+interface ButtonProps {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline";
-  size?: "sm" | "md" | "lg";
   className?: string;
-  href?: string;
-  target?: string;
-  rel?: string;
-  onClick?: () => void;
-  type?: "button" | "submit" | "reset";
   disabled?: boolean;
-};
+  href?: string;
+  onClick?: () => void;
+  rel?: string;
+  size?: "sm" | "md" | "lg";
+  target?: string;
+  type?: "button" | "submit" | "reset";
+  variant?: "primary" | "secondary" | "outline";
+}
 
 export const Button = ({
   children,
@@ -33,18 +33,18 @@ export const Button = ({
     "inline-flex items-center justify-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
 
   const variantClasses = {
+    outline:
+      "bg-transparent border border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
     primary: "bg-primary text-white hover:bg-primary-dark focus:ring-primary",
     // Improve readability: light background, high-contrast text and border
     secondary:
       "bg-white text-primary border border-gray-300 hover:bg-gray-50 focus:ring-primary shadow-sm",
-    outline:
-      "bg-transparent border border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
   };
 
   const sizeClasses = {
-    sm: "text-sm px-4 py-2",
-    md: "px-6 py-3",
     lg: "text-lg px-8 py-4",
+    md: "px-6 py-3",
+    sm: "text-sm px-4 py-2",
   };
 
   const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";

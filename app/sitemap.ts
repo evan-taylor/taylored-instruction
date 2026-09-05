@@ -29,8 +29,7 @@ const staticRoutePaths = [
 ] as const;
 
 // Route-specific configuration for priority and change frequency
-type RouteConfig = {
-  priority: number;
+interface RouteConfig {
   changeFrequency:
     | "always"
     | "hourly"
@@ -39,60 +38,61 @@ type RouteConfig = {
     | "monthly"
     | "yearly"
     | "never";
-};
+  priority: number;
+}
 
 const routeConfigByPath: Record<string, RouteConfig> = {
-  "/": { priority: 1.0, changeFrequency: "weekly" },
-  "/about": { priority: 0.9, changeFrequency: "monthly" },
-  "/contact": { priority: 0.9, changeFrequency: "monthly" },
-  "/blog": { priority: 0.9, changeFrequency: "weekly" },
-  "/resources": { priority: 0.95, changeFrequency: "weekly" },
-  "/bls": { priority: 0.95, changeFrequency: "weekly" },
-  "/basic-life-support": { priority: 0.95, changeFrequency: "weekly" },
-  "/first-aid-cpr-aed": { priority: 0.95, changeFrequency: "weekly" },
-  "/heartsaver": { priority: 0.95, changeFrequency: "weekly" },
-  "/lifeguarding": { priority: 0.95, changeFrequency: "weekly" },
-  "/corporate-training": { priority: 0.9, changeFrequency: "weekly" },
-  "/aeds": { priority: 0.85, changeFrequency: "monthly" },
-  "/aha-instructor-training": { priority: 0.85, changeFrequency: "monthly" },
-  "/fa-cpr-aed-instructor": { priority: 0.8, changeFrequency: "monthly" },
-  "/lifeguarding-instructor": { priority: 0.8, changeFrequency: "monthly" },
+  "/": { changeFrequency: "weekly", priority: 1.0 },
+  "/about": { changeFrequency: "monthly", priority: 0.9 },
+  "/aeds": { changeFrequency: "monthly", priority: 0.85 },
+  "/aha-instructor-training": { changeFrequency: "monthly", priority: 0.85 },
+  "/alignment": { changeFrequency: "monthly", priority: 0.8 },
+  "/basic-life-support": { changeFrequency: "weekly", priority: 0.95 },
+  "/blog": { changeFrequency: "weekly", priority: 0.9 },
+  "/bls": { changeFrequency: "weekly", priority: 0.95 },
+  "/contact": { changeFrequency: "monthly", priority: 0.9 },
+  "/corporate-training": { changeFrequency: "weekly", priority: 0.9 },
+  "/fa-cpr-aed-instructor": { changeFrequency: "monthly", priority: 0.8 },
+  "/first-aid-cpr-aed": { changeFrequency: "weekly", priority: 0.95 },
+  "/heartsaver": { changeFrequency: "weekly", priority: 0.95 },
+  "/lifeguarding": { changeFrequency: "weekly", priority: 0.95 },
+  "/lifeguarding-instructor": { changeFrequency: "monthly", priority: 0.8 },
   "/lifeguarding-instructor-trainer": {
-    priority: 0.75,
     changeFrequency: "monthly",
+    priority: 0.75,
   },
-  "/alignment": { priority: 0.8, changeFrequency: "monthly" },
-  "/privacy-policy": { priority: 0.3, changeFrequency: "yearly" },
-  "/terms": { priority: 0.3, changeFrequency: "yearly" },
+  "/privacy-policy": { changeFrequency: "yearly", priority: 0.3 },
+  "/resources": { changeFrequency: "weekly", priority: 0.95 },
+  "/terms": { changeFrequency: "yearly", priority: 0.3 },
 };
 
 const getRouteConfig = (routePath: string): RouteConfig => {
   if (routePath.startsWith("/resources/")) {
     return {
-      priority: 0.85,
       changeFrequency: "weekly",
+      priority: 0.85,
     };
   }
 
   if (routePath.startsWith("/blog/")) {
     return {
-      priority: 0.8,
       changeFrequency: "weekly",
+      priority: 0.8,
     };
   }
 
   return (
     routeConfigByPath[routePath] || {
-      priority: 0.7,
       changeFrequency: "monthly",
+      priority: 0.7,
     }
   );
 };
 
-type ResourceRouteEntry = {
-  path: string;
+interface ResourceRouteEntry {
   lastModified: Date;
-};
+  path: string;
+}
 
 const buildEntry = ({
   path,
@@ -124,11 +124,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const resource of resources) {
       const path = `/resources/${resource.slug}`;
       dynamicResourceRouteMap.set(path, {
-        path,
         lastModified: new Date(resource.updatedAt),
+        path,
       });
     }
-  } catch (_error) {
+  } catch {
     // If Convex is unavailable, still return a valid sitemap for static routes.
   }
 
@@ -143,11 +143,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const post of posts) {
       const path = `/blog/${post.slug}`;
       dynamicBlogRouteMap.set(path, {
-        path,
         lastModified: new Date(post._updatedAt ?? post.publishedAt),
+        path,
       });
     }
-  } catch (_error) {
+  } catch {
     // If Sanity is unavailable, still return a valid sitemap.
   }
 
@@ -155,14 +155,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...staticRoutePaths.map((path) => buildEntry({ path })),
     ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
       buildEntry({
-        path: resourceRoute.path,
         lastModified: resourceRoute.lastModified,
+        path: resourceRoute.path,
       })
     ),
     ...Array.from(dynamicBlogRouteMap.values()).map((blogRoute) =>
       buildEntry({
-        path: blogRoute.path,
         lastModified: blogRoute.lastModified,
+        path: blogRoute.path,
       })
     ),
   ];

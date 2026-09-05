@@ -25,48 +25,48 @@ export const getEcardProducts = query({
       .collect();
 
     return products.map((product) => ({
-      id: product._id,
-      name: product.name,
       description: product.description,
-      stripe_price_id: product.stripePriceId,
+      id: product._id,
       image_urls: product.imageUrls,
-      type: product.type,
+      name: product.name,
       requires_instructor: product.requiresInstructor,
+      stripe_price_id: product.stripePriceId,
+      type: product.type,
     }));
   },
 });
 
 export const getProducts = query({
   args: {
-    type: v.optional(v.string()),
     requiresInstructor: v.optional(v.boolean()),
+    type: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const products =
-      args.type !== undefined
-        ? await ctx.db
+      args.type === undefined
+        ? await ctx.db.query("products").collect()
+        : await ctx.db
             .query("products")
             .withIndex("by_type", (q) => q.eq("type", args.type as string))
-            .collect()
-        : await ctx.db.query("products").collect();
+            .collect();
 
     const filteredProducts =
-      args.requiresInstructor !== undefined
-        ? products.filter(
+      args.requiresInstructor === undefined
+        ? products
+        : products.filter(
             (p) => p.requiresInstructor === args.requiresInstructor
-          )
-        : products;
+          );
 
     return filteredProducts.map((product) => ({
-      id: product._id,
-      name: product.name,
+      categories: product.categories,
       description: product.description,
-      stripe_price_id: product.stripePriceId,
+      id: product._id,
       image_urls: product.imageUrls,
-      type: product.type,
+      name: product.name,
       requires_instructor: product.requiresInstructor,
       sku: product.sku,
-      categories: product.categories,
+      stripe_price_id: product.stripePriceId,
+      type: product.type,
     }));
   },
 });
@@ -80,15 +80,15 @@ export const getProduct = query({
     }
 
     return {
-      id: product._id,
-      name: product.name,
+      categories: product.categories,
       description: product.description,
-      stripe_price_id: product.stripePriceId,
+      id: product._id,
       image_urls: product.imageUrls,
-      type: product.type,
+      name: product.name,
       requires_instructor: product.requiresInstructor,
       sku: product.sku,
-      categories: product.categories,
+      stripe_price_id: product.stripePriceId,
+      type: product.type,
     };
   },
 });

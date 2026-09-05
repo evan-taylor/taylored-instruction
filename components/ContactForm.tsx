@@ -18,22 +18,22 @@ export function ContactForm() {
     success: boolean | null;
     error: string | null;
   }>({
+    error: null,
     loading: false,
     success: null,
-    error: null,
   });
   const [locationChoice, setLocationChoice] = useState("Vancouver, WA");
   const [showOtherLocation, setShowOtherLocation] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setStatus({ loading: true, success: null, error: null });
+    setStatus({ error: null, loading: true, success: null });
     const formData = new FormData(event.currentTarget);
 
     // Track form submission attempt
     posthog.capture("contact_form_submitted", {
-      location: formData.get("location"),
       contactMethods: formData.getAll("contactMethod"),
+      location: formData.get("location"),
       smsOptIn: formData.get("smsOptIn") === "on",
     });
 
@@ -43,12 +43,12 @@ export function ContactForm() {
       // --------------------------------
 
       if (result.success) {
-        setStatus({ loading: false, success: true, error: null });
+        setStatus({ error: null, loading: false, success: true });
 
         // Track successful submission
         posthog.capture("contact_form_success", {
-          location: formData.get("location"),
           contactMethods: formData.getAll("contactMethod"),
+          location: formData.get("location"),
           smsOptIn: formData.get("smsOptIn") === "on",
         });
 
@@ -63,9 +63,9 @@ export function ContactForm() {
         setShowOtherLocation(false);
       } else {
         setStatus({
+          error: result.error || "An unknown error occurred.",
           loading: false,
           success: false,
-          error: result.error || "An unknown error occurred.",
         });
 
         // Track form submission error
@@ -74,11 +74,11 @@ export function ContactForm() {
           location: formData.get("location"),
         });
       }
-    } catch (_error) {
+    } catch {
       setStatus({
+        error: "An unexpected error occurred.",
         loading: false,
         success: false,
-        error: "An unexpected error occurred.",
       });
 
       // Track unexpected error
@@ -303,7 +303,7 @@ export function ContactForm() {
             <>
               <svg
                 aria-label="Loading"
-                className="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
+                className="mr-3 -ml-1 h-5 w-5 animate-spin text-white"
                 fill="none"
                 role="img"
                 viewBox="0 0 24 24"

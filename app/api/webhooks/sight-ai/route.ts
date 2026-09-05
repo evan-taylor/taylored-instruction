@@ -18,28 +18,28 @@ const signaturePrefix = "sha256=";
 const defaultAuthor = "Taylored Instruction";
 const fallbackExcerptLength = 320;
 
-type PortableTextSpan = {
+interface PortableTextSpan {
   _key: string;
   _type: "span";
   marks: string[];
   text: string;
-};
+}
 
-type PortableTextMarkDef = {
+interface PortableTextMarkDef {
   _key: string;
   _type: "link";
   href: string;
-};
+}
 
-type PortableTextBlock = {
+interface PortableTextBlock {
   _key: string;
   _type: "block";
   children: PortableTextSpan[];
   markDefs: PortableTextMarkDef[];
   style: "blockquote" | "h2" | "h3" | "normal";
-};
+}
 
-type SightAiArticle = {
+interface SightAiArticle {
   article_type?: string;
   author_name?: string | null;
   category?: string | null;
@@ -58,30 +58,30 @@ type SightAiArticle = {
   thumbnail_image_url?: string | null;
   title?: string;
   updated_at?: string;
-};
+}
 
-type SightAiWebhookPayload = {
+interface SightAiWebhookPayload {
   article?: SightAiArticle;
   event?: string;
   event_id?: string;
   site?: { host?: string; id?: string; name?: string };
   test?: boolean;
   timestamp?: string;
-};
+}
 
-type ExistingPost = {
+interface ExistingPost {
   _id: string;
   mainImage?: unknown;
-};
+}
 
-type SanityImage = {
+interface SanityImage {
   _type: "image";
   alt: string;
   asset: {
     _ref: string;
     _type: "reference";
   };
-};
+}
 
 type RequiredSightAiArticle = SightAiArticle & {
   content: string;
@@ -90,7 +90,7 @@ type RequiredSightAiArticle = SightAiArticle & {
   title: string;
 };
 
-type SanityPostInput = {
+interface SanityPostInput {
   _type: "post";
   author: string;
   body: PortableTextBlock[];
@@ -107,7 +107,7 @@ type SanityPostInput = {
     current: string;
   };
   title: string;
-};
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;

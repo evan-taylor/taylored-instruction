@@ -3,27 +3,27 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { ProfileWithUser } from "./types";
 
-type ConvexProfile = {
+interface ConvexProfile {
   id: string;
-  userId: string;
   is_instructor: boolean;
-  updated_at: string | null | undefined;
   last_login: string | null | undefined;
-  user_email: string | null;
   short_id: string;
-};
+  updated_at: string | null | undefined;
+  user_email: string | null;
+  userId: string;
+}
 
 function mapConvexProfileToLocal(
   convexProfile: ConvexProfile
 ): ProfileWithUser {
   return {
     id: convexProfile.id,
-    userId: convexProfile.userId,
     isInstructor: convexProfile.is_instructor,
-    updatedAt: convexProfile.updated_at ?? null,
     lastLogin: convexProfile.last_login ?? null,
-    userEmail: convexProfile.user_email,
     shortId: convexProfile.short_id,
+    updatedAt: convexProfile.updated_at ?? null,
+    userEmail: convexProfile.user_email,
+    userId: convexProfile.userId,
   };
 }
 
@@ -49,10 +49,10 @@ export function useAdminProfiles(
   }
 
   return {
-    profiles,
-    setProfiles,
-    error,
-    setError,
     adminDataLoading,
+    error,
+    profiles,
+    setError,
+    setProfiles,
   };
 }

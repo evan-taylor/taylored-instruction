@@ -27,9 +27,12 @@ const pageDescription =
   "On-site corporate CPR, BLS, and First Aid training for businesses, schools, and organizations in Vancouver WA, Clark County, Portland metro, and San Luis Obispo CA.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/corporate-training",
+  image: {
+    description:
+      "On-site workplace CPR, BLS, and First Aid certification for teams",
+    title: "Corporate CPR Training",
+  },
   keywords: [
     "corporate CPR training Vancouver WA",
     "on-site CPR and first aid training",
@@ -40,32 +43,29 @@ export const metadata = buildPageMetadata({
     "corporate CPR training San Luis Obispo",
     "business emergency response training",
   ],
-  image: {
-    title: "Corporate CPR Training",
-    description:
-      "On-site workplace CPR, BLS, and First Aid certification for teams",
-  },
+  path: "/corporate-training",
+  title: pageTitle,
 });
 
 export default async function CorporateTrainingPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/corporate-training",
   });
   const serviceSchema = getServiceSchema({
-    name: "Corporate CPR, BLS, and First Aid Training",
-    description:
-      "Custom workplace safety training for employee teams, including CPR, BLS, and First Aid certification delivered on-site.",
-    path: "/corporate-training",
-    serviceType: "On-site Workplace Safety Training",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
       "San Luis Obispo County, CA",
     ],
     audienceType: "Employers, Schools, and Organizations",
+    description:
+      "Custom workplace safety training for employee teams, including CPR, BLS, and First Aid certification delivered on-site.",
+    name: "Corporate CPR, BLS, and First Aid Training",
+    path: "/corporate-training",
+    serviceType: "On-site Workplace Safety Training",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

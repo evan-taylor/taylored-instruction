@@ -9,13 +9,13 @@ import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
 export const metadata: Metadata = {
   robots: {
-    index: false,
     follow: false,
-    nocache: true,
     googleBot: {
-      index: false,
       follow: false,
+      index: false,
     },
+    index: false,
+    nocache: true,
   },
 };
 

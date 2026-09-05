@@ -12,11 +12,11 @@ const ApprovalEmailSchema = z.object({
   name: z.string().min(1, "Name is required"),
 });
 
-type SendApprovalEmailResult = {
-  success: boolean;
-  message?: string;
+interface SendApprovalEmailResult {
   error?: string;
-};
+  message?: string;
+  success: boolean;
+}
 
 export async function sendInstructorApprovalEmail(
   email: string,
@@ -28,7 +28,7 @@ export async function sendInstructorApprovalEmail(
     const errors = Object.entries(validatedFields.error.flatten().fieldErrors)
       .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
       .join("; ");
-    return { success: false, error: `Invalid data. ${errors}` };
+    return { error: `Invalid data. ${errors}`, success: false };
   }
 
   const { email: validatedEmail, name: validatedName } = validatedFields.data;
@@ -36,38 +36,38 @@ export async function sendInstructorApprovalEmail(
   const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey) {
     return {
-      success: false,
       error: "Email service not configured. Please contact support.",
+      success: false,
     };
   }
 
   try {
     const emailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      to: [validatedEmail],
-      subject: "You're approved as an instructor at Taylored Instruction",
       react: React.createElement(InstructorApprovalEmail, {
         firstName: validatedName,
       }),
+      subject: "You're approved as an instructor at Taylored Instruction",
+      to: [validatedEmail],
     });
 
     if (emailData.error) {
       return {
-        success: false,
         error: `Failed to send approval email: ${emailData.error.message}`,
+        success: false,
       };
     }
 
     return {
-      success: true,
       message: "Approval email sent successfully",
+      success: true,
     };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     return {
-      success: false,
       error: `Failed to send approval email: ${errorMessage}`,
+      success: false,
     };
   }
 }

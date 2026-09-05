@@ -13,26 +13,26 @@ const pageDescription =
   "Learn how Taylored Instruction collects, uses, and safeguards your personal information.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/privacy-policy",
+  image: {
+    description: "How Taylored Instruction protects your information",
+    title: "Privacy Policy",
+  },
   keywords: [
     "Taylored Instruction privacy policy",
     "CPR training company privacy policy",
     "SMS privacy policy Taylored Instruction",
     "student data privacy policy",
   ],
-  image: {
-    title: "Privacy Policy",
-    description: "How Taylored Instruction protects your information",
-  },
+  path: "/privacy-policy",
+  title: pageTitle,
 });
 
 export default async function PrivacyPolicyPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/privacy-policy",
   });
   const breadcrumbSchema = getBreadcrumbSchema([

@@ -7,21 +7,21 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
 
-type OnboardingStep = {
+interface OnboardingStep {
   _id: Id<"onboarding_steps">;
-  title: string;
   content: string;
-  order: number;
   createdAt: string;
-  updatedAt: string;
-};
-
-type EditingStep = {
-  id: Id<"onboarding_steps"> | null;
-  title: string;
-  content: string;
   order: number;
-};
+  title: string;
+  updatedAt: string;
+}
+
+interface EditingStep {
+  content: string;
+  id: Id<"onboarding_steps"> | null;
+  order: number;
+  title: string;
+}
 
 export default function OnboardingAdminPage() {
   const { loading: profileLoading, session, email } = useProfile();
@@ -86,10 +86,10 @@ export default function OnboardingAdminPage() {
   const handleCreateNew = () => {
     const nextOrder = steps ? Math.max(...steps.map((s) => s.order), 0) + 1 : 1;
     setEditingStep({
-      id: null,
-      title: "",
       content: "",
+      id: null,
       order: nextOrder,
+      title: "",
     });
     setIsCreating(true);
     setErrorMessage(null);
@@ -97,10 +97,10 @@ export default function OnboardingAdminPage() {
 
   const handleEdit = (step: OnboardingStep) => {
     setEditingStep({
-      id: step._id,
-      title: step.title,
       content: step.content,
+      id: step._id,
       order: step.order,
+      title: step.title,
     });
     setIsCreating(false);
     setErrorMessage(null);
@@ -127,22 +127,22 @@ export default function OnboardingAdminPage() {
     try {
       if (isCreating) {
         await createStep({
-          title: trimmedTitle,
           content: trimmedContent,
           order: editingStep.order,
+          title: trimmedTitle,
         });
       } else if (editingStep.id) {
         await updateStep({
-          id: editingStep.id,
-          title: trimmedTitle,
           content: trimmedContent,
+          id: editingStep.id,
           order: editingStep.order,
+          title: trimmedTitle,
         });
       }
       setEditingStep(null);
       setIsCreating(false);
       setErrorMessage(null);
-    } catch (_error) {
+    } catch {
       setErrorMessage("Failed to save step. Please try again.");
     }
   };
@@ -159,7 +159,7 @@ export default function OnboardingAdminPage() {
     try {
       await deleteStep({ id: deleteConfirmId });
       setDeleteConfirmId(null);
-    } catch (_error) {
+    } catch {
       setErrorMessage("Failed to delete step. Please try again.");
       setDeleteConfirmId(null);
     }

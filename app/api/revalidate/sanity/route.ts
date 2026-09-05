@@ -2,12 +2,12 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 const secretHeaderName = "x-sanity-revalidate-secret";
 
-type SanityWebhookPayload = {
+interface SanityWebhookPayload {
   _type?: string;
   slug?: {
     current?: string;
   };
-};
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   return Response.json({
     revalidated: true,
-    type: payload._type,
     slug,
+    type: payload._type,
   });
 }

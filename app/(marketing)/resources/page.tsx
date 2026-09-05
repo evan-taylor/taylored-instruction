@@ -18,10 +18,12 @@ const pageDescription =
   "Explore local CPR, BLS, first aid, AED, and workplace safety resources focused on Vancouver, Washington and surrounding communities, with additional San Luis Obispo content.";
 
 const resourcePageMetadata: BuildPageMetadataInput = {
-  title: `${pageTitle} | Vancouver WA Focus`,
   description: pageDescription,
-  path: "/resources",
-  ogType: "article",
+  image: {
+    description:
+      "Local training guides for Vancouver WA, Clark County, and San Luis Obispo",
+    title: "CPR and BLS Resource Library",
+  },
   keywords: [
     "CPR resources Vancouver WA",
     "BLS training guides Clark County WA",
@@ -29,11 +31,9 @@ const resourcePageMetadata: BuildPageMetadataInput = {
     "corporate CPR planning resources",
     "San Luis Obispo CPR resources",
   ],
-  image: {
-    title: "CPR and BLS Resource Library",
-    description:
-      "Local training guides for Vancouver WA, Clark County, and San Luis Obispo",
-  },
+  ogType: "article",
+  path: "/resources",
+  title: `${pageTitle} | Vancouver WA Focus`,
 };
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -48,24 +48,24 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-type ResourceCard = {
-  slug: string;
-  title: string;
+interface ResourceCard {
   excerpt: string;
+  locationCity: string;
+  locationLabel: string;
   metaDescription: string;
   primaryKeyword: string;
-  locationLabel: string;
-  locationCity: string;
-  serviceLine: string;
   readingTimeMinutes: number;
+  serviceLine: string;
+  slug: string;
+  title: string;
   updatedAt: string;
-};
+}
 
 const formatUpdatedDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
     day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 
 const getCityCount = (resources: ResourceCard[]) =>
@@ -92,8 +92,8 @@ export default async function ResourcesPage() {
   }
 
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/resources",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
@@ -104,17 +104,17 @@ export default async function ResourcesPage() {
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Taylored Instruction SEO Resources",
     itemListElement: resourceList.map((resource, index) => ({
       "@type": "ListItem",
-      position: index + 1,
       item: {
         "@type": "Article",
+        description: resource.metaDescription,
         name: resource.title,
         url: `https://tayloredinstruction.com/resources/${resource.slug}`,
-        description: resource.metaDescription,
       },
+      position: index + 1,
     })),
+    name: "Taylored Instruction SEO Resources",
   };
   const resourcesSection = (() => {
     if (hasResourceQueryError) {

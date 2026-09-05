@@ -16,10 +16,12 @@ const pageDescription =
   "On-site Red Cross Lifeguarding Instructor Trainer services for aquatic facilities, schools, and organizations in Vancouver WA, Portland metro, and San Luis Obispo County.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/lifeguarding-instructor-trainer",
-  ogType: "article",
+  image: {
+    description: "On-site Red Cross instructor trainer services",
+    title: "Lifeguarding Instructor Trainer",
+    type: "lifeguarding",
+  },
   keywords: [
     "lifeguarding instructor trainer",
     "Red Cross instructor trainer",
@@ -30,32 +32,30 @@ export const metadata = buildPageMetadata({
     "municipal aquatics instructor training",
     "university lifeguard instructor courses",
   ],
-  image: {
-    title: "Lifeguarding Instructor Trainer",
-    description: "On-site Red Cross instructor trainer services",
-    type: "lifeguarding",
-  },
+  ogType: "article",
+  path: "/lifeguarding-instructor-trainer",
+  title: pageTitle,
 });
 
 export default async function Page() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/lifeguarding-instructor-trainer",
   });
   const serviceSchema = getServiceSchema({
-    name: "On-Site Lifeguarding Instructor Trainer Services",
-    description:
-      "Travel-based instructor trainer services for organizations building or expanding Red Cross Lifeguarding Instructor teams.",
-    path: "/lifeguarding-instructor-trainer",
-    serviceType: "Instructor Trainer Services",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
       "San Luis Obispo County, CA",
     ],
     audienceType: "Aquatic facilities, schools, and municipalities",
+    description:
+      "Travel-based instructor trainer services for organizations building or expanding Red Cross Lifeguarding Instructor teams.",
+    name: "On-Site Lifeguarding Instructor Trainer Services",
+    path: "/lifeguarding-instructor-trainer",
+    serviceType: "Instructor Trainer Services",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

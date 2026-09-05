@@ -11,15 +11,15 @@ const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend do
 // Define schema for form validation - RESTORED
 const AlignmentInterestSchema = z
   .object({
-    firstName: z.string().min(1, "First name is required"),
-    lastName: z.string().min(1, "Last name is required"),
-    email: z.string().email("Invalid email address"),
-    phone: z.string().min(1, "Phone number is required"), // Assuming phone is required based on form UI
-    hasCertification: z.enum(["Yes", "No"], {
-      required_error: "Certification status is required",
-    }),
     agencies: z.array(z.string()).optional(), // Optional array of strings
+    email: z.string().email("Invalid email address"),
+    firstName: z.string().min(1, "First name is required"),
+    hasCertification: z.enum(["Yes", "No"], {
+      error: "Certification status is required",
+    }),
+    lastName: z.string().min(1, "Last name is required"),
     message: z.string().optional(),
+    phone: z.string().min(1, "Phone number is required"), // Assuming phone is required based on form UI
     smsOptIn: z.boolean().optional(),
     smsOptOut: z.boolean().optional(),
   })
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
         .join("; ");
       return NextResponse.json(
-        { success: false, error: `Invalid form data. ${errors}` },
+        { error: `Invalid form data. ${errors}`, success: false },
         { status: 400 }
       );
     }
@@ -61,17 +61,17 @@ export async function POST(req: NextRequest) {
     // Send email to admin
     const adminEmailData = await getResendClient().emails.send({
       from: `Alignment Form <${fromEmail}>`, // Updated sender name
-      to: [adminEmail],
-      replyTo: email,
-      subject: `New Alignment Interest Submission from ${firstName} ${lastName}`,
       react: React.createElement(AlignmentInterestEmail, {
         ...validatedFields.data,
       }), // Pass validated data
+      replyTo: email,
+      subject: `New Alignment Interest Submission from ${firstName} ${lastName}`,
+      to: [adminEmail],
     });
 
     if (adminEmailData.error) {
       return NextResponse.json(
-        { success: false, error: "Failed to send notification email." },
+        { error: "Failed to send notification email.", success: false },
         { status: 500 }
       );
     }
@@ -79,9 +79,9 @@ export async function POST(req: NextRequest) {
     // Send confirmation email to user
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
-      to: [email],
-      subject: "Alignment Interest Received - Taylored Instruction",
       react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
+      subject: "Alignment Interest Received - Taylored Instruction",
+      to: [email],
     });
 
     if (userEmailData.error) {
@@ -92,12 +92,12 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json(
-        { success: false, error: error.message },
+        { error: error.message, success: false },
         { status: 500 }
       );
     }
     return NextResponse.json(
-      { success: false, error: "An unexpected error occurred." },
+      { error: "An unexpected error occurred.", success: false },
       { status: 500 }
     );
   }

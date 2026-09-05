@@ -23,15 +23,15 @@ const cardImageWidth = 800;
 const cardImageHeight = 450;
 
 const blogPageMetadata: BuildPageMetadataInput = {
-  title: pageTitle,
   description: pageDescription,
-  path: "/blog",
   keywords: [
     "CPR blog Vancouver WA",
     "BLS training articles",
     "first aid and AED blog",
     "lifeguarding training articles",
   ],
+  path: "/blog",
+  title: pageTitle,
 };
 
 const formatPublishedDate = (date: string) =>
@@ -55,8 +55,8 @@ export default async function BlogPage() {
 
   const postList = posts ?? [];
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/blog",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
@@ -66,19 +66,19 @@ export default async function BlogPage() {
   const itemListSchema = {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Taylored Instruction Blog",
     itemListElement: postList.map((post, index) => ({
       "@type": "ListItem",
-      position: index + 1,
       item: {
         "@type": "Article",
-        description: post.excerpt,
-        name: post.title,
         dateModified: post._updatedAt,
         datePublished: post.publishedAt,
+        description: post.excerpt,
+        name: post.title,
         url: `https://tayloredinstruction.com/blog/${post.slug}`,
       },
+      position: index + 1,
     })),
+    name: "Taylored Instruction Blog",
   };
 
   return (

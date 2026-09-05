@@ -50,8 +50,8 @@ export const attachUserDataOnLogin = mutation({
       });
 
       await ctx.db.patch(stagingProfile._id, {
-        processedAt: Date.now(),
         convexUserId: userId,
+        processedAt: Date.now(),
       });
 
       return {
@@ -121,9 +121,7 @@ export const getMigrationStats = query({
     const unprocessed = allStaging.filter((p) => p.processedAt === undefined);
 
     return {
-      total: allStaging.length,
       processed: processed.length,
-      unprocessed: unprocessed.length,
       processedRate:
         allStaging.length > 0
           ? (
@@ -131,6 +129,8 @@ export const getMigrationStats = query({
               PERCENTAGE_MULTIPLIER
             ).toFixed(1)
           : "0",
+      total: allStaging.length,
+      unprocessed: unprocessed.length,
     };
   },
 });
@@ -138,10 +138,10 @@ export const getMigrationStats = query({
 export const importStagingProfile = mutation({
   args: {
     email: v.string(),
-    supabaseUserId: v.string(),
     isInstructor: v.boolean(),
-    updatedAt: v.optional(v.string()),
     lastLogin: v.optional(v.string()),
+    supabaseUserId: v.string(),
+    updatedAt: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -150,18 +150,18 @@ export const importStagingProfile = mutation({
       .first();
 
     if (existing) {
-      return { imported: false, reason: "Already exists", id: existing._id };
+      return { id: existing._id, imported: false, reason: "Already exists" };
     }
 
     const id = await ctx.db.insert("staging_profiles", {
       email: args.email.toLowerCase(),
-      supabaseUserId: args.supabaseUserId,
       isInstructor: args.isInstructor,
-      updatedAt: args.updatedAt,
       lastLogin: args.lastLogin,
+      supabaseUserId: args.supabaseUserId,
+      updatedAt: args.updatedAt,
     });
 
-    return { imported: true, id };
+    return { id, imported: true };
   },
 });
 
@@ -169,15 +169,15 @@ export const importProducts = mutation({
   args: {
     products: v.array(
       v.object({
-        originalCsvId: v.optional(v.number()),
-        sku: v.optional(v.string()),
-        name: v.string(),
+        categories: v.optional(v.array(v.string())),
         description: v.optional(v.string()),
         imageUrls: v.optional(v.string()),
-        categories: v.optional(v.array(v.string())),
-        type: v.string(),
+        name: v.string(),
+        originalCsvId: v.optional(v.number()),
         requiresInstructor: v.boolean(),
+        sku: v.optional(v.string()),
         stripePriceId: v.optional(v.string()),
+        type: v.string(),
       })
     ),
   },
@@ -197,15 +197,15 @@ export const importProducts = mutation({
 
       if (existing) {
         results.push({
-          name: product.name,
           imported: false,
+          name: product.name,
           reason: "Already exists",
         });
         continue;
       }
 
       const id = await ctx.db.insert("products", product);
-      results.push({ name: product.name, imported: true, id });
+      results.push({ id, imported: true, name: product.name });
     }
 
     return results;
