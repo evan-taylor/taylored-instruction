@@ -20,7 +20,7 @@ export function PostHogPageView(): null {
         url += `?${searchParams.toString()}`;
       }
       posthog.capture("$pageview", {
-        $currentUrl: url,
+        $current_url: url,
       });
     }
   }, [pathname, searchParams]);
