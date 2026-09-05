@@ -8,9 +8,13 @@ import {
   replayIntegration,
 } from "@sentry/nextjs";
 import posthog from "posthog-js";
+import {
+  getMissingPostHogEnvVariable,
+  getPostHogEnv,
+} from "@/lib/posthog-env";
 
-const posthogProjectToken = process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
-const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
+const { host: posthogHost, projectToken: posthogProjectToken } =
+  getPostHogEnv();
 
 if (posthogProjectToken && posthogHost) {
   posthog.init(posthogProjectToken, {
@@ -19,12 +23,11 @@ if (posthogProjectToken && posthogHost) {
     capture_pageview: false,
     capture_pageleave: true,
     capture_exceptions: true,
+    defaults: "2025-05-24",
     debug: process.env.NODE_ENV === "development",
   });
 } else if (process.env.NODE_ENV !== "production") {
-  const missingVariable = posthogProjectToken
-    ? "NEXT_PUBLIC_POSTHOG_HOST"
-    : "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN";
+  const missingVariable = getMissingPostHogEnvVariable();
 
   throw new Error(
     `${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`
