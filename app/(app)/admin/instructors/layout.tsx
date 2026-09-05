@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Manage Instructors - Admin | Taylored Instruction",
   description:
     "Administrator panel for managing instructor approvals and user accounts.",
+  title: "Manage Instructors - Admin | Taylored Instruction",
 };
 
 export default function AdminInstructorsLayout({

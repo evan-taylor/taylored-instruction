@@ -1,15 +1,15 @@
 import { formatLastLogin } from "./helpers";
 import type { ProfileWithUser } from "./types";
 
-type InstructorsTableProps = {
-  profiles: ProfileWithUser[];
+interface InstructorsTableProps {
+  onRejectUser: (profileId: string, userEmail: string | null) => void;
   onToggleStatus: (
     profileId: string,
     userId: string,
     currentStatus: boolean
   ) => void;
-  onRejectUser: (profileId: string, userEmail: string | null) => void;
-};
+  profiles: ProfileWithUser[];
+}
 
 export function InstructorsTable({
   profiles,

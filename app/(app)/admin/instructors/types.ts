@@ -1,14 +1,14 @@
-export type ProfileWithUser = {
+export interface ProfileWithUser {
   id: string;
-  userId: string;
   isInstructor: boolean;
-  updatedAt: string | null;
   lastLogin: string | null;
-  userEmail: string | null;
   shortId?: string;
-};
+  updatedAt: string | null;
+  userEmail: string | null;
+  userId: string;
+}
 
-export type LastLoginDisplay = {
-  text: string;
+export interface LastLoginDisplay {
   className: string;
-};
+  text: string;
+}

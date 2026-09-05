@@ -1,16 +1,16 @@
 // Product type matches Supabase database schema which uses snake_case
-export type Product = {
-  id: string; // uuid
-  original_csv_id: number | null;
-  sku: string | null;
-  name: string;
-  description: string | null;
-  price: number; // Stored as decimal, represented as number in JS/TS
-  image_urls: string[] | null;
+export interface Product {
   categories: string[] | null;
-  type: "digital" | "aed" | "ecard";
-  requires_instructor: boolean;
   created_at: string; // timestamp with time zone (string representation)
-};
+  description: string | null;
+  id: string; // uuid
+  image_urls: string[] | null;
+  name: string;
+  original_csv_id: number | null;
+  price: number; // Stored as decimal, represented as number in JS/TS
+  requires_instructor: boolean;
+  sku: string | null;
+  type: "digital" | "aed" | "ecard";
+}
 
 // You might add other shared types here later

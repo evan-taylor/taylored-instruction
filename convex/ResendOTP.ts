@@ -16,12 +16,12 @@ function generateSixDigitCode(): string {
 }
 
 export const ResendOTP = Email({
-  id: "resend-otp",
   apiKey: process.env.RESEND_API_KEY,
-  maxAge: OTP_EXPIRY_MINUTES * SECONDS_PER_MINUTE,
   generateVerificationToken() {
     return generateSixDigitCode();
   },
+  id: "resend-otp",
+  maxAge: OTP_EXPIRY_MINUTES * SECONDS_PER_MINUTE,
   async sendVerificationRequest({ identifier: email, provider, token }) {
     const resend = new ResendAPI(provider.apiKey);
     const emailFrom = process.env.AUTH_EMAIL_FROM;
@@ -32,8 +32,6 @@ export const ResendOTP = Email({
 
     const { error } = await resend.emails.send({
       from: emailFrom,
-      to: [email],
-      subject: "Your Taylored Instruction Login Code",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Your Login Code</h2>
@@ -47,7 +45,9 @@ export const ResendOTP = Email({
           <p style="color: #666; font-size: 12px;">Taylored Instruction LLC</p>
         </div>
       `,
+      subject: "Your Taylored Instruction Login Code",
       text: `Your Taylored Instruction login code is: ${token}\n\nThis code will expire in ${OTP_EXPIRY_MINUTES} minutes.\n\nIf you didn't request this code, you can safely ignore this email.`,
+      to: [email],
     });
 
     if (error) {

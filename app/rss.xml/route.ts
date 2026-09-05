@@ -5,9 +5,9 @@ import type { BlogPostSummary } from "@/sanity/types";
 
 const XML_ESCAPE_REGEX = /[<>&'"]/g;
 const xmlReplacements: Record<string, string> = {
+  "'": "&apos;",
   '"': "&quot;",
   "&": "&amp;",
-  "'": "&apos;",
   "<": "&lt;",
   ">": "&gt;",
 };

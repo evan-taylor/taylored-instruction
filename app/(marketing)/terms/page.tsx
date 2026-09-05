@@ -13,26 +13,26 @@ const pageDescription =
   "Read terms and conditions for course bookings, rescheduling, refunds, liability, and media consent at Taylored Instruction LLC.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/terms",
+  image: {
+    description: "Course booking, refund, and policy terms",
+    title: "Terms and Conditions",
+  },
   keywords: [
     "Taylored Instruction terms and conditions",
     "CPR class cancellation policy",
     "CPR course rescheduling policy",
     "training liability waiver terms",
   ],
-  image: {
-    title: "Terms and Conditions",
-    description: "Course booking, refund, and policy terms",
-  },
+  path: "/terms",
+  title: pageTitle,
 });
 
 export default async function TermsPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/terms",
   });
   const breadcrumbSchema = getBreadcrumbSchema([

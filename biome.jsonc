@@ -1,94 +1,68 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["ultracite"],
+  "extends": ["ultracite/biome/core"],
   "linter": {
     "rules": {
+      "a11y": { "noSvgWithoutTitle": "off" },
+      "complexity": { "noRedundantDefaultExport": "off" },
+      "performance": {
+        "noAwaitInLoops": "off",
+        "noImgElement": "off",
+        "noJsxPropsBind": "off"
+      },
       "style": {
+        "noIncrementDecrement": "off",
+        "noNestedTernary": "off",
+        "noSubstr": "off",
+        "useDestructuring": "off",
         "useFilenamingConvention": "off"
+      },
+      "suspicious": {
+        "noEmptyBlockStatements": "off",
+        "noLeakedRender": "off",
+        "noUnnecessaryConditions": "off"
       }
     }
   },
   "overrides": [
     {
       "includes": ["**/*.css"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noUnknownAtRules": "off"
-          }
-        }
-      }
+      "linter": { "rules": { "suspicious": { "noUnknownAtRules": "off" } } }
     },
     {
       "includes": ["components/ui/**/*.tsx"],
-      "linter": {
-        "rules": {
-          "performance": {
-            "noNamespaceImport": "off"
-          }
-        }
-      }
+      "linter": { "rules": { "performance": { "noNamespaceImport": "off" } } }
     },
     {
       "includes": ["next.config.js"],
       "linter": {
         "rules": {
-          "style": {
-            "noMagicNumbers": "off"
-          },
-          "suspicious": {
-            "useAwait": "off"
-          }
+          "style": { "noMagicNumbers": "off" },
+          "suspicious": { "useAwait": "off" }
         }
       }
     },
     {
       "includes": ["scripts/*.js"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "useAwait": "off"
-          }
-        }
-      }
+      "linter": { "rules": { "suspicious": { "useAwait": "off" } } }
     },
     {
       "includes": ["app/**/page.tsx", "app/layout.tsx"],
       "linter": {
-        "rules": {
-          "security": {
-            "noDangerouslySetInnerHtml": "off"
-          }
-        }
+        "rules": { "security": { "noDangerouslySetInnerHtml": "off" } }
       }
     },
     {
       "includes": ["app/(marketing)/**/*.tsx"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "useAwait": "off"
-          }
-        }
-      }
+      "linter": { "rules": { "suspicious": { "useAwait": "off" } } }
     },
     {
       "includes": ["convex/tsconfig.json", "convex/_generated/**"],
-      "json": {
-        "parser": {
-          "allowComments": true
-        }
-      }
+      "json": { "parser": { "allowComments": true } }
     },
     {
       "includes": ["convex/**/*.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noConsole": "off"
-          }
-        }
-      }
+      "linter": { "rules": { "suspicious": { "noConsole": "off" } } }
     }
   ]
 }

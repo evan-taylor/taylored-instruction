@@ -20,9 +20,12 @@ const pageDescription =
 
 // --- Page Metadata ---
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/contact",
+  image: {
+    description:
+      "Call or email Taylored Instruction for CPR, BLS, First Aid, and Lifeguard classes",
+    title: "Contact Taylored Instruction",
+  },
   keywords: [
     "contact CPR instructor Vancouver WA",
     "CPR class scheduling Vancouver WA",
@@ -33,11 +36,8 @@ export const metadata = buildPageMetadata({
     "AED consultation contact",
     "call Taylored Instruction",
   ],
-  image: {
-    description:
-      "Call or email Taylored Instruction for CPR, BLS, First Aid, and Lifeguard classes",
-    title: "Contact Taylored Instruction",
-  },
+  path: "/contact",
+  title: pageTitle,
 });
 
 // --- Page Component ---
@@ -45,20 +45,20 @@ export default async function ContactPage() {
   cacheLife("days");
   const contactPageSchema = {
     ...getContactPageSchema(),
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
   };
   const contactServiceSchema = getServiceSchema({
-    name: "CPR and Safety Training Consultation",
-    description:
-      "Course consultation, scheduling support, and custom training quotes for CPR, BLS, First Aid, Lifeguarding, and AED programs.",
-    path: "/contact",
-    serviceType: "Training Consultation",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
       "San Luis Obispo County, CA",
     ],
+    description:
+      "Course consultation, scheduling support, and custom training quotes for CPR, BLS, First Aid, Lifeguarding, and AED programs.",
+    name: "CPR and Safety Training Consultation",
+    path: "/contact",
+    serviceType: "Training Consultation",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

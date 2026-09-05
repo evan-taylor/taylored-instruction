@@ -2,24 +2,24 @@ import { useAuthToken } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
-type Profile = {
-  id: string;
-  userId: string;
+interface Profile {
   email: string | null;
+  id: string;
   is_instructor: boolean;
-  updated_at: string | null | undefined;
   last_login?: string | null | undefined;
-};
+  updated_at: string | null | undefined;
+  userId: string;
+}
 
-type UseProfileReturn = {
-  session: { user: { id: string; email?: string } } | null;
-  profile: Profile | null;
+interface UseProfileReturn {
+  email: string | null;
+  error: string | null;
   isInstructor: boolean;
   loading: boolean;
-  error: string | null;
+  profile: Profile | null;
+  session: { user: { id: string; email?: string } } | null;
   userId: string | undefined;
-  email: string | null;
-};
+}
 
 export function useProfile(_initialUserId?: string): UseProfileReturn {
   const authToken = useAuthToken();
@@ -32,19 +32,19 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
   const session = isAuthenticated
     ? {
         user: {
-          id: profile?.userId ?? "unknown",
           email: profile?.email ?? undefined,
+          id: profile?.userId ?? "unknown",
         },
       }
     : null;
 
   return {
-    session,
-    profile: profile || null,
+    email: profile?.email || null,
+    error: null,
     isInstructor,
     loading,
-    error: null,
+    profile: profile || null,
+    session,
     userId: profile?.userId,
-    email: profile?.email || null,
   };
 }

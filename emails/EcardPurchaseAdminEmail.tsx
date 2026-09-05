@@ -12,19 +12,19 @@ import {
   Text,
 } from "@react-email/components";
 
-type CartItem = {
+interface CartItem {
   name: string;
   quantity: string;
-};
+}
 
-type EcardPurchaseAdminEmailProps = {
-  itemName?: string;
-  quantity?: string;
-  price?: string;
-  customerEmail?: string;
-  sessionId?: string;
+interface EcardPurchaseAdminEmailProps {
   cartItems?: CartItem[];
-};
+  customerEmail?: string;
+  itemName?: string;
+  price?: string;
+  quantity?: string;
+  sessionId?: string;
+}
 
 export const EcardPurchaseAdminEmail: React.FC<
   Readonly<EcardPurchaseAdminEmailProps>
@@ -106,34 +106,34 @@ const main = {
 
 const container = {
   backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
   border: "1px solid #f0f0f0",
   borderRadius: "4px",
-  width: "100%",
+  margin: "0 auto",
+  marginBottom: "64px",
   maxWidth: "600px",
+  padding: "20px 0 48px",
+  width: "100%",
 };
 
 const heading = {
-  fontSize: "24px",
-  lineHeight: "1.3",
-  fontWeight: "700",
   color: "#484848",
+  fontSize: "24px",
+  fontWeight: "700",
+  lineHeight: "1.3",
   padding: "0 20px",
 };
 
 const paragraph = {
+  color: "#484848",
   fontSize: "16px",
   lineHeight: "1.4",
-  color: "#484848",
   padding: "0 30px",
 };
 
 const subHeading = {
+  color: "#484848",
   fontSize: "18px",
   fontWeight: "600",
-  color: "#484848",
   padding: "10px 30px 5px 30px",
 };
 
@@ -146,24 +146,24 @@ const itemRow = {
 };
 
 const itemDetailsColumn = {
-  fontSize: "16px",
   color: "#333",
+  fontSize: "16px",
   paddingLeft: "10px",
 };
 
 const labelColumn = {
-  width: "150px",
-  verticalAlign: "top",
-  paddingBottom: "8px",
-  fontWeight: "600",
   color: "#555",
+  fontWeight: "600",
+  paddingBottom: "8px",
+  verticalAlign: "top",
+  width: "150px",
 };
 
 const valueColumn = {
-  verticalAlign: "top",
-  paddingBottom: "8px",
   color: "#333",
   fontSize: "16px",
+  paddingBottom: "8px",
+  verticalAlign: "top",
 };
 
 const hr = {

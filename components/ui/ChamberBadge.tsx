@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 
-type ChamberBadgeWidget = {
+interface ChamberBadgeWidget {
   create: () => void;
-};
+}
 
 type ChamberWindow = typeof globalThis.window & {
   MNI?: {
@@ -36,7 +36,7 @@ export const ChamberBadge = () => {
             "#@id{text-align:center;position:relative}#@id .mn-widget-member-name{font-weight:700}#@id .mn-widget-member-logo{max-width:100%}",
         }).create();
         return true;
-      } catch (_error) {
+      } catch {
         return false;
       }
     };

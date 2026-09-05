@@ -4,44 +4,44 @@ import { ChevronLeft, ChevronRight, Quote } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useState } from "react";
 
-type Testimonial = {
+interface Testimonial {
   id: number;
+  image: string;
   name: string;
   position: string;
-  image: string;
   quote: string;
-};
+}
 
 const testimonials: Testimonial[] = [
   {
     id: 1,
+    image: "/headshot.jpg",
     name: "Sarah Johnson",
     position: "Swimming Instructor",
-    image: "/headshot.jpg",
     quote:
       "The CPR certification course was thorough and engaging. I feel much more confident in my ability to respond to emergencies at the pool where I teach swimming lessons.",
   },
   {
     id: 2,
+    image: "/headshot.jpg",
     name: "Michael Rodriguez",
     position: "Parent",
-    image: "/headshot.jpg",
     quote:
       "As a parent, I wanted to be prepared for any emergency. The First Aid training I received was practical and the instructor made complex procedures easy to understand.",
   },
   {
     id: 3,
+    image: "/headshot.jpg",
     name: "Emma Wilson",
     position: "Fitness Center Manager",
-    image: "/headshot.jpg",
     quote:
       "We hired Taylored Instruction to train our entire staff in CPR and AED use. The on-site training was convenient and customized to our facility's specific needs.",
   },
   {
     id: 4,
+    image: "/headshot.jpg",
     name: "David Chen",
     position: "Lifeguard",
-    image: "/headshot.jpg",
     quote:
       "The Lifeguard Training program was comprehensive and challenging. I appreciate how the scenarios mirrored real-life situations we might encounter.",
   },

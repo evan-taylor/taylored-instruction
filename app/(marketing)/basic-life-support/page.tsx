@@ -15,10 +15,13 @@ const pageDescription =
   "American Red Cross Basic Life Support (BLS) certification for healthcare providers in Vancouver WA, Clark County, and San Luis Obispo CA.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/basic-life-support",
-  ogType: "article",
+  image: {
+    description:
+      "Red Cross BLS training for healthcare providers in Vancouver WA and San Luis Obispo CA",
+    title: "Red Cross Basic Life Support (BLS)",
+    type: "bls",
+  },
   keywords: [
     "Red Cross BLS class Vancouver WA",
     "basic life support certification Clark County",
@@ -29,18 +32,15 @@ export const metadata = buildPageMetadata({
     "Red Cross BLS class San Luis Obispo",
     "BLS classes Portland metro",
   ],
-  image: {
-    title: "Red Cross Basic Life Support (BLS)",
-    description:
-      "Red Cross BLS training for healthcare providers in Vancouver WA and San Luis Obispo CA",
-    type: "bls",
-  },
+  ogType: "article",
+  path: "/basic-life-support",
+  title: pageTitle,
 });
 
 const BasicLifeSupportPage = async () => {
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/basic-life-support",
   });
   const courseSchema = getRedCrossBLSCourseSchema();

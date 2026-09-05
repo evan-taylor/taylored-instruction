@@ -10,9 +10,9 @@ import {
   Text,
 } from "@react-email/components";
 
-type ContactConfirmationEmailProps = {
+interface ContactConfirmationEmailProps {
   firstName: string;
-};
+}
 
 export const ContactConfirmationEmail: React.FC<
   Readonly<ContactConfirmationEmailProps>
@@ -63,34 +63,34 @@ const main = {
 
 const container = {
   backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
   border: "1px solid #f0f0f0",
   borderRadius: "4px",
+  margin: "0 auto",
+  marginBottom: "64px",
+  padding: "20px 0 48px",
 };
 
 const heading = {
-  fontSize: "24px",
-  lineHeight: "1.3",
-  fontWeight: "700",
   color: "#484848",
+  fontSize: "24px",
+  fontWeight: "700",
+  lineHeight: "1.3",
   padding: "0 20px",
 };
 
 const paragraph = {
+  color: "#484848",
   fontSize: "16px",
   lineHeight: "1.4",
-  color: "#484848",
   padding: "0 20px",
 };
 
 const link = {
   color: "#2b6cb0", // Primary color
-  textDecoration: "underline",
-  marginLeft: "20px",
   display: "inline-block",
   marginBottom: "10px",
+  marginLeft: "20px",
+  textDecoration: "underline",
 };
 
 const hr = {

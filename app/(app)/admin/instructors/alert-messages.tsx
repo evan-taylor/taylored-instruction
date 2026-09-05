@@ -1,7 +1,7 @@
-type AlertMessagesProps = {
-  error: string | null;
+interface AlertMessagesProps {
   actionMessage: string | null;
-};
+  error: string | null;
+}
 
 export function AlertMessages({ error, actionMessage }: AlertMessagesProps) {
   return (

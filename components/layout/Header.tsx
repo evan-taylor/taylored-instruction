@@ -11,34 +11,34 @@ import { useProfile } from "../../hooks/useProfile";
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
 
 // --- Type Definitions ---
-type NavLinkItem = {
-  label: string;
-  href: string;
-  indent?: boolean;
-  type?: undefined; // Ensure type compatibility with Divider
-  requiresInstructor?: boolean; // Added for conditional display
+interface NavLinkItem {
   hideWhenLoggedIn?: boolean;
   hideWhenLoggedOut?: boolean;
-};
-
-type NavDivider = {
+  href: string;
+  indent?: boolean;
   label: string;
-  type: "divider";
+  requiresInstructor?: boolean; // Added for conditional display
+  type?: undefined; // Ensure type compatibility with Divider
+}
+
+interface NavDivider {
   href?: string; // Optional href for clickable dividers
   indent?: undefined;
+  label: string;
   requiresInstructor?: undefined; // Added
-};
+  type: "divider";
+}
 
 type DropdownItem = NavLinkItem | NavDivider;
 
-type NavTopLevelLink = {
-  label: string;
+interface NavTopLevelLink {
   dropdown?: DropdownItem[]; // Optional dropdown
-  href?: string; // Optional direct href if no dropdown
   hideWhenLoggedIn?: boolean; // Added
   hideWhenLoggedOut?: boolean; // Added
+  href?: string; // Optional direct href if no dropdown
+  label: string;
   requiresInstructor?: boolean; // Added for top-level links if needed
-};
+}
 
 // Helper function for active link class
 const getLinkClass = (href: string, pathname: string, isMobile = false) => {
@@ -72,106 +72,106 @@ const generateNavLinks = (
   isInstructor: boolean
 ): NavTopLevelLink[] => [
   {
-    label: "About Us",
     dropdown: [
-      { label: "About Taylored Instruction", href: "/about" },
-      { label: "Training Resources", href: "/resources" },
-      { label: "Contact Us", href: "/contact" },
+      { href: "/about", label: "About Taylored Instruction" },
+      { href: "/resources", label: "Training Resources" },
+      { href: "/contact", label: "Contact Us" },
     ],
+    label: "About Us",
   },
   {
-    label: "Classes",
     dropdown: [
       {
-        label: "Register for Classes",
         href: "https://www.hovn.app/tayloredinstruction",
+        label: "Register for Classes",
       },
       {
-        type: "divider",
-        label: "American Heart Association Courses",
         href: "https://www.hovn.app/tayloredinstruction/agencies/aha",
+        label: "American Heart Association Courses",
+        type: "divider",
       },
-      { label: "BLS", href: "/bls", indent: true },
-      { label: "Heartsaver", href: "/heartsaver", indent: true },
+      { href: "/bls", indent: true, label: "BLS" },
+      { href: "/heartsaver", indent: true, label: "Heartsaver" },
       {
-        label: "Instructor Training",
         href: "/aha-instructor-training",
         indent: true,
+        label: "Instructor Training",
       },
       {
-        type: "divider",
-        label: "American Red Cross Courses",
         href: "https://www.hovn.app/tayloredinstruction/agencies/arc",
+        label: "American Red Cross Courses",
+        type: "divider",
       },
       {
-        label: "Adult and Pediatric First Aid/CPR/AED",
         href: "/first-aid-cpr-aed",
         indent: true,
+        label: "Adult and Pediatric First Aid/CPR/AED",
       },
-      { label: "Lifeguarding", href: "/lifeguarding", indent: true },
+      { href: "/lifeguarding", indent: true, label: "Lifeguarding" },
       {
-        label: "Lifeguarding Instructor",
         href: "/lifeguarding-instructor",
         indent: true,
+        label: "Lifeguarding Instructor",
       },
       {
-        label: "First Aid/CPR/AED Instructor",
         href: "/fa-cpr-aed-instructor",
         indent: true,
+        label: "First Aid/CPR/AED Instructor",
       },
     ],
+    label: "Classes",
   },
   {
-    label: "Products",
     dropdown: [
       {
-        label: "Shop All Products",
         href: "https://shop.tayloredinstruction.com/",
+        label: "Shop All Products",
       },
       {
-        label: "AEDs",
         href: "https://shop.tayloredinstruction.com/search/aeds",
+        label: "AEDs",
       },
       {
-        label: "Instructor Supplies",
         href: "https://shop.tayloredinstruction.com/search/instructor-supplies",
+        label: "Instructor Supplies",
       },
     ],
+    label: "Products",
   },
   {
-    label: "Instructors",
     dropdown: [
       // Hide Alignment if logged in as an instructor
       ...(isInstructor
         ? ([] as NavLinkItem[])
-        : ([{ label: "Alignment", href: "/alignment" }] as NavLinkItem[])),
+        : ([{ href: "/alignment", label: "Alignment" }] as NavLinkItem[])),
       {
-        label: "Instructor Resources",
         href: "https://docs.tayloredinstruction.com/",
+        label: "Instructor Resources",
         requiresInstructor: true,
       },
       // Conditionally add eCards if instructor
       ...(isInstructor
         ? [
             {
-              label: "eCards",
               href: "/ecards",
+              label: "eCards",
               requiresInstructor: true,
             } as NavLinkItem,
           ]
         : []),
-      { type: "divider", label: "Account" },
+      { label: "Account", type: "divider" },
       {
-        label: "Login",
-        href: "/login",
         hideWhenLoggedIn: true,
+        href: "/login",
+        label: "Login",
       },
       {
-        label: "My Account",
-        href: "/my-account",
         hideWhenLoggedOut: true,
+        href: "/my-account",
+        label: "My Account",
       },
     ],
+    label: "Instructors",
   },
 ];
 
@@ -196,7 +196,7 @@ export const Header = () => {
     try {
       await signOut();
       router.push("/");
-    } catch (_err) {
+    } catch {
       // Handle unexpected errors
     }
   };
@@ -417,7 +417,7 @@ const NavMenu = ({
         key={`divider-${item.label}`}
         onClick={onItemClick}
         {...(isExternal
-          ? { target: "_blank", rel: "noopener noreferrer" }
+          ? { rel: "noopener noreferrer", target: "_blank" }
           : {})}
       >
         {item.label}
@@ -438,7 +438,7 @@ const NavMenu = ({
     const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
     const indentClass = item.indent ? " pl-8" : "";
     const linkProps = isExternal
-      ? { target: "_blank" as const, rel: "noopener noreferrer" }
+      ? { rel: "noopener noreferrer", target: "_blank" as const }
       : {};
     return (
       <Link
@@ -560,7 +560,7 @@ const MobileNavMenu = ({
             key={`divider-${item.label}`}
             onClick={closeMenu}
             {...(isExternal
-              ? { target: "_blank", rel: "noopener noreferrer" }
+              ? { rel: "noopener noreferrer", target: "_blank" }
               : {})}
           >
             {item.label}
@@ -590,7 +590,7 @@ const MobileNavMenu = ({
         key={item.label}
         onClick={closeMenu}
         {...(isExternal
-          ? { target: "_blank", rel: "noopener noreferrer" }
+          ? { rel: "noopener noreferrer", target: "_blank" }
           : {})}
       >
         {item.label}

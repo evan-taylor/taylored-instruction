@@ -10,8 +10,8 @@ const adminEmail =
 const internalSecret = process.env.INTERNAL_EMAIL_WEBHOOK_SECRET;
 
 const NewUserNotificationSchema = z.object({
-  userId: z.string().min(1, "User ID is required"),
   userEmail: z.string().optional(),
+  userId: z.string().min(1, "User ID is required"),
 });
 
 const escapeHtml = (value: string): string =>
@@ -83,9 +83,9 @@ export async function POST(req: NextRequest) {
 
       const emailData = await getResendClient().emails.send({
         from: `Taylored Instruction <${fromEmail}>`,
-        to: [adminEmail],
-        subject,
         html: htmlBody,
+        subject,
+        to: [adminEmail],
       });
 
       if (emailData.error) {

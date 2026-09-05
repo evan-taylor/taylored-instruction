@@ -5,24 +5,24 @@ import type { ReactNode } from "react";
 import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 import { Button } from "@/components/ui/Button";
 
-type HeroImage = {
+interface HeroImage {
   alt: string;
   position?: string;
   src: string;
-};
+}
 
-type ResourceLink = {
+interface ResourceLink {
   href: string;
   label: string;
-};
+}
 
-type SecondaryAction = {
+interface SecondaryAction {
   href: string;
   label: string;
   variant?: "secondary" | "outline";
-};
+}
 
-type ClassPageLayoutProps = {
+interface ClassPageLayoutProps {
   badgeLabel?: string;
   children: ReactNode;
   courseName: string;
@@ -32,12 +32,12 @@ type ClassPageLayoutProps = {
   secondaryActions?: SecondaryAction[];
   subtitle?: string;
   title: string;
-};
+}
 
-type ClassPageSectionProps = {
+interface ClassPageSectionProps {
   children: ReactNode;
   title: string;
-};
+}
 
 export function ClassPageSection({ children, title }: ClassPageSectionProps) {
   return (
@@ -92,7 +92,7 @@ export default function ClassPageLayout({
         </div>
       </section>
 
-      <section className="-mt-14 relative z-20 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <section className="relative z-20 mx-auto -mt-14 max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xl md:p-6">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>

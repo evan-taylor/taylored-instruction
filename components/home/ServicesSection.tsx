@@ -2,14 +2,14 @@ import { Heart, LifeBuoy, UserCheck } from "lucide-react";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
 
-type ServiceCardProps = {
-  icon: ReactNode;
-  title: string;
+interface ServiceCardProps {
   description: string;
+  icon: ReactNode;
   link: string;
   rel?: ComponentProps<typeof Link>["rel"];
   target?: ComponentProps<typeof Link>["target"];
-};
+  title: string;
+}
 
 const ServiceCard = ({
   icon,

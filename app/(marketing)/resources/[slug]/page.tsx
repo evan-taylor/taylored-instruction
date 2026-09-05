@@ -10,11 +10,11 @@ import { buildPageMetadata } from "@/lib/seo";
 import { getFallbackSeoPageBySlug } from "@/lib/seoFallbackContent";
 import { generateJSONLD, getBreadcrumbSchema } from "@/lib/structuredData";
 
-type ResourcePageProps = {
+interface ResourcePageProps {
   params: Promise<{
     slug: string;
   }>;
-};
+}
 
 const FALLBACK_CTA_HREF = "/contact";
 
@@ -28,7 +28,7 @@ const sanitizeCtaHref = (href: string): string => {
     if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
       return href;
     }
-  } catch (_error) {
+  } catch {
     return FALLBACK_CTA_HREF;
   }
 
@@ -79,26 +79,26 @@ export async function generateMetadata(
 
   if (!resource) {
     return buildPageMetadata({
-      title: "Resource Not Found",
       description:
         "The requested training resource could not be found on Taylored Instruction.",
-      path: `/resources/${params.slug}`,
       noIndex: true,
+      path: `/resources/${params.slug}`,
+      title: "Resource Not Found",
     });
   }
 
   const { page } = resource;
   return buildPageMetadata({
-    title: page.metaTitle,
     description: page.metaDescription,
-    path: `/resources/${page.slug}`,
-    ogType: "article",
+    image: {
+      description: page.metaDescription,
+      title: page.title,
+    },
     keywords: [page.primaryKeyword, ...page.secondaryKeywords],
     noIndex: resource.isFallback,
-    image: {
-      title: page.title,
-      description: page.metaDescription,
-    },
+    ogType: "article",
+    path: `/resources/${page.slug}`,
+    title: page.metaTitle,
   });
 }
 
@@ -119,28 +119,28 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: page.title,
-    description: page.metaDescription,
-    datePublished: page.publishedAt ?? page.createdAt,
-    dateModified: page.updatedAt,
+    articleSection: page.serviceLine,
     author: {
       "@type": "Organization",
       name: "Taylored Instruction",
     },
+    dateModified: page.updatedAt,
+    datePublished: page.publishedAt ?? page.createdAt,
+    description: page.metaDescription,
+    headline: page.title,
+    keywords: [page.primaryKeyword, ...page.secondaryKeywords].join(", "),
+    mainEntityOfPage: {
+      "@id": `https://tayloredinstruction.com/resources/${page.slug}`,
+      "@type": "WebPage",
+    },
     publisher: {
       "@type": "Organization",
-      name: "Taylored Instruction",
       logo: {
         "@type": "ImageObject",
         url: "https://tayloredinstruction.com/horizontal-logo-black.png",
       },
+      name: "Taylored Instruction",
     },
-    mainEntityOfPage: {
-      "@type": "WebPage",
-      "@id": `https://tayloredinstruction.com/resources/${page.slug}`,
-    },
-    articleSection: page.serviceLine,
-    keywords: [page.primaryKeyword, ...page.secondaryKeywords].join(", "),
   };
 
   const faqSchema = {
@@ -148,11 +148,11 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
     "@type": "FAQPage",
     mainEntity: page.faqItems.map((item) => ({
       "@type": "Question",
-      name: item.question,
       acceptedAnswer: {
         "@type": "Answer",
         text: item.answer,
       },
+      name: item.question,
     })),
   };
 

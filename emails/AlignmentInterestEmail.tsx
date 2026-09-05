@@ -11,17 +11,17 @@ import {
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
-type AlignmentInterestEmailProps = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  hasCertification: "Yes" | "No";
+interface AlignmentInterestEmailProps {
   agencies?: string[];
+  email: string;
+  firstName: string;
+  hasCertification: "Yes" | "No";
+  lastName: string;
   message?: string;
+  phone: string;
   smsOptIn?: boolean;
   smsOptOut?: boolean;
-};
+}
 
 export default function AlignmentInterestEmail({
   firstName,

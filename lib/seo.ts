@@ -9,22 +9,22 @@ type OgImageType =
   | "lifeguarding"
   | "swimming";
 
-type PageImageOptions = {
-  title: string;
+interface PageImageOptions {
   description?: string;
-  url?: string;
-  type?: OgImageType;
-};
-
-export type BuildPageMetadataInput = {
   title: string;
+  type?: OgImageType;
+  url?: string;
+}
+
+export interface BuildPageMetadataInput {
   description: string;
-  path: string;
-  keywords?: string[];
-  ogType?: "website" | "article";
   image?: PageImageOptions;
+  keywords?: string[];
   noIndex?: boolean;
-};
+  ogType?: "website" | "article";
+  path: string;
+  title: string;
+}
 
 export const SITE_URL = "https://tayloredinstruction.com";
 export const SITE_NAME = "Taylored Instruction";
@@ -63,50 +63,50 @@ export const buildPageMetadata = ({
   const ogImageUrl =
     image?.url ??
     generateOgImageUrl({
-      title: ogTitle,
       description: ogDescription,
+      title: ogTitle,
       type: image?.type,
     });
 
   return {
-    title,
-    description,
-    keywords: dedupeKeywords([...BASE_KEYWORDS, ...keywords]),
     alternates: {
       canonical: canonicalUrl,
     },
+    description,
+    keywords: dedupeKeywords([...BASE_KEYWORDS, ...keywords]),
     openGraph: {
-      title,
       description,
-      type: ogType,
-      url: canonicalUrl,
-      siteName: SITE_NAME,
-      locale: "en_US",
       images: [
         {
+          alt: ogTitle,
+          height: 630,
           url: ogImageUrl,
           width: 1200,
-          height: 630,
-          alt: ogTitle,
         },
       ],
+      locale: "en_US",
+      siteName: SITE_NAME,
+      title,
+      type: ogType,
+      url: canonicalUrl,
     },
+    title,
     twitter: {
       card: "summary_large_image",
-      title,
       description,
       images: [ogImageUrl],
+      title,
     },
     ...(noIndex
       ? {
           robots: {
-            index: false,
             follow: false,
-            nocache: true,
             googleBot: {
-              index: false,
               follow: false,
+              index: false,
             },
+            index: false,
+            nocache: true,
           },
         }
       : {}),

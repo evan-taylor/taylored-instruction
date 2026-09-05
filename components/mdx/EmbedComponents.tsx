@@ -4,9 +4,9 @@ import { getCalApi } from "@calcom/embed-react";
 import Script from "next/script";
 import { useEffect } from "react";
 
-type CapEmbedProps = {
+interface CapEmbedProps {
   url: string;
-};
+}
 
 function extractCapVideoId(url: string): string | undefined {
   if (url.includes("cap.so/embed/")) {
@@ -41,9 +41,9 @@ export function CapEmbed({ url }: CapEmbedProps) {
   );
 }
 
-type LoomEmbedProps = {
+interface LoomEmbedProps {
   url: string;
-};
+}
 
 export function LoomEmbed({ url }: LoomEmbedProps) {
   const videoId = url.includes("loom.com/share/")
@@ -70,10 +70,10 @@ export function LoomEmbed({ url }: LoomEmbedProps) {
   );
 }
 
-type TypeformEmbedProps = {
+interface TypeformEmbedProps {
   formId: string;
   height?: number;
-};
+}
 
 export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
   if (!formId) {
@@ -101,12 +101,12 @@ export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
   );
 }
 
-type CalComButtonProps = {
-  username: string;
+interface CalComButtonProps {
+  buttonText?: string;
   eventType: string;
   namespace: string;
-  buttonText?: string;
-};
+  username: string;
+}
 
 export function CalComButton({
   username,
@@ -136,8 +136,8 @@ export function CalComButton({
 }
 
 export const mdxComponents = {
+  CalComButton,
   CapEmbed,
   LoomEmbed,
   TypeformEmbed,
-  CalComButton,
 };

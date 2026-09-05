@@ -2,13 +2,13 @@ import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
 
 const BRAND_COLORS = {
-  primary: "#2B5A8A",
-  primaryDark: "#163f69",
   accent: "#C41E3A",
-  text: "#1a202c",
-  white: "#ffffff",
   lightGray: "#f8fafc",
   muted: "#64748b",
+  primary: "#2B5A8A",
+  primaryDark: "#163f69",
+  text: "#1a202c",
+  white: "#ffffff",
 };
 
 const TITLE_LENGTH_THRESHOLD = 50;
@@ -45,49 +45,48 @@ export function GET(request: NextRequest) {
   return new ImageResponse(
     <div
       style={{
-        height: "100%",
-        width: "100%",
+        backgroundColor: BRAND_COLORS.white,
         display: "flex",
         flexDirection: "column",
-        backgroundColor: BRAND_COLORS.white,
+        height: "100%",
         position: "relative",
+        width: "100%",
       }}
     >
       {/* Top accent bar */}
       <div
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "8px",
           background: `linear-gradient(90deg, ${BRAND_COLORS.primary} 0%, ${accentColor} 50%, ${BRAND_COLORS.primaryDark} 100%)`,
+          height: "8px",
+          left: 0,
+          position: "absolute",
+          right: 0,
+          top: 0,
         }}
       />
 
       {/* Main content area */}
       <div
         style={{
+          alignItems: "center",
           display: "flex",
           flexDirection: "row",
-          alignItems: "center",
+          gap: "60px",
+          height: "100%",
           justifyContent: "flex-start",
           padding: "60px 80px",
-          height: "100%",
-          gap: "60px",
         }}
       >
         {/* Logo section */}
         <div
           style={{
+            alignItems: "center",
             display: "flex",
             flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
             flexShrink: 0,
+            justifyContent: "center",
           }}
         >
-          {/* biome-ignore lint/performance/noImgElement: img required for OG image generation */}
           <img
             alt="Taylored Instruction Logo"
             height={220}
@@ -103,22 +102,22 @@ export function GET(request: NextRequest) {
         <div
           style={{
             display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
             flex: 1,
+            flexDirection: "column",
             gap: "20px",
+            justifyContent: "center",
           }}
         >
           {/* Title */}
           <div
             style={{
-              fontSize: title.length > TITLE_LENGTH_THRESHOLD ? "42px" : "52px",
-              fontWeight: 700,
               color: BRAND_COLORS.text,
-              lineHeight: 1.2,
-              maxWidth: "700px",
               display: "flex",
               flexWrap: "wrap",
+              fontSize: title.length > TITLE_LENGTH_THRESHOLD ? "42px" : "52px",
+              fontWeight: 700,
+              lineHeight: 1.2,
+              maxWidth: "700px",
             }}
           >
             {title}
@@ -127,13 +126,13 @@ export function GET(request: NextRequest) {
           {/* Description */}
           <div
             style={{
-              fontSize: "26px",
-              fontWeight: 400,
               color: BRAND_COLORS.muted,
-              lineHeight: 1.4,
-              maxWidth: "650px",
               display: "flex",
               flexWrap: "wrap",
+              fontSize: "26px",
+              fontWeight: 400,
+              lineHeight: 1.4,
+              maxWidth: "650px",
             }}
           >
             {description}
@@ -150,28 +149,28 @@ export function GET(request: NextRequest) {
           >
             <div
               style={{
-                display: "flex",
                 alignItems: "center",
-                gap: "8px",
                 backgroundColor: BRAND_COLORS.lightGray,
-                padding: "10px 20px",
-                borderRadius: "8px",
                 border: `2px solid ${BRAND_COLORS.primary}`,
+                borderRadius: "8px",
+                display: "flex",
+                gap: "8px",
+                padding: "10px 20px",
               }}
             >
               <div
                 style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
                   backgroundColor: BRAND_COLORS.primary,
+                  borderRadius: "50%",
+                  height: "10px",
+                  width: "10px",
                 }}
               />
               <span
                 style={{
+                  color: BRAND_COLORS.primary,
                   fontSize: "18px",
                   fontWeight: 600,
-                  color: BRAND_COLORS.primary,
                 }}
               >
                 Vancouver, WA
@@ -179,28 +178,28 @@ export function GET(request: NextRequest) {
             </div>
             <div
               style={{
-                display: "flex",
                 alignItems: "center",
-                gap: "8px",
                 backgroundColor: BRAND_COLORS.lightGray,
-                padding: "10px 20px",
-                borderRadius: "8px",
                 border: `2px solid ${BRAND_COLORS.accent}`,
+                borderRadius: "8px",
+                display: "flex",
+                gap: "8px",
+                padding: "10px 20px",
               }}
             >
               <div
                 style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
                   backgroundColor: BRAND_COLORS.accent,
+                  borderRadius: "50%",
+                  height: "10px",
+                  width: "10px",
                 }}
               />
               <span
                 style={{
+                  color: BRAND_COLORS.accent,
                   fontSize: "18px",
                   fontWeight: 600,
-                  color: BRAND_COLORS.accent,
                 }}
               >
                 San Luis Obispo, CA
@@ -213,29 +212,29 @@ export function GET(request: NextRequest) {
       {/* Bottom section with website */}
       <div
         style={{
-          position: "absolute",
+          alignItems: "center",
+          backgroundColor: BRAND_COLORS.primaryDark,
           bottom: 0,
-          left: 0,
-          right: 0,
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          left: 0,
           padding: "20px 80px",
-          backgroundColor: BRAND_COLORS.primaryDark,
+          position: "absolute",
+          right: 0,
         }}
       >
         <div
           style={{
-            display: "flex",
             alignItems: "center",
+            display: "flex",
             gap: "24px",
           }}
         >
           <span
             style={{
+              color: BRAND_COLORS.white,
               fontSize: "18px",
               fontWeight: 500,
-              color: BRAND_COLORS.white,
               opacity: 0.9,
             }}
           >
@@ -243,8 +242,8 @@ export function GET(request: NextRequest) {
           </span>
           <span
             style={{
-              fontSize: "18px",
               color: BRAND_COLORS.white,
+              fontSize: "18px",
               opacity: 0.5,
             }}
           >
@@ -252,9 +251,9 @@ export function GET(request: NextRequest) {
           </span>
           <span
             style={{
+              color: BRAND_COLORS.white,
               fontSize: "18px",
               fontWeight: 500,
-              color: BRAND_COLORS.white,
               opacity: 0.9,
             }}
           >
@@ -263,9 +262,9 @@ export function GET(request: NextRequest) {
         </div>
         <span
           style={{
+            color: BRAND_COLORS.white,
             fontSize: "20px",
             fontWeight: 600,
-            color: BRAND_COLORS.white,
           }}
         >
           tayloredinstruction.com
@@ -273,8 +272,8 @@ export function GET(request: NextRequest) {
       </div>
     </div>,
     {
-      width: 1200,
       height: 630,
+      width: 1200,
     }
   );
 }

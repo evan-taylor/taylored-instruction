@@ -25,73 +25,76 @@ const BASE_RESEARCH_NOTES = [
   "FEMA/Ready preparedness guidance: https://www.ready.gov/",
 ] as const;
 
-type LocationProfile = {
-  slug: string;
-  label: string;
+interface LocationProfile {
   city: string;
-  region: string;
-  state: string;
-  nearbyAreas: string[];
+  label: string;
   localDemandSignals: string[];
-  seasonalRisks: string[];
   localReference: string;
+  nearbyAreas: string[];
+  region: string;
+  seasonalRisks: string[];
   seoWeight: "primary" | "secondary";
-};
+  slug: string;
+  state: string;
+}
 
-type ServiceProfile = {
-  slugPrefix: string;
-  serviceLine: string;
-  titleLabel: string;
-  shortName: string;
+interface ServiceProfile {
   audience: string;
-  credential: string;
   classFormats: string[];
   commonUseCases: string[];
   complianceNotes: string[];
+  credential: string;
   ctaHref: string;
   faqTemplates: Array<{
     question: string;
     answer: (location: LocationProfile) => string;
   }>;
-};
+  serviceLine: string;
+  shortName: string;
+  slugPrefix: string;
+  titleLabel: string;
+}
 
-type GeneratedPage = {
-  slug: string;
-  title: string;
-  metaTitle: string;
-  metaDescription: string;
+interface GeneratedPage {
+  audience: string;
+  ctaHref: string;
+  ctaLabel: string;
+  ctaText: string;
   excerpt: string;
-  primaryKeyword: string;
-  secondaryKeywords: string[];
-  locationLabel: string;
+  faqItems: Array<{
+    question: string;
+    answer: string;
+  }>;
   locationCity: string;
+  locationLabel: string;
   locationRegion: string;
   locationState: string;
-  serviceLine: string;
-  audience: string;
+  metaDescription: string;
+  metaTitle: string;
+  primaryKeyword: string;
   readingTimeMinutes: number;
+  researchNotes: string[];
+  secondaryKeywords: string[];
   sections: Array<{
     heading: string;
     paragraphs: string[];
     bullets?: string[];
   }>;
-  faqItems: Array<{
-    question: string;
-    answer: string;
-  }>;
-  ctaLabel: string;
-  ctaHref: string;
-  ctaText: string;
-  researchNotes: string[];
-};
+  serviceLine: string;
+  slug: string;
+  title: string;
+}
 
 const LOCATION_PROFILES: LocationProfile[] = [
   {
-    slug: "vancouver-wa",
-    label: "Vancouver, WA",
     city: "Vancouver",
-    region: "Clark County",
-    state: "WA",
+    label: "Vancouver, WA",
+    localDemandSignals: [
+      "cross-state commuter workforce tied to Portland healthcare and service jobs",
+      "growing family population and youth programs across Clark County",
+      "active construction, logistics, and warehouse operations along key corridors",
+    ],
+    localReference: "Clark County, WA: https://www.clark.wa.gov/",
     nearbyAreas: [
       "Downtown Vancouver",
       "East Vancouver",
@@ -100,25 +103,26 @@ const LOCATION_PROFILES: LocationProfile[] = [
       "Camas",
       "Washougal",
     ],
-    localDemandSignals: [
-      "cross-state commuter workforce tied to Portland healthcare and service jobs",
-      "growing family population and youth programs across Clark County",
-      "active construction, logistics, and warehouse operations along key corridors",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer outdoor recreation and riverfront activity",
       "heat and wildfire smoke periods affecting vulnerable populations",
       "winter storm and power-outage preparedness needs",
     ],
-    localReference: "Clark County, WA: https://www.clark.wa.gov/",
     seoWeight: "primary",
+    slug: "vancouver-wa",
+    state: "WA",
   },
   {
-    slug: "clark-county-wa",
-    label: "Clark County, WA",
     city: "Vancouver",
-    region: "Clark County",
-    state: "WA",
+    label: "Clark County, WA",
+    localDemandSignals: [
+      "county-wide schools, employers, and athletic facilities requiring certified responders",
+      "distributed workforce that benefits from on-site and mobile training delivery",
+      "mix of urban and rural communities with varied emergency response timelines",
+    ],
+    localReference:
+      "Clark County Public Health: https://www.clark.wa.gov/public-health",
     nearbyAreas: [
       "Battle Ground",
       "Ridgefield",
@@ -127,26 +131,25 @@ const LOCATION_PROFILES: LocationProfile[] = [
       "Washougal",
       "Yacolt",
     ],
-    localDemandSignals: [
-      "county-wide schools, employers, and athletic facilities requiring certified responders",
-      "distributed workforce that benefits from on-site and mobile training delivery",
-      "mix of urban and rural communities with varied emergency response timelines",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer event season with large community gatherings",
       "air quality impacts from regional wildfire smoke",
       "winter driving and weather-related incident risk",
     ],
-    localReference:
-      "Clark County Public Health: https://www.clark.wa.gov/public-health",
     seoWeight: "primary",
+    slug: "clark-county-wa",
+    state: "WA",
   },
   {
-    slug: "camas-wa",
-    label: "Camas, WA",
     city: "Camas",
-    region: "Clark County",
-    state: "WA",
+    label: "Camas, WA",
+    localDemandSignals: [
+      "active school, youth sports, and recreation community",
+      "commuter professionals and healthcare workers needing renewal certifications",
+      "small businesses prioritizing workplace safety and response readiness",
+    ],
+    localReference: "City of Camas: https://www.cityofcamas.us/",
     nearbyAreas: [
       "Downtown Camas",
       "Prune Hill",
@@ -154,201 +157,201 @@ const LOCATION_PROFILES: LocationProfile[] = [
       "Washougal",
       "East Vancouver",
     ],
-    localDemandSignals: [
-      "active school, youth sports, and recreation community",
-      "commuter professionals and healthcare workers needing renewal certifications",
-      "small businesses prioritizing workplace safety and response readiness",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer camps and pool activity increasing lifeguard and CPR demand",
       "hiking and trail season with first aid relevance",
       "winter weather disruptions requiring prepared teams",
     ],
-    localReference: "City of Camas: https://www.cityofcamas.us/",
     seoWeight: "primary",
+    slug: "camas-wa",
+    state: "WA",
   },
   {
-    slug: "washougal-wa",
-    label: "Washougal, WA",
     city: "Washougal",
-    region: "Clark County",
-    state: "WA",
+    label: "Washougal, WA",
+    localDemandSignals: [
+      "outdoor-oriented families and recreation programs",
+      "local employers and community organizations needing practical first aid skills",
+      "cross-city commuting patterns that favor predictable class scheduling",
+    ],
+    localReference: "City of Washougal: https://www.cityofwashougal.us/",
     nearbyAreas: [
       "Downtown Washougal",
       "Steigerwald area",
       "Camas",
       "East County communities",
     ],
-    localDemandSignals: [
-      "outdoor-oriented families and recreation programs",
-      "local employers and community organizations needing practical first aid skills",
-      "cross-city commuting patterns that favor predictable class scheduling",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "water recreation and river-adjacent activity",
       "summer outdoor events and heat risk",
       "winter travel and preparedness challenges",
     ],
-    localReference: "City of Washougal: https://www.cityofwashougal.us/",
     seoWeight: "primary",
+    slug: "washougal-wa",
+    state: "WA",
   },
   {
-    slug: "battle-ground-wa",
-    label: "Battle Ground, WA",
     city: "Battle Ground",
-    region: "Clark County",
-    state: "WA",
+    label: "Battle Ground, WA",
+    localDemandSignals: [
+      "rapid residential growth and family-focused community facilities",
+      "expanding local employers needing CPR and AED readiness",
+      "strong demand for blended and weekend certification options",
+    ],
+    localReference: "City of Battle Ground: https://www.cityofbg.org/",
     nearbyAreas: [
       "Downtown Battle Ground",
       "Hockinson",
       "North Clark County",
       "Ridgefield",
     ],
-    localDemandSignals: [
-      "rapid residential growth and family-focused community facilities",
-      "expanding local employers needing CPR and AED readiness",
-      "strong demand for blended and weekend certification options",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer camp and youth activity season",
       "rural/edge-of-urban travel distances affecting emergency timelines",
       "winter weather and outage preparedness",
     ],
-    localReference: "City of Battle Ground: https://www.cityofbg.org/",
     seoWeight: "primary",
+    slug: "battle-ground-wa",
+    state: "WA",
   },
   {
-    slug: "ridgefield-wa",
-    label: "Ridgefield, WA",
     city: "Ridgefield",
-    region: "Clark County",
-    state: "WA",
+    label: "Ridgefield, WA",
+    localDemandSignals: [
+      "new schools, childcare centers, and community facilities",
+      "business growth along I-5 corridor requiring safety training",
+      "mixed commuter and local workforce with recurring renewal needs",
+    ],
+    localReference: "City of Ridgefield: https://ridgefieldwa.us/",
     nearbyAreas: [
       "Downtown Ridgefield",
       "North Ridgefield developments",
       "Salmon Creek",
       "Battle Ground",
     ],
-    localDemandSignals: [
-      "new schools, childcare centers, and community facilities",
-      "business growth along I-5 corridor requiring safety training",
-      "mixed commuter and local workforce with recurring renewal needs",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer sports and community events",
       "air quality events from regional smoke",
       "winter travel and severe weather preparation",
     ],
-    localReference: "City of Ridgefield: https://ridgefieldwa.us/",
     seoWeight: "primary",
+    slug: "ridgefield-wa",
+    state: "WA",
   },
   {
-    slug: "salmon-creek-wa",
-    label: "Salmon Creek, WA",
     city: "Vancouver",
-    region: "Clark County",
-    state: "WA",
+    label: "Salmon Creek, WA",
+    localDemandSignals: [
+      "strong healthcare-adjacent workforce demand for BLS renewals",
+      "growing senior and family populations needing caregiver preparedness",
+      "high traffic corridor with organizations prioritizing AED readiness",
+    ],
+    localReference:
+      "Clark County Public Health: https://www.clark.wa.gov/public-health",
     nearbyAreas: [
       "Legacy Salmon Creek area",
       "Felida",
       "Hazel Dell",
       "Ridgefield",
     ],
-    localDemandSignals: [
-      "strong healthcare-adjacent workforce demand for BLS renewals",
-      "growing senior and family populations needing caregiver preparedness",
-      "high traffic corridor with organizations prioritizing AED readiness",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "community event season and outdoor activity",
       "summer heat and air quality concerns",
       "winter weather disruptions",
     ],
-    localReference:
-      "Clark County Public Health: https://www.clark.wa.gov/public-health",
     seoWeight: "primary",
+    slug: "salmon-creek-wa",
+    state: "WA",
   },
   {
-    slug: "hazel-dell-wa",
-    label: "Hazel Dell, WA",
     city: "Vancouver",
-    region: "Clark County",
-    state: "WA",
+    label: "Hazel Dell, WA",
+    localDemandSignals: [
+      "retail and service-heavy workforce requiring first aid readiness",
+      "community organizations serving diverse age groups",
+      "small employers needing practical and affordable group training",
+    ],
+    localReference: "Clark County, WA: https://www.clark.wa.gov/",
     nearbyAreas: [
       "Hazel Dell North",
       "Hazel Dell South",
       "Downtown Vancouver",
       "Salmon Creek",
     ],
-    localDemandSignals: [
-      "retail and service-heavy workforce requiring first aid readiness",
-      "community organizations serving diverse age groups",
-      "small employers needing practical and affordable group training",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer event and youth programming",
       "heat and smoke exposure events",
       "winter weather and outage response needs",
     ],
-    localReference: "Clark County, WA: https://www.clark.wa.gov/",
     seoWeight: "primary",
+    slug: "hazel-dell-wa",
+    state: "WA",
   },
   {
-    slug: "orchards-wa",
-    label: "Orchards, WA",
     city: "Vancouver",
-    region: "Clark County",
-    state: "WA",
+    label: "Orchards, WA",
+    localDemandSignals: [
+      "family neighborhoods and childcare demand for CPR-ready staff",
+      "local businesses that benefit from workplace emergency plans",
+      "consistent need for flexible evening and weekend classes",
+    ],
+    localReference: "Clark County, WA: https://www.clark.wa.gov/",
     nearbyAreas: [
       "Orchards neighborhood",
       "Sifton",
       "Brush Prairie",
       "East Vancouver",
     ],
-    localDemandSignals: [
-      "family neighborhoods and childcare demand for CPR-ready staff",
-      "local businesses that benefit from workplace emergency plans",
-      "consistent need for flexible evening and weekend classes",
-    ],
+    region: "Clark County",
     seasonalRisks: [
       "summer camps and outdoor activities",
       "air quality events requiring respiratory awareness",
       "winter incident prevention and response planning",
     ],
-    localReference: "Clark County, WA: https://www.clark.wa.gov/",
     seoWeight: "primary",
+    slug: "orchards-wa",
+    state: "WA",
   },
   {
-    slug: "portland-metro-or",
-    label: "Portland Metro (serving from Vancouver, WA)",
     city: "Vancouver",
-    region: "Portland Metro",
-    state: "OR/WA",
+    label: "Portland Metro (serving from Vancouver, WA)",
+    localDemandSignals: [
+      "cross-river teams needing training close to I-5 and I-205 access",
+      "healthcare and hospitality employers with recurring certification cycles",
+      "multi-site businesses seeking standardized group training",
+    ],
+    localReference: "Metro Region (OR): https://www.oregonmetro.gov/",
     nearbyAreas: [
       "North Portland",
       "Jantzen Beach",
       "Delta Park",
       "Vancouver waterfront",
     ],
-    localDemandSignals: [
-      "cross-river teams needing training close to I-5 and I-205 access",
-      "healthcare and hospitality employers with recurring certification cycles",
-      "multi-site businesses seeking standardized group training",
-    ],
+    region: "Portland Metro",
     seasonalRisks: [
       "large summer events and tourism activity",
       "high heat days and vulnerable worker exposure",
       "winter commute risk and weather preparedness",
     ],
-    localReference: "Metro Region (OR): https://www.oregonmetro.gov/",
     seoWeight: "primary",
+    slug: "portland-metro-or",
+    state: "OR/WA",
   },
   {
-    slug: "san-luis-obispo-ca",
-    label: "San Luis Obispo, CA",
     city: "San Luis Obispo",
-    region: "San Luis Obispo County",
-    state: "CA",
+    label: "San Luis Obispo, CA",
+    localDemandSignals: [
+      "seasonal tourism and hospitality workforce changes",
+      "campus and youth-serving organizations with CPR requirements",
+      "coastal recreation and water-safety training demand",
+    ],
+    localReference: "San Luis Obispo County: https://www.slocounty.ca.gov/",
     nearbyAreas: [
       "Cal Poly area",
       "Downtown SLO",
@@ -356,55 +359,47 @@ const LOCATION_PROFILES: LocationProfile[] = [
       "Pismo Beach",
       "Arroyo Grande",
     ],
-    localDemandSignals: [
-      "seasonal tourism and hospitality workforce changes",
-      "campus and youth-serving organizations with CPR requirements",
-      "coastal recreation and water-safety training demand",
-    ],
+    region: "San Luis Obispo County",
     seasonalRisks: [
       "summer coastal activity and event density",
       "heat and wildfire season preparedness",
       "holiday travel and event response planning",
     ],
-    localReference: "San Luis Obispo County: https://www.slocounty.ca.gov/",
     seoWeight: "secondary",
+    slug: "san-luis-obispo-ca",
+    state: "CA",
   },
   {
-    slug: "pismo-beach-ca",
-    label: "Pismo Beach, CA",
     city: "Pismo Beach",
-    region: "San Luis Obispo County",
-    state: "CA",
+    label: "Pismo Beach, CA",
+    localDemandSignals: [
+      "hospitality and visitor-serving employers with safety training needs",
+      "seasonal staffing patterns requiring rapid onboarding",
+      "coastal recreation environments where CPR and first aid readiness matters",
+    ],
+    localReference: "City of Pismo Beach: https://www.pismobeach.org/",
     nearbyAreas: [
       "Shell Beach",
       "Arroyo Grande",
       "Grover Beach",
       "San Luis Obispo",
     ],
-    localDemandSignals: [
-      "hospitality and visitor-serving employers with safety training needs",
-      "seasonal staffing patterns requiring rapid onboarding",
-      "coastal recreation environments where CPR and first aid readiness matters",
-    ],
+    region: "San Luis Obispo County",
     seasonalRisks: [
       "summer tourism peak and beach activity",
       "coastal weather variation and outdoor-event incidents",
       "wildfire smoke and heat readiness",
     ],
-    localReference: "City of Pismo Beach: https://www.pismobeach.org/",
     seoWeight: "secondary",
+    slug: "pismo-beach-ca",
+    state: "CA",
   },
 ];
 
 const SERVICE_PROFILES: ServiceProfile[] = [
   {
-    slugPrefix: "bls-certification",
-    serviceLine: "BLS Certification",
-    titleLabel: "AHA BLS Certification",
-    shortName: "BLS",
     audience:
       "healthcare professionals, first responders, and clinical support teams",
-    credential: "AHA Basic Life Support Provider eCard",
     classFormats: [
       "in-person instructor-led sessions",
       "blended learning with online coursework and in-person skills check",
@@ -419,34 +414,34 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Renewal timelines are commonly every two years, but employers may set stricter internal deadlines.",
       "Skills confidence matters as much as the card—hands-on practice reduces hesitation during real incidents.",
     ],
+    credential: "AHA Basic Life Support Provider eCard",
     ctaHref:
       "https://www.hovn.app/tayloredinstruction/courses/aha-basic-life-support/o/cm408wcp10017ggkz39i7ptf9",
     faqTemplates: [
       {
-        question: "How often do I need to renew my BLS card?",
         answer: (location) =>
           `Most BLS credentials are valid for two years, and many employers in ${location.label} expect renewal before expiration to avoid schedule disruption.`,
+        question: "How often do I need to renew my BLS card?",
       },
       {
-        question: "Can I complete part of BLS training online?",
         answer: (location) =>
           `Yes. Blended options are available for learners in ${location.label}, where you complete the cognitive module online and finish with an in-person skills session.`,
+        question: "Can I complete part of BLS training online?",
       },
       {
-        question: "Who should enroll in BLS classes?",
         answer: (location) =>
           `BLS is ideal for healthcare and clinical support professionals across ${location.region}, including nurses, dental teams, medical assistants, and first responders.`,
+        question: "Who should enroll in BLS classes?",
       },
     ],
+    serviceLine: "BLS Certification",
+    shortName: "BLS",
+    slugPrefix: "bls-certification",
+    titleLabel: "AHA BLS Certification",
   },
   {
-    slugPrefix: "first-aid-cpr-aed-classes",
-    serviceLine: "First Aid CPR AED",
-    titleLabel: "First Aid / CPR / AED Certification",
-    shortName: "First Aid CPR AED",
     audience:
       "workplace teams, educators, coaches, parents, and community volunteers",
-    credential: "American Red Cross First Aid/CPR/AED certification",
     classFormats: [
       "traditional in-person classes",
       "blended learning for faster scheduling flexibility",
@@ -461,34 +456,34 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Class design should match the likely emergencies at your workplace or program environment.",
       "Regular skills refreshers can improve confidence between certification cycles.",
     ],
+    credential: "American Red Cross First Aid/CPR/AED certification",
     ctaHref:
       "https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/",
     faqTemplates: [
       {
-        question: "What is covered in First Aid/CPR/AED training?",
         answer: (location) =>
           `Participants in ${location.label} learn scene safety, emergency assessment, CPR fundamentals, AED use, and first aid care for common injury and illness events.`,
+        question: "What is covered in First Aid/CPR/AED training?",
       },
       {
-        question: "Is this class suitable for non-medical professionals?",
         answer: () =>
           "Yes. This certification is designed for both workplace and community responders without a clinical background.",
+        question: "Is this class suitable for non-medical professionals?",
       },
       {
-        question: "Can we schedule private group training?",
         answer: (location) =>
           `Yes. Group training options are available throughout ${location.region} for schools, businesses, and community organizations.`,
+        question: "Can we schedule private group training?",
       },
     ],
+    serviceLine: "First Aid CPR AED",
+    shortName: "First Aid CPR AED",
+    slugPrefix: "first-aid-cpr-aed-classes",
+    titleLabel: "First Aid / CPR / AED Certification",
   },
   {
-    slugPrefix: "heartsaver-cpr-aed",
-    serviceLine: "Heartsaver CPR AED",
-    titleLabel: "AHA Heartsaver CPR AED",
-    shortName: "Heartsaver",
     audience:
       "non-clinical professionals, employers, instructors, and community leaders",
-    credential: "AHA Heartsaver First Aid CPR AED certification",
     classFormats: [
       "in-person certification sessions",
       "hybrid format with online content and in-person skills assessment",
@@ -503,35 +498,34 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Course selection should align with whether first aid, CPR/AED, or both are required.",
       "Practical scenarios improve retention and reduce response delay under stress.",
     ],
+    credential: "AHA Heartsaver First Aid CPR AED certification",
     ctaHref:
       "https://www.hovn.app/tayloredinstruction/courses/aha-heartsaver-first-aid-cpr-aed/o/cm408v8do0012ggkzda8f0otz",
     faqTemplates: [
       {
-        question: "What is the difference between Heartsaver and BLS?",
         answer: () =>
           "Heartsaver is typically designed for non-clinical responders, while BLS focuses on healthcare-provider response standards.",
+        question: "What is the difference between Heartsaver and BLS?",
       },
       {
-        question: "Do employers accept Heartsaver cards?",
         answer: (location) =>
           `Many employers in ${location.label} accept Heartsaver when it matches job requirements, but healthcare roles usually require BLS.`,
+        question: "Do employers accept Heartsaver cards?",
       },
       {
-        question: "Can I use Heartsaver for school or coaching requirements?",
         answer: () =>
           "In many cases yes, but you should confirm exact credential requirements with your district, agency, or governing body.",
+        question: "Can I use Heartsaver for school or coaching requirements?",
       },
     ],
+    serviceLine: "Heartsaver CPR AED",
+    shortName: "Heartsaver",
+    slugPrefix: "heartsaver-cpr-aed",
+    titleLabel: "AHA Heartsaver CPR AED",
   },
   {
-    slugPrefix: "corporate-cpr-training",
-    serviceLine: "Corporate Group Training",
-    titleLabel: "Corporate CPR & First Aid Group Training",
-    shortName: "Corporate Training",
     audience:
       "employers, HR leaders, operations managers, and safety coordinators",
-    credential:
-      "group CPR/first aid certification pathways aligned to team needs",
     classFormats: [
       "on-site private group classes",
       "blended group pathways to reduce time away from operations",
@@ -546,33 +540,34 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "On-site delivery can reduce scheduling friction for shift-based teams.",
       "Documentation and renewal tracking are essential for audit readiness.",
     ],
+    credential:
+      "group CPR/first aid certification pathways aligned to team needs",
     ctaHref: "/contact",
     faqTemplates: [
       {
-        question: "Can you train our team on-site?",
         answer: (location) =>
           `Yes. On-site group training is available in ${location.label} and nearby areas, with schedules built around your operations.`,
+        question: "Can you train our team on-site?",
       },
       {
-        question: "How many employees can be trained at once?",
         answer: () =>
           "Class size depends on course type, timing, and skill-station setup; group plans can be scaled for single or multi-day delivery.",
+        question: "How many employees can be trained at once?",
       },
       {
-        question: "Can we mix departments with different training needs?",
         answer: () =>
           "Yes. Teams can be segmented by role so each group receives the credential level appropriate to their responsibilities.",
+        question: "Can we mix departments with different training needs?",
       },
     ],
+    serviceLine: "Corporate Group Training",
+    shortName: "Corporate Training",
+    slugPrefix: "corporate-cpr-training",
+    titleLabel: "Corporate CPR & First Aid Group Training",
   },
   {
-    slugPrefix: "aed-program-services",
-    serviceLine: "AED Program Services",
-    titleLabel: "AED Program Planning & CPR Integration",
-    shortName: "AED Services",
     audience:
       "facility managers, safety leaders, and organizational decision makers",
-    credential: "AED readiness program design with responder training support",
     classFormats: [
       "consultative planning sessions",
       "combined AED deployment and responder certification training",
@@ -587,34 +582,33 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Teams should practice real-world response pathways, not just classroom theory.",
       "Program records and drills help maintain long-term readiness.",
     ],
+    credential: "AED readiness program design with responder training support",
     ctaHref: "/aeds",
     faqTemplates: [
       {
-        question: "Where should AED units be placed?",
         answer: () =>
           "Placement should prioritize high-traffic, easily accessible areas and align with your emergency action plan.",
+        question: "Where should AED units be placed?",
       },
       {
-        question: "Do staff need CPR training if we have an AED?",
         answer: () =>
           "Yes. CPR and AED skills work together, and team practice improves response speed and confidence during a critical event.",
+        question: "Do staff need CPR training if we have an AED?",
       },
       {
-        question: "How do we maintain an AED program over time?",
         answer: () =>
           "A sustainable program includes battery/pad checks, responder refreshers, and periodic scenario drills.",
+        question: "How do we maintain an AED program over time?",
       },
     ],
+    serviceLine: "AED Program Services",
+    shortName: "AED Services",
+    slugPrefix: "aed-program-services",
+    titleLabel: "AED Program Planning & CPR Integration",
   },
   {
-    slugPrefix: "lifeguarding-certification",
-    serviceLine: "Lifeguarding Certification",
-    titleLabel: "Lifeguarding Certification",
-    shortName: "Lifeguarding",
     audience:
       "aquatic staff, seasonal lifeguards, and recreation program leaders",
-    credential:
-      "American Red Cross Lifeguarding with First Aid/CPR/AED credentials",
     classFormats: [
       "in-person pool and classroom instruction",
       "blended options where available for prerequisite theory",
@@ -629,75 +623,81 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Facilities should align staffing plans with renewal windows to avoid coverage gaps.",
       "Team drills and leadership coaching improve deck communication and response consistency.",
     ],
+    credential:
+      "American Red Cross Lifeguarding with First Aid/CPR/AED credentials",
     ctaHref:
       "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding/o/cm40925g1001oggkzd9r40cdz",
     faqTemplates: [
       {
-        question: "How long does lifeguard certification take?",
         answer: () =>
           "Program length varies by format and prerequisite completion, but practical in-water evaluation is a core requirement.",
+        question: "How long does lifeguard certification take?",
       },
       {
-        question: "Is this course useful for seasonal aquatic staff?",
         answer: (location) =>
           `Yes. It is commonly used to prepare seasonal teams serving pools and aquatic programs in ${location.label}.`,
+        question: "Is this course useful for seasonal aquatic staff?",
       },
       {
-        question: "Can facilities arrange private lifeguard classes?",
         answer: () =>
           "Yes. Private scheduling can support seasonal staffing windows and facility-specific preparedness goals.",
+        question: "Can facilities arrange private lifeguard classes?",
       },
     ],
+    serviceLine: "Lifeguarding Certification",
+    shortName: "Lifeguarding",
+    slugPrefix: "lifeguarding-certification",
+    titleLabel: "Lifeguarding Certification",
   },
 ];
 
 const seoSectionValidator = v.object({
+  bullets: v.optional(v.array(v.string())),
   heading: v.string(),
   paragraphs: v.array(v.string()),
-  bullets: v.optional(v.array(v.string())),
 });
 
 const seoFaqValidator = v.object({
-  question: v.string(),
   answer: v.string(),
+  question: v.string(),
 });
 
 const seoPageInputValidator = v.object({
-  slug: v.string(),
-  title: v.string(),
-  metaTitle: v.string(),
-  metaDescription: v.string(),
+  audience: v.string(),
+  ctaHref: v.string(),
+  ctaLabel: v.string(),
+  ctaText: v.string(),
   excerpt: v.string(),
-  primaryKeyword: v.string(),
-  secondaryKeywords: v.array(v.string()),
-  locationLabel: v.string(),
+  faqItems: v.array(seoFaqValidator),
   locationCity: v.string(),
+  locationLabel: v.string(),
   locationRegion: v.string(),
   locationState: v.string(),
-  serviceLine: v.string(),
-  audience: v.string(),
-  readingTimeMinutes: v.number(),
-  sections: v.array(seoSectionValidator),
-  faqItems: v.array(seoFaqValidator),
-  ctaLabel: v.string(),
-  ctaHref: v.string(),
-  ctaText: v.string(),
-  researchNotes: v.array(v.string()),
+  metaDescription: v.string(),
+  metaTitle: v.string(),
+  primaryKeyword: v.string(),
   published: v.boolean(),
+  readingTimeMinutes: v.number(),
+  researchNotes: v.array(v.string()),
+  secondaryKeywords: v.array(v.string()),
+  sections: v.array(seoSectionValidator),
+  serviceLine: v.string(),
+  slug: v.string(),
+  title: v.string(),
 });
 
 const summarizePublishedPage = (page: Doc<"seo_pages">) => ({
-  slug: page.slug,
-  title: page.title,
   excerpt: page.excerpt,
+  locationCity: page.locationCity,
+  locationLabel: page.locationLabel,
   metaDescription: page.metaDescription,
   primaryKeyword: page.primaryKeyword,
-  locationLabel: page.locationLabel,
-  locationCity: page.locationCity,
-  serviceLine: page.serviceLine,
-  readingTimeMinutes: page.readingTimeMinutes,
-  updatedAt: page.updatedAt,
   publishedAt: page.publishedAt ?? page.updatedAt,
+  readingTimeMinutes: page.readingTimeMinutes,
+  serviceLine: page.serviceLine,
+  slug: page.slug,
+  title: page.title,
+  updatedAt: page.updatedAt,
 });
 
 const clampLimit = (limit?: number): number => {
@@ -738,48 +738,48 @@ const buildSections = (
 
   return [
     {
-      heading: `${service.titleLabel} in ${location.label}: Why local context matters`,
-      paragraphs: [
-        `${service.titleLabel} in ${location.label} should be practical, scenario-driven, and tailored to how people actually work and live in ${location.region}. Teams in this area often need training that balances strong clinical or workplace standards with realistic scheduling constraints.`,
-        `Local demand is shaped by ${localDemandSummary}. A high-quality program addresses those realities and helps participants respond with confidence when seconds matter.`,
-      ],
       bullets: [
         `Primary service area: ${location.label}`,
         `Nearby communities served: ${location.nearbyAreas.join(", ")}`,
         `Regional focus: ${location.region}, ${location.state}`,
       ],
+      heading: `${service.titleLabel} in ${location.label}: Why local context matters`,
+      paragraphs: [
+        `${service.titleLabel} in ${location.label} should be practical, scenario-driven, and tailored to how people actually work and live in ${location.region}. Teams in this area often need training that balances strong clinical or workplace standards with realistic scheduling constraints.`,
+        `Local demand is shaped by ${localDemandSummary}. A high-quality program addresses those realities and helps participants respond with confidence when seconds matter.`,
+      ],
     },
     {
-      heading: "What participants learn",
-      paragraphs: [
-        `This program is built for ${service.audience} and follows recognized training standards. Participants build the skills needed to assess emergencies quickly, prioritize actions, and communicate effectively under pressure.`,
-        "Instruction emphasizes repetition and applied practice, not passive lecture-only learning. That approach improves retention and makes skills easier to use in real situations.",
-      ],
       bullets: [
         `Credential pathway: ${service.credential}`,
         `Format options: ${classFormatsSummary}`,
         ...service.commonUseCases.map((item) => `Use case: ${item}`),
       ],
+      heading: "What participants learn",
+      paragraphs: [
+        `This program is built for ${service.audience} and follows recognized training standards. Participants build the skills needed to assess emergencies quickly, prioritize actions, and communicate effectively under pressure.`,
+        "Instruction emphasizes repetition and applied practice, not passive lecture-only learning. That approach improves retention and makes skills easier to use in real situations.",
+      ],
     },
     {
-      heading: `How training is delivered in ${location.label}`,
-      paragraphs: [
-        `Flexible delivery is critical for organizations and individuals in ${location.region}. Class planning can support shift schedules, school calendars, hiring cycles, and renewal deadlines without sacrificing instructional quality.`,
-        "When possible, private and group options reduce administrative complexity while helping teams train together on shared protocols.",
-      ],
       bullets: [
         "Public classes for individuals and small teams",
         "Private group sessions for employers and organizations",
         "Blended options to reduce seat time while preserving hands-on competency",
       ],
+      heading: `How training is delivered in ${location.label}`,
+      paragraphs: [
+        `Flexible delivery is critical for organizations and individuals in ${location.region}. Class planning can support shift schedules, school calendars, hiring cycles, and renewal deadlines without sacrificing instructional quality.`,
+        "When possible, private and group options reduce administrative complexity while helping teams train together on shared protocols.",
+      ],
     },
     {
+      bullets: service.complianceNotes,
       heading: "Compliance, renewal, and readiness planning",
       paragraphs: [
         "For many roles, certification is only one part of a broader readiness system. Leaders should pair credential tracking with refreshers, drills, and clear emergency action steps.",
         "Programs are strongest when card validity, shift coverage, and practical scenario readiness are managed together instead of as separate tasks.",
       ],
-      bullets: service.complianceNotes,
     },
     {
       heading: `Local risk profile for ${location.label}`,
@@ -789,15 +789,15 @@ const buildSections = (
       ],
     },
     {
-      heading: "Implementation checklist for organizations",
-      paragraphs: [
-        "Organizations can increase program impact by aligning training cadence with staffing changes, documented emergency procedures, and facility risk points.",
-      ],
       bullets: [
         "Map training requirements by role and location",
         "Track certification expiration before staffing bottlenecks occur",
         "Run periodic response drills with realistic scenarios",
         "Keep AED, first aid, and emergency contact workflows current",
+      ],
+      heading: "Implementation checklist for organizations",
+      paragraphs: [
+        "Organizations can increase program impact by aligning training cadence with staffing changes, documented emergency procedures, and facility risk points.",
       ],
     },
   ];
@@ -824,8 +824,8 @@ const buildSeoPage = (
   const ctaText = `Need ${service.shortName} training in ${location.label}? We can help you choose the right format for individuals, teams, and recurring renewal cycles.`;
 
   const faqItems = service.faqTemplates.map((template) => ({
-    question: template.question,
     answer: template.answer(location),
+    question: template.question,
   }));
 
   const researchNotes = [
@@ -835,26 +835,26 @@ const buildSeoPage = (
   ];
 
   return {
-    slug,
-    title,
-    metaTitle: `${title} | Taylored Instruction`,
-    metaDescription: `Get ${service.shortName} training in ${location.label}. Practical, certification-focused instruction with flexible formats for individuals and teams.`,
+    audience: service.audience,
+    ctaHref,
+    ctaLabel,
+    ctaText,
     excerpt: `Professional ${service.shortName} training options in ${location.label} with practical skills, flexible scheduling, and local readiness focus.`,
-    primaryKeyword,
-    secondaryKeywords: getSecondaryKeywords(service, location),
-    locationLabel: location.label,
+    faqItems,
     locationCity: location.city,
+    locationLabel: location.label,
     locationRegion: location.region,
     locationState: location.state,
-    serviceLine: service.serviceLine,
-    audience: service.audience,
+    metaDescription: `Get ${service.shortName} training in ${location.label}. Practical, certification-focused instruction with flexible formats for individuals and teams.`,
+    metaTitle: `${title} | Taylored Instruction`,
+    primaryKeyword,
     readingTimeMinutes,
-    sections,
-    faqItems,
-    ctaLabel,
-    ctaHref,
-    ctaText,
     researchNotes,
+    secondaryKeywords: getSecondaryKeywords(service, location),
+    sections,
+    serviceLine: service.serviceLine,
+    slug,
+    title,
   };
 };
 
@@ -916,11 +916,11 @@ const upsertGeneratedPage = async (
   if (!existing) {
     await ctx.db.insert("seo_pages", {
       ...page,
+      createdAt: now,
       generatedBy,
       published: true,
-      createdAt: now,
-      updatedAt: now,
       publishedAt: now,
+      updatedAt: now,
     });
     return "inserted";
   }
@@ -933,8 +933,8 @@ const upsertGeneratedPage = async (
     ...page,
     generatedBy,
     published: true,
-    updatedAt: now,
     publishedAt: existing.publishedAt ?? now,
+    updatedAt: now,
   });
 
   return "updated";
@@ -942,9 +942,9 @@ const upsertGeneratedPage = async (
 
 export const listPublishedPages = query({
   args: {
+    limit: v.optional(v.number()),
     locationCity: v.optional(v.string()),
     serviceLine: v.optional(v.string()),
-    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const safeLimit = clampLimit(args.limit);
@@ -1039,11 +1039,11 @@ export const listPagesForAdmin = query({
       .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
       .map((page) => ({
         _id: page._id,
+        locationLabel: page.locationLabel,
+        published: page.published,
+        serviceLine: page.serviceLine,
         slug: page.slug,
         title: page.title,
-        locationLabel: page.locationLabel,
-        serviceLine: page.serviceLine,
-        published: page.published,
         updatedAt: page.updatedAt,
       }));
   },
@@ -1061,10 +1061,10 @@ export const upsertPage = mutation({
     if (!existing) {
       const id = await ctx.db.insert("seo_pages", {
         ...args.page,
-        generatedBy: user.email ?? user._id,
         createdAt: now,
-        updatedAt: now,
+        generatedBy: user.email ?? user._id,
         publishedAt: args.page.published ? now : undefined,
+        updatedAt: now,
       });
       return { id, status: "inserted" as const };
     }
@@ -1072,10 +1072,10 @@ export const upsertPage = mutation({
     await ctx.db.patch(existing._id, {
       ...args.page,
       generatedBy: user.email ?? user._id,
-      updatedAt: now,
       publishedAt: args.page.published
         ? (existing.publishedAt ?? now)
         : existing.publishedAt,
+      updatedAt: now,
     });
 
     return { id: existing._id, status: "updated" as const };
@@ -1100,9 +1100,9 @@ export const deletePage = mutation({
 
 export const generateSeoContentBatch = mutation({
   args: {
-    overwriteExisting: v.optional(v.boolean()),
-    offset: v.optional(v.number()),
     batchSize: v.optional(v.number()),
+    offset: v.optional(v.number()),
+    overwriteExisting: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     const user = await requireAdmin(ctx);
@@ -1144,14 +1144,14 @@ export const generateSeoContentBatch = mutation({
     }
 
     return {
-      totalTemplates: allPages.length,
-      processed: pages.length,
-      offset: safeOffset,
       batchSize: safeBatchSize,
       hasMore: safeOffset + pages.length < allPages.length,
       inserted,
-      updated,
+      offset: safeOffset,
+      processed: pages.length,
       skipped,
+      totalTemplates: allPages.length,
+      updated,
     };
   },
 });
@@ -1186,10 +1186,10 @@ export const seedInitialSeoContent = internalMutation({
     }
 
     return {
-      totalTemplates: pages.length,
       inserted,
-      updated,
       skipped,
+      totalTemplates: pages.length,
+      updated,
     };
   },
 });

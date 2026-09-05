@@ -18,9 +18,9 @@ export default function PostHogClient() {
   }
 
   return new PostHog(projectToken, {
-    host,
     enableExceptionAutocapture: true,
     flushAt: 1,
     flushInterval: 0,
+    host,
   });
 }

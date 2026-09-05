@@ -11,27 +11,27 @@ import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { trackVisitorsEvent } from "@/lib/analytics";
 
-type Product = {
-  id: string;
-  name: string;
+interface Product {
   description: string | null;
-  stripe_price_id: string | null;
+  id: string;
   image_urls: string | null;
-  type: string;
+  name: string;
   requires_instructor: boolean;
-};
-
-interface ProductWithPrice extends Product {
-  display_price: number;
-  currency: string;
-  stripe_product_name?: string;
-  stripe_product_description?: string | null;
+  stripe_price_id: string | null;
+  type: string;
 }
 
-type CartItem = {
+interface ProductWithPrice extends Product {
+  currency: string;
+  display_price: number;
+  stripe_product_description?: string | null;
+  stripe_product_name?: string;
+}
+
+interface CartItem {
   product: ProductWithPrice;
   quantity: number;
-};
+}
 
 export default function ECardsPage() {
   const router = useRouter();
@@ -53,14 +53,14 @@ export default function ECardsPage() {
     Record<string, StripePriceData[]>
   >({});
 
-  type StripePriceData = {
-    id: string;
-    unit_amount: number | null;
+  interface StripePriceData {
     currency: string;
-    product_name: string;
-    product_description?: string | null;
     error?: string;
-  };
+    id: string;
+    product_description?: string | null;
+    product_name: string;
+    unit_amount: number | null;
+  }
 
   const idsKey = useMemo(() => {
     if (!ecardProducts) {
@@ -81,7 +81,7 @@ export default function ECardsPage() {
       if (savedCart) {
         try {
           setCartItems(JSON.parse(savedCart));
-        } catch (_e) {
+        } catch {
           setCartItems([]);
         }
       }
@@ -114,9 +114,9 @@ export default function ECardsPage() {
 
   const fetchStripePrices = useCallback(async (priceIds: string[]) => {
     const priceResponse = await fetch("/api/get-stripe-prices", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ priceIds }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     });
 
     if (!priceResponse.ok) {
@@ -139,18 +139,18 @@ export default function ECardsPage() {
       if (stripeInfo && stripeInfo.unit_amount !== null) {
         return {
           ...convexProduct,
-          display_price: stripeInfo.unit_amount / CentsInDollar,
           currency: stripeInfo.currency.toUpperCase(),
-          stripe_product_name: stripeInfo.product_name,
+          display_price: stripeInfo.unit_amount / CentsInDollar,
           stripe_product_description: stripeInfo.product_description,
+          stripe_product_name: stripeInfo.product_name,
         };
       }
       return {
         ...convexProduct,
-        display_price: 0,
         currency: "N/A",
-        stripe_product_name: undefined,
+        display_price: 0,
         stripe_product_description: undefined,
+        stripe_product_name: undefined,
       };
     },
     []
@@ -177,10 +177,10 @@ export default function ECardsPage() {
     if (!idsKey) {
       return (ecardProducts as unknown as Product[]).map((item) => ({
         ...item,
-        display_price: 0,
         currency: "USD",
-        stripe_product_name: undefined,
+        display_price: 0,
         stripe_product_description: undefined,
+        stripe_product_name: undefined,
       }));
     }
 
@@ -295,15 +295,15 @@ export default function ECardsPage() {
     }
 
     trackVisitorsEvent("Add to Cart", {
+      price: product.display_price,
       productName: product.name,
       quantity,
-      price: product.display_price,
     });
     posthog.capture("ecard_added_to_cart", {
+      currency: product.currency,
       product_id: product.id,
       quantity,
       unit_price: product.display_price,
-      currency: product.currency,
     });
 
     setSelectedQuantities((prev) => ({
@@ -318,10 +318,10 @@ export default function ECardsPage() {
     const cartItem = cartItems.find((item) => item.product.id === productId);
     if (cartItem) {
       posthog.capture("ecard_removed_from_cart", {
+        currency: cartItem.product.currency,
         product_id: cartItem.product.id,
         quantity: cartItem.quantity,
         unit_price: cartItem.product.display_price,
-        currency: cartItem.product.currency,
       });
     }
     setCartItems(cartItems.filter((item) => item.product.id !== productId));
@@ -362,10 +362,10 @@ export default function ECardsPage() {
     // Track checkout initiation
     posthog.capture("ecard_checkout_initiated", {
       cartItems: cartItems.map((item) => ({
+        price: item.product.display_price,
         productId: item.product.id,
         productName: item.product.name,
         quantity: item.quantity,
-        price: item.product.display_price,
       })),
       totalItems: cartItems.length,
       totalValue: cartItems.reduce(
@@ -384,13 +384,10 @@ export default function ECardsPage() {
       setLoadingProductIds(cartItems.map((item) => item.product.id));
 
       const response = await fetch("/api/create-cart-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: session?.user?.email,
           lineItems,
           metadata: {
-            userId: session?.user?.id,
             cartItems: JSON.stringify(
               cartItems.map((item) => ({
                 productId: item.product.id,
@@ -398,8 +395,11 @@ export default function ECardsPage() {
                 quantity: item.quantity,
               }))
             ),
+            userId: session?.user?.id,
           },
         }),
+        headers: { "Content-Type": "application/json" },
+        method: "POST",
       });
 
       const data = await response.json();
@@ -427,12 +427,12 @@ export default function ECardsPage() {
       } else {
         // Track checkout error
         posthog.capture("ecard_checkout_error", {
-          error: data.error || "Unknown error",
           cartItems: cartItems.map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
             quantity: item.quantity,
           })),
+          error: data.error || "Unknown error",
           userId: session?.user?.id,
         });
 
@@ -440,15 +440,15 @@ export default function ECardsPage() {
           data.error || "Could not initiate checkout. Please try again."
         );
       }
-    } catch (_err) {
+    } catch {
       // Track unexpected error
       posthog.capture("ecard_checkout_error", {
-        error: "Network or server error",
         cartItems: cartItems.map((item) => ({
           productId: item.product.id,
           productName: item.product.name,
           quantity: item.quantity,
         })),
+        error: "Network or server error",
         userId: session?.user?.id,
       });
 
@@ -517,7 +517,7 @@ export default function ECardsPage() {
             Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)})
           </span>
           {cartItems.length > 0 && (
-            <span className="-top-2 -right-2 absolute flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
+            <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
               {cartItems.length}
             </span>
           )}
