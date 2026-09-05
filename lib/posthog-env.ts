@@ -1,7 +1,19 @@
 const DEFAULT_POSTHOG_HOST = "https://us.i.posthog.com";
 
 function isValidPostHogHost(host: string | undefined): host is string {
-  return Boolean(host?.startsWith("http"));
+  if (!host) {
+    return false;
+  }
+
+  try {
+    const parsed = new URL(host);
+    return (
+      (parsed.protocol === "http:" || parsed.protocol === "https:") &&
+      Boolean(parsed.hostname)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export function getPostHogEnv() {
