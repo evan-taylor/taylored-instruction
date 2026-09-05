@@ -2,6 +2,9 @@
 const nextConfig = {
   cacheComponents: true, // Enable Cache Components (PPR) for Next.js 16
   compress: true, // Enable gzip compression
+  experimental: {
+    webpackMemoryOptimizations: true,
+  },
   // Headers for better SEO and security
   async headers() {
     const contentSecurityPolicy = [
