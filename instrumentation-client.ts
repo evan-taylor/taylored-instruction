@@ -15,11 +15,11 @@ const posthogHost = process.env.NEXT_PUBLIC_POSTHOG_HOST;
 if (posthogProjectToken && posthogHost) {
   posthog.init(posthogProjectToken, {
     api_host: posthogHost,
-    person_profiles: "identified_only",
-    capture_pageview: false,
-    capture_pageleave: true,
     capture_exceptions: true,
+    capture_pageleave: true,
+    capture_pageview: false,
     debug: process.env.NODE_ENV === "development",
+    person_profiles: "identified_only",
   });
 } else if (process.env.NODE_ENV !== "production") {
   const missingVariable = posthogProjectToken

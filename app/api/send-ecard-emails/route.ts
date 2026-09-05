@@ -182,9 +182,9 @@ export async function POST(req: NextRequest) {
           distinctId: userId,
           event: "ecard_purchase_completed",
           properties: {
+            fulfillment_type: "cart",
             item_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
             order_total: Number(totalPrice),
-            fulfillment_type: "cart",
           },
         });
         await posthog?.shutdown();
