@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   try {
     // Track checkout session creation
     const posthog = PostHogClient();
-    await posthog.capture({
+    await posthog?.capture({
       distinctId: email,
       event: "checkout_session_created",
       properties: {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
 
     if (session.url) {
       // Track successful checkout session creation
-      await posthog.capture({
+      await posthog?.capture({
         distinctId: email,
         event: "checkout_session_created_success",
         properties: {
@@ -98,12 +98,12 @@ export async function POST(req: NextRequest) {
           metadata,
         },
       });
-      await posthog.shutdown();
+      await posthog?.shutdown();
 
       return NextResponse.json({ url: session.url });
     }
 
-    await posthog.shutdown();
+    await posthog?.shutdown();
     return NextResponse.json(
       { error: "Checkout session created, but no redirect URL was provided." },
       { status: 500 }
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     // Track checkout session creation error
     const posthog = PostHogClient();
-    await posthog.capture({
+    await posthog?.capture({
       distinctId: email,
       event: "checkout_session_error",
       properties: {
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
         email,
       },
     });
-    await posthog.shutdown();
+    await posthog?.shutdown();
 
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

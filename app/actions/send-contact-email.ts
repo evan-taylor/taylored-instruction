@@ -85,7 +85,7 @@ export async function sendContactEmail(
   try {
     // Track contact form submission on server side
     const posthog = PostHogClient();
-    await posthog.capture({
+    await posthog?.capture({
       distinctId: email, // Use email as distinct ID for anonymous users
       event: "contact_form_server_submitted",
       properties: {
@@ -101,7 +101,7 @@ export async function sendContactEmail(
         contactMethodCount: contactMethodList.length,
       },
     });
-    await posthog.shutdown();
+    await posthog?.shutdown();
 
     // Send email to admin
     const adminEmailData = await getResendClient().emails.send({

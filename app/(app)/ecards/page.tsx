@@ -299,6 +299,12 @@ export default function ECardsPage() {
       quantity,
       price: product.display_price,
     });
+    posthog.capture("ecard_added_to_cart", {
+      product_id: product.id,
+      quantity,
+      unit_price: product.display_price,
+      currency: product.currency,
+    });
 
     setSelectedQuantities((prev) => ({
       ...prev,
@@ -309,6 +315,15 @@ export default function ECardsPage() {
   };
 
   const removeFromCart = (productId: string) => {
+    const cartItem = cartItems.find((item) => item.product.id === productId);
+    if (cartItem) {
+      posthog.capture("ecard_removed_from_cart", {
+        product_id: cartItem.product.id,
+        quantity: cartItem.quantity,
+        unit_price: cartItem.product.display_price,
+        currency: cartItem.product.currency,
+      });
+    }
     setCartItems(cartItems.filter((item) => item.product.id !== productId));
   };
 

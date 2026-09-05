@@ -10,6 +10,7 @@ import {
   getVancouverLocalBusinessSchema,
   getWebSiteSchema,
 } from "@/lib/structuredData";
+import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
@@ -136,7 +137,10 @@ export default function RootLayout({
         />
       </head>
       <body className={readexPro.variable}>
-        {children}
+        <PostHogProvider>
+          {children}
+          <PostHogPageViewWrapper />
+        </PostHogProvider>
         <Analytics />
         <SpeedInsights />
       </body>

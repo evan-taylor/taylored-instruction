@@ -1,4 +1,5 @@
 import { useMutation } from "convex/react";
+import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 import { sendInstructorApprovalEmail } from "@/app/actions/send-instructor-approval-email";
 import { api } from "@/convex/_generated/api";
@@ -8,6 +9,7 @@ export function useInstructorActions(
   profiles: ProfileWithUser[],
   setProfiles: (updatedProfiles: ProfileWithUser[]) => void
 ) {
+  const posthog = usePostHog();
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmDialogState, setConfirmDialogState] = useState<{
@@ -58,6 +60,9 @@ export function useInstructorActions(
         userId: userId as unknown as any,
         approve: !currentStatus,
       });
+      posthog.capture("instructor_status_updated", {
+        is_instructor: !currentStatus,
+      });
 
       const now = new Date().toISOString();
 
@@ -106,6 +111,7 @@ export function useInstructorActions(
         // biome-ignore lint/suspicious/noExplicitAny: Convex ID type conversion required (important-comment)
         profileId: userId as unknown as any,
       });
+      posthog.capture("instructor_rejected");
 
       setProfiles(profiles.filter((p) => p.id !== userId));
       setActionMessage(

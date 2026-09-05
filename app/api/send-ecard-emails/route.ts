@@ -3,6 +3,7 @@ import React from "react";
 import Stripe from "stripe";
 import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
+import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
 
 // Lazy Stripe initialization to avoid build-time errors
@@ -173,6 +174,22 @@ export async function POST(req: NextRequest) {
         );
       }
       await sendCartEmails(cartItems, totalPrice, customerEmail);
+
+      const userId = session.metadata.userId;
+      if (userId) {
+        const posthog = PostHogClient();
+        await posthog?.capture({
+          distinctId: userId,
+          event: "ecard_purchase_completed",
+          properties: {
+            item_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
+            order_total: Number(totalPrice),
+            fulfillment_type: "cart",
+          },
+        });
+        await posthog?.shutdown();
+      }
+
       return NextResponse.json({ success: true });
     }
 
