@@ -335,10 +335,23 @@ This is a Next.js 16 website (Taylored Instruction — CPR/BLS training company)
 ### Running the dev server
 
 ```bash
-bun run dev          # starts Next.js on port 3000
+bun run dev          # starts Next.js on port 3000 with Infisical-injected secrets
+bun run build        # production build with Infisical-injected secrets
+bun run env:pull     # optional: write Infisical secrets to .env.local
 ```
 
-A `.env.local` file must exist with at least `NEXT_PUBLIC_CONVEX_URL` set — the Convex client provider throws at module load time if it is missing. All available VM secrets must be written to `.env.local` before starting the dev server. Key vars: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `NEXT_PUBLIC_BASE_URL`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_EMAIL_FROM`, `JWKS`, `JWT_PRIVATE_KEY`, `SITE_URL`, `INTERNAL_EMAIL_WEBHOOK_SECRET`.
+App secrets live in the Infisical project **Taylored Instruction** (see `.infisical.json`). `dev` / `build` / `start` wrap the Next.js command with `infisical run` via `scripts/with-infisical.sh`.
+
+Authenticate with one of:
+- `INFISICAL_CLIENT_ID` + `INFISICAL_CLIENT_SECRET` (Cloud Agent / CI machine identity)
+- `INFISICAL_TOKEN`
+- `infisical login` (local interactive session)
+
+Set `INFISICAL_ENV` to `dev` (default), `staging`, or `prod`. Hosts that already inject app env (for example Vercel) fall back to running Next.js without the CLI.
+
+The Convex client provider still throws if `NEXT_PUBLIC_CONVEX_URL` is missing after injection. Do not copy Infisical machine-identity credentials into Infisical itself.
+
+Sanity, Notion, Stripe publishable, and other app vars that were never in Cloud Agent secrets are not in Infisical yet. Add them in the Infisical dashboard if a command needs them.
 
 ### Lint / Type-check / Test
 
