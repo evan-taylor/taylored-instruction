@@ -4,6 +4,10 @@ Status: product decisions approved by Evan on October 3, 2026. Feature implement
 
 This document is the authoritative handoff for Taylored Instruction. Hovn is a rough UX/domain reference, not a specification to clone. All requirements below come from the interview; implementation defaults are called out separately. Do not replace these decisions with Hovn behavior or stale repository documentation.
 
+## Auth prerequisite added after the interview
+
+Migrate to **Convex Auth v2** before implementing registration identity and permissions. Follow [the migration worklist](convex-auth-v2-migration.md), which records the current preview APIs, existing-user preservation, Google/email-code parity, development validation, and production cutover boundary. This is required implementation scope, not completed work on the preparation branch.
+
 ## 1. Delivery boundary and existing architecture
 
 - Implement in this repository using Next.js App Router, TypeScript, Bun, Convex/Convex Auth, Stripe, Resend/React Email, and the existing UI styling. Do not introduce another backend or multi-tenant platform.
@@ -230,6 +234,7 @@ Use accessible semantic controls, labels/errors, keyboard navigation, visible fo
 
 Each phase must deliver connected backend/UI behavior, not placeholder pages. Keep a requirements checklist and report blockers explicitly.
 
+0. **Convex Auth v2 migration:** complete `convex-auth-v2-migration.md`, preserve existing application identities and Google/email-code login, prove development SSR/session/role behavior, and document the separate production cutover. Resolve provider parity before using v2 for registration.
 1. **Foundation and authorization:** verify upgraded baseline; add shared validators/money/date utilities, role and session-assignment checks, additive schema/indexes, auth-safe public projections, meaningful test harness (Convex test plus browser E2E or equivalent).
 2. **Templates, scheduling, and short links:** complete admin CRUD, material/question/outcome/email configuration, inheritance/overrides, saved locations, multi-meeting sessions, recurring preview, publication/access modes, immutable short codes, public listing/detail.
 3. **Registration and payment:** multi-attendee details/unique emails, choices/waivers, authoritative quote, coupon seat accounting, holds/cutoff, Stripe Checkout and verified webhook, free/offline/admin enrollment, purchaser receipt and scoped guest access.
@@ -238,6 +243,10 @@ Each phase must deliver connected backend/UI behavior, not placeholder pages. Ke
 6. **Launch and regression:** replace course booking links, retain product/eCard/corporate paths, verify all acceptance scenarios, document configuration, run full checks, production-like test-mode browser/payment smoke, prepare reviewable deployment notes. Do not deploy production or transact against live customer records as part of test execution.
 
 ## 8. Acceptance tests (must be demonstrated)
+
+### Authentication prerequisite
+
+- [ ] Convex Auth v2 migration and every acceptance criterion in `convex-auth-v2-migration.md` are complete in development; production rollout remains separate.
 
 ### Templates and scheduling
 
