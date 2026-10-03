@@ -2,6 +2,7 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function LifeguardingPageContent() {
   return (
@@ -12,14 +13,18 @@ export default function LifeguardingPageContent() {
         position: "center 42%",
         src: "/lifeguard-training.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
+      )}
       resources={[
         { href: "/contact", label: "Request Course Fact Sheet" },
         { href: "/contact", label: "Request eBook Access Instructions" },
       ]}
       secondaryActions={[
         {
-          href: "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended",
+          href: registrationBookingUrl(
+            "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended"
+          ),
           label: "View Recertification Courses",
         },
       ]}

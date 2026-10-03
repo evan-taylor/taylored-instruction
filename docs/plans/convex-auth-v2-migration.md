@@ -54,3 +54,7 @@ The preview documentation explicitly says v2 is alpha and should not yet be used
 - [ ] Guest checkout remains account-optional; secure portal links work without granting staff powers; session short links remain public/unlisted/restricted according to session visibility.
 - [ ] Migration dry run, rerun, partial failure recovery, mapping counts, and rollback are tested using development fixtures. No existing user IDs/profile links are lost or duplicated.
 - [ ] Remaining production settings, callback changes, user reauthentication expectations, alpha-readiness constraints, and rollback procedure are documented. No production cutover is executed by the cloud implementation task.
+
+## October 3 implementation decision
+
+Evan subsequently directed: “Retain v1 pending upstream OTP support.” This supersedes the Auth v2 prerequisite above. Keep the current v1 providers and identities; revisit v2 when upstream supports passwordless email codes. See `registration-validation.md` for implementation and verification evidence.

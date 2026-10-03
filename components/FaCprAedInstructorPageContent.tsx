@@ -2,6 +2,7 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function FaCprAedInstructorPageContent() {
   return (
@@ -12,7 +13,9 @@ export default function FaCprAedInstructorPageContent() {
         alt: "CPR instructor training session",
         src: "/Cpr-Instructor-Image.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/arc-first-aid-cpr-aed-instructor-r25/"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/certifications/arc-first-aid-cpr-aed-instructor-r25/"
+      )}
       resources={[
         { href: "/contact", label: "Request Course Fact Sheet" },
         { href: "/contact", label: "Request Instructor Manual" },

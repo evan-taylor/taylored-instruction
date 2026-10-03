@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import { Button } from "@/components/ui/Button";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -169,7 +170,9 @@ export default async function Page() {
           </Button>
           <Button
             className="shadow-lg transition-shadow duration-200 hover:shadow-xl"
-            href="https://www.hovn.app/tayloredinstruction"
+            href={registrationBookingUrl(
+              "https://www.hovn.app/tayloredinstruction"
+            )}
             size="lg"
             target="_blank"
             variant="secondary"

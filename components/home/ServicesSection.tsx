@@ -1,6 +1,7 @@
 import { Heart, LifeBuoy, UserCheck } from "lucide-react";
 import Link from "next/link";
 import type { ComponentProps, ReactNode } from "react";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 type ServiceCardProps = {
   icon: ReactNode;
@@ -48,7 +49,9 @@ export const ServicesSection = () => (
         <ServiceCard
           description="We offer American Heart Association or American Red Cross CPR training for both laypersons and professional rescuers. Need to train your staff? We would love to work with you."
           icon={<Heart />}
-          link="https://www.hovn.app/tayloredinstruction/"
+          link={registrationBookingUrl(
+            "https://www.hovn.app/tayloredinstruction/"
+          )}
           rel="noopener noreferrer"
           target="_blank"
           title="CPR Training"

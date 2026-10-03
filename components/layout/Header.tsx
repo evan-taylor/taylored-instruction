@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
@@ -84,12 +85,16 @@ const generateNavLinks = (
     dropdown: [
       {
         label: "Register for Classes",
-        href: "https://www.hovn.app/tayloredinstruction",
+        href: registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction"
+        ),
       },
       {
         type: "divider",
         label: "American Heart Association Courses",
-        href: "https://www.hovn.app/tayloredinstruction/agencies/aha",
+        href: registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction/agencies/aha"
+        ),
       },
       { label: "BLS", href: "/bls", indent: true },
       { label: "Heartsaver", href: "/heartsaver", indent: true },
@@ -101,7 +106,9 @@ const generateNavLinks = (
       {
         type: "divider",
         label: "American Red Cross Courses",
-        href: "https://www.hovn.app/tayloredinstruction/agencies/arc",
+        href: registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction/agencies/arc"
+        ),
       },
       {
         label: "Adult and Pediatric First Aid/CPR/AED",
@@ -309,7 +316,9 @@ export const Header = () => {
                 className="btn btn-primary px-4 py-2 text-sm"
                 data-visitors-event="Register Now Click"
                 data-visitors-source="header"
-                href="https://www.hovn.app/tayloredinstruction"
+                href={registrationBookingUrl(
+                  "https://www.hovn.app/tayloredinstruction"
+                )}
                 target="_blank"
               >
                 Register Now
@@ -352,7 +361,9 @@ export const Header = () => {
               className="btn btn-primary w-full text-center"
               data-visitors-event="Register Now Click"
               data-visitors-source="mobile_header"
-              href="https://www.hovn.app/tayloredinstruction"
+              href={registrationBookingUrl(
+                "https://www.hovn.app/tayloredinstruction"
+              )}
               onClick={closeMobileMenu}
               target="_blank"
             >

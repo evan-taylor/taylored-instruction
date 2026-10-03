@@ -86,6 +86,23 @@ const nextConfig = {
     ];
 
     return [
+      ...[
+        "/s/:path*",
+        "/courses/:path*",
+        "/instructor/sessions/:path*",
+        "/admin/registrations/:path*",
+        "/admin/registration-activity/:path*",
+        "/registrations/:path*",
+        "/registration/:path*",
+        "/api/registration/:path*",
+      ].map((source) => ({
+        source,
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      })),
       {
         source: "/admin/studio/:path*",
         headers: studioSecurityHeaders,
