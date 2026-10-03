@@ -5,9 +5,15 @@ import { httpAction } from "./_generated/server";
 
 export const stripeWebhook = httpAction(async (ctx, request) => {
   const secret = process.env.REGISTRATION_STRIPE_WEBHOOK_SECRET;
-  const key = process.env.REGISTRATION_STRIPE_TEST_KEY;
+  const key = process.env.STRIPE_SECRET_KEY;
   const signature = request.headers.get("stripe-signature");
-  if (!(secret && key && signature)) {
+  if (
+    !(
+      secret &&
+      signature &&
+      (key?.startsWith("sk_test_") || key?.startsWith("rk_test_"))
+    )
+  ) {
     return new Response("Webhook not configured", { status: 400 });
   }
   let event: Stripe.Event;
