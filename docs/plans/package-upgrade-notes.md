@@ -106,3 +106,7 @@ This is an upgrade and planning branch, not the registration implementation. The
 - Built-site smoke at `127.0.0.1:3100`: homepage rendered with corrected responsive hero typography; contact page rendered and choosing Other revealed its conditional location field; login rendered email-code and Google controls. No form was submitted and no authentication email was requested.
 - Browser smoke was read-only apart from an unsent local radio selection. It does not cover authenticated checkout, real Stripe requests, email delivery, or mobile regression. Those remain release checks, especially for the Stripe major API change.
 - `git diff --check` passed. All 58 direct package entries are current at this snapshot; installed versions are reproducible from `bun.lock`.
+
+## Follow-up: Auth v2 requirement
+
+After this stable dependency upgrade, Evan requested migration to Convex Auth v2. This preparation branch intentionally still runs the verified v1 baseline. The cloud implementation must first complete `convex-auth-v2-migration.md`, including an explicitly pinned alpha package and preserved identities/login methods. The stable-upgrade validation above is not evidence that Auth v2 has been installed, migrated, or tested.
