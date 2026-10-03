@@ -642,7 +642,7 @@ describe("Payment and material policies", () => {
     ).toThrow("waivable");
   });
   it("verifies a real Stripe HMAC signature, rejects a tampered payload and deduplicates replay", async () => {
-    vi.stubEnv("REGISTRATION_STRIPE_TEST_KEY", "sk_test_local_signature_only");
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_local_signature_only");
     vi.stubEnv("REGISTRATION_STRIPE_WEBHOOK_SECRET", "whsec_local_acceptance");
     const f = await fixture();
     const order = await f.t.mutation(
@@ -1006,5 +1006,47 @@ describe("Operational regression coverage", () => {
     );
     expect(result[0]?.questions[0]?.version).toBe(2);
     expect(result[0]?.acceptedAt).toBeGreaterThan(0);
+  });
+});
+
+describe("Shared development service settings", () => {
+  it("rejects a live shared Stripe key before creating checkout", async () => {
+    const f = await fixture();
+    const args = attempt(f.course, f.session);
+    const order = await f.t.mutation(api.registration.reserve, args);
+    vi.stubEnv("STRIPE_SECRET_KEY", "sk_live_local_rejection_fixture");
+    await expect(
+      f.t.action(api.registrationExternal.checkout, {
+        orderId: order.orderId,
+        requestKey: args.requestKey,
+      })
+    ).rejects.toThrow("Configure STRIPE_SECRET_KEY with a test key");
+  });
+  it("reuses the auth sender and website origin while forcing portal mail to the safe recipient", async () => {
+    const f = await fixture();
+    vi.stubEnv("SITE_URL", "https://preview.example.test");
+    vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
+    vi.stubEnv("RESEND_API_KEY", "re_local_mock_only");
+    vi.stubEnv("REGISTRATION_TEST_RECIPIENT", "safe@example.test");
+    const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "local-email" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      await f.t.action(api.registrationExternal.requestPortal, {
+        email: "student@example.test",
+      });
+      expect(send).toHaveBeenCalledTimes(1);
+      const body = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
+      expect(body.to).toBe("safe@example.test");
+      expect(body.from).toBe("Training <sender@example.test>");
+      expect(body.text).toContain(
+        "https://preview.example.test/registrations/access#"
+      );
+    } finally {
+      send.mockRestore();
+    }
   });
 });

@@ -14,16 +14,16 @@ const INVITATION_PATH =
   /Register at (\/s\/[A-Za-z0-9_-]+#invitation=[A-Za-z0-9-]+)/u;
 
 function stripe() {
-  const key = process.env.REGISTRATION_STRIPE_TEST_KEY;
+  const key = process.env.STRIPE_SECRET_KEY;
   if (!(key?.startsWith("sk_test_") || key?.startsWith("rk_test_"))) {
-    throw new Error("Configure REGISTRATION_STRIPE_TEST_KEY with a test key");
+    throw new Error("Configure STRIPE_SECRET_KEY with a test key");
   }
   return new Stripe(key, { apiVersion: "2026-09-30.endive" });
 }
 function baseUrl() {
-  const url = process.env.REGISTRATION_BASE_URL;
+  const url = process.env.SITE_URL;
   if (!url) {
-    throw new Error("Configure REGISTRATION_BASE_URL");
+    throw new Error("Configure SITE_URL");
   }
   return new URL(url).origin;
 }
@@ -38,14 +38,13 @@ export const checkout = action({
     if (order.checkoutUrl) {
       return order.checkoutUrl;
     }
-    // Explicit launch gate: registration tax policy must be reviewed before enabling checkout.
-    if (process.env.REGISTRATION_TAX_POLICY !== "configured-no-automatic-tax") {
-      throw new Error("Registration tax policy requires configuration");
-    }
     const client = stripe();
     const session = await client.checkout.sessions.create(
       {
         mode: "payment",
+        // Test-only registration amounts exclude automatic tax. Confirm tax
+        // treatment before a separately reviewed production enablement.
+        automatic_tax: { enabled: false },
         allowed_payment_method_types: ["card"],
         customer_email: order.purchaser,
         client_reference_id: order._id,
@@ -126,7 +125,7 @@ export const deliver = internalAction({
         }
         try {
           const recipient = process.env.REGISTRATION_TEST_RECIPIENT;
-          const from = process.env.REGISTRATION_EMAIL_FROM;
+          const from = process.env.AUTH_EMAIL_FROM;
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
             throw new Error(
               "Safe test recipient, sender, and Resend key required"
@@ -210,7 +209,7 @@ export const requestPortal = action({
       tokenHash,
     });
     const recipient = process.env.REGISTRATION_TEST_RECIPIENT;
-    const from = process.env.REGISTRATION_EMAIL_FROM;
+    const from = process.env.AUTH_EMAIL_FROM;
     if (!(recipient && from && process.env.RESEND_API_KEY)) {
       throw new Error("Safe test email configuration required");
     }

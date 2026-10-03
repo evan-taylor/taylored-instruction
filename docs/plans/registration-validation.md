@@ -42,16 +42,19 @@ These tests are evidence of the scenarios named above, not a claim that every pr
 
 ## Required development service configuration
 
-Set these on the **development Convex deployment**:
+Set these on the **development Convex deployment**. Only `REGISTRATION_STRIPE_WEBHOOK_SECRET` and `REGISTRATION_TEST_RECIPIENT` are new required settings; reuse `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `AUTH_EMAIL_FROM`, and `SITE_URL` if already configured there. Values set only on Vercel or in the workspace are not automatically available in Convex. Do not change production keys to run these tests.
+
+The obsolete `REGISTRATION_STRIPE_TEST_KEY`, `REGISTRATION_BASE_URL`, `REGISTRATION_EMAIL_FROM`, and `REGISTRATION_TAX_POLICY` variables are no longer read and can be removed from development configuration. Existing auth keys/providers are unchanged.
+
+Settings:
 
 | Variable | Purpose |
 | --- | --- |
-| `REGISTRATION_STRIPE_TEST_KEY` | Dedicated `sk_test_` or `rk_test_` key; live keys are rejected by outbound payment/refund code. |
+| `STRIPE_SECRET_KEY` | Reuse the existing setting with a `sk_test_` or `rk_test_` key on the development deployment. Registration rejects live keys. |
 | `REGISTRATION_STRIPE_WEBHOOK_SECRET` | Signing secret for this development endpoint's test events. |
-| `REGISTRATION_BASE_URL` | Development app origin used for Checkout return URLs and portal links. |
-| `REGISTRATION_TAX_POLICY` | Must explicitly equal `configured-no-automatic-tax` after confirming that configuration is applicable. No tax exemption or rate is inferred. |
+| `SITE_URL` | Reuse the auth setting: the development website origin, used for Checkout return URLs and portal links. |
 | `RESEND_API_KEY` | Development email provider credential. |
-| `REGISTRATION_EMAIL_FROM` | Verified sender appropriate for development. |
+| `AUTH_EMAIL_FROM` | Reuse the verified sender already configured for OTP email. |
 | `REGISTRATION_TEST_RECIPIENT` | Explicit safe mailbox controlled by the tester. **Every registration email is redirected here**, including admin alerts and portal links. |
 | `REGISTRATION_ADMIN_EMAIL` | Intended operational shortage-alert recipient; defaults to the existing admin allowlist. Test redirection still applies. |
 
@@ -66,8 +69,14 @@ No dedicated working Stripe test credentials, webhook endpoint secret, verified 
 - Create a real test Checkout; pay with a test card; confirm signed delivery, receipt/material mail, replay safety, expiration, and partial/full test refunds. Exercise provider timeouts and retry/reconciliation.
 - Verify sender authentication, the chosen safe mailbox, portal email delivery/exchange, calendar update/cancellation rendering, and shortage/restock messages. Exercise approved-admin and assigned/unassigned-instructor browser workflows using verified development identities.
 - Verify existing Google and email-code login, authenticated instructor resources, Sanity Studio, and existing test eCard/product commerce. The browser smoke checks cover rendering/redirects, not provider completion.
-- Decide registration tax treatment with the Stripe account owner. The implementation deliberately refuses paid registration unless the explicit no-automatic-tax configuration is set. **If automatic Stripe Tax is required, tax-inclusive quote/finalizer support remains a release blocker**; existing product commerce tax settings remain untouched.
+- Decide registration tax treatment with the Stripe account owner. Test registration Checkout explicitly disables automatic tax; there is no tax-policy environment switch and this does not assert exemption or resolve production tax policy. **If automatic Stripe Tax is required, tax-inclusive quote/finalizer support remains a release blocker**; existing product commerce tax settings remain untouched.
 - Publish reviewed native offerings/materials/instructors/coupons in development and complete staff acceptance. Only then consider `NEXT_PUBLIC_NATIVE_REGISTRATION=true` to change marketing booking links. It defaults to the previous Hovn links.
 - Production email delivery and live Stripe keys remain intentionally unavailable in this test-only implementation. Any production enablement is a separate reviewed change and deployment, neither performed nor authorized here.
 
 Auth v2 remains deferred per Evan's instruction until upstream supports the required OTP flow. The original migration worklist remains useful for that future effort.
+
+## Environment simplification follow-up
+
+Registration now reuses `STRIPE_SECRET_KEY`, `AUTH_EMAIL_FROM`, and `SITE_URL`; its redundant aliases and tax-policy switch are removed. The shared Stripe key must still be a test key. Both scheduled registration mail and portal access mail retain forced safe-recipient delivery. No deployed secrets were changed.
+
+Validation: `bun run test` passes lint, TypeScript, and 26 behavioral tests. The added tests reject a live shared Stripe key before checkout and exercise the portal-mail action with a mocked provider, verifying the shared sender/site origin and safe recipient. Signed webhook verification now uses the shared Stripe setting. This change does not certify hosted provider acceptance.
