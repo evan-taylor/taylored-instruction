@@ -1,0 +1,26 @@
+docs/plans/class-registration.md
+  s_0bc950d3e3cd9b::t_4398afbea52689 7-10,237,247-249
+  s_0bc950d3e3cd9b::t_efaa25ee3942ea 250
+docs/plans/convex-auth-v2-migration.md
+  s_0bc950d3e3cd9b::t_4398afbea52689 1-56
+docs/plans/cloud-agent-handoff.md
+  s_0bc950d3e3cd9b::t_4398afbea52689 5,7
+docs/plans/package-upgrade-notes.md
+  s_0bc950d3e3cd9b::t_4398afbea52689 109-112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "ae8665ff2e0e7d2610020d667e7cc0b091b3638e",
+  "prompts": {},
+  "sessions": {
+    "s_0bc950d3e3cd9b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1034b-94a5-7981-bc72-40475df470b8",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
