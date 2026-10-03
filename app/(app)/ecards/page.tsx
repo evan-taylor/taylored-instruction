@@ -22,10 +22,10 @@ type Product = {
 };
 
 interface ProductWithPrice extends Product {
-  display_price: number;
   currency: string;
-  stripe_product_name?: string;
+  display_price: number;
   stripe_product_description?: string | null;
+  stripe_product_name?: string;
 }
 
 type CartItem = {
@@ -81,7 +81,7 @@ export default function ECardsPage() {
       if (savedCart) {
         try {
           setCartItems(JSON.parse(savedCart));
-        } catch (_e) {
+        } catch {
           setCartItems([]);
         }
       }
@@ -440,7 +440,7 @@ export default function ECardsPage() {
           data.error || "Could not initiate checkout. Please try again."
         );
       }
-    } catch (_err) {
+    } catch {
       // Track unexpected error
       posthog.capture("ecard_checkout_error", {
         error: "Network or server error",
@@ -508,7 +508,7 @@ export default function ECardsPage() {
       {/* Shopping Cart Button */}
       <div className="mb-4 flex justify-end">
         <button
-          className="relative flex items-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
+          className="relative flex items-center rounded-lg bg-primary px-4 py-2 text-white shadow-xs transition-colors hover:bg-primary-dark"
           onClick={() => setIsCartOpen(!isCartOpen)}
           type="button"
         >
@@ -517,7 +517,7 @@ export default function ECardsPage() {
             Cart ({cartItems.reduce((sum, item) => sum + item.quantity, 0)})
           </span>
           {cartItems.length > 0 && (
-            <span className="-top-2 -right-2 absolute flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
+            <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs">
               {cartItems.length}
             </span>
           )}
@@ -562,10 +562,10 @@ export default function ECardsPage() {
               <div className="space-y-4">
                 {cartItems.map((item) => (
                   <div
-                    className="flex rounded-lg border p-3 shadow-sm"
+                    className="flex rounded-lg border p-3 shadow-xs"
                     key={item.product.id}
                   >
-                    <div className="mr-3 h-16 w-16 flex-shrink-0 overflow-hidden rounded">
+                    <div className="mr-3 h-16 w-16 shrink-0 overflow-hidden rounded-sm">
                       <Image
                         alt={item.product.name}
                         className="h-full w-full object-cover"
@@ -580,7 +580,7 @@ export default function ECardsPage() {
                         ${(item.product.display_price ?? 0).toFixed(2)} each
                       </p>
                       <div className="mt-2 flex items-center justify-between">
-                        <div className="flex items-center rounded border">
+                        <div className="flex items-center rounded-sm border">
                           <button
                             className="px-2 py-1 text-gray-500 hover:text-gray-700"
                             onClick={() =>
@@ -639,7 +639,7 @@ export default function ECardsPage() {
             </div>
 
             <button
-              className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-xs transition-colors hover:bg-primary-dark disabled:opacity-50"
               disabled={cartItems.length === 0 || loadingProductIds.length > 0}
               onClick={handleCartCheckout}
               type="button"
@@ -679,7 +679,7 @@ export default function ECardsPage() {
                 width={300}
               />
             </div>
-            <div className="flex flex-grow flex-col p-4">
+            <div className="flex grow flex-col p-4">
               <h3 className="mb-2 font-semibold text-lg">{product.name}</h3>
               <p className="mb-4 text-gray-600 text-sm">
                 {product.description}
@@ -691,7 +691,7 @@ export default function ECardsPage() {
 
             <div className="mt-auto border-t p-4 pt-0">
               <div className="flex items-center gap-3">
-                <div className="flex items-center overflow-hidden rounded border">
+                <div className="flex items-center overflow-hidden rounded-sm border">
                   <button
                     className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
                     onClick={() =>
@@ -731,7 +731,7 @@ export default function ECardsPage() {
                 </div>
 
                 <button
-                  className="flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
+                  className="flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2 text-white shadow-xs transition-colors hover:bg-primary-dark"
                   onClick={() => addToCart(product)}
                   type="button"
                 >

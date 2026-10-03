@@ -17,8 +17,8 @@ const AlignmentPageContent: React.FC = () => {
           quality={100}
           src="/CPR-Training-Getty-Images-scaled.jpg"
         />
-        <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 to-black/30" />
-        <div className="relative z-20 mx-auto max-w-3xl rounded-xl bg-black/30 p-6 shadow-2xl backdrop-blur-sm md:p-8">
+        <div className="absolute inset-0 z-10 bg-linear-to-b from-black/60 to-black/30" />
+        <div className="relative z-20 mx-auto max-w-3xl rounded-xl bg-black/30 p-6 shadow-2xl backdrop-blur-xs md:p-8">
           <h1 className="mb-4 font-bold text-3xl text-white sm:text-4xl md:text-5xl">
             Taylored Instruction Alignment
           </h1>
@@ -28,7 +28,7 @@ const AlignmentPageContent: React.FC = () => {
       {/* Main Content Section */}
       <div className="container mx-auto max-w-4xl px-4 py-12">
         {/* Introductory Paragraph */}
-        <div className="mb-12 rounded-lg bg-white p-6 shadow-sm">
+        <div className="mb-12 rounded-lg bg-white p-6 shadow-xs">
           <p className="text-center text-gray-700 leading-relaxed">
             Are you passionate about saving lives and empowering others? At
             Taylored Instruction, we believe in the power of health and safety
@@ -51,7 +51,7 @@ const AlignmentPageContent: React.FC = () => {
         </div>
 
         {/* Mission Section */}
-        <div className="mb-12 rounded-lg bg-gray-50 p-6 shadow-sm">
+        <div className="mb-12 rounded-lg bg-gray-50 p-6 shadow-xs">
           <h3 className="mb-3 font-semibold text-gray-800 text-xl lg:text-2xl">
             A Mission with Impact
           </h3>
@@ -63,7 +63,7 @@ const AlignmentPageContent: React.FC = () => {
         </div>
 
         {/* Support Section */}
-        <div className="mb-12 rounded-lg bg-gray-50 p-6 shadow-sm">
+        <div className="mb-12 rounded-lg bg-gray-50 p-6 shadow-xs">
           <h3 className="mb-3 font-semibold text-gray-800 text-xl lg:text-2xl">
             Unmatched Support, Every Step of the Way
           </h3>
@@ -100,7 +100,7 @@ const AlignmentPageContent: React.FC = () => {
         </div>
 
         {/* Get Started Section */}
-        <div className="mb-8 rounded-lg bg-white p-6 shadow-sm">
+        <div className="mb-8 rounded-lg bg-white p-6 shadow-xs">
           <h3 className="mb-6 text-center font-semibold text-2xl text-gray-800">
             Ready to Get Started?
           </h3>

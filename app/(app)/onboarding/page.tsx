@@ -88,7 +88,7 @@ function findFirstMatch(text: string): MatchInfo | null {
 }
 
 function renderMatchElement(info: MatchInfo, key: number): React.ReactNode {
-  const content = info.match[1];
+  const [, content] = info.match;
   switch (info.type) {
     case "bold":
       return <strong key={key}>{content}</strong>;
@@ -109,7 +109,7 @@ function renderMatchElement(info: MatchInfo, key: number): React.ReactNode {
     case "code":
       return (
         <code
-          className="rounded bg-gray-100 px-1 py-0.5 font-mono text-sm"
+          className="rounded-sm bg-gray-100 px-1 py-0.5 font-mono text-sm"
           key={key}
         >
           {content}
@@ -149,7 +149,8 @@ function renderInlineElements(text: string): React.ReactNode {
       parts.push(remaining.slice(0, firstMatch.index));
     }
 
-    parts.push(renderMatchElement(firstMatch, key++));
+    parts.push(renderMatchElement(firstMatch, key));
+    key += 1;
     remaining = remaining.slice(firstMatch.index + firstMatch.match[0].length);
   }
 
@@ -451,7 +452,7 @@ export default function OnboardingPage() {
             Please log in to access the instructor onboarding materials.
           </p>
           <a
-            className="inline-flex items-center justify-center rounded bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
+            className="inline-flex items-center justify-center rounded-sm bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
             href="/login"
           >
             Log In
@@ -520,7 +521,7 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
           <h2 className="mb-6 font-bold text-2xl">{currentStep.title}</h2>
           <div className="prose max-w-none">
             {parseAndRenderMDX(currentStep.content)}

@@ -82,9 +82,9 @@ export default async function AboutPage() {
             style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="absolute inset-0 z-10 bg-linear-to-r from-black/70 to-black/50" />
         <div className="container relative z-20 mx-auto px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-xs md:p-10">
             <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               About Taylored Instruction
             </h1>

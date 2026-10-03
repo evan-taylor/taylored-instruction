@@ -74,7 +74,7 @@ export function ContactForm() {
           location: formData.get("location"),
         });
       }
-    } catch (_error) {
+    } catch {
       setStatus({
         loading: false,
         success: false,
@@ -98,17 +98,17 @@ export function ContactForm() {
     <form className="space-y-6" onSubmit={handleSubmit}>
       {/* Status Messages - Moved to top */}
       {status.success === true && (
-        <p className="mb-4 rounded border border-green-200 bg-green-100 p-3 text-center text-green-800">
+        <p className="mb-4 rounded-sm border border-green-200 bg-green-100 p-3 text-center text-green-800">
           Message sent successfully! We&apos;ll be in touch soon.
         </p>
       )}
       {status.success === false && status.error && (
-        <p className="mb-4 rounded border border-red-200 bg-red-100 p-3 text-center text-red-800">
+        <p className="mb-4 rounded-sm border border-red-200 bg-red-100 p-3 text-center text-red-800">
           Error: {status.error}
         </p>
       )}
       {status.loading && (
-        <p className="mb-4 rounded border border-blue-200 bg-blue-100 p-3 text-center text-blue-800">
+        <p className="mb-4 rounded-sm border border-blue-200 bg-blue-100 p-3 text-center text-blue-800">
           Sending message...
         </p>
       )}
@@ -303,7 +303,7 @@ export function ContactForm() {
             <>
               <svg
                 aria-label="Loading"
-                className="-ml-1 mr-3 h-5 w-5 animate-spin text-white"
+                className="mr-3 -ml-1 h-5 w-5 animate-spin text-white"
                 fill="none"
                 role="img"
                 viewBox="0 0 24 24"

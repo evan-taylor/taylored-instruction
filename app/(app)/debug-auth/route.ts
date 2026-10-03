@@ -26,14 +26,14 @@ export async function GET(request: NextRequest) {
       userAgent: request.headers.get("user-agent"),
       cookies: request.cookies.getAll().map((c) => ({
         name: c.name,
-        value: `${c.value.substring(0, TRUNCATE_LENGTH)}...`,
+        value: `${c.value.slice(0, TRUNCATE_LENGTH)}...`,
       })),
     };
 
     return NextResponse.json({
       authenticated: !!token,
       token: token
-        ? `Present (truncated): ${token.substring(0, TRUNCATE_LENGTH)}...`
+        ? `Present (truncated): ${token.slice(0, TRUNCATE_LENGTH)}...`
         : null,
       environment: envInfo,
       request: requestInfo,

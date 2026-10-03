@@ -13,7 +13,7 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2026-09-30.endive",
   });
 }
 
@@ -40,7 +40,7 @@ const parseCartItems = (cartItemsJson: string): CartItem[] | null => {
       return null;
     }
     return items;
-  } catch (_error) {
+  } catch {
     return null;
   }
 };
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
       }
       await sendCartEmails(cartItems, totalPrice, customerEmail);
 
-      const userId = session.metadata.userId;
+      const { userId } = session.metadata;
       if (userId) {
         const posthog = PostHogClient();
         await posthog?.capture({

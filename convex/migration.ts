@@ -189,7 +189,8 @@ export const importProducts = mutation({
       id?: unknown;
     }> = [];
 
-    for (const product of args.products) {
+    await args.products.reduce(async (previous, product) => {
+      await previous;
       const existing = await ctx.db
         .query("products")
         .filter((q) => q.eq(q.field("name"), product.name))
@@ -201,12 +202,12 @@ export const importProducts = mutation({
           imported: false,
           reason: "Already exists",
         });
-        continue;
+        return;
       }
 
       const id = await ctx.db.insert("products", product);
       results.push({ name: product.name, imported: true, id });
-    }
+    }, Promise.resolve());
 
     return results;
   },

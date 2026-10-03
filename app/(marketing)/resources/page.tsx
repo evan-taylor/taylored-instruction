@@ -166,7 +166,7 @@ export default async function ResourcesPage() {
       <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
         {resourceList.map((resource) => (
           <article
-            className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-xl border border-gray-200 bg-white p-6 shadow-xs transition-shadow hover:shadow-md"
             key={resource.slug}
           >
             <div className="flex flex-wrap gap-2">
@@ -238,14 +238,14 @@ export default async function ResourcesPage() {
             </p>
           </div>
           <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-xs">
               <BookOpen className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
                 {hasResourceQueryError ? "—" : resourceList.length} resources
               </p>
               <p className="text-gray-600 text-sm">Published pages</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-xs">
               <MapPin className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
                 {hasResourceQueryError ? "—" : getCityCount(resourceList)}{" "}
@@ -253,7 +253,7 @@ export default async function ResourcesPage() {
               </p>
               <p className="text-gray-600 text-sm">City-specific coverage</p>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
+            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-xs">
               <Stethoscope className="mx-auto h-5 w-5 text-primary" />
               <p className="mt-2 font-semibold text-gray-900">
                 {hasResourceQueryError

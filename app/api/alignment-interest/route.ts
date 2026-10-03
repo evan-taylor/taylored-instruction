@@ -16,7 +16,7 @@ const AlignmentInterestSchema = z
     email: z.string().email("Invalid email address"),
     phone: z.string().min(1, "Phone number is required"), // Assuming phone is required based on form UI
     hasCertification: z.enum(["Yes", "No"], {
-      required_error: "Certification status is required",
+      error: "Certification status is required",
     }),
     agencies: z.array(z.string()).optional(), // Optional array of strings
     message: z.string().optional(),

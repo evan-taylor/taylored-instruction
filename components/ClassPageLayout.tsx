@@ -41,7 +41,7 @@ type ClassPageSectionProps = {
 
 export function ClassPageSection({ children, title }: ClassPageSectionProps) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:p-8">
+    <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-xs md:p-8">
       <h2 className="mb-4 font-bold text-2xl text-gray-950">{title}</h2>
       <div className="space-y-4 text-gray-700 leading-relaxed">{children}</div>
     </section>
@@ -74,7 +74,7 @@ export default function ClassPageLayout({
             objectPosition: image.position ?? "center",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/45 to-black/20" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4 pt-20 pb-24 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
             <p className="mb-4 font-semibold text-sm text-white/80 uppercase tracking-[0.18em]">
@@ -92,7 +92,7 @@ export default function ClassPageLayout({
         </div>
       </section>
 
-      <section className="-mt-14 relative z-20 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+      <section className="relative z-20 mx-auto -mt-14 max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xl md:p-6">
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>

@@ -1,53 +1,56 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
-html {
-  scroll-behavior: smooth;
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background font-readex text-text;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-bold;
+  }
+
+  h1 {
+    @apply text-3xl lg:text-4xl mb-6;
+  }
+
+  h2 {
+    @apply text-2xl lg:text-3xl mb-4;
+  }
+
+  h3 {
+    @apply text-xl lg:text-2xl mb-3;
+  }
+
+  p {
+    @apply mb-4;
+  }
 }
 
-body {
-  @apply bg-background font-readex text-text;
+@layer components {
+  .btn {
+    @apply px-6 py-2 rounded-sm font-medium transition-all duration-200;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white hover:opacity-90;
+  }
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  @apply font-bold;
-}
-
-h1 {
-  @apply text-3xl lg:text-4xl mb-6;
-}
-
-h2 {
-  @apply text-2xl lg:text-3xl mb-4;
-}
-
-h3 {
-  @apply text-xl lg:text-2xl mb-3;
-}
-
-p {
-  @apply mb-4;
-}
-
-.btn {
-  @apply px-6 py-2 rounded font-medium transition-all duration-200;
-}
-
-.btn-primary {
-  @apply bg-primary text-white hover:bg-primary-dark;
-}
-
-.btn-secondary {
-  @apply bg-secondary text-white hover:opacity-90;
-}
-
-.container {
+@utility container {
   @apply mx-auto px-4 max-w-7xl;
 }
 
@@ -112,6 +115,6 @@ p {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-readex text-text;
   }
 }

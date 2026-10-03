@@ -5,12 +5,7 @@ import type { Product } from "../types";
 
 // Helper to get the first image URL or a placeholder
 const getImageUrl = (imageUrls: string[] | null | undefined): string => {
-  if (
-    imageUrls &&
-    imageUrls.length > 0 &&
-    imageUrls[0] &&
-    imageUrls[0].startsWith("http")
-  ) {
+  if (imageUrls && imageUrls.length > 0 && imageUrls[0]?.startsWith("http")) {
     return imageUrls[0];
   }
   return "/placeholder-image.png"; // Provide a path to a placeholder image in your public folder
@@ -50,7 +45,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isInstructor }) => {
           width={300}
         />
       </Link>
-      <div className="flex flex-grow flex-col p-4">
+      <div className="flex grow flex-col p-4">
         <h3 className="mb-1 font-semibold text-gray-800 text-md">
           <Link className="cursor-pointer hover:underline" href={productUrl}>
             {product.name}
@@ -61,7 +56,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, isInstructor }) => {
             ${product.price ? Number(product.price).toFixed(2) : "N/A"}
           </p>
           <button
-            className={`ml-2 rounded bg-blue-500 px-3 py-1 text-sm text-white transition-colors duration-150 hover:bg-blue-600 ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
+            className={`ml-2 rounded-sm bg-blue-500 px-3 py-1 text-sm text-white transition-colors duration-150 hover:bg-blue-600 ${isDisabled ? "cursor-not-allowed opacity-50" : ""}`}
             disabled={isDisabled}
             onClick={() => {
               // TODO: Implement cart functionality

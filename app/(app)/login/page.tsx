@@ -116,7 +116,7 @@ export default function LoginPage() {
     setMessage("");
     const event = {
       preventDefault: () => {
-        return;
+        // Resending is triggered by a button, without a form submission.
       },
     } as React.FormEvent;
     await handleSendCode(event);
@@ -184,7 +184,7 @@ export default function LoginPage() {
                     Email
                   </label>
                   <input
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                     disabled={isLoading}
                     id="email"
                     onChange={(e) => setEmail(e.target.value)}
@@ -272,7 +272,7 @@ export default function LoginPage() {
                   </label>
                   <input
                     autoComplete="off"
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-center font-mono text-2xl tracking-widest focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-center font-mono text-2xl tracking-widest focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                     disabled={isLoading}
                     id="code"
                     maxLength={6}

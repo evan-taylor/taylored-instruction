@@ -43,19 +43,19 @@ export const getProducts = query({
   },
   handler: async (ctx, args) => {
     const products =
-      args.type !== undefined
-        ? await ctx.db
+      args.type === undefined
+        ? await ctx.db.query("products").collect()
+        : await ctx.db
             .query("products")
             .withIndex("by_type", (q) => q.eq("type", args.type as string))
-            .collect()
-        : await ctx.db.query("products").collect();
+            .collect();
 
     const filteredProducts =
-      args.requiresInstructor !== undefined
-        ? products.filter(
+      args.requiresInstructor === undefined
+        ? products
+        : products.filter(
             (p) => p.requiresInstructor === args.requiresInstructor
-          )
-        : products;
+          );
 
     return filteredProducts.map((product) => ({
       id: product._id,

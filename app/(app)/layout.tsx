@@ -29,7 +29,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <AuthEffects />
           <div className="flex min-h-screen flex-col">
             <Header />
-            <main className="flex-grow">{children}</main>
+            <main className="grow">{children}</main>
             <Footer />
           </div>
         </ConvexClientProvider>

@@ -18,7 +18,7 @@ const readPayload = async (request: Request): Promise<SanityWebhookPayload> => {
     return {};
   }
 
-  const slug = payload.slug;
+  const { slug } = payload;
 
   return {
     _type: typeof payload._type === "string" ? payload._type : undefined,

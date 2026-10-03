@@ -141,12 +141,13 @@ export const reorderSteps = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
 
-    for (const update of args.updates) {
+    await args.updates.reduce(async (previous, update) => {
+      await previous;
       await ctx.db.patch(update.id, {
         order: update.order,
         updatedAt: new Date().toISOString(),
       });
-    }
+    }, Promise.resolve());
 
     return true;
   },

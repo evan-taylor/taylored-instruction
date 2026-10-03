@@ -28,7 +28,7 @@ const sanitizeCtaHref = (href: string): string => {
     if (parsedUrl.protocol === "http:" || parsedUrl.protocol === "https:") {
       return href;
     }
-  } catch (_error) {
+  } catch {
     return FALLBACK_CTA_HREF;
   }
 
