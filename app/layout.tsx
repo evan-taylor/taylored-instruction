@@ -1,8 +1,11 @@
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+
 import type { Metadata } from "next";
 import { Readex_Pro } from "next/font/google";
+import {
+  PrivateAwareAnalytics,
+  PrivateAwareSpeedInsights,
+} from "@/components/registration/analytics";
 import {
   generateJSONLD,
   getOrganizationSchema,
@@ -141,8 +144,8 @@ export default function RootLayout({
           {children}
           <PostHogPageViewWrapper />
         </PostHogProvider>
-        <Analytics />
-        <SpeedInsights />
+        <PrivateAwareAnalytics />
+        <PrivateAwareSpeedInsights />
       </body>
     </html>
   );

@@ -3,8 +3,14 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import { init } from "@sentry/nextjs";
+import { isPrivateRegistrationUrl } from "./shared/registration/privacy";
 
 init({
+  traceLifecycle: "static",
+  beforeSend: (event) =>
+    isPrivateRegistrationUrl(event.request?.url) ? null : event,
+  beforeSendTransaction: (event) =>
+    isPrivateRegistrationUrl(event.request?.url) ? null : event,
   dsn: "https://f31f65850f94006f5f71c6a16458e0aa@o4510288242933760.ingest.us.sentry.io/4510288256958464",
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.

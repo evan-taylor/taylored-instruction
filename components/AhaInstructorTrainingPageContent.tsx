@@ -1,6 +1,7 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function AhaInstructorTrainingPageContent() {
   return (
@@ -11,7 +12,9 @@ export default function AhaInstructorTrainingPageContent() {
         alt: "CPR instructor training session",
         src: "/Cpr-Instructor-Image.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-instructor-2025/"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/certifications/aha-bls-instructor-2025/"
+      )}
       subtitle="Build the skills to teach AHA BLS or Heartsaver courses in your community, workplace, or organization."
       title="American Heart Association Instructor Training"
     >

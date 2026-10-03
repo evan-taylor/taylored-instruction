@@ -35,6 +35,19 @@
   },
   "overrides": [
     {
+      "includes": ["components/registration/**/*.tsx"],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": {
+              "level": "error",
+              "options": { "inputComponents": ["Input"] }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/*.css"],
       "linter": {
         "rules": {

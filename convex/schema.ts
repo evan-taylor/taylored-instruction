@@ -2,6 +2,8 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { registrationTables } from "./registrationSchema";
+
 const onboardingSteps = defineTable({
   title: v.string(),
   content: v.string(),
@@ -66,6 +68,7 @@ const seoPages = defineTable({
 
 const schema = defineSchema({
   ...authTables,
+  ...registrationTables,
 
   onboarding_steps: onboardingSteps,
   seo_pages: seoPages,

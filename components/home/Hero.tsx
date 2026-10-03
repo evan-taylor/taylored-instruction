@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export const Hero = () => (
   <div className="relative flex min-h-[550px] items-center justify-center overflow-hidden px-4 text-center md:min-h-[600px]">
@@ -21,7 +22,9 @@ export const Hero = () => (
       </h1>
 
       <Link
-        href="https://www.hovn.app/tayloredinstruction"
+        href={registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction"
+        )}
         rel="noopener noreferrer"
         target="_blank"
       >

@@ -38,3 +38,8 @@ supabase/functions/delete-user-and-profile/index.ts
 supabase/functions/send-approval-email/_shared/cors.ts
 supabase/functions/*
 supabase/migrations/*
+
+# Local registration verification artifacts
+.convex/
+test-results/
+playwright-report/

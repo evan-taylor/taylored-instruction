@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm"; // Placeholder for the form component
+import { registrationBookingUrl } from "@/lib/registration-launch";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -162,7 +163,9 @@ export default async function ContactPage() {
                 </p>
                 <Link
                   className="mt-2 inline-block font-medium text-primary hover:underline"
-                  href="https://www.hovn.app/tayloredinstruction"
+                  href={registrationBookingUrl(
+                    "https://www.hovn.app/tayloredinstruction"
+                  )}
                   rel="noopener noreferrer"
                   target="_blank"
                 >

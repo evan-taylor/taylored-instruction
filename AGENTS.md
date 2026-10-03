@@ -361,3 +361,13 @@ Lefthook is configured (`lefthook.yml`) with a pre-commit hook that runs `bunx u
 - There is no unit test framework — `bun run test` only lints and type-checks.
 - The contact form (`/contact`) is a good end-to-end smoke test: it exercises a server action (`app/actions/send-contact-email.ts`) that sends email via Resend. If `RESEND_API_KEY` is set, submission returns a green "Message sent successfully!" banner.
 - Auth uses Convex Auth with email OTP (via Resend) and Google OAuth. The `JWKS` and `JWT_PRIVATE_KEY` secrets are needed for Convex Auth token verification. The login page is at `/login`.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

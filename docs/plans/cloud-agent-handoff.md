@@ -31,3 +31,7 @@ Run frozen-lockfile install, lint, type-check, production build, meaningful back
 The existing `bun run test` only runs lint and type-check; it is not evidence of behavioral correctness. Add and run actual tests. If an external prerequisite blocks a check, finish unaffected work and report exactly what remains unverified.
 
 Finish with committed implementation changes on a feature branch based on the handoff branch, a requirements coverage checklist, test evidence, environment/setup instructions, and remaining blockers. Keep all approved features in scope and persist until implementation is complete.
+
+## October 3 implementation decision
+
+Evan subsequently directed: “Retain v1 pending upstream OTP support.” This supersedes the Auth v2 prerequisite above. Keep the current v1 providers and identities; revisit v2 when upstream supports passwordless email codes. See `registration-validation.md` for implementation and verification evidence.

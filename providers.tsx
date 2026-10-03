@@ -4,6 +4,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import posthog from "posthog-js";
 import { PostHogProvider as PhProvider } from "posthog-js/react";
 import { Suspense, useEffect } from "react";
+import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
 
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
   return <PhProvider client={posthog}>{children}</PhProvider>;
@@ -14,7 +15,7 @@ export function PostHogPageView(): null {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (pathname) {
+    if (pathname && !isPrivateRegistrationPath(pathname)) {
       let url = window.origin + pathname;
       if (searchParams?.toString()) {
         url += `?${searchParams.toString()}`;
