@@ -139,7 +139,7 @@ export default async function Page() {
           </div>
         </div>
 
-        <div className="mb-10 rounded-lg p-6 shadow-sm">
+        <div className="mb-10 rounded-lg p-6 shadow-xs">
           <h2 className="mb-3 font-semibold text-xl">
             Why Work With an Instructor Trainer
           </h2>

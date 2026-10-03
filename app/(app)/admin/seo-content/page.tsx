@@ -35,7 +35,7 @@ export default function AdminSeoContentPage() {
 
   const pages = useQuery(
     api.seoContent.listPagesForAdmin,
-    !profileLoading && !!session && isAdmin ? {} : "skip"
+    !profileLoading && session && isAdmin ? {} : "skip"
   );
   const generateContent = useMutation(api.seoContent.generateSeoContentBatch);
 
@@ -52,7 +52,7 @@ export default function AdminSeoContentPage() {
       setResultMessage(
         `Generated ${result.totalTemplates} templates · inserted ${result.inserted} · updated ${result.updated} · skipped ${result.skipped}`
       );
-    } catch (_error) {
+    } catch {
       setErrorMessage(
         "Content generation failed. Confirm you are logged in as an admin account and try again."
       );
@@ -175,7 +175,7 @@ export default function AdminSeoContentPage() {
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-10">
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-xs">
         <h1 className="font-bold text-3xl">SEO Content Generator</h1>
         <p className="mt-3 text-gray-700">
           Generate and publish a large batch of Vancouver-first SEO pages (plus
@@ -249,7 +249,7 @@ export default function AdminSeoContentPage() {
         ) : null}
       </div>
 
-      <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-xs">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-semibold text-xl">Published pages</h2>
           <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">

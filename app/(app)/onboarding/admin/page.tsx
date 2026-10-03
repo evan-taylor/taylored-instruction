@@ -59,7 +59,7 @@ export default function OnboardingAdminPage() {
             Please log in to access the admin panel.
           </p>
           <a
-            className="inline-flex items-center justify-center rounded bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
+            className="inline-flex items-center justify-center rounded-sm bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
             href="/login"
           >
             Log In
@@ -142,7 +142,7 @@ export default function OnboardingAdminPage() {
       setEditingStep(null);
       setIsCreating(false);
       setErrorMessage(null);
-    } catch (_error) {
+    } catch {
       setErrorMessage("Failed to save step. Please try again.");
     }
   };
@@ -159,7 +159,7 @@ export default function OnboardingAdminPage() {
     try {
       await deleteStep({ id: deleteConfirmId });
       setDeleteConfirmId(null);
-    } catch (_error) {
+    } catch {
       setErrorMessage("Failed to delete step. Please try again.");
       setDeleteConfirmId(null);
     }
@@ -190,7 +190,7 @@ export default function OnboardingAdminPage() {
         </div>
 
         {editingStep && (
-          <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="mb-8 rounded-lg border border-gray-200 bg-white p-6 shadow-xs">
             <h2 className="mb-4 font-bold text-xl">
               {isCreating ? "Create New Step" : "Edit Step"}
             </h2>
@@ -203,7 +203,7 @@ export default function OnboardingAdminPage() {
                 Title
               </label>
               <input
-                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                 id="title"
                 onChange={(e) =>
                   setEditingStep({ ...editingStep, title: e.target.value })
@@ -222,7 +222,7 @@ export default function OnboardingAdminPage() {
                 Order
               </label>
               <input
-                className="w-32 rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-32 rounded-lg border border-gray-300 px-4 py-2 focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                 id="order"
                 min="1"
                 onChange={(e) =>
@@ -251,7 +251,7 @@ export default function OnboardingAdminPage() {
                 <code className="block">{`<CalComButton username="evan-taylor" eventType="taylored-instruction" namespace="taylored-instruction" buttonText="Book Now" />`}</code>
               </div>
               <textarea
-                className="h-96 w-full rounded-lg border border-gray-300 px-4 py-2 font-mono text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-96 w-full rounded-lg border border-gray-300 px-4 py-2 font-mono text-sm focus:border-primary focus:outline-hidden focus:ring-1 focus:ring-primary"
                 id="content"
                 onChange={(e) =>
                   setEditingStep({ ...editingStep, content: e.target.value })
@@ -294,7 +294,7 @@ export default function OnboardingAdminPage() {
         )}
 
         {deleteConfirmId && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="rounded-lg bg-white p-6 shadow-xl">
               <h3 className="mb-4 font-bold text-lg">Confirm Delete</h3>
               <p className="mb-6 text-gray-600">
@@ -322,53 +322,51 @@ export default function OnboardingAdminPage() {
         )}
 
         <div className="space-y-4">
-          {steps ? (
-            steps.length === 0 ? (
-              <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
-                <p className="mb-4 text-gray-600">No onboarding steps yet.</p>
+          {steps?.length === 0 && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+              <p className="mb-4 text-gray-600">No onboarding steps yet.</p>
+              <button
+                className="rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary-dark"
+                onClick={handleCreateNew}
+                type="button"
+              >
+                Create Your First Step
+              </button>
+            </div>
+          )}
+          {steps?.map((step) => (
+            <div
+              className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-xs"
+              key={step._id}
+            >
+              <div>
+                <span className="mr-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary font-medium text-sm text-white">
+                  {step.order}
+                </span>
+                <span className="font-medium">{step.title}</span>
+                <span className="ml-3 text-gray-500 text-sm">
+                  Updated: {new Date(step.updatedAt).toLocaleDateString()}
+                </span>
+              </div>
+              <div className="flex gap-2">
                 <button
-                  className="rounded-lg bg-primary px-4 py-2 font-medium text-white transition-colors hover:bg-primary-dark"
-                  onClick={handleCreateNew}
+                  className="rounded-sm px-3 py-1 font-medium text-primary text-sm transition-colors hover:bg-primary hover:text-white"
+                  onClick={() => handleEdit(step)}
                   type="button"
                 >
-                  Create Your First Step
+                  Edit
+                </button>
+                <button
+                  className="rounded-sm px-3 py-1 font-medium text-red-600 text-sm transition-colors hover:bg-red-600 hover:text-white"
+                  onClick={() => handleDeleteClick(step._id)}
+                  type="button"
+                >
+                  Delete
                 </button>
               </div>
-            ) : (
-              steps.map((step) => (
-                <div
-                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
-                  key={step._id}
-                >
-                  <div>
-                    <span className="mr-3 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary font-medium text-sm text-white">
-                      {step.order}
-                    </span>
-                    <span className="font-medium">{step.title}</span>
-                    <span className="ml-3 text-gray-500 text-sm">
-                      Updated: {new Date(step.updatedAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      className="rounded px-3 py-1 font-medium text-primary text-sm transition-colors hover:bg-primary hover:text-white"
-                      onClick={() => handleEdit(step)}
-                      type="button"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="rounded px-3 py-1 font-medium text-red-600 text-sm transition-colors hover:bg-red-600 hover:text-white"
-                      onClick={() => handleDeleteClick(step._id)}
-                      type="button"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))
-            )
-          ) : (
+            </div>
+          ))}
+          {steps === undefined && (
             <p className="text-gray-600">Loading steps...</p>
           )}
         </div>

@@ -948,8 +948,7 @@ export const listPublishedPages = query({
   },
   handler: async (ctx, args) => {
     const safeLimit = clampLimit(args.limit);
-    const locationCity = args.locationCity;
-    const serviceLine = args.serviceLine;
+    const { locationCity, serviceLine } = args;
     let candidates: Doc<"seo_pages">[];
 
     if (locationCity && serviceLine) {
@@ -1126,7 +1125,8 @@ export const generateSeoContentBatch = mutation({
     let updated = 0;
     let skipped = 0;
 
-    for (const page of pages) {
+    await pages.reduce(async (previous, page) => {
+      await previous;
       const result = await upsertGeneratedPage(
         ctx,
         page,
@@ -1141,7 +1141,7 @@ export const generateSeoContentBatch = mutation({
       } else {
         skipped += 1;
       }
-    }
+    }, Promise.resolve());
 
     return {
       totalTemplates: allPages.length,
@@ -1168,7 +1168,8 @@ export const seedInitialSeoContent = internalMutation({
     let updated = 0;
     let skipped = 0;
 
-    for (const page of pages) {
+    await pages.reduce(async (previous, page) => {
+      await previous;
       const result = await upsertGeneratedPage(
         ctx,
         page,
@@ -1183,7 +1184,7 @@ export const seedInitialSeoContent = internalMutation({
       } else {
         skipped += 1;
       }
-    }
+    }, Promise.resolve());
 
     return {
       totalTemplates: pages.length,

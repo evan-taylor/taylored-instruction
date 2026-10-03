@@ -96,9 +96,9 @@ export default async function AedPage() {
             style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="absolute inset-0 z-10 bg-linear-to-r from-black/70 to-black/50" />
         <div className="container relative z-20 mx-auto px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-xs md:p-10">
             <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               AED Sales & Distribution
             </h1>
@@ -179,7 +179,7 @@ export default async function AedPage() {
           </p>
 
           {/* Call to Action Section */}
-          <div className="rounded-lg bg-muted p-8 text-center shadow">
+          <div className="rounded-lg bg-muted p-8 text-center shadow-sm">
             <h3 className="mb-4 font-semibold text-text text-xl md:text-2xl">
               Get a Quote or Place Your Order Today!
             </h3>

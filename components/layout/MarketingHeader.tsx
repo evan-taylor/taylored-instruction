@@ -202,7 +202,7 @@ export const MarketingHeader = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link
-            className="flex-shrink-0"
+            className="shrink-0"
             href="/"
             onClick={() => {
               setActiveDesktopDropdown(null);
@@ -379,7 +379,7 @@ const NavMenu = ({
           {renderNavLink(link)}
 
           {activeDropdown === link.label && link.dropdown && (
-            <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+            <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden">
               {link.dropdown.map((item) =>
                 renderDropdownItem(item, () => toggleDropdown(link.label))
               )}

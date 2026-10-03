@@ -70,7 +70,7 @@ export const TestimonialsSection = () => {
         <div className="relative mx-auto max-w-4xl">
           <div className="rounded-lg bg-white p-8 shadow-lg md:p-12">
             <div className="flex flex-col items-center md:flex-row md:space-x-8">
-              <div className="mb-6 flex-shrink-0 md:mb-0">
+              <div className="mb-6 shrink-0 md:mb-0">
                 <div className="relative h-24 w-24 overflow-hidden rounded-full md:h-32 md:w-32">
                   <Image
                     alt={testimonials[activeIndex].name}

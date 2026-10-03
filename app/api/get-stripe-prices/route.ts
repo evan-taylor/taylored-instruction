@@ -9,7 +9,7 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2026-09-30.endive",
   });
 }
 
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     const priceDetailsPromises = priceIds.map(async (id) => {
       try {
         return await getPriceCached(id);
-      } catch (_error) {
+      } catch {
         return { id, error: "Failed to retrieve price details." };
       }
     });
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
         "Cache-Control": "public, s-maxage=300, stale-while-revalidate=3600",
       },
     });
-  } catch (_err: unknown) {
+  } catch {
     return NextResponse.json(
       { error: "Internal Server Error while fetching prices." },
       { status: 500 }

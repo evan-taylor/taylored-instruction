@@ -30,13 +30,13 @@ export const Button = ({
   disabled = false,
 }: ButtonProps) => {
   const baseClasses =
-    "inline-flex items-center justify-center font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2";
+    "inline-flex items-center justify-center font-medium rounded-sm transition-colors focus:outline-hidden focus:ring-2 focus:ring-offset-2";
 
   const variantClasses = {
     primary: "bg-primary text-white hover:bg-primary-dark focus:ring-primary",
     // Improve readability: light background, high-contrast text and border
     secondary:
-      "bg-white text-primary border border-gray-300 hover:bg-gray-50 focus:ring-primary shadow-sm",
+      "bg-white text-primary border border-gray-300 hover:bg-gray-50 focus:ring-primary shadow-xs",
     outline:
       "bg-transparent border border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
   };

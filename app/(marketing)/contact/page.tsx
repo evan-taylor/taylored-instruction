@@ -92,9 +92,9 @@ export default async function ContactPage() {
             style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="absolute inset-0 z-10 bg-linear-to-r from-black/70 to-black/50" />
         <div className="container relative z-20 mx-auto px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-xs md:p-10">
             <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               Contact Us
             </h1>
@@ -123,7 +123,7 @@ export default async function ContactPage() {
               <h2 className="mb-6 text-center font-semibold text-3xl text-text">
                 Contact Information
               </h2>
-              <div className="rounded-lg bg-gray-50 p-6 text-center shadow-sm">
+              <div className="rounded-lg bg-gray-50 p-6 text-center shadow-xs">
                 <div className="relative mx-auto mb-4 h-36 w-36 overflow-hidden rounded-full border-4 border-primary shadow-lg">
                   <Image
                     alt="Headshot of Evan Taylor, owner" // Assuming same headshot as About page

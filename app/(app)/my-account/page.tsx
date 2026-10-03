@@ -45,7 +45,7 @@ export default function MyAccountPage() {
         <div className="text-center">
           <p className="text-lg text-red-600">Error loading account: {error}</p>
           <button
-            className="mt-4 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            className="mt-4 rounded-sm bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
             onClick={() => window.location.reload()}
             type="button"
           >
@@ -161,7 +161,7 @@ export default function MyAccountPage() {
 
         {/* Sign Out Button */}
         <button
-          className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
+          className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-hidden focus:ring-3 focus:ring-red-300/50 md:w-auto"
           onClick={async () => {
             await signOut();
             router.push("/");

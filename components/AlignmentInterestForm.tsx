@@ -159,7 +159,7 @@ const AlignmentInterestForm: React.FC = () => {
           `Submission failed: ${result.error || "Unknown error. Please check your input and try again."}`
         );
       }
-    } catch (_error) {
+    } catch {
       // Track unexpected error
       posthog.capture("alignment_interest_error", {
         error: "Network or server error",
@@ -409,7 +409,7 @@ const AlignmentInterestForm: React.FC = () => {
           }
           return (
             <p
-              className={`mt-4 rounded p-3 text-center text-sm ${statusClass}`}
+              className={`mt-4 rounded-sm p-3 text-center text-sm ${statusClass}`}
             >
               {status}
             </p>

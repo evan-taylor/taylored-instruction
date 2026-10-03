@@ -152,7 +152,7 @@ export default async function BlogPage() {
 
               return (
                 <article
-                  className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xs transition-shadow hover:shadow-md"
                   key={post._id}
                 >
                   {imageUrl ? (

@@ -128,7 +128,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(resource.updatedAt),
       });
     }
-  } catch (_error) {
+  } catch {
     // If Convex is unavailable, still return a valid sitemap for static routes.
   }
 
@@ -147,7 +147,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         lastModified: new Date(post._updatedAt ?? post.publishedAt),
       });
     }
-  } catch (_error) {
+  } catch {
     // If Sanity is unavailable, still return a valid sitemap.
   }
 

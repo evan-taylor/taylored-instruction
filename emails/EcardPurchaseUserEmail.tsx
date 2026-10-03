@@ -24,7 +24,7 @@ type EcardPurchaseUserEmailProps = {
   cartItems?: CartItem[]; // For multi-item purchases
 };
 
-export const EcardPurchaseUserEmail: React.FC<
+const EcardPurchaseUserEmail: React.FC<
   Readonly<EcardPurchaseUserEmailProps>
 > = ({ itemName, quantity, price, cartItems }) => (
   <Html>
