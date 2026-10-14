@@ -54,7 +54,12 @@ async function handleCheckout(ctx: ActionCtx, event: Stripe.Event) {
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : undefined,
+    tax: session.total_details?.amount_tax ?? 0,
   });
+}
+function invoiceTax(invoice: Stripe.Invoice) {
+  const preTax = invoice.total_excluding_tax ?? invoice.subtotal;
+  return Math.max(0, invoice.total - preTax);
 }
 
 async function handleInvoice(
@@ -71,6 +76,7 @@ async function handleInvoice(
       eventId: event.id,
       stripeInvoiceId: invoice.id,
       amount: invoice.amount_paid,
+      tax: invoiceTax(invoice),
       currency: invoice.currency,
       live: invoice.livemode,
       paymentIntent: await invoicePaymentIntent(client, invoice.id),

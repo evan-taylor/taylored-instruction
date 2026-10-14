@@ -43,6 +43,8 @@ export const emailStep = v.object({
 });
 export const settingsFields = {
   tuition: v.number(),
+  /** Stripe tax code applied to tuition (for example txcd_20030000). */
+  taxCode: v.optional(v.string()),
   materials: v.array(materialAttachment),
   questions: v.array(question),
   outcomes: v.array(outcome),
@@ -52,6 +54,7 @@ export const settingsFields = {
 export const settings = v.object(settingsFields);
 export const overrides = v.object({
   tuition: v.optional(v.number()),
+  taxCode: v.optional(v.string()),
   materials: v.optional(v.array(materialAttachment)),
   questions: v.optional(v.array(question)),
   outcomes: v.optional(v.array(outcome)),
@@ -85,7 +88,14 @@ export const line = v.object({
   cents: v.number(),
   discount: v.number(),
   materialId: v.optional(v.id("registrationMaterials")),
+  taxCode: v.optional(v.string()),
 });
+export const postalAddress = {
+  city: v.optional(v.string()),
+  state: v.optional(v.string()),
+  postalCode: v.optional(v.string()),
+  country: v.optional(v.string()),
+};
 export const quotedSeat = v.object({
   attendee,
   acceptedAt: v.optional(v.number()),

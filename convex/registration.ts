@@ -467,12 +467,16 @@ export const reserve = mutation({
     requireOpen(course, session, config, Boolean(actor));
     const coupon = await validCoupon(ctx, args.coupon, course._id);
     const pricing = adminPricing(config, args.admin);
-    const seats = quote(
+    const seats = await withTaxCodes(
+      ctx,
       pricing,
-      args.attendees,
-      coupon,
-      coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0,
-      actor ? ADMIN_MAX_SEATS : MAX_SEATS
+      quote(
+        pricing,
+        args.attendees,
+        coupon,
+        coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0,
+        actor ? ADMIN_MAX_SEATS : MAX_SEATS
+      )
     );
     await reserveCapacity(
       ctx,
@@ -548,6 +552,33 @@ export const reserve = mutation({
   },
 });
 
+/** Stamps each line with its Stripe tax code: tuition from settings, materials from the material. */
+async function withTaxCodes(
+  ctx: QueryCtx,
+  config: Settings,
+  seats: Quote[]
+): Promise<Quote[]> {
+  const ids = [
+    ...new Set(
+      seats.flatMap((seat) =>
+        seat.lines.flatMap((l) => (l.materialId ? [l.materialId] : []))
+      )
+    ),
+  ];
+  const materials = await Promise.all(ids.map((id) => ctx.db.get(id)));
+  const codes = new Map(
+    materials.flatMap((m) => (m?.taxCode ? [[m._id, m.taxCode] as const] : []))
+  );
+  return seats.map((seat) => ({
+    ...seat,
+    lines: seat.lines.map((line) => {
+      const code = line.materialId
+        ? codes.get(line.materialId)
+        : config.taxCode;
+      return code ? { ...line, taxCode: code } : line;
+    }),
+  }));
+}
 type AdminReservation = {
   reason: string;
   tuition?: number;

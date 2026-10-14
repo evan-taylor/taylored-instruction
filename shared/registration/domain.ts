@@ -72,15 +72,33 @@ export function effective(
   defaults: Settings,
   overrides: Partial<Settings>
 ): Settings {
-  return Object.fromEntries(
-    Object.entries(defaults).map(([key, value]) => [
-      key,
-      overrides[key as keyof Settings] ?? value,
-    ])
-  ) as Settings;
+  // Absence means inherit; any defined override wins, including keys the
+  // template leaves unset (such as an optional tax code).
+  const defined = Object.fromEntries(
+    Object.entries(overrides).filter(([, value]) => value !== undefined)
+  );
+  return { ...defaults, ...defined } as Settings;
+}
+/** Common Stripe Tax codes offered when the live list cannot be fetched. */
+export const DEFAULT_TAX_CODES = [
+  { id: "txcd_20030000", name: "General - Services" },
+  { id: "txcd_10000000", name: "General - Electronically Supplied Services" },
+  { id: "txcd_99999999", name: "General - Tangible Goods" },
+] as const;
+const TAX_CODE = /^txcd_\d{8}$/u;
+export function taxCode(value: string | undefined) {
+  const trimmed = value?.trim();
+  if (!trimmed) {
+    return;
+  }
+  if (!TAX_CODE.test(trimmed)) {
+    throw new Error("Tax codes look like txcd_20030000");
+  }
+  return trimmed;
 }
 export function validateSettings(config: Settings) {
   cents(config.tuition);
+  taxCode(config.taxCode);
   if (!Number.isFinite(config.cutoffMinutes) || config.cutoffMinutes < 0) {
     throw new Error("Invalid registration cutoff");
   }

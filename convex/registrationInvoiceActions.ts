@@ -1,10 +1,14 @@
 "use node";
 import { v } from "convex/values";
 import Stripe from "stripe";
+import { DEFAULT_TAX_CODES } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
 import { action, internalAction } from "./_generated/server";
 
 const HOUR_S = 3600;
+const TAX_CODE_PAGE = 100;
+const TAX_CODE_LIMIT = 600;
 
 function stripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -15,9 +19,45 @@ function stripe() {
 }
 
 /**
+ * Invoice items need a Stripe Product to carry a tax code. One product per
+ * tax code is created on demand with a deterministic id so retries reuse it.
+ */
+async function productForTaxCode(client: Stripe, taxCode?: string) {
+  const id = taxCode ? `registration_${taxCode}` : "registration_default";
+  try {
+    return (await client.products.retrieve(id)).id;
+  } catch {
+    const created = await client.products.create(
+      {
+        id,
+        name: taxCode
+          ? `Registration line (${taxCode})`
+          : "Registration line (account default tax code)",
+        ...(taxCode ? { tax_code: taxCode } : {}),
+        metadata: { registration: "line" },
+      },
+      { idempotencyKey: `registration-product:${id}` }
+    );
+    return created.id;
+  }
+}
+
+function customerAddress(invoice: Doc<"registrationInvoices">) {
+  return {
+    line1: invoice.billToAddress,
+    city: invoice.city,
+    state: invoice.state,
+    postal_code: invoice.postalCode,
+    country: invoice.country ?? "US",
+  };
+}
+
+/**
  * Creates, finalizes, and emails a hosted Stripe invoice for an unpaid group
- * order. Amounts come only from the stored order snapshot. Every provider call
- * uses an idempotency key derived from the invoice so retries never duplicate.
+ * order. Amounts come only from the stored order snapshot; Stripe Tax adds
+ * sales tax from the billing address and each line's tax code. Every provider
+ * call uses an idempotency key derived from the invoice so retries never
+ * duplicate.
  */
 export const issue = action({
   args: { id: v.id("registrationInvoices") },
@@ -36,9 +76,7 @@ export const issue = action({
         {
           name: invoice.billToName,
           email: invoice.billToEmail,
-          ...(invoice.billToAddress
-            ? { address: { line1: invoice.billToAddress } }
-            : {}),
+          address: customerAddress(invoice),
           metadata: { registrationInvoice: invoice._id },
         },
         { idempotencyKey: `registration-invoice-customer:${invoice._id}` }
@@ -52,7 +90,7 @@ export const issue = action({
             Math.floor(Date.now() / 1000) + HOUR_S
           ),
           auto_advance: false,
-          automatic_tax: { enabled: false },
+          automatic_tax: { enabled: true },
           pending_invoice_items_behavior: "exclude",
           currency: "usd",
           description: `${order.title} · ${order.seats.length} attendee${order.seats.length === 1 ? "" : "s"}`,
@@ -71,24 +109,42 @@ export const issue = action({
         },
         { idempotencyKey: `registration-invoice:${invoice._id}` }
       );
+      const lines = order.seats.flatMap((seat, index) =>
+        seat.lines
+          .filter((line) => line.cents > line.discount)
+          .map((line) => ({ seat, index, line }))
+      );
+      const codes = [...new Set(lines.map((l) => l.line.taxCode ?? ""))];
+      const products = new Map(
+        await Promise.all(
+          codes.map(
+            async (code) =>
+              [
+                code,
+                await productForTaxCode(client, code || undefined),
+              ] as const
+          )
+        )
+      );
       await Promise.all(
-        order.seats.flatMap((seat, index) =>
-          seat.lines
-            .filter((line) => line.cents > line.discount)
-            .map((line) =>
-              client.invoiceItems.create(
-                {
-                  customer: customer.id,
-                  invoice: created.id,
-                  amount: line.cents - line.discount,
-                  currency: "usd",
-                  description: `${seat.attendee.name}: ${line.title}`,
-                },
-                {
-                  idempotencyKey: `registration-invoice-item:${invoice._id}:${index}:${line.id}`,
-                }
-              )
-            )
+        lines.map(({ seat, index, line }) =>
+          client.invoiceItems.create(
+            {
+              customer: customer.id,
+              invoice: created.id,
+              description: `${seat.attendee.name}: ${line.title}`,
+              quantity: 1,
+              price_data: {
+                currency: "usd",
+                product: products.get(line.taxCode ?? "") ?? "",
+                unit_amount: line.cents - line.discount,
+                tax_behavior: "exclusive",
+              },
+            },
+            {
+              idempotencyKey: `registration-invoice-item:${invoice._id}:${index}:${line.id}`,
+            }
+          )
         )
       );
       const finalized = await client.invoices.finalizeInvoice(
@@ -99,9 +155,10 @@ export const issue = action({
       if (finalized.livemode || !finalized.hosted_invoice_url) {
         throw new Error("A test invoice URL was not returned");
       }
-      if (finalized.amount_due !== order.total) {
+      const preTax = finalized.total_excluding_tax ?? finalized.subtotal;
+      if (preTax !== order.total) {
         await client.invoices.voidInvoice(finalized.id);
-        throw new Error("Provider invoice total did not match the order");
+        throw new Error("Provider invoice subtotal did not match the order");
       }
       await ctx.runMutation(internal.registrationGroups.attachStripeInvoice, {
         id: invoice._id,
@@ -109,6 +166,7 @@ export const issue = action({
         stripeCustomerId: customer.id,
         hostedUrl: finalized.hosted_invoice_url,
         pdfUrl: finalized.invoice_pdf ?? undefined,
+        tax: Math.max(0, finalized.total - preTax),
       });
       return finalized.hosted_invoice_url;
     } catch (error) {
@@ -159,5 +217,36 @@ export const closeRemote = internalAction({
       );
     }
     return null;
+  },
+});
+
+/** Stripe Tax codes for the admin pickers; falls back to common codes offline. */
+export const taxCodes = action({
+  args: {},
+  returns: v.array(
+    v.object({ id: v.string(), name: v.string(), description: v.string() })
+  ),
+  handler: async (ctx) => {
+    await ctx.runQuery(internal.registrationGroups.requireStaff, {});
+    const fallback = DEFAULT_TAX_CODES.map((c) => ({ ...c, description: "" }));
+    try {
+      const client = stripe();
+      const codes: { id: string; name: string; description: string }[] = [];
+      for await (const code of client.taxCodes.list({
+        limit: TAX_CODE_PAGE,
+      })) {
+        codes.push({
+          id: code.id,
+          name: code.name,
+          description: code.description,
+        });
+        if (codes.length >= TAX_CODE_LIMIT) {
+          break;
+        }
+      }
+      return codes.length ? codes : fallback;
+    } catch {
+      return fallback;
+    }
   },
 });

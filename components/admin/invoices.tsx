@@ -49,6 +49,10 @@ export type InvoiceDraft = {
   billToName: string;
   billToEmail: string;
   billToAddress: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
   poNumber: string;
   notes: string;
   dueDays: number;
@@ -57,11 +61,80 @@ export const emptyInvoiceDraft: InvoiceDraft = {
   billToName: "",
   billToEmail: "",
   billToAddress: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  country: "US",
   poNumber: "",
   notes: "Thank you for training with Taylored Instruction.",
   dueDays: INVOICE_TERMS_DAYS,
 };
 
+export type PostalAddress = {
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+};
+/** City, state, ZIP, and country inputs shared by invoices and organizations. */
+export function AddressFields({
+  value,
+  onChange,
+}: {
+  value: PostalAddress;
+  onChange: (patch: Partial<PostalAddress>) => void;
+}) {
+  return (
+    <>
+      <Field label="City" required>
+        {(p) => (
+          <TextInput
+            {...p}
+            onChange={(e) => onChange({ city: e.target.value })}
+            value={value.city}
+          />
+        )}
+      </Field>
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="State" required>
+          {(p) => (
+            <TextInput
+              {...p}
+              maxLength={2}
+              onChange={(e) =>
+                onChange({ state: e.target.value.toUpperCase() })
+              }
+              placeholder="WA"
+              value={value.state}
+            />
+          )}
+        </Field>
+        <Field label="ZIP" required>
+          {(p) => (
+            <TextInput
+              {...p}
+              inputMode="numeric"
+              onChange={(e) => onChange({ postalCode: e.target.value })}
+              value={value.postalCode}
+            />
+          )}
+        </Field>
+        <Field label="Country">
+          {(p) => (
+            <TextInput
+              {...p}
+              maxLength={2}
+              onChange={(e) =>
+                onChange({ country: e.target.value.toUpperCase() })
+              }
+              value={value.country}
+            />
+          )}
+        </Field>
+      </div>
+    </>
+  );
+}
 /** Bill-to and terms fields shared by the create modal and the group wizard. */
 export function InvoiceFields({
   value,
@@ -98,7 +171,12 @@ export function InvoiceFields({
           />
         )}
       </Field>
-      <Field className="sm:col-span-2" label="Billing address">
+      <Field
+        className="sm:col-span-2"
+        hint="Stripe Tax calculates sales tax from this address."
+        label="Street address"
+        required
+      >
         {(p) => (
           <TextInput
             {...p}
@@ -107,6 +185,7 @@ export function InvoiceFields({
           />
         )}
       </Field>
+      <AddressFields onChange={(patch) => set(patch)} value={value} />
       <Field label="PO number">
         {(p) => (
           <TextInput
@@ -255,7 +334,7 @@ function InvoiceActions({
       <ConfirmDialog
         busy={busy}
         confirmLabel="Record payment"
-        description={`Marks ${invoice.number} paid for ${formatMoney(invoice.amount)}, settles the order, and releases materials. The hosted Stripe invoice is closed so it cannot be paid twice.`}
+        description={`Marks ${invoice.number} paid for ${formatMoney(invoice.amount + (invoice.tax ?? 0))}, settles the order, and releases materials. The hosted Stripe invoice is closed so it cannot be paid twice.`}
         onClose={() => setDialog(null)}
         onConfirm={() =>
           run(async () => {
@@ -353,6 +432,10 @@ export function CreateInvoiceModal({
       billToEmail:
         current.billToEmail || organization?.contactEmail || order.purchaser,
       billToAddress: current.billToAddress || organization?.address || "",
+      city: current.city || organization?.city || "",
+      state: current.state || organization?.state || "",
+      postalCode: current.postalCode || organization?.postalCode || "",
+      country: current.country || organization?.country || "US",
     }));
   }, [order, organizations, organizationId]);
   return (
@@ -364,7 +447,15 @@ export function CreateInvoiceModal({
             Cancel
           </Button>
           <Button
-            disabled={busy || !order || !draft.billToName || !draft.billToEmail}
+            disabled={
+              busy ||
+              !order ||
+              !draft.billToName ||
+              !draft.billToEmail ||
+              !draft.city ||
+              !draft.state ||
+              !draft.postalCode
+            }
             onClick={async () => {
               if (!order) {
                 return;
@@ -554,7 +645,10 @@ export function InvoicesPanel({
   const [creating, setCreating] = useState(Boolean(focusOrder));
   const [message, setMessage] = useState("");
   const open = rows?.filter((r) => r.invoice.status === "open") ?? [];
-  const outstanding = open.reduce((sum, r) => sum + r.invoice.amount, 0);
+  const outstanding = open.reduce(
+    (sum, r) => sum + r.invoice.amount + (r.invoice.tax ?? 0),
+    0
+  );
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">

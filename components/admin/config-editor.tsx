@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/field";
 import { EmptyState, Notice } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { TaxCodeSelect } from "@/components/ui/tax-code-select";
 import { api } from "@/convex/_generated/api";
 import type { Settings } from "@/shared/registration/domain";
 import { patchById } from "./shared";
@@ -27,6 +28,8 @@ export type ConfigSection = "pricing" | "questions" | "outcomes" | "emails";
 type SectionProps = {
   value: Settings;
   onChange: (value: Settings) => void;
+  /** Template tax code shown as the fallback when editing session overrides. */
+  inheritedTaxCode?: string;
 };
 type Material = Settings["materials"][number];
 type Question = Settings["questions"][number];
@@ -260,7 +263,7 @@ function MaterialsTable({ value, onChange }: SectionProps) {
   );
 }
 
-function PricingSection({ value, onChange }: SectionProps) {
+function PricingSection({ value, onChange, inheritedTaxCode }: SectionProps) {
   const cutoffHours = value.cutoffMinutes / MINUTES_PER_HOUR;
   return (
     <div className="space-y-6">
@@ -278,6 +281,13 @@ function PricingSection({ value, onChange }: SectionProps) {
             />
           )}
         </Field>
+        <TaxCodeSelect
+          inherited={inheritedTaxCode}
+          onChange={(taxCode) =>
+            onChange({ ...value, taxCode: taxCode || undefined })
+          }
+          value={value.taxCode ?? ""}
+        />
         <Field
           hint="Registration closes this many hours before the first meeting. Use 0 to stay open until it starts."
           label="Registration cutoff (hours before)"
@@ -864,14 +874,25 @@ export function ConfigEditor({
   value,
   onChange,
   section,
+  inheritedTaxCode,
 }: SectionProps & { section?: ConfigSection }) {
   if (section) {
     const Section = SECTIONS[section];
-    return <Section onChange={onChange} value={value} />;
+    return (
+      <Section
+        inheritedTaxCode={inheritedTaxCode}
+        onChange={onChange}
+        value={value}
+      />
+    );
   }
   return (
     <div className="space-y-8">
-      <PricingSection onChange={onChange} value={value} />
+      <PricingSection
+        inheritedTaxCode={inheritedTaxCode}
+        onChange={onChange}
+        value={value}
+      />
       <QuestionsSection onChange={onChange} value={value} />
       <OutcomesSection onChange={onChange} value={value} />
       <EmailsSection onChange={onChange} value={value} />

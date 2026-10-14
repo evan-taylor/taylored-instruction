@@ -5,6 +5,7 @@ import {
   courseFields,
   orderStatus,
   outcome,
+  postalAddress,
   quotedSeat,
   sessionFields,
 } from "../shared/registration/validators";
@@ -58,6 +59,7 @@ export const registrationTables = {
     storageId: v.optional(v.id("_storage")),
     version: v.number(),
     archived: v.boolean(),
+    taxCode: v.optional(v.string()),
   }),
   registrationCodes: defineTable({
     materialId: v.id("registrationMaterials"),
@@ -98,6 +100,8 @@ export const registrationTables = {
     error: v.optional(v.string()),
     organizationId: v.optional(v.id("registrationOrganizations")),
     pricingNote: v.optional(v.string()),
+    /** Sales tax collected by Stripe on top of `total`, recorded at settlement. */
+    tax: v.optional(v.number()),
   })
     .index("by_requestKey", ["requestKey"])
     .index("by_purchaser", ["purchaser"])
@@ -111,6 +115,7 @@ export const registrationTables = {
     contactEmail: v.string(),
     phone: v.string(),
     address: v.string(),
+    ...postalAddress,
     notes: v.string(),
     archived: v.boolean(),
   }).index("by_contactEmail", ["contactEmail"]),
@@ -145,10 +150,14 @@ export const registrationTables = {
     billToName: v.string(),
     billToEmail: v.string(),
     billToAddress: v.string(),
+    ...postalAddress,
     poNumber: v.string(),
     notes: v.string(),
     dueAt: v.number(),
+    /** Pre-tax amount from the order snapshot. */
     amount: v.number(),
+    /** Sales tax computed by Stripe Tax when the invoice is finalized. */
+    tax: v.optional(v.number()),
     status: v.union(
       v.literal("draft"),
       v.literal("open"),

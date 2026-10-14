@@ -7,6 +7,7 @@ import {
   formatMoney,
   invoiceNumber,
 } from "../shared/registration/domain";
+import { postalAddress } from "../shared/registration/validators";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -177,6 +178,7 @@ export const saveOrganization = mutation({
     contactEmail: v.string(),
     phone: v.string(),
     address: v.string(),
+    ...postalAddress,
     notes: v.string(),
     archived: v.boolean(),
   },
@@ -190,6 +192,10 @@ export const saveOrganization = mutation({
       contactEmail: value.contactEmail.trim() ? email(value.contactEmail) : "",
       phone: text(value.phone, "Phone"),
       address: text(value.address, "Address"),
+      city: text(value.city ?? "", "City") || undefined,
+      state: text(value.state ?? "", "State") || undefined,
+      postalCode: text(value.postalCode ?? "", "Postal code") || undefined,
+      country: text(value.country ?? "", "Country") || undefined,
       notes: text(value.notes, "Notes"),
     };
     const saved =
@@ -261,6 +267,7 @@ export const createInvoice = mutation({
     billToName: v.string(),
     billToEmail: v.string(),
     billToAddress: v.string(),
+    ...postalAddress,
     poNumber: v.string(),
     notes: v.string(),
     dueDays: v.number(),
@@ -288,6 +295,18 @@ export const createInvoice = mutation({
     ) {
       throw new Error("Payment terms must be between 0 and 180 days");
     }
+    if (
+      !(
+        args.billToAddress.trim() &&
+        args.city?.trim() &&
+        args.state?.trim() &&
+        args.postalCode?.trim()
+      )
+    ) {
+      throw new Error(
+        "A full billing address (street, city, state, ZIP) is required so sales tax can be calculated"
+      );
+    }
     const id = await ctx.db.insert("registrationInvoices", {
       orderId: order._id,
       number: await nextInvoiceNumber(ctx),
@@ -295,6 +314,10 @@ export const createInvoice = mutation({
       billToName: text(args.billToName, "Bill-to name", true),
       billToEmail: email(args.billToEmail),
       billToAddress: text(args.billToAddress, "Billing address"),
+      city: text(args.city ?? "", "City"),
+      state: text(args.state ?? "", "State"),
+      postalCode: text(args.postalCode ?? "", "Postal code"),
+      country: text(args.country ?? "US", "Country") || "US",
       poNumber: text(args.poNumber, "PO number"),
       notes: text(args.notes, "Invoice notes"),
       dueAt: Date.now() + args.dueDays * DAY_MS,
@@ -378,6 +401,15 @@ export const invoiceForIssue = internalQuery({
     return { invoice, order };
   },
 });
+/** Lets Node actions enforce the same staff check as queries and mutations. */
+export const requireStaff = internalQuery({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await staff(ctx);
+    return null;
+  },
+});
 export const invoiceData = internalQuery({
   args: { id: v.id("registrationInvoices") },
   returns: v.union(doc(schema, "registrationInvoices"), v.null()),
@@ -390,6 +422,7 @@ export const attachStripeInvoice = internalMutation({
     stripeCustomerId: v.string(),
     hostedUrl: v.string(),
     pdfUrl: v.optional(v.string()),
+    tax: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -409,6 +442,7 @@ export const attachStripeInvoice = internalMutation({
       stripeCustomerId: args.stripeCustomerId,
       hostedUrl: args.hostedUrl,
       pdfUrl: args.pdfUrl,
+      tax: args.tax,
       status: invoice.status === "draft" ? "open" : invoice.status,
       sentAt: invoice.sentAt ?? Date.now(),
       error: undefined,
@@ -420,7 +454,7 @@ export const attachStripeInvoice = internalMutation({
       subject: `Invoice ${invoice.number} from Taylored Instruction`,
       body: [
         `Hello ${invoice.billToName},`,
-        `Invoice ${invoice.number} for ${order?.title ?? "training"} totals ${formatMoney(invoice.amount)} and is due ${new Date(invoice.dueAt).toLocaleDateString("en-US", { dateStyle: "long" })}.`,
+        `Invoice ${invoice.number} for ${order?.title ?? "training"} totals ${formatMoney(invoice.amount + args.tax)}${args.tax ? ` (including ${formatMoney(args.tax)} sales tax)` : ""} and is due ${new Date(invoice.dueAt).toLocaleDateString("en-US", { dateStyle: "long" })}.`,
         invoice.poNumber ? `PO number: ${invoice.poNumber}` : "",
         invoice.notes,
         "Use the secure link below to view the invoice, download a PDF, or pay by card.",
@@ -450,6 +484,7 @@ export const invoicePaid = internalMutation({
     eventId: v.string(),
     stripeInvoiceId: v.string(),
     amount: v.number(),
+    tax: v.optional(v.number()),
     currency: v.string(),
     paymentIntent: v.optional(v.string()),
     live: v.boolean(),
@@ -477,7 +512,12 @@ export const invoicePaid = internalMutation({
       throw new Error("Unknown invoice payment");
     }
     if (invoice.status !== "paid") {
-      if (args.currency !== order.currency || args.amount !== order.total) {
+      const tax = args.tax ?? invoice.tax ?? 0;
+      if (
+        args.currency !== order.currency ||
+        tax < 0 ||
+        args.amount !== order.total + tax
+      ) {
         throw new Error(
           "Invoice payment does not match the authoritative order"
         );
@@ -486,9 +526,11 @@ export const invoicePaid = internalMutation({
         status: "paid",
         method: "stripe",
         paidAt: Date.now(),
+        tax,
         error: undefined,
       });
-      await settle(ctx, order, "invoice", args.paymentIntent);
+      await ctx.db.patch(order._id, { tax });
+      await settle(ctx, { ...order, tax }, "invoice", args.paymentIntent);
       await audit(ctx, "system", "invoice-paid", invoice._id, invoice.number);
     }
     await ctx.db.insert("registrationEvents", {
@@ -629,7 +671,7 @@ export const remindInvoice = mutation({
       kind: "email",
       recipient: invoice.billToEmail,
       subject: `${overdue ? "Overdue invoice" : "Invoice reminder"}: ${invoice.number}`,
-      body: `Hello ${invoice.billToName},\nInvoice ${invoice.number} for ${formatMoney(invoice.amount)} ${overdue ? "was due" : "is due"} ${new Date(invoice.dueAt).toLocaleDateString("en-US", { dateStyle: "long" })}. Use the secure link below to view or pay it.`,
+      body: `Hello ${invoice.billToName},\nInvoice ${invoice.number} for ${formatMoney(invoice.amount + (invoice.tax ?? 0))} ${overdue ? "was due" : "is due"} ${new Date(invoice.dueAt).toLocaleDateString("en-US", { dateStyle: "long" })}. Use the secure link below to view or pay it.`,
       due: now,
       link: { label: "View and pay invoice", url: invoice.hostedUrl },
     });

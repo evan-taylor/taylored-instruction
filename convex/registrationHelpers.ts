@@ -437,7 +437,7 @@ export async function settle(
     kind: "email",
     recipient: order.purchaser,
     subject: `Receipt: ${order.title}`,
-    body: `Payment recorded: USD ${(order.total / 100).toFixed(2)}. Attendees: ${order.seats.map((s) => s.attendee.name).join(", ")}. Request secure purchaser access to view your order.`,
+    body: `Payment recorded: USD ${((order.total + (order.tax ?? 0)) / 100).toFixed(2)}${order.tax ? ` (includes USD ${(order.tax / 100).toFixed(2)} sales tax)` : ""}. Attendees: ${order.seats.map((s) => s.attendee.name).join(", ")}. Request secure purchaser access to view your order.`,
     due: now,
   });
   await audit(ctx, "system", "settled", order._id, source);

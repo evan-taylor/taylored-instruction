@@ -1056,10 +1056,15 @@ function computeValidity(input: ValidityInput) {
   const organizationOk =
     input.organizationId !== "new" ||
     input.newOrganizationName.trim().length > 0;
+  const address = input.invoice;
   const invoiceOk =
     input.payment !== "invoice" ||
-    (input.invoice.billToName.trim().length > 0 &&
-      input.invoice.billToEmail.includes("@"));
+    (address.billToName.trim().length > 0 &&
+      address.billToEmail.includes("@") &&
+      address.billToAddress.trim().length > 0 &&
+      address.city.trim().length > 0 &&
+      address.state.trim().length > 0 &&
+      address.postalCode.trim().length > 0);
   return {
     offeringReady: input.offering,
     rosterReady:

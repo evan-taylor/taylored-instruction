@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/page-header";
 import { Meter } from "@/components/ui/stat";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
+import { TaxCodeSelect } from "@/components/ui/tax-code-select";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { inventoryPreview } from "@/shared/registration/domain";
@@ -103,6 +104,11 @@ function MaterialRow({
     <TR>
       <TD>
         <div className="font-medium text-slate-900">{material.title}</div>
+        <div className="text-slate-500 text-xs">
+          {material.taxCode
+            ? `Tax code ${material.taxCode}`
+            : "Account default tax code"}
+        </div>
         {material.kind === "link" && material.url ? (
           <div
             className="max-w-xs truncate text-slate-500 text-xs"
@@ -314,6 +320,7 @@ function MaterialEditor({
   const [storageId, setStorageId] = useState(material?.storageId);
   const [fileName, setFileName] = useState("");
   const [archived, setArchived] = useState(material?.archived ?? false);
+  const [taxCode, setTaxCode] = useState(material?.taxCode ?? "");
   const [uploading, setUploading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -348,6 +355,7 @@ function MaterialEditor({
         url: kind === "link" ? url : undefined,
         storageId,
         archived,
+        taxCode: taxCode || undefined,
       });
       onClose();
     } catch (error) {
@@ -457,6 +465,11 @@ function MaterialEditor({
             fulfilled oldest-first as stock arrives.
           </Notice>
         ) : null}
+        <TaxCodeSelect
+          hint="Applied to this material on checkout and invoices. Digital access codes usually use an electronically supplied services code; printed manuals use tangible goods."
+          onChange={setTaxCode}
+          value={taxCode}
+        />
         <Toggle
           checked={archived}
           description="Archived materials stay attached to existing templates but are hidden from new ones."

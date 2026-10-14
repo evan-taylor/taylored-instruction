@@ -37,8 +37,12 @@ export type AdjustmentChoiceValue = "keep" | "collect" | "refund";
 type PaymentHandling = "unpaid" | "offline" | "waived";
 
 /** Remaining Stripe amount that can still be refunded on an order. */
+/** Amount actually charged: quoted total plus any sales tax Stripe collected. */
+export function charged(order: Order) {
+  return order.total + (order.tax ?? 0);
+}
 export function refundable(order: Order) {
-  return Math.max(0, order.total - order.refunded - order.refundReserved);
+  return Math.max(0, charged(order) - order.refunded - order.refundReserved);
 }
 
 export function sessionLabel(session: Session) {
@@ -474,6 +478,11 @@ export function ManualEnrollment() {
           ))}
         </div>
       ) : null}
+      <Notice tone="info">
+        Card payments and invoices add sales tax at payment time based on the
+        billing address; offline and waived enrollments record the pre-tax total
+        only.
+      </Notice>
       <Field hint={payment?.hint} label="Payment handling" required>
         {(props) => (
           <Select
@@ -969,7 +978,7 @@ function RefundForm({ order }: { order: Order }) {
       <div className="flex flex-wrap items-end gap-3">
         <Field
           className="w-48"
-          hint={`Up to ${formatMoney(remaining)} remaining on the card payment.`}
+          hint={`Up to ${formatMoney(remaining)} remaining on the card payment. Collected sales tax is refundable along with the lines.`}
           label="Refund amount"
         >
           {(props) => (

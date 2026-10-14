@@ -306,6 +306,11 @@ function CourseRow({
       </TD>
       <TD className="text-right">
         <Money cents={course.settings.tuition} />
+        {course.settings.taxCode ? (
+          <div className="text-slate-500 text-xs">
+            Tax code {course.settings.taxCode}
+          </div>
+        ) : null}
       </TD>
       <TD className="tabular-nums">
         {pluralize(course.settings.materials.length, "material")}

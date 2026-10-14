@@ -912,6 +912,10 @@ function InheritedSummary({ settings }: { settings: Settings }) {
         items={[
           { label: "Tuition", value: <Money cents={settings.tuition} /> },
           {
+            label: "Tax code",
+            value: settings.taxCode ?? "Stripe account default",
+          },
+          {
             label: "Materials",
             value: pluralize(settings.materials.length, "material"),
           },
@@ -972,6 +976,7 @@ function SettingsSection({
             </Button>
           </div>
           <ConfigEditor
+            inheritedTaxCode={course?.settings.taxCode}
             onChange={(settings) => onChange({ ...draft, settings })}
             value={draft.settings}
           />

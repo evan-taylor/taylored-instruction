@@ -20,6 +20,7 @@ import {
   pluralize,
 } from "@/components/registration/format";
 import {
+  charged,
   ManualEnrollment,
   OrderInvoices,
   OrderPayments,
@@ -84,6 +85,18 @@ function matches(order: Order, needle: string) {
 /* Order detail                                                        */
 /* ------------------------------------------------------------------ */
 
+function TaxCodes({ lines }: { lines: Order["seats"][number]["lines"] }) {
+  const codes = [...new Set(lines.map((line) => line.taxCode).filter(Boolean))];
+  if (codes.length === 0) {
+    return null;
+  }
+  return (
+    <div className="text-slate-500 text-xs" title="Stripe tax codes">
+      {codes.join(", ")}
+    </div>
+  );
+}
+
 function AttendeesTable({ order }: { order: Order }) {
   const seats = useQuery(api.registrationOperations.orderSeats, {
     orderId: order._id,
@@ -130,6 +143,7 @@ function AttendeesTable({ order }: { order: Order }) {
                 </TD>
                 <TD className="text-right">
                   <Money cents={seat.snapshot.total} />
+                  <TaxCodes lines={seat.snapshot.lines} />
                 </TD>
                 <TD className="text-right">
                   <Button
@@ -203,7 +217,12 @@ function orderFacts(order: Order) {
       label: "Settled",
       value: order.settledAt ? formatDateTime(order.settledAt) : "—",
     },
-    { label: "Total", value: <Money cents={order.total} /> },
+    { label: "Subtotal", value: <Money cents={order.total} /> },
+    {
+      label: "Sales tax",
+      value: order.tax === undefined ? "—" : <Money cents={order.tax} />,
+    },
+    { label: "Total charged", value: <Money cents={charged(order)} /> },
     { label: "Refunded", value: <Money cents={order.refunded} /> },
     {
       label: "Refundable remaining",
@@ -296,7 +315,7 @@ function OrderModal({
     <Modal
       description={
         order
-          ? `${order.purchaserName} · ${pluralize(order.seats.length, "seat")} · ${formatMoney(order.total)}`
+          ? `${order.purchaserName} · ${pluralize(order.seats.length, "seat")} · ${formatMoney(charged(order))}`
           : undefined
       }
       onClose={onClose}
@@ -529,7 +548,12 @@ function OrderRow({
       </TD>
       <TD className="tabular-nums">{order.seats.length}</TD>
       <TD className="text-right">
-        <Money cents={order.total} />
+        <Money cents={charged(order)} />
+        {order.tax ? (
+          <div className="text-slate-500 text-xs">
+            incl. <Money cents={order.tax} /> tax
+          </div>
+        ) : null}
         {order.refunded > 0 ? (
           <div className="text-slate-500 text-xs">
             <Money cents={order.refunded} /> refunded

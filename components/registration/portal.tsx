@@ -36,6 +36,7 @@ type PortalRow = {
   status?: string;
   total?: number;
   refunded?: number;
+  tax?: number;
   materials?: { id: string; title: string; state: string }[];
   meetings?: {
     id: string;
@@ -232,6 +233,26 @@ function OrderCard({ row }: { row: PortalRow }) {
               {formatMoney(row.refunded ?? 0)}
             </dd>
           </div>
+          {row.tax === undefined ? null : (
+            <>
+              <div>
+                <dt className="text-slate-500 text-xs uppercase tracking-wide">
+                  Sales tax
+                </dt>
+                <dd className="m-0 text-slate-900 tabular-nums">
+                  {formatMoney(row.tax)}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-slate-500 text-xs uppercase tracking-wide">
+                  Total charged
+                </dt>
+                <dd className="m-0 font-semibold text-slate-900 tabular-nums">
+                  {formatMoney((row.total ?? 0) + row.tax)}
+                </dd>
+              </div>
+            </>
+          )}
         </dl>
         <div>
           <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">

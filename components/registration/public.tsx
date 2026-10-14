@@ -72,6 +72,9 @@ type Review = {
   requestKey: string;
 };
 
+const TAX_NOTE =
+  "Sales tax is calculated at payment from your billing address.";
+
 const newAttendee = (): AttendeeRow => ({
   key: crypto.randomUUID(),
   name: "",
@@ -1107,6 +1110,7 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
           {formatMoney(quoteResult?.total ?? review.total)}
         </span>
       </div>
+      <p className="m-0 text-slate-500 text-xs">{TAX_NOTE}</p>
       <HoldCountdown expires={review.expires} />
       <Button
         className="w-full"
@@ -1224,6 +1228,7 @@ function OrderSummary({
             <p className="m-0 border-slate-200 border-t pt-3 font-semibold text-slate-900">
               {`Estimated total before coupon: ${formatMoney(form.estimate)}`}
             </p>
+            <p className="m-0 text-slate-500 text-xs">{TAX_NOTE}</p>
             {open ? (
               <Button
                 className="w-full"
@@ -1529,10 +1534,13 @@ export function RegistrationSuccess() {
                   ? "Your registration is confirmed. Check your email for access instructions."
                   : "Payment may still be processing. Confirmation follows verified payment."}
               </p>
-              {status && !settled ? (
+              {status ? (
                 <p className="m-0 text-slate-500 text-sm">
-                  Order total {formatMoney(status.total)}. Check again in a
-                  moment.
+                  Total charged {formatMoney(status.total + (status.tax ?? 0))}
+                  {status.tax
+                    ? ` (includes ${formatMoney(status.tax)} sales tax)`
+                    : ""}
+                  {settled ? "." : ". Check again in a moment."}
                 </p>
               ) : null}
             </div>

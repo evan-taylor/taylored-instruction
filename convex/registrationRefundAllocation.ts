@@ -43,6 +43,13 @@ export async function allocateRefund(
       }
     }
   }
+  // Collected sales tax is refundable alongside the lines it was charged on.
+  const taxAvailable = (order.tax ?? 0) - (consumed.get("order:tax") ?? 0);
+  const taxValue = Math.min(remaining, Math.max(0, taxAvailable));
+  if (taxValue > 0) {
+    allocations.push({ email: "order", lineId: "tax", cents: taxValue });
+    remaining -= taxValue;
+  }
   if (remaining) {
     throw new Error("Refund exceeds unrefunded purchased lines");
   }

@@ -10,6 +10,7 @@ import {
   effective,
   inventoryPreview,
   quote,
+  validateSettings,
 } from "../../shared/registration/domain";
 import { parseRoster, rosterSummary } from "../../shared/registration/roster";
 import { recurrence } from "../../shared/registration/schedule";
@@ -1057,7 +1058,11 @@ describe("Group training and invoicing", () => {
   const bill = {
     billToName: "Acme Safety",
     billToEmail: "ap@example.test",
-    billToAddress: "1 Main St, Vancouver WA",
+    billToAddress: "1 Main St",
+    city: "Vancouver",
+    state: "WA",
+    postalCode: "98660",
+    country: "US",
     poNumber: "PO-7",
     notes: "Net 30",
     dueDays: 30,
@@ -1143,6 +1148,7 @@ describe("Group training and invoicing", () => {
       stripeCustomerId: "cus_1",
       hostedUrl: "https://invoice.stripe.com/i/test",
       pdfUrl: "https://pay.stripe.com/invoice/test/pdf",
+      tax: 1700,
     });
     const job = await f.t.run(async (ctx) =>
       (await ctx.db.query("registrationJobs").take(100)).find(
@@ -1166,10 +1172,21 @@ describe("Group training and invoicing", () => {
         live: false,
       })
     ).rejects.toThrow("does not match");
+    await expect(
+      f.t.mutation(internal.registrationGroups.invoicePaid, {
+        eventId: "evt_untaxed",
+        stripeInvoiceId: "in_test_1",
+        amount: order.total + 1700,
+        tax: 0,
+        currency: "usd",
+        live: false,
+      })
+    ).rejects.toThrow("does not match");
     const paid = {
       eventId: "evt_paid",
       stripeInvoiceId: "in_test_1",
-      amount: order.total,
+      amount: order.total + 1700,
+      tax: 1700,
       currency: "usd",
       paymentIntent: "pi_group",
       live: false,
@@ -1188,6 +1205,7 @@ describe("Group training and invoicing", () => {
       ),
     }));
     expect(state.order?.status).toBe("settled");
+    expect(state.order?.tax).toBe(1700);
     expect(state.order?.source).toBe("invoice");
     expect(state.order?.paymentIntent).toBe("pi_group");
     expect(state.invoice?.status).toBe("paid");
@@ -1342,5 +1360,115 @@ describe("Roster parsing", () => {
       ["Jane Again", "jane@example.test", "Duplicate email in roster"],
     ]);
     expect(rosterSummary(rows)).toEqual({ total: 7, ready: 4, problems: 3 });
+  });
+});
+
+describe("Stripe Tax", () => {
+  it("stamps tax codes on quoted lines from the template, session override, and material", async () => {
+    const f = await fixture();
+    expect(
+      effective(
+        { ...config, taxCode: "txcd_20030000" },
+        { taxCode: "txcd_10000000" }
+      ).taxCode
+    ).toBe("txcd_10000000");
+    expect(effective(config, { taxCode: "txcd_10000000" }).taxCode).toBe(
+      "txcd_10000000"
+    );
+    expect(() => validateSettings({ ...config, taxCode: "nope" })).toThrow(
+      "txcd_"
+    );
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.material, { taxCode: "txcd_10000000" });
+      await ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          taxCode: "txcd_20030000",
+          materials: [
+            {
+              id: "online",
+              materialId: f.material,
+              title: "Online code",
+              policy: "included",
+              cents: 1000,
+            },
+          ],
+        },
+      });
+    });
+    const order = await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session)
+    );
+    const lines = await f.t.run(
+      async (ctx) => (await ctx.db.get(order.orderId))?.seats[0]?.lines
+    );
+    expect(lines?.map((l) => [l.id, l.taxCode])).toEqual([
+      ["tuition", "txcd_20030000"],
+      ["online", "txcd_10000000"],
+    ]);
+  });
+  it("accepts checkout payments only when the amount equals the quote plus the reported tax, records tax, and lets refunds include it", async () => {
+    const f = await fixture();
+    const order = await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session)
+    );
+    await f.t.mutation(internal.registrationPayments.attachCheckout, {
+      orderId: order.orderId,
+      session: "cs_tax",
+      url: "https://checkout.stripe.com/tax",
+    });
+    const event = {
+      orderId: order.orderId,
+      session: "cs_tax",
+      eventId: "evt_tax",
+      amount: 10_850,
+      tax: 850,
+      currency: "usd",
+      paid: true,
+      live: false,
+      type: "checkout.session.completed",
+      paymentIntent: "pi_tax",
+    };
+    await expect(
+      f.t.mutation(internal.registrationPayments.paymentEvent, {
+        ...event,
+        tax: 0,
+      })
+    ).rejects.toThrow("quote");
+    await f.t.mutation(internal.registrationPayments.paymentEvent, event);
+    const settled = await f.t.run((ctx) => ctx.db.get(order.orderId));
+    expect(settled?.status).toBe("settled");
+    expect(settled?.tax).toBe(850);
+    const receipt = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").take(100)).find(
+        (j) => j.key === `receipt:${order.orderId}`
+      )
+    );
+    expect(receipt?.body).toContain("108.50");
+    expect(receipt?.body).toContain("8.50 sales tax");
+    await expect(
+      f.adminClient.mutation(api.registrationPayments.requestRefund, {
+        orderId: order.orderId,
+        cents: 10_851,
+        key: crypto.randomUUID(),
+        reason: "Too much",
+      })
+    ).rejects.toThrow("exceeds");
+    const id = await f.adminClient.mutation(
+      api.registrationPayments.requestRefund,
+      {
+        orderId: order.orderId,
+        cents: 10_850,
+        key: crypto.randomUUID(),
+        reason: "Full refund including tax",
+      }
+    );
+    const refund = await f.t.run((ctx) => ctx.db.get(id));
+    expect(refund?.allocations).toEqual([
+      { email: "student@example.test", lineId: "tuition", cents: 10_000 },
+      { email: "order", lineId: "tax", cents: 850 },
+    ]);
   });
 });

@@ -42,9 +42,10 @@ export const checkout = action({
     const session = await client.checkout.sessions.create(
       {
         mode: "payment",
-        // Test-only registration amounts exclude automatic tax. Confirm tax
-        // treatment before a separately reviewed production enablement.
-        automatic_tax: { enabled: false },
+        // Stripe Tax computes sales tax from the billing address collected at
+        // checkout and each line's tax code; local totals stay pre-tax.
+        automatic_tax: { enabled: true },
+        billing_address_collection: "required",
         allowed_payment_method_types: ["card"],
         customer_email: order.purchaser,
         client_reference_id: order._id,
@@ -58,8 +59,12 @@ export const checkout = action({
             .map((line) => ({
               price_data: {
                 currency: "usd",
-                product_data: { name: `${seat.attendee.name}: ${line.title}` },
+                product_data: {
+                  name: `${seat.attendee.name}: ${line.title}`,
+                  ...(line.taxCode ? { tax_code: line.taxCode } : {}),
+                },
                 unit_amount: line.cents - line.discount,
+                tax_behavior: "exclusive",
               },
               quantity: 1,
             }))

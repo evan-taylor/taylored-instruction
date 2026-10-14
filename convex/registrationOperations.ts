@@ -8,6 +8,7 @@ import {
   csv,
   inventoryPreview,
   safeUrl,
+  taxCode,
 } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
@@ -55,6 +56,7 @@ export const saveMaterial = mutation({
     url: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
     archived: v.boolean(),
+    taxCode: v.optional(v.string()),
   },
   returns: v.id("registrationMaterials"),
   handler: async (ctx, { id, ...args }) => {
@@ -74,6 +76,7 @@ export const saveMaterial = mutation({
     const value = {
       ...args,
       url: args.kind === "link" ? safeUrl(args.url ?? "") : undefined,
+      taxCode: taxCode(args.taxCode),
       version: (previous?.version ?? 0) + 1,
     };
     const result = id ?? (await ctx.db.insert("registrationMaterials", value));

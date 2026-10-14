@@ -152,6 +152,7 @@ export const orders = query({
         title: v.string(),
         status: v.string(),
         total: v.number(),
+        tax: v.optional(v.number()),
         refunded: v.number(),
         attendees: v.array(v.object({ name: v.string(), email: v.string() })),
       })
@@ -180,6 +181,7 @@ export const orders = query({
         title: order.title,
         status: order.status,
         total: order.total,
+        tax: order.tax,
         refunded: order.refunded,
         attendees: order.seats.map((s) => ({
           name: s.attendee.name,
@@ -223,13 +225,17 @@ export const calendarFile = query({
 export const status = query({
   args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
   returns: v.union(
-    v.object({ status: v.string(), total: v.number() }),
+    v.object({
+      status: v.string(),
+      total: v.number(),
+      tax: v.optional(v.number()),
+    }),
     v.null()
   ),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     return order?.requestKey === args.requestKey
-      ? { status: order.status, total: order.total }
+      ? { status: order.status, total: order.total, tax: order.tax }
       : null;
   },
 });

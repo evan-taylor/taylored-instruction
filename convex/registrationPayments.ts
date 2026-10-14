@@ -82,6 +82,8 @@ export const paymentEvent = internalMutation({
     live: v.boolean(),
     type: v.string(),
     paymentIntent: v.optional(v.string()),
+    /** Sales tax Stripe collected on top of the quoted total. */
+    tax: v.optional(v.number()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -95,15 +97,21 @@ export const paymentEvent = internalMutation({
     if (event) {
       return null;
     }
-    const order = await ctx.db.get(args.orderId);
+    const tax = args.tax ?? 0;
+    const stored = await ctx.db.get(args.orderId);
     if (
-      !order ||
-      (order.stripeSession && order.stripeSession !== args.session) ||
-      order.currency !== args.currency ||
-      order.total !== args.amount
+      !stored ||
+      (stored.stripeSession && stored.stripeSession !== args.session) ||
+      stored.currency !== args.currency ||
+      tax < 0 ||
+      stored.total + tax !== args.amount
     ) {
       throw new Error("Payment does not match the authoritative quote");
     }
+    if (args.paid && tax !== (stored.tax ?? 0)) {
+      await ctx.db.patch(stored._id, { tax });
+    }
+    const order = { ...stored, tax: args.paid ? tax : stored.tax };
     if (!order.stripeSession) {
       throw new Error("Checkout attachment pending; retry event");
     }
@@ -172,7 +180,8 @@ export const requestRefund = mutation({
     if (
       !order?.paymentIntent ||
       order.status !== "settled" ||
-      args.cents > order.total - order.refunded - order.refundReserved
+      args.cents >
+        order.total + (order.tax ?? 0) - order.refunded - order.refundReserved
     ) {
       throw new Error("Refund exceeds remaining Stripe payment");
     }

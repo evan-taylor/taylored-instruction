@@ -7,6 +7,7 @@ import { Field, TextArea, TextInput, Toggle } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { AddressFields } from "./invoices";
 
 export type OrganizationDraft = {
   name: string;
@@ -14,6 +15,10 @@ export type OrganizationDraft = {
   contactEmail: string;
   phone: string;
   address: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
   notes: string;
   archived: boolean;
 };
@@ -23,6 +28,10 @@ export const emptyOrganization: OrganizationDraft = {
   contactEmail: "",
   phone: "",
   address: "",
+  city: "",
+  state: "",
+  postalCode: "",
+  country: "US",
   notes: "",
   archived: false,
 };
@@ -30,7 +39,13 @@ export function draftFromOrganization(
   organization: Doc<"registrationOrganizations">
 ): OrganizationDraft {
   const { _id, _creationTime, ...fields } = organization;
-  return fields;
+  return {
+    ...fields,
+    city: fields.city ?? "",
+    state: fields.state ?? "",
+    postalCode: fields.postalCode ?? "",
+    country: fields.country ?? "US",
+  };
 }
 
 /** Shared organization fields used by the editor modal and the enrollment wizard. */
@@ -86,16 +101,16 @@ export function OrganizationFields({
           />
         )}
       </Field>
-      <Field label="Billing address">
+      <Field label="Street address">
         {(p) => (
           <TextInput
             {...p}
             onChange={(e) => set({ address: e.target.value })}
-            placeholder="Street, city, state ZIP"
             value={value.address}
           />
         )}
       </Field>
+      <AddressFields onChange={(patch) => set(patch)} value={value} />
       {compact ? null : (
         <>
           <Field

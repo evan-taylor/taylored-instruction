@@ -25,6 +25,7 @@ export const seed = internalMutation({
       kind: "keycode",
       version: 1,
       archived: false,
+      taxCode: "txcd_10000000",
     });
     const manual = await ctx.db.insert("registrationMaterials", {
       title: "Student manual",
@@ -42,6 +43,7 @@ export const seed = internalMutation({
     });
     const settings = {
       tuition: 10_000,
+      taxCode: "txcd_20030000",
       materials: [
         {
           id: "online",
@@ -217,7 +219,11 @@ export const seed = internalMutation({
       contactName: "Pat Example",
       contactEmail: "ap@example.test",
       phone: "360-555-0100",
-      address: "100 Test Street, Vancouver WA 98660",
+      address: "100 Test Street",
+      city: "Vancouver",
+      state: "WA",
+      postalCode: "98660",
+      country: "US",
       notes: "Fixture organization for group enrollment and invoicing.",
       archived: false,
     });
