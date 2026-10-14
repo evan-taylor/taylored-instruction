@@ -11,11 +11,13 @@ import {
   inventoryPreview,
   quote,
 } from "../../shared/registration/domain";
+import { parseRoster, rosterSummary } from "../../shared/registration/roster";
 import { recurrence } from "../../shared/registration/schedule";
 
 afterEach(() => vi.unstubAllEnvs());
 
 const modules = import.meta.glob("../../convex/**/*.ts");
+const INVOICE_NUMBER = /^TI-\d{4}-\d{4}$/u;
 const config = {
   tuition: 10_000,
   materials: [],
@@ -1048,5 +1050,297 @@ describe("Shared development service settings", () => {
     } finally {
       send.mockRestore();
     }
+  });
+});
+
+describe("Group training and invoicing", () => {
+  const bill = {
+    billToName: "Acme Safety",
+    billToEmail: "ap@example.test",
+    billToAddress: "1 Main St, Vancouver WA",
+    poNumber: "PO-7",
+    notes: "Net 30",
+    dueDays: 30,
+  };
+  const group = (payment: "unpaid" | "offline" | "waived" = "unpaid") => ({
+    payment,
+    overbook: false,
+    reason: "Group booking",
+  });
+  it("lets staff price a large group roster while public checkout keeps template limits", async () => {
+    const f = await fixture(40);
+    const roster = Array.from({ length: 25 }, (_, i) =>
+      seat(`person${i}@example.test`)
+    );
+    await expect(
+      f.t.mutation(api.registration.reserve, {
+        ...attempt(f.course, f.session),
+        attendees: roster,
+      })
+    ).rejects.toThrow("between 1 and 20");
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: roster,
+      admin: { ...group(), tuition: 8000, pricingNote: "Volume rate" },
+    });
+    expect(result.total).toBe(25 * 8000);
+    expect(result.status).toBe("unpaid");
+    const order = await f.t.run((ctx) => ctx.db.get(result.orderId));
+    expect(order?.seats[0]?.lines[0]?.cents).toBe(8000);
+    expect(order?.pricingNote).toBe("Volume rate");
+    await expect(
+      f.adminClient.mutation(api.registration.reserve, {
+        ...attempt(f.course, f.session, "x@example.test"),
+        admin: { ...group(), tuition: 1 },
+      })
+    ).rejects.toThrow("Explain the custom group price");
+    await expect(
+      f.t.mutation(api.registration.reserve, {
+        ...attempt(f.course, f.session, "y@example.test"),
+        admin: { ...group(), tuition: 1, pricingNote: "guest" },
+      })
+    ).rejects.toThrow();
+  });
+  it("issues unique invoices once per order, emails a pay link, and settles exactly once on a matching paid event", async () => {
+    const f = await fixture(10);
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("a@example.test"), seat("b@example.test")],
+      admin: group(),
+    });
+    const second = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session, "c@example.test"),
+      admin: group(),
+    });
+    const [first, other] = await Promise.all([
+      f.adminClient.mutation(api.registrationGroups.createInvoice, {
+        orderId: order.orderId,
+        ...bill,
+      }),
+      f.adminClient.mutation(api.registrationGroups.createInvoice, {
+        orderId: second.orderId,
+        ...bill,
+      }),
+    ]);
+    const numbers = await f.t.run(async (ctx) => [
+      (await ctx.db.get(first))?.number,
+      (await ctx.db.get(other))?.number,
+    ]);
+    expect(new Set(numbers).size).toBe(2);
+    expect(numbers[0]).toMatch(INVOICE_NUMBER);
+    await expect(
+      f.adminClient.mutation(api.registrationGroups.createInvoice, {
+        orderId: order.orderId,
+        ...bill,
+      })
+    ).rejects.toThrow("already open");
+    await expect(
+      f.outsiderClient.query(api.registrationGroups.invoices, {})
+    ).rejects.toThrow("Forbidden");
+    await f.t.mutation(internal.registrationGroups.attachStripeInvoice, {
+      id: first,
+      stripeInvoiceId: "in_test_1",
+      stripeCustomerId: "cus_1",
+      hostedUrl: "https://invoice.stripe.com/i/test",
+      pdfUrl: "https://pay.stripe.com/invoice/test/pdf",
+    });
+    const job = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").take(100)).find(
+        (j) => j.key === `invoice:${first}`
+      )
+    );
+    expect(job?.recipient).toBe("ap@example.test");
+    expect(job?.link?.url).toBe("https://invoice.stripe.com/i/test");
+    await expect(
+      f.adminClient.mutation(api.registrationPayments.createPaymentLink, {
+        orderId: order.orderId,
+        requestKey: crypto.randomUUID(),
+      })
+    ).rejects.toThrow("Void the open invoice");
+    await expect(
+      f.t.mutation(internal.registrationGroups.invoicePaid, {
+        eventId: "evt_bad",
+        stripeInvoiceId: "in_test_1",
+        amount: 1,
+        currency: "usd",
+        live: false,
+      })
+    ).rejects.toThrow("does not match");
+    const paid = {
+      eventId: "evt_paid",
+      stripeInvoiceId: "in_test_1",
+      amount: order.total,
+      currency: "usd",
+      paymentIntent: "pi_group",
+      live: false,
+    };
+    await f.t.mutation(internal.registrationGroups.invoicePaid, paid);
+    await f.t.mutation(internal.registrationGroups.invoicePaid, paid);
+    const state = await f.t.run(async (ctx) => ({
+      order: await ctx.db.get(order.orderId),
+      invoice: await ctx.db.get(first),
+      seats: await ctx.db
+        .query("registrationSeats")
+        .withIndex("by_orderId", (q) => q.eq("orderId", order.orderId))
+        .take(10),
+      events: (await ctx.db.query("registrationEvents").take(100)).filter(
+        (e) => e.type === "invoice.paid"
+      ),
+    }));
+    expect(state.order?.status).toBe("settled");
+    expect(state.order?.source).toBe("invoice");
+    expect(state.order?.paymentIntent).toBe("pi_group");
+    expect(state.invoice?.status).toBe("paid");
+    expect(state.seats.every((s) => s.state === "active")).toBe(true);
+    expect(state.events).toHaveLength(1);
+    await expect(
+      f.adminClient.mutation(api.registrationGroups.voidInvoice, {
+        id: first,
+        reason: "oops",
+      })
+    ).rejects.toThrow("Paid invoices cannot be voided");
+  });
+  it("records offline invoice payment through the shared finalizer and voids without touching the order", async () => {
+    const f = await fixture(10);
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: group(),
+    });
+    const id = await f.adminClient.mutation(
+      api.registrationGroups.createInvoice,
+      { orderId: order.orderId, ...bill }
+    );
+    await f.adminClient.mutation(api.registrationGroups.recordInvoicePayment, {
+      id,
+      reason: "Check #1001",
+    });
+    const paid = await f.t.run(async (ctx) => ({
+      order: await ctx.db.get(order.orderId),
+      invoice: await ctx.db.get(id),
+    }));
+    expect(paid.order?.status).toBe("settled");
+    expect(paid.order?.source).toBe("offline");
+    expect(paid.invoice?.method).toBe("offline");
+    const second = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session, "second@example.test"),
+      admin: group(),
+    });
+    const voided = await f.adminClient.mutation(
+      api.registrationGroups.createInvoice,
+      { orderId: second.orderId, ...bill, dueDays: 0 }
+    );
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(voided, { status: "open", dueAt: Date.now() - 1 });
+    });
+    const attention = await f.adminClient.query(
+      api.registrationOperations.attention
+    );
+    expect(attention.invoices.map((i) => i._id)).toEqual([voided]);
+    await f.adminClient.mutation(api.registrationGroups.voidInvoice, {
+      id: voided,
+      reason: "Customer will pay by card",
+    });
+    const after = await f.t.run(async (ctx) => ({
+      order: await ctx.db.get(second.orderId),
+      invoice: await ctx.db.get(voided),
+    }));
+    expect(after.invoice?.status).toBe("void");
+    expect(after.order?.status).toBe("unpaid");
+    await expect(
+      f.adminClient.mutation(api.registrationPayments.createPaymentLink, {
+        orderId: second.orderId,
+        requestKey: crypto.randomUUID(),
+      })
+    ).resolves.toBeNull();
+    const summary = await f.adminClient.query(
+      api.registrationDashboard.summary
+    );
+    expect(summary.ordersSettled).toBe(1);
+    expect(summary.revenue).toBe(10_000);
+  });
+  it("accepts public group requests with rate limiting and queues a staff alert with a link", async () => {
+    const f = await fixture();
+    const request = {
+      organization: "Acme Safety",
+      contactName: "Pat",
+      email: "pat@example.test",
+      phone: "",
+      courseInterest: "BLS for 12 nurses",
+      headcount: 12,
+      preferredDates: "Early next month",
+      location: "On-site",
+      notes: "",
+    };
+    const id = await f.t.mutation(
+      api.registrationGroups.submitGroupRequest,
+      request
+    );
+    const job = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").take(100)).find(
+        (j) => j.key === `group-request:${id}`
+      )
+    );
+    expect(job?.link?.url).toBe("/admin/groups");
+    expect(job?.body).toContain("Acme Safety");
+    await expect(
+      f.t.mutation(api.registrationGroups.submitGroupRequest, {
+        ...request,
+        headcount: 0,
+      })
+    ).rejects.toThrow("number of attendees");
+    await expect(
+      f.outsiderClient.query(api.registrationGroups.groupRequests, {})
+    ).rejects.toThrow("Forbidden");
+    expect(
+      await f.adminClient.query(api.registrationGroups.groupRequests, {
+        status: "new",
+      })
+    ).toHaveLength(1);
+    await f.adminClient.mutation(api.registrationGroups.updateGroupRequest, {
+      id,
+      status: "contacted",
+      internalNotes: "Called and left a message",
+    });
+    expect(
+      (await f.adminClient.query(api.registrationDashboard.summary))
+        .newGroupRequests
+    ).toBe(0);
+    await Promise.all(
+      Array.from({ length: 4 }, () =>
+        f.t.mutation(api.registrationGroups.submitGroupRequest, request)
+      )
+    );
+    await expect(
+      f.t.mutation(api.registrationGroups.submitGroupRequest, request)
+    ).rejects.toThrow("Too many attempts");
+  });
+});
+
+describe("Roster parsing", () => {
+  it("accepts common paste formats, ignores headers, and flags problems", () => {
+    const rows = parseRoster(
+      [
+        "Name, Email",
+        "Jane Doe, jane@example.test",
+        "JOHN@example.test, John Smith",
+        "Ann Lee <ann@example.test>",
+        "Bob\tbob@example.test",
+        "nobody@example.test",
+        "Missing Email Person",
+        "jane@example.test, Jane Again",
+        "",
+      ].join("\n"),
+      (index) => `row-${index}`
+    );
+    expect(rows.map((r) => [r.name, r.email, r.issue])).toEqual([
+      ["Jane Doe", "jane@example.test", undefined],
+      ["John Smith", "john@example.test", undefined],
+      ["Ann Lee", "ann@example.test", undefined],
+      ["Bob", "bob@example.test", undefined],
+      ["", "nobody@example.test", "Missing name"],
+      ["Missing Email Person", "", "Missing email"],
+      ["Jane Again", "jane@example.test", "Duplicate email in roster"],
+    ]);
+    expect(rosterSummary(rows)).toEqual({ total: 7, ready: 4, problems: 3 });
   });
 });

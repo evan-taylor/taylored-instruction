@@ -142,6 +142,12 @@ export default function MyAccountPage() {
                   <div className="mt-2 ml-4 space-y-1">
                     <Link
                       className="block text-primary hover:underline"
+                      href="/admin"
+                    >
+                      Registration admin
+                    </Link>
+                    <Link
+                      className="block text-primary hover:underline"
                       href="/admin/instructors"
                     >
                       Manage Instructors

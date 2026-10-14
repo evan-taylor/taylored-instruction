@@ -212,6 +212,30 @@ export const seed = internalMutation({
       consumed: 0,
       disabled: false,
     });
+    const organization = await ctx.db.insert("registrationOrganizations", {
+      name: "Example Dental Group",
+      contactName: "Pat Example",
+      contactEmail: "ap@example.test",
+      phone: "360-555-0100",
+      address: "100 Test Street, Vancouver WA 98660",
+      notes: "Fixture organization for group enrollment and invoicing.",
+      archived: false,
+    });
+    await ctx.db.insert("registrationGroupRequests", {
+      organization: "Example Dental Group",
+      contactName: "Pat Example",
+      email: "ap@example.test",
+      phone: "360-555-0100",
+      courseInterest: "BLS Provider for 14 staff",
+      headcount: 14,
+      preferredDates: "Two Saturdays next month",
+      location: "On-site at our location",
+      notes: "Fixture request; invoice with PO required.",
+      status: "new",
+      internalNotes: "",
+      organizationId: organization,
+      updatedAt: Date.now(),
+    });
     return {
       code: "registration-test-public",
       freeCode: "registration-test-free",

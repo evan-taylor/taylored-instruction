@@ -35,6 +35,7 @@ export const claim = internalMutation({
         v.object({ title: v.string(), url: v.union(v.string(), v.null()) })
       ),
       calendar: v.optional(v.string()),
+      link: v.optional(v.object({ label: v.string(), url: v.string() })),
     }),
     v.null()
   ),
@@ -100,6 +101,7 @@ export const claim = internalMutation({
             .join("\n")
         : "",
       calendar: session ? calendar(session, Date.now()) : undefined,
+      link: job.link,
     };
   },
 });

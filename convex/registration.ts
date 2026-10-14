@@ -3,11 +3,13 @@ import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import type { Quote, Settings } from "../shared/registration/domain";
 import {
+  ADMIN_MAX_SEATS,
   BATCH,
   cents,
   effective,
   email,
   HOLD_MS,
+  MAX_SEATS,
   quote,
   safeUrl,
   validateSettings,
@@ -420,6 +422,10 @@ export const reserve = mutation({
           v.literal("offline"),
           v.literal("waived")
         ),
+        /** Custom per-seat tuition in cents for negotiated group pricing. */
+        tuition: v.optional(v.number()),
+        organizationId: v.optional(v.id("registrationOrganizations")),
+        pricingNote: v.optional(v.string()),
       })
     ),
     invitation: v.optional(v.string()),
@@ -460,11 +466,13 @@ export const reserve = mutation({
     const now = Date.now();
     requireOpen(course, session, config, Boolean(actor));
     const coupon = await validCoupon(ctx, args.coupon, course._id);
+    const pricing = adminPricing(config, args.admin);
     const seats = quote(
-      config,
+      pricing,
       args.attendees,
       coupon,
-      coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0
+      coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0,
+      actor ? ADMIN_MAX_SEATS : MAX_SEATS
     );
     await reserveCapacity(
       ctx,
@@ -498,6 +506,8 @@ export const reserve = mutation({
       restoredUses: 0,
       refunded: 0,
       refundReserved: 0,
+      organizationId: args.admin?.organizationId,
+      pricingNote: args.admin?.pricingNote?.trim() || undefined,
     });
     await Promise.all(
       seats.map((seat) =>
@@ -527,7 +537,7 @@ export const reserve = mutation({
       actor?.userId ?? "guest",
       "reserved",
       id,
-      args.admin?.reason ?? "Guest checkout"
+      reservationDetail(args.admin)
     );
     return {
       orderId: id,
@@ -537,6 +547,30 @@ export const reserve = mutation({
     };
   },
 });
+
+type AdminReservation = {
+  reason: string;
+  tuition?: number;
+  pricingNote?: string;
+};
+/** Applies negotiated group tuition for staff enrollments; public checkout keeps template pricing. */
+function adminPricing(config: Settings, admin?: AdminReservation): Settings {
+  if (admin?.tuition === undefined) {
+    return config;
+  }
+  if (!admin.pricingNote?.trim()) {
+    throw new Error("Explain the custom group price");
+  }
+  return { ...config, tuition: cents(admin.tuition) };
+}
+function reservationDetail(admin?: AdminReservation) {
+  if (!admin) {
+    return "Guest checkout";
+  }
+  return admin.tuition === undefined
+    ? admin.reason
+    : `${admin.reason}; custom tuition ${admin.tuition} cents (${admin.pricingNote})`;
+}
 
 async function reserveCapacity(
   ctx: MutationCtx,

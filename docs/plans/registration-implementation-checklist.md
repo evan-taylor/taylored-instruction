@@ -66,3 +66,33 @@ The implementation entry points are `convex/registration*.ts`, `shared/registrat
 - [ ] Publish reviewed native offerings and enable the marketing launch flag after acceptance. No production deployment or live-service enablement was performed.
 
 The full plan's provider acceptance is therefore **not yet certified complete**. These unchecked items must not be represented as completed tests or production readiness.
+
+## Group training, invoicing, and admin experience (October 14, 2026)
+
+Scope added after the original plan so the website can fully replace Hovn for group and corporate training. Checked items have local automated evidence in `tests/registration/backend.test.ts`; browser acceptance remains listed below.
+
+### Group training
+- [x] Public group-training request page (`/group-training`) stores requests, rate-limits by email, and queues a staff alert with a deep link to the admin queue.
+- [x] Admin request queue with status workflow (new → contacted → quoted → scheduled → closed), internal notes, organization linking, and "start group enrollment" prefill.
+- [x] Organizations (billing contact, address, notes, archive) linked to orders and invoices; organization order history.
+- [x] Group enrollment wizard: scheduled session or self-paced course, pasted roster parsing (name/email in common formats, duplicate and missing-field detection), capacity check with audited overbook, group-wide material choices and question answers, optional coupon, negotiated per-seat price with required pricing note, purchaser and organization, and payment handling (invoice, offline, waived, hold unpaid). Staff orders allow up to 100 attendees; public checkout stays at 20.
+- [x] Custom group tuition is recorded on the order snapshot and audit log; public checkout cannot set it.
+
+### Invoicing
+- [x] Sequential invoice numbers (`TI-YYYY-NNNN`) from a transactional counter; one open invoice per order; invoices only for unpaid orders with a nonzero total.
+- [x] Hosted Stripe invoice (send-invoice collection, due date, PO number and invoice number as custom fields, line items from the immutable order snapshot) created, finalized, and emailed through the durable outbox with a pay link; idempotency keys on every provider call; provider total verified against the order.
+- [x] `invoice.paid` webhook settles the order through the shared finalizer exactly once (amount/currency verified, event-id deduplicated, payment intent captured for refunds). `invoice.voided` / `invoice.marked_uncollectible` close the local invoice.
+- [x] Offline invoice payment (check, ACH) settles through the same finalizer and closes the hosted invoice so it cannot be paid twice; void keeps the order awaiting payment; card payment links are blocked while an invoice is open; paid invoices cannot be voided.
+- [x] Reminders and overdue detection; overdue invoices and new group requests appear in the attention queue and dashboard.
+
+### Admin experience
+- [x] Admin shell with grouped navigation, attention badge, admin gating (backend remains authoritative), and a dashboard (30-day revenue and seats, upcoming sessions and fill, awaiting payment, open/overdue invoices, attention list, low keycode stock, next sessions, recent orders, audit feed).
+- [x] All registration admin pages rebuilt on shared primitives: tables with status badges, modal editors, confirm-with-reason dialogs for every financial or destructive action, dollar inputs, zone-aware date inputs, deep links (`?new=1`, `?session=`, `?order=`, `?tab=`), loading and empty states.
+- [x] Session cancellation now requires and records a reason (the previous UI never populated it).
+- [x] Admin lookup by email across purchasers and attendees; single-order query for deep links; state-filtered keycode stock query.
+- [x] Public discovery, session detail/checkout, success, portal, and instructor screens restyled while preserving every e2e-tested label and flow.
+
+### Outstanding acceptance for this scope
+- [ ] Hosted Stripe test invoice end to end: issue, open the hosted page, pay with a test card, confirm `invoice.paid` delivery and settlement, void, and offline-payment close. Requires the development Stripe endpoint subscribed to `invoice.paid`, `invoice.voided`, and `invoice.marked_uncollectible` in addition to the existing events.
+- [ ] Browser acceptance of the rebuilt admin, public, and instructor screens against a development Convex deployment. The cloud workspace used for this change cannot run the local Convex backend (its binary requires a newer glibc than Amazon Linux 2023 provides), so only lint, type-check, and the behavioral suite ran here.
+- [ ] Decide whether Stripe Tax applies to invoices; automatic tax is disabled on test invoices exactly as on Checkout.

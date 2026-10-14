@@ -2,110 +2,239 @@
 import { useConvex, useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/badge";
+import { Field, Select } from "@/components/ui/field";
+import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-export function BulkTransfer({
-  orders,
-  reason,
+import { formatMoney } from "@/shared/registration/domain";
+import {
+  AdjustmentChoice,
+  type AdjustmentChoiceValue,
+  ReasonDialog,
+  sessionLabel,
+} from "./operations";
+
+/** One line of a bulk operation outcome, keyed by the entity it touched. */
+export type BulkResult = {
+  key: string;
+  label: string;
+  ok: boolean;
+  detail: string;
+};
+
+export function BulkResults({
+  results,
+  title = "Results",
 }: {
-  orders: Id<"registrationOrders">[];
-  reason: string;
+  results: BulkResult[];
+  title?: string;
 }) {
-  const convex = useConvex();
-  const sessions = useQuery(api.registration.sessions, {});
-  const transfer = useMutation(api.registrationTransfers.transfer);
-  const [target, setTarget] = useState<Id<"registrationSessions">>();
-  const [choice, setChoice] = useState<"keep" | "collect" | "refund">("keep");
-  const [results, setResults] = useState<string[]>([]);
-  async function run(preview: boolean) {
-    if (!target) {
-      return;
-    }
-    const rows = await Promise.all(
-      orders.map(async (orderId) => {
-        const seats = await convex.query(
-          api.registrationOperations.orderSeats,
-          { orderId }
-        );
-        return await Promise.all(
-          seats
-            .filter((s) => s.state === "active")
-            .map(async (seat) => {
-              try {
-                if (preview) {
-                  const price = await convex.query(
-                    api.registrationTransfers.preview,
-                    { seatId: seat._id, sessionId: target }
-                  );
-                  return `${seat.name}: difference $${(price.difference / 100).toFixed(2)}`;
-                }
-                const result = await transfer({
-                  seatId: seat._id,
-                  sessionId: target,
-                  choice,
-                  reason,
-                  requestKey: crypto.randomUUID(),
-                });
-                return `${seat.name}: transferred; adjustment $${(result.adjustment / 100).toFixed(2)}`;
-              } catch (error) {
-                return `${seat.name}: ${String(error)}`;
-              }
-            })
-        );
-      })
-    );
-    setResults(rows.flat());
+  if (results.length === 0) {
+    return null;
   }
+  const failed = results.filter((r) => !r.ok).length;
   return (
-    <div className="space-y-3">
-      <label className="block">
-        Bulk transfer destination
-        <select
-          onChange={(e) =>
-            setTarget(e.target.value as Id<"registrationSessions">)
-          }
-          value={target ?? ""}
-        >
-          <option value="">Choose session</option>
-          {sessions
-            ?.filter((s) => s.state === "open")
-            .map((s) => (
-              <option key={s._id} value={s._id}>
-                {s.title}
-              </option>
-            ))}
-        </select>
-      </label>
-      <label className="block">
-        Adjustment choice
-        <select
-          onChange={(e) => setChoice(e.target.value as typeof choice)}
-          value={choice}
-        >
-          <option value="keep">Keep original payment</option>
-          <option value="collect">Collect higher price</option>
-          <option value="refund">Refund lower price</option>
-        </select>
-      </label>
-      <Button
-        disabled={!(target && orders.length)}
-        onClick={() => run(true)}
-        type="button"
-      >
-        Preview selected transfers
-      </Button>
-      <Button
-        disabled={!(target && orders.length && reason)}
-        onClick={() => run(false)}
-        type="button"
-      >
-        Transfer selected registrations
-      </Button>
-      <ul>
-        {results.map((result, index) => (
-          <li key={`${orders[index] ?? "seat"}:${result}`}>{result}</li>
+    <section className="space-y-2">
+      <div className="flex items-center gap-2">
+        <h4 className="m-0 font-semibold text-slate-900 text-sm">{title}</h4>
+        <Badge tone="success">{results.length - failed} succeeded</Badge>
+        {failed ? <Badge tone="danger">{failed} failed</Badge> : null}
+      </div>
+      <ul className="m-0 list-none divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white p-0 text-sm">
+        {results.map((result) => (
+          <li
+            className="flex flex-wrap items-start justify-between gap-2 px-3 py-2"
+            key={result.key}
+          >
+            <span className="min-w-0">
+              <span className="block font-medium text-slate-900">
+                {result.label}
+              </span>
+              <span className="block break-words text-slate-500 text-xs">
+                {result.detail}
+              </span>
+            </span>
+            <Badge tone={result.ok ? "success" : "danger"}>
+              {result.ok ? "Done" : "Failed"}
+            </Badge>
+          </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+function useBulkTransfer(orders: Id<"registrationOrders">[]) {
+  const convex = useConvex();
+  const transfer = useMutation(api.registrationTransfers.transfer);
+  const [results, setResults] = useState<BulkResult[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  const activeSeats = async () => {
+    const perOrder = await Promise.all(
+      orders.map((orderId) =>
+        convex.query(api.registrationOperations.orderSeats, { orderId })
+      )
+    );
+    return perOrder.flat().filter((seat) => seat.state === "active");
+  };
+  const preview = async (sessionId: Id<"registrationSessions">) => {
+    setBusy(true);
+    setMessage("");
+    try {
+      const seats = await activeSeats();
+      const rows = await Promise.all(
+        seats.map(async (seat): Promise<BulkResult> => {
+          try {
+            const price = await convex.query(
+              api.registrationTransfers.preview,
+              { seatId: seat._id, sessionId }
+            );
+            return {
+              key: seat._id,
+              label: seat.name,
+              ok: true,
+              detail: `${formatMoney(price.original)} → ${formatMoney(price.destination)} (difference ${formatMoney(price.difference)})`,
+            };
+          } catch (error) {
+            return {
+              key: seat._id,
+              label: seat.name,
+              ok: false,
+              detail: String(error),
+            };
+          }
+        })
+      );
+      setResults(rows);
+      if (rows.length === 0) {
+        setMessage("No active, paid seats were found in the selected orders.");
+      }
+    } catch (error) {
+      setMessage(String(error));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const run = async (
+    sessionId: Id<"registrationSessions">,
+    choice: AdjustmentChoiceValue,
+    reason: string
+  ) => {
+    const seats = await activeSeats();
+    const rows = await Promise.all(
+      seats.map(async (seat): Promise<BulkResult> => {
+        try {
+          const result = await transfer({
+            seatId: seat._id,
+            sessionId,
+            choice,
+            reason,
+            requestKey: crypto.randomUUID(),
+          });
+          return {
+            key: seat._id,
+            label: seat.name,
+            ok: true,
+            detail: `Transferred; adjustment ${formatMoney(result.adjustment)}`,
+          };
+        } catch (error) {
+          return {
+            key: seat._id,
+            label: seat.name,
+            ok: false,
+            detail: String(error),
+          };
+        }
+      })
+    );
+    setResults(rows);
+    setMessage(
+      rows.length
+        ? `Processed ${rows.length} seat transfer${rows.length === 1 ? "" : "s"}.`
+        : "No active, paid seats were found in the selected orders."
+    );
+  };
+  return { results, busy, message, preview, run };
+}
+
+/** Moves every active seat in the selected orders to one destination session. */
+export function BulkTransfer({
+  orders,
+}: {
+  orders: Id<"registrationOrders">[];
+}) {
+  const sessions = useQuery(api.registration.sessions, {});
+  const [target, setTarget] = useState<Id<"registrationSessions"> | "">("");
+  const [choice, setChoice] = useState<AdjustmentChoiceValue>("keep");
+  const [open, setOpen] = useState(false);
+  const { results, busy, message, preview, run } = useBulkTransfer(orders);
+  const destinations = sessions?.filter((s) => s.state === "open");
+  const destination = destinations?.find((s) => s._id === target);
+  return (
+    <div className="space-y-5">
+      <p className="m-0 text-slate-600 text-sm">
+        Transfers every active, paid seat in the {orders.length} selected{" "}
+        {orders.length === 1 ? "order" : "orders"}. Held, unpaid, or canceled
+        seats are skipped.
+      </p>
+      <Field label="Destination session" required>
+        {(props) => (
+          <Select
+            {...props}
+            onChange={(e) =>
+              setTarget(e.target.value as Id<"registrationSessions"> | "")
+            }
+            value={target}
+          >
+            <option value="">Choose an open session</option>
+            {destinations?.map((s) => (
+              <option key={s._id} value={s._id}>
+                {sessionLabel(s)}
+              </option>
+            ))}
+          </Select>
+        )}
+      </Field>
+      <AdjustmentChoice onChange={setChoice} value={choice} />
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button
+          disabled={!target || busy}
+          onClick={() => {
+            if (target) {
+              preview(target);
+            }
+          }}
+          size="sm"
+          type="button"
+          variant="secondary"
+        >
+          {busy ? "Working…" : "Preview"}
+        </Button>
+        <Button
+          disabled={!target || busy}
+          onClick={() => setOpen(true)}
+          size="sm"
+          type="button"
+        >
+          Transfer
+        </Button>
+      </div>
+      <ResultNotice message={message} />
+      <BulkResults results={results} />
+      <ReasonDialog
+        confirmLabel="Transfer seats"
+        description={`Moves all active seats in the selected orders to ${destination?.title ?? "the destination"}. Each seat gets a new order for the destination session.`}
+        onClose={() => setOpen(false)}
+        onConfirm={async (reason) => {
+          if (target) {
+            await run(target, choice, reason);
+          }
+        }}
+        open={open}
+        title="Confirm bulk transfer"
+      />
     </div>
   );
 }

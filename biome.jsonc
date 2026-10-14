@@ -41,13 +41,24 @@
       "assist": { "enabled": false }
     },
     {
-      "includes": ["components/registration/**/*.tsx"],
+      "includes": [
+        "components/registration/**/*.tsx",
+        "components/admin/**/*.tsx"
+      ],
       "linter": {
         "rules": {
           "a11y": {
             "noLabelWithoutControl": {
               "level": "error",
-              "options": { "inputComponents": ["Input"] }
+              "options": {
+                "inputComponents": [
+                  "Input",
+                  "TextInput",
+                  "TextArea",
+                  "Select",
+                  "MoneyInput"
+                ]
+              }
             }
           }
         }

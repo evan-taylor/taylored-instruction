@@ -6,8 +6,8 @@ import { twMerge } from "tailwind-merge";
 
 type ButtonProps = {
   children: React.ReactNode;
-  variant?: "primary" | "secondary" | "outline";
-  size?: "sm" | "md" | "lg";
+  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
+  size?: "xs" | "sm" | "md" | "lg";
   className?: string;
   href?: string;
   target?: string;
@@ -15,6 +15,8 @@ type ButtonProps = {
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  title?: string;
+  "aria-label"?: string;
 };
 
 export const Button = ({
@@ -28,20 +30,27 @@ export const Button = ({
   onClick,
   type = "button",
   disabled = false,
+  title,
+  "aria-label": ariaLabel,
 }: ButtonProps) => {
   const baseClasses =
-    "inline-flex items-center justify-center font-medium rounded-sm transition-colors focus:outline-hidden focus:ring-2 focus:ring-offset-2";
+    "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 whitespace-nowrap";
 
   const variantClasses = {
     primary: "bg-primary text-white hover:bg-primary-dark focus:ring-primary",
     // Improve readability: light background, high-contrast text and border
     secondary:
-      "bg-white text-primary border border-gray-300 hover:bg-gray-50 focus:ring-primary shadow-xs",
+      "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 focus:ring-primary shadow-xs",
     outline:
       "bg-transparent border border-primary text-primary hover:bg-primary hover:text-white focus:ring-primary",
+    ghost:
+      "bg-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus:ring-primary",
+    danger:
+      "bg-rose-600 text-white hover:bg-rose-700 focus:ring-rose-600 shadow-xs",
   };
 
   const sizeClasses = {
+    xs: "text-xs px-2.5 py-1.5",
     sm: "text-sm px-4 py-2",
     md: "px-6 py-3",
     lg: "text-lg px-8 py-4",
@@ -59,7 +68,14 @@ export const Button = ({
 
   if (href) {
     return (
-      <Link className={classes} href={href} rel={rel} target={target}>
+      <Link
+        aria-label={ariaLabel}
+        className={classes}
+        href={href}
+        rel={rel}
+        target={target}
+        title={title}
+      >
         {children}
       </Link>
     );
@@ -67,9 +83,11 @@ export const Button = ({
 
   return (
     <button
+      aria-label={ariaLabel}
       className={classes}
       disabled={disabled}
       onClick={onClick}
+      title={title}
       type={type}
     >
       {children}

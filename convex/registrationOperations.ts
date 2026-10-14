@@ -101,6 +101,13 @@ export const uploadUrl = mutation({
 export const stock = query({
   args: {
     materialId: v.id("registrationMaterials"),
+    state: v.optional(
+      v.union(
+        v.literal("available"),
+        v.literal("assigned"),
+        v.literal("retired")
+      )
+    ),
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -118,10 +125,13 @@ export const stock = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx);
+    const { materialId, state } = args;
     return await ctx.db
       .query("registrationCodes")
       .withIndex("by_materialId_and_state", (q) =>
-        q.eq("materialId", args.materialId)
+        state
+          ? q.eq("materialId", materialId).eq("state", state)
+          : q.eq("materialId", materialId)
       )
       .paginate(args.paginationOpts);
   },
@@ -898,10 +908,22 @@ export const attention = query({
     unpaid: v.array(doc(schema, "registrationOrders")),
     payments: v.array(doc(schema, "registrationOrders")),
     refunds: v.array(doc(schema, "registrationRefunds")),
+    invoices: v.array(doc(schema, "registrationInvoices")),
+    requests: v.array(doc(schema, "registrationGroupRequests")),
   }),
   handler: async (ctx) => {
     await staff(ctx);
+    const now = Date.now();
+    const openInvoices = await ctx.db
+      .query("registrationInvoices")
+      .withIndex("by_status", (q) => q.eq("status", "open"))
+      .take(BATCH);
     return {
+      invoices: openInvoices.filter((i) => i.dueAt < now),
+      requests: await ctx.db
+        .query("registrationGroupRequests")
+        .withIndex("by_status", (q) => q.eq("status", "new"))
+        .take(BATCH),
       refunds: await ctx.db
         .query("registrationRefunds")
         .withIndex("by_state", (q) => q.eq("state", "pending"))
@@ -1016,6 +1038,14 @@ export const locations = query({
   handler: async (ctx) => {
     await staff(ctx);
     return await ctx.db.query("registrationLocations").take(BATCH);
+  },
+});
+export const order = query({
+  args: { orderId: v.id("registrationOrders") },
+  returns: v.union(doc(schema, "registrationOrders"), v.null()),
+  handler: async (ctx, args) => {
+    await staff(ctx);
+    return await ctx.db.get(args.orderId);
   },
 });
 export const orderSeats = query({

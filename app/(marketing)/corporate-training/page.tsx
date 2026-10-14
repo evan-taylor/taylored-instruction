@@ -604,15 +604,25 @@ export default async function CorporateTrainingPage() {
               Corporate CPR Training options. Let&apos;s create a safer
               workplace together!
             </p>
-            <Link href="/contact">
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button
                 className="bg-white px-8 py-6 text-lg text-primary shadow-lg hover:bg-white/90"
+                href="/group-training"
                 size="lg"
                 variant="primary"
               >
-                Get Started
+                Request group training
               </Button>
-            </Link>
+              <Link href="/contact">
+                <Button
+                  className="border-white/40 bg-transparent px-8 py-6 text-lg text-white hover:bg-white/10 hover:text-white"
+                  size="lg"
+                  variant="outline"
+                >
+                  Get Started
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
       </section>

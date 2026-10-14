@@ -249,6 +249,15 @@ export const createPaymentLink = mutation({
     if (order?.status !== "unpaid" || args.requestKey.length < 24) {
       throw new Error("Unpaid order required");
     }
+    const invoices = await ctx.db
+      .query("registrationInvoices")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .take(BATCH);
+    if (invoices.some((i) => i.status === "open" || i.status === "draft")) {
+      throw new Error(
+        "Void the open invoice before creating a card payment link"
+      );
+    }
     await ctx.db.patch(order._id, {
       status: "hold",
       requestKey: args.requestKey,

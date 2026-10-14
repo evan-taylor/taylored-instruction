@@ -96,12 +96,85 @@ export const registrationTables = {
     refundReserved: v.number(),
     checkoutUrl: v.optional(v.string()),
     error: v.optional(v.string()),
+    organizationId: v.optional(v.id("registrationOrganizations")),
+    pricingNote: v.optional(v.string()),
   })
     .index("by_requestKey", ["requestKey"])
     .index("by_purchaser", ["purchaser"])
     .index("by_status_and_expires", ["status", "expires"])
     .index("by_sessionId", ["sessionId"])
-    .index("by_stripeSession", ["stripeSession"]),
+    .index("by_stripeSession", ["stripeSession"])
+    .index("by_organizationId", ["organizationId"]),
+  registrationOrganizations: defineTable({
+    name: v.string(),
+    contactName: v.string(),
+    contactEmail: v.string(),
+    phone: v.string(),
+    address: v.string(),
+    notes: v.string(),
+    archived: v.boolean(),
+  }).index("by_contactEmail", ["contactEmail"]),
+  registrationGroupRequests: defineTable({
+    organization: v.string(),
+    contactName: v.string(),
+    email: v.string(),
+    phone: v.string(),
+    courseInterest: v.string(),
+    headcount: v.number(),
+    preferredDates: v.string(),
+    location: v.string(),
+    notes: v.string(),
+    status: v.union(
+      v.literal("new"),
+      v.literal("contacted"),
+      v.literal("quoted"),
+      v.literal("scheduled"),
+      v.literal("closed")
+    ),
+    internalNotes: v.string(),
+    organizationId: v.optional(v.id("registrationOrganizations")),
+    orderId: v.optional(v.id("registrationOrders")),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_email", ["email"]),
+  registrationInvoices: defineTable({
+    orderId: v.id("registrationOrders"),
+    number: v.string(),
+    organizationId: v.optional(v.id("registrationOrganizations")),
+    billToName: v.string(),
+    billToEmail: v.string(),
+    billToAddress: v.string(),
+    poNumber: v.string(),
+    notes: v.string(),
+    dueAt: v.number(),
+    amount: v.number(),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("open"),
+      v.literal("paid"),
+      v.literal("void")
+    ),
+    method: v.optional(v.union(v.literal("stripe"), v.literal("offline"))),
+    stripeInvoiceId: v.optional(v.string()),
+    stripeCustomerId: v.optional(v.string()),
+    hostedUrl: v.optional(v.string()),
+    pdfUrl: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    remindedAt: v.optional(v.number()),
+    paidAt: v.optional(v.number()),
+    voidedAt: v.optional(v.number()),
+    actor: v.string(),
+    error: v.optional(v.string()),
+  })
+    .index("by_orderId", ["orderId"])
+    .index("by_number", ["number"])
+    .index("by_status", ["status"])
+    .index("by_stripeInvoiceId", ["stripeInvoiceId"]),
+  registrationCounters: defineTable({
+    key: v.string(),
+    value: v.number(),
+  }).index("by_key", ["key"]),
   registrationSeats: defineTable({
     orderId: v.id("registrationOrders"),
     courseId: v.id("registrationCourses"),
@@ -182,6 +255,7 @@ export const registrationTables = {
     scheduleRevision: v.optional(v.number()),
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
+    link: v.optional(v.object({ label: v.string(), url: v.string() })),
   })
     .index("by_key", ["key"])
     .index("by_state_and_due", ["state", "due"])

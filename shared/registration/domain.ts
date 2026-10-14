@@ -16,7 +16,33 @@ export type Coupon = {
 export const HOLD_MS = 30 * 60 * 1000;
 export const BATCH = 50;
 export const MAX_SEATS = 20;
+/** Staff-created group orders may carry larger rosters than public checkout. */
+export const ADMIN_MAX_SEATS = 100;
 export const WAIVER = "I already have this material";
+export const INVOICE_TERMS_DAYS = 30;
+
+export function formatMoney(valueInCents: number) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(valueInCents / 100);
+}
+/** Parses a dollar string such as "1,250.50" into integer cents. */
+export function parseDollars(value: string) {
+  const normalized = value.replaceAll(/[$,\s]/gu, "");
+  if (normalized === "") {
+    return 0;
+  }
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount < 0) {
+    throw new Error("Enter a valid dollar amount");
+  }
+  return Math.round(amount * 100);
+}
+export function invoiceNumber(sequence: number, at = Date.now()) {
+  const year = new Date(at).getUTCFullYear();
+  return `TI-${year}-${String(sequence).padStart(4, "0")}`;
+}
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const FORMULA = /^[\s]*[=+\-@\t\r]/u;
 const HTML_CHARS = /[&<>"']/gu;
@@ -102,11 +128,12 @@ export function quote(
   config: Settings,
   inputs: Attendee[],
   coupon: Coupon | null,
-  availableUses: number
+  availableUses: number,
+  maxSeats = MAX_SEATS
 ): Quote[] {
   validateSettings(config);
-  if (inputs.length < 1 || inputs.length > MAX_SEATS) {
-    throw new Error("Choose between 1 and 20 attendees");
+  if (inputs.length < 1 || inputs.length > maxSeats) {
+    throw new Error(`Choose between 1 and ${maxSeats} attendees`);
   }
   const seen = new Set<string>();
   let uses = availableUses;

@@ -1,12 +1,17 @@
 "use client";
 import { useMutation } from "convex/react";
+import { Ticket } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+
+/** Shown when the URL hash carries a waitlist invitation token. */
 export function InvitationActions() {
   const decline = useMutation(api.registrationWaitlist.decline);
   const [token, setToken] = useState("");
   const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
   useEffect(() => {
     setToken(
       new URLSearchParams(window.location.hash.slice(1)).get("invitation") ?? ""
@@ -16,28 +21,50 @@ export function InvitationActions() {
     return null;
   }
   return (
-    <aside className="rounded border p-4">
-      <p>
-        You have a reserved opening. Register using the invited attendee’s email
-        before the expiry shown in your email.
-      </p>
-      <Button
-        onClick={async () => {
-          try {
-            await decline({ token });
-            setMessage(
-              "Invitation declined; the next person can be offered the opening."
-            );
-          } catch (error) {
-            setMessage(String(error));
-          }
-        }}
-        type="button"
-        variant="outline"
-      >
-        Decline this opening
-      </Button>
-      <p role="status">{message}</p>
+    <aside
+      aria-label="Waitlist invitation"
+      className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 px-5 py-4"
+    >
+      <div className="flex items-start gap-3">
+        <span className="mt-0.5 rounded-lg bg-white p-2 text-primary shadow-xs">
+          <Ticket aria-hidden="true" className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="m-0 font-semibold text-slate-900">
+            You have a reserved opening
+          </p>
+          <p className="m-0 mt-0.5 text-slate-600 text-sm">
+            Register using the invited attendee’s email before the expiry shown
+            in your email. If you no longer need the seat, decline it so the
+            next person can be offered the opening.
+          </p>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setMessage("");
+            try {
+              await decline({ token });
+              setMessage(
+                "Invitation declined; the next person can be offered the opening."
+              );
+            } catch (error) {
+              setMessage(String(error));
+            } finally {
+              setBusy(false);
+            }
+          }}
+          size="sm"
+          type="button"
+          variant="secondary"
+        >
+          {busy ? "Working…" : "Decline this opening"}
+        </Button>
+      </div>
+      <ResultNotice message={message} />
     </aside>
   );
 }

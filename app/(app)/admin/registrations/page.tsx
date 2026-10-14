@@ -1,12 +1,10 @@
-import {
-  OrderAdmin,
-  RegistrationAdminNav,
-} from "@/components/registration/admin";
+import { Suspense } from "react";
+import { OrderAdmin } from "@/components/admin/registrations";
+
 export default function Page() {
   return (
-    <>
-      <RegistrationAdminNav />
+    <Suspense fallback={null}>
       <OrderAdmin />
-    </>
+    </Suspense>
   );
 }

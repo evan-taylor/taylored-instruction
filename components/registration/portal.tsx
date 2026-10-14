@@ -1,8 +1,34 @@
 "use client";
+import {
+  CalendarDays,
+  Download,
+  ExternalLink,
+  KeyRound,
+  Mail,
+  MapPin,
+} from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/input";
+import { StatusBadge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Field, TextInput } from "@/components/ui/field";
+import {
+  EmptyState,
+  Notice,
+  PageHeader,
+  Skeleton,
+} from "@/components/ui/page-header";
+import { TabPanel, Tabs } from "@/components/ui/tabs";
+import { formatMoney } from "@/shared/registration/domain";
+import { formatMeeting, formatTime } from "./format";
 
+type PortalView = "registrations" | "orders";
 type PortalRow = {
   id: string;
   title: string;
@@ -14,173 +40,508 @@ type PortalRow = {
   meetings?: {
     id: string;
     start: number;
+    end?: number;
     location: string;
     onlineUrl?: string;
     instructions: string;
   }[];
   attendees?: { name: string; email: string }[];
 };
-export function RegistrationPortal({ access = false }: { access?: boolean }) {
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [rows, setRows] = useState<PortalRow[]>([]);
-  const [view, setView] = useState("registrations");
-  const [cursor, setCursor] = useState<string | null>(null);
-  const [more, setMore] = useState(false);
-  async function post(body: object) {
-    const response = await fetch("/api/registration/portal", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const data = await response.json();
-    setMessage(
-      data.error ?? data.message ?? "Access confirmed. Open your registrations."
+type Message = { text: string; tone: "info" | "success" | "danger" } | null;
+
+const TABS: { id: PortalView; label: string }[] = [
+  { id: "registrations", label: "Registrations" },
+  { id: "orders", label: "Orders" },
+];
+
+function MaterialRow({
+  material,
+  onUnavailable,
+}: {
+  material: NonNullable<PortalRow["materials"]>[number];
+  onUnavailable: () => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <li className="flex flex-wrap items-center justify-between gap-2 py-2">
+      <span className="flex items-center gap-2 text-slate-800 text-sm">
+        {material.title}
+        <StatusBadge status={material.state} />
+      </span>
+      {material.state === "ready" ? (
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              const response = await fetch(
+                `/api/registration/portal?material=${encodeURIComponent(material.id)}`
+              );
+              const data = await response.json();
+              if (response.ok && data.url) {
+                window.open(data.url, "_blank", "noopener,noreferrer");
+              } else {
+                onUnavailable();
+              }
+            } finally {
+              setBusy(false);
+            }
+          }}
+          size="xs"
+          type="button"
+          variant="secondary"
+        >
+          <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+          {busy ? "Opening…" : "Open"}
+        </Button>
+      ) : (
+        <span className="text-slate-500 text-xs">
+          Please contact us for your missing material.
+        </span>
+      )}
+    </li>
+  );
+}
+
+function MeetingRow({
+  meeting,
+}: {
+  meeting: NonNullable<PortalRow["meetings"]>[number];
+}) {
+  const when = meeting.end
+    ? formatMeeting({ start: meeting.start, end: meeting.end })
+    : `${formatTime(meeting.start)}`;
+  return (
+    <li className="space-y-1 py-2 text-sm">
+      <p className="m-0 flex items-start gap-2 text-slate-900">
+        <CalendarDays
+          aria-hidden="true"
+          className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+        />
+        {when}
+      </p>
+      <p className="m-0 flex items-start gap-2 text-slate-600">
+        <MapPin
+          aria-hidden="true"
+          className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+        />
+        {meeting.location || "Online"}
+      </p>
+      {meeting.instructions ? (
+        <p className="m-0 whitespace-pre-line rounded-md bg-slate-50 px-3 py-2 text-slate-700 text-xs">
+          {meeting.instructions}
+        </p>
+      ) : null}
+      {meeting.onlineUrl ? (
+        <a
+          className="inline-flex items-center gap-1 font-medium text-primary text-xs underline-offset-2 hover:underline"
+          href={meeting.onlineUrl}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+          Join online
+        </a>
+      ) : null}
+    </li>
+  );
+}
+
+function RegistrationCard({
+  row,
+  onMessage,
+}: {
+  row: PortalRow;
+  onMessage: (message: Message) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="sm:items-center">
+        <CardTitle>{row.title}</CardTitle>
+        {row.state ? <StatusBadge status={row.state} /> : null}
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {row.meetings?.length ? (
+          <section>
+            <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+              Schedule and joining info
+            </h3>
+            <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+              {row.meetings.map((m) => (
+                <MeetingRow key={m.id} meeting={m} />
+              ))}
+            </ul>
+            <a
+              className="mt-2 inline-flex items-center gap-1.5 font-medium text-primary text-sm underline-offset-2 hover:underline"
+              href={`/api/registration/portal?calendar=${encodeURIComponent(row.id)}`}
+            >
+              <Download aria-hidden="true" className="h-4 w-4" />
+              Download calendar
+            </a>
+          </section>
+        ) : null}
+        <section>
+          <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+            Materials
+          </h3>
+          {row.materials?.length ? (
+            <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+              {row.materials.map((m) => (
+                <MaterialRow
+                  key={m.id}
+                  material={m}
+                  onUnavailable={() =>
+                    onMessage({ text: "Material unavailable", tone: "danger" })
+                  }
+                />
+              ))}
+            </ul>
+          ) : (
+            <p className="m-0 text-slate-500 text-sm">
+              Materials appear here once your registration is paid.
+            </p>
+          )}
+        </section>
+      </CardContent>
+    </Card>
+  );
+}
+
+function OrderCard({ row }: { row: PortalRow }) {
+  return (
+    <Card>
+      <CardHeader className="sm:items-center">
+        <CardTitle>{row.title}</CardTitle>
+        {row.status ? <StatusBadge status={row.status} /> : null}
+      </CardHeader>
+      <CardContent className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
+        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:block sm:space-y-2">
+          <div>
+            <dt className="text-slate-500 text-xs uppercase tracking-wide">
+              Paid total
+            </dt>
+            <dd className="m-0 font-semibold text-slate-900 tabular-nums">
+              {formatMoney(row.total ?? 0)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-slate-500 text-xs uppercase tracking-wide">
+              Refunded
+            </dt>
+            <dd className="m-0 text-slate-900 tabular-nums">
+              {formatMoney(row.refunded ?? 0)}
+            </dd>
+          </div>
+        </dl>
+        <div>
+          <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+            Attendees
+          </h3>
+          <ul className="m-0 list-none space-y-1 p-0 text-sm">
+            {row.attendees?.map((a) => (
+              <li className="text-slate-800" key={a.email}>
+                {a.name} <span className="text-slate-500">· {a.email}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AccessCard({
+  onConfirm,
+  busy,
+}: {
+  onConfirm: () => void;
+  busy: boolean;
+}) {
+  return (
+    <Card className="border-primary/30">
+      <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-3">
+          <span className="rounded-lg bg-primary/10 p-2 text-primary">
+            <KeyRound aria-hidden="true" className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="m-0 font-semibold text-slate-900">
+              Confirm access to your registrations
+            </p>
+            <p className="m-0 mt-0.5 text-slate-600 text-sm">
+              Opening this page does not consume your email link. Confirm below
+              to unlock your registrations on this device for 24 hours.
+            </p>
+          </div>
+        </div>
+        <Button disabled={busy} onClick={onConfirm} type="button">
+          {busy ? "Working…" : "Confirm secure access"}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RequestAccessCard({
+  email,
+  busy,
+  onEmail,
+  onSubmit,
+}: {
+  email: string;
+  busy: boolean;
+  onEmail: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <Card>
+      <CardHeader>
+        <div>
+          <CardTitle>Get a secure access link</CardTitle>
+          <CardDescription>
+            Enter the email you registered with and we’ll send a one-time link.
+            No password needed.
+          </CardDescription>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSubmit();
+          }}
+        >
+          <Field label="Email address">
+            {(props) => (
+              <TextInput
+                {...props}
+                autoComplete="email"
+                onChange={(e) => onEmail(e.target.value)}
+                required
+                type="email"
+                value={email}
+              />
+            )}
+          </Field>
+          <Button disabled={busy} type="submit" variant="secondary">
+            <Mail aria-hidden="true" className="h-4 w-4" />
+            {busy ? "Sending…" : "Email me secure access"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function RowList({
+  view,
+  rows,
+  loading,
+  onMessage,
+}: {
+  view: PortalView;
+  rows: PortalRow[];
+  loading: boolean;
+  onMessage: (message: Message) => void;
+}) {
+  if (loading) {
+    return (
+      <div aria-busy="true" className="space-y-4" role="status">
+        <span className="sr-only">Loading…</span>
+        <Skeleton className="h-40" />
+        <Skeleton className="h-40" />
+      </div>
     );
-    return response.ok;
   }
-  async function load(nextView: string, nextCursor: string | null = null) {
-    const response = await fetch(
-      `/api/registration/portal?view=${nextView}${nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ""}`
+  if (!rows.length) {
+    return (
+      <EmptyState
+        action={
+          <Button href="/classes" size="sm" variant="secondary">
+            Browse classes
+          </Button>
+        }
+        description={
+          view === "orders"
+            ? "Orders you purchased for yourself or others will appear here."
+            : "Classes you’re registered for will appear here with materials and joining details."
+        }
+        title={view === "orders" ? "No orders yet" : "No registrations yet"}
+      />
     );
-    const data = await response.json();
-    if (!response.ok) {
-      setMessage(data.error);
-      return;
-    }
-    setRows(nextCursor ? [...rows, ...data.page] : data.page);
-    setView(nextView);
-    setCursor(data.continueCursor);
-    setMore(!data.isDone);
   }
   return (
-    <section className="mx-auto max-w-4xl space-y-6 p-12">
-      <h1 className="font-bold text-3xl">Your registrations</h1>
-      {access ? (
-        <>
-          <p>
-            Confirm access to your registrations. Opening this page does not
-            consume your email link.
-          </p>
-          <Button
-            onClick={async () => {
+    <div className="space-y-4">
+      {rows.map((row) =>
+        view === "orders" ? (
+          <OrderCard key={row.id} row={row} />
+        ) : (
+          <RegistrationCard key={row.id} onMessage={onMessage} row={row} />
+        )
+      )}
+    </div>
+  );
+}
+
+export function RegistrationPortal({ access = false }: { access?: boolean }) {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState<Message>(null);
+  const [rows, setRows] = useState<PortalRow[]>([]);
+  const [view, setView] = useState<PortalView>("registrations");
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [more, setMore] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  async function post(body: object) {
+    setBusy(true);
+    try {
+      const response = await fetch("/api/registration/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await response.json();
+      setMessage({
+        text:
+          data.error ??
+          data.message ??
+          "Access confirmed. Open your registrations.",
+        tone: response.ok ? "success" : "danger",
+      });
+      return response.ok;
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function load(nextView: PortalView, nextCursor: string | null = null) {
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `/api/registration/portal?view=${nextView}${nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ""}`
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage({ text: data.error, tone: "danger" });
+        return;
+      }
+      setRows(nextCursor ? [...rows, ...data.page] : data.page);
+      setView(nextView);
+      setCursor(data.continueCursor);
+      setMore(!data.isDone);
+      setLoaded(true);
+    } finally {
+      setLoading(false);
+    }
+  }
+  return (
+    <div className="bg-slate-50">
+      <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+        <PageHeader
+          description="Class schedules, joining instructions, course materials, and receipts in one place."
+          eyebrow="Secure portal"
+          title="Your registrations"
+        />
+        {access ? (
+          <AccessCard
+            busy={busy}
+            onConfirm={async () => {
               const token = window.location.hash.slice(1);
               if (await post({ token })) {
                 window.history.replaceState(null, "", "/registrations/access");
+                await load("registrations");
               }
             }}
-            type="button"
-          >
-            Confirm secure access
-          </Button>
-        </>
-      ) : null}
-      <form
-        className="space-y-3"
-        onSubmit={(e) => {
-          e.preventDefault();
-          post({ email });
-        }}
-      >
-        <label className="block">
-          Email address
-          <Input
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            type="email"
-            value={email}
           />
-        </label>
-        <Button type="submit">Email me secure access</Button>
-      </form>
-      <div className="flex gap-3">
-        <Button onClick={() => load("registrations")} type="button">
-          My registrations and materials
-        </Button>
-        <Button onClick={() => load("orders")} type="button" variant="outline">
-          My purchaser orders
-        </Button>
-      </div>
-      {message ? <p role="status">{message}</p> : null}
-      {rows.map((row) => (
-        <article
-          className="space-y-3 rounded border border-slate-400 p-5"
-          key={row.id}
-        >
-          <h2 className="font-semibold text-2xl">{row.title}</h2>
-          <p>{row.state ?? row.status}</p>
-          {row.total === undefined ? null : (
-            <p>
-              Paid total: ${(row.total / 100).toFixed(2)} · Refunded: $
-              {((row.refunded ?? 0) / 100).toFixed(2)}
-            </p>
-          )}
-          {row.attendees?.map((a) => (
-            <p key={a.email}>
-              {a.name} · {a.email}
-            </p>
-          ))}
-          {row.meetings?.map((m) => (
-            <div key={m.id}>
-              <p>
-                {new Date(m.start).toLocaleString()} · {m.location}
-              </p>
-              <p>{m.instructions}</p>
-              {m.onlineUrl ? (
-                <a className="underline" href={m.onlineUrl} rel="noreferrer">
-                  Join online
-                </a>
-              ) : null}
-            </div>
-          ))}
-          {row.meetings?.length ? (
-            <a
-              className="block underline"
-              href={`/api/registration/portal?calendar=${encodeURIComponent(row.id)}`}
-            >
-              Download calendar
-            </a>
-          ) : null}
-          {row.materials?.map((m) => (
-            <div key={m.id}>
-              {m.title} · {m.state}
-              {m.state === "ready" ? (
+        ) : null}
+        {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
+        {loaded ? null : (
+          <div className="grid gap-6 md:grid-cols-2">
+            <RequestAccessCard
+              busy={busy}
+              email={email}
+              onEmail={setEmail}
+              onSubmit={() => post({ email })}
+            />
+            <Card>
+              <CardHeader>
+                <div>
+                  <CardTitle>Already have access?</CardTitle>
+                  <CardDescription>
+                    If you confirmed a link on this device or are signed in,
+                    open your registrations directly.
+                  </CardDescription>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-3">
                 <Button
-                  onClick={async () => {
-                    const response = await fetch(
-                      `/api/registration/portal?material=${encodeURIComponent(m.id)}`
-                    );
-                    const data = await response.json();
-                    if (response.ok && data.url) {
-                      window.open(data.url, "_blank", "noopener,noreferrer");
-                    } else {
-                      setMessage("Material unavailable");
-                    }
-                  }}
+                  disabled={loading}
+                  onClick={() => load("registrations")}
                   type="button"
-                  variant="outline"
                 >
-                  Open material
+                  {loading ? "Loading…" : "My registrations and materials"}
                 </Button>
-              ) : (
-                <p>Please contact us for your missing material.</p>
-              )}
-            </div>
-          ))}
-        </article>
-      ))}
-      {more ? (
-        <Button onClick={() => load(view, cursor)} type="button">
-          Load more
-        </Button>
-      ) : null}
-      <p>
-        For cancellations or changes, please{" "}
-        <a className="underline" href="/contact">
-          contact us
-        </a>
-        .
-      </p>
-    </section>
+                <Button
+                  disabled={loading}
+                  onClick={() => load("orders")}
+                  type="button"
+                  variant="secondary"
+                >
+                  My purchaser orders
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {loaded ? (
+          <>
+            <Tabs
+              label="Portal sections"
+              onChange={(next) => {
+                setMessage(null);
+                load(next);
+              }}
+              tabs={TABS}
+              value={view}
+            />
+            {TABS.map((tab) => (
+              <TabPanel active={view === tab.id} id={tab.id} key={tab.id}>
+                <RowList
+                  loading={loading}
+                  onMessage={setMessage}
+                  rows={rows}
+                  view={tab.id}
+                />
+              </TabPanel>
+            ))}
+            {more ? (
+              <div className="flex justify-center">
+                <Button
+                  disabled={loading}
+                  onClick={() => load(view, cursor)}
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                >
+                  Load more
+                </Button>
+              </div>
+            ) : null}
+          </>
+        ) : null}
+        <p className="m-0 text-center text-slate-500 text-sm">
+          For cancellations or changes, please{" "}
+          <a
+            className="font-medium text-primary underline-offset-2 hover:underline"
+            href="/contact"
+          >
+            contact us
+          </a>
+          .
+        </p>
+      </div>
+    </div>
   );
 }

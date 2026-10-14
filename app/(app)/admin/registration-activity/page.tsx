@@ -1,12 +1,10 @@
-import {
-  ActivityAdmin,
-  RegistrationAdminNav,
-} from "@/components/registration/admin";
+import { Suspense } from "react";
+import { ActivityAdmin } from "@/components/admin/activity";
+
 export default function Page() {
   return (
-    <>
-      <RegistrationAdminNav />
+    <Suspense fallback={null}>
       <ActivityAdmin />
-    </>
+    </Suspense>
   );
 }

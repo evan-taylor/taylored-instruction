@@ -1,12 +1,10 @@
-import {
-  MaterialAdmin,
-  RegistrationAdminNav,
-} from "@/components/registration/admin";
+import { Suspense } from "react";
+import { MaterialAdmin } from "@/components/admin/materials";
+
 export default function Page() {
   return (
-    <>
-      <RegistrationAdminNav />
+    <Suspense>
       <MaterialAdmin />
-    </>
+    </Suspense>
   );
 }

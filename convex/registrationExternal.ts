@@ -110,6 +110,49 @@ export const refund = action({
     return null;
   },
 });
+
+type RenderableJob = {
+  body: string;
+  subject: string;
+  name: string;
+  title: string;
+  schedule: string;
+  materials: { title: string; url: string | null }[];
+  link?: { label: string; url: string };
+};
+function absolute(url: string) {
+  return url.startsWith("/") ? baseUrl() + url : url;
+}
+/** Renders a queued job into a safe subject and HTML body with structural details appended. */
+function renderJob(job: RenderableJob) {
+  const variables = {
+    attendeeName: job.name,
+    courseTitle: job.title,
+    meetingDates: job.schedule,
+    materials: job.materials
+      .map((m) => `${m.title}: ${m.url ?? "Open portal"}`)
+      .join("\n"),
+    portalLink: `${baseUrl()}/registrations`,
+  };
+  const content = renderEmail(job.body, variables);
+  const invitationPath = job.body.match(INVITATION_PATH)?.[1];
+  const invitationLink = invitationPath
+    ? `<p><a href="${escapeHtml(baseUrl() + invitationPath)}">Accept or decline your reserved opening</a></p>`
+    : "";
+  const actionLink = job.link
+    ? `<p><a href="${escapeHtml(absolute(job.link.url))}">${escapeHtml(job.link.label)}</a></p>`
+    : "";
+  const materialList = job.materials
+    .map(
+      (m) =>
+        `<li>${m.url ? `<a href="${escapeHtml(m.url)}">${escapeHtml(m.title)}</a>` : escapeHtml(m.title)}</li>`
+    )
+    .join("");
+  return {
+    subject: renderSubject(job.subject, variables),
+    html: `${content}${actionLink}${invitationLink}<p>${escapeHtml(job.title)}</p><p>${escapeHtml(job.schedule)}</p><ul>${materialList}</ul><p><a href="${escapeHtml(baseUrl())}/registrations">Secure registration access</a></p>`,
+  };
+}
 export const deliver = internalAction({
   args: {},
   returns: v.null(),
@@ -132,33 +175,14 @@ export const deliver = internalAction({
             );
           }
           // All registration mail is forced to the explicit safe test recipient until a separate release change.
-          const variables = {
-            attendeeName: job.name,
-            courseTitle: job.title,
-            meetingDates: job.schedule,
-            materials: job.materials
-              .map((m) => `${m.title}: ${m.url ?? "Open portal"}`)
-              .join("\n"),
-            portalLink: `${baseUrl()}/registrations`,
-          };
-          const content = renderEmail(job.body, variables);
-          const invitationPath = job.body.match(INVITATION_PATH)?.[1];
-          const invitationLink = invitationPath
-            ? `<p><a href="${escapeHtml(baseUrl() + invitationPath)}">Accept or decline your reserved opening</a></p>`
-            : "";
-          const materialList = job.materials
-            .map(
-              (m) =>
-                `<li>${m.url ? `<a href="${escapeHtml(m.url)}">${escapeHtml(m.title)}</a>` : escapeHtml(m.title)}</li>`
-            )
-            .join("");
+          const rendered = renderJob(job);
           const response = await new Resend(
             process.env.RESEND_API_KEY
           ).emails.send(
             {
               from,
               to: recipient,
-              subject: renderSubject(job.subject, variables),
+              subject: rendered.subject,
               attachments: job.calendar
                 ? [
                     {
@@ -168,7 +192,7 @@ export const deliver = internalAction({
                     },
                   ]
                 : undefined,
-              html: `${content}${invitationLink}<p>${escapeHtml(job.title)}</p><p>${escapeHtml(job.schedule)}</p><ul>${materialList}</ul><p><a href="${escapeHtml(baseUrl())}/registrations">Secure registration access</a></p>`,
+              html: rendered.html,
             },
             { idempotencyKey: `registration-mail:${id}` }
           );

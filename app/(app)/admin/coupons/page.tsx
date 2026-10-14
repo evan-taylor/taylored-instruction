@@ -1,12 +1,10 @@
-import {
-  CouponAdmin,
-  RegistrationAdminNav,
-} from "@/components/registration/admin";
+import { Suspense } from "react";
+import { CouponAdmin } from "@/components/admin/coupons";
+
 export default function Page() {
   return (
-    <>
-      <RegistrationAdminNav />
+    <Suspense>
       <CouponAdmin />
-    </>
+    </Suspense>
   );
 }
