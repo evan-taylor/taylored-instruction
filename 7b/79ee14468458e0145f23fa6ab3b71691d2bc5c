@@ -1,0 +1,27 @@
+components/admin/group-enrollment.tsx
+  s_d0a82c0dd5b547::t_ce5c795b8ebcc2 1147-1150,1156,1159-1161,1525
+convex/registrationOperations.ts
+  s_d0a82c0dd5b547::t_11b0b093526703 866-868
+convex/registrationSchema.ts
+  s_d0a82c0dd5b547::t_856e8b943ecbf5 337-341
+convex/registrationWaitlist.ts
+  s_d0a82c0dd5b547::t_80869549c770b5 81,83-89,91-101
+tests/registration/backend.test.ts
+  s_d0a82c0dd5b547::t_92ed577852a263 2906-2989
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b79ee14468458e0145f23fa6ab3b71691d2bc5c",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}

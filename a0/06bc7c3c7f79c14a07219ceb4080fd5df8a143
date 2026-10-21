@@ -1,0 +1,27 @@
+convex/ResendOTP.ts
+  s_d0a82c0dd5b547::t_90d6a00c0f88d4 42
+convex/registrationExternal.ts
+  s_d0a82c0dd5b547::t_afd6f33b74702b 206
+convex/registrationMail.ts
+  s_d0a82c0dd5b547::t_c7fd5e7ddccd89 63,66
+shared/registration/email.ts
+  s_d0a82c0dd5b547::t_38e22b70ab8ffd 33-44,47-49,51,54,60,64-70,72-93,160-162,174-175
+tests/registration/email.test.ts
+  s_d0a82c0dd5b547::t_45fb7a42b02daa 57,86-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a006bc7c3c7f79c14a07219ceb4080fd5df8a143",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
