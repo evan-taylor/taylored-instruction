@@ -1,0 +1,41 @@
+app/(app)/admin/instructors/instructors-table.tsx
+  s_d0a82c0dd5b547::t_ae27406a002b1e 70
+app/(app)/admin/instructors/page.tsx
+  s_d0a82c0dd5b547::t_0e0896a3c7b417 4-5,23,53,62,71-80
+app/(app)/ecards/page.tsx
+  s_d0a82c0dd5b547::t_efb2b544047323 40-43
+app/(app)/layout.tsx
+  s_d0a82c0dd5b547::t_ca94af78ff0533 8,33
+app/(app)/my-account/page.tsx
+  s_d0a82c0dd5b547::t_545dff379490d8 6,9,30,109-114,116-118,120,122
+components/admin/dashboard.tsx
+  s_d0a82c0dd5b547::t_b43bf268e99573 111
+components/admin/shell.tsx
+  s_d0a82c0dd5b547::t_8afb462936c6e2 8,73-78,170-171
+components/layout/Header.tsx
+  s_d0a82c0dd5b547::t_15ba5f02291ed2 9,11,74-76,152-154,167,185-189
+components/layout/InstructorNavigation.tsx
+  s_d0a82c0dd5b547::t_562ee63bf785ca 1-62
+components/layout/MarketingHeader.tsx
+  s_d0a82c0dd5b547::t_5e01d0aec65304 8,10,63-64,141-145,156,159-163
+lib/workspace-navigation.ts
+  s_d0a82c0dd5b547::t_bad4b79d237a67 1-56
+tests/registration/workspace-navigation.test.ts
+  s_d0a82c0dd5b547::t_7692c427cfc322 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8612eaa3ee41fe2bf8a90b3e3d2a9ef8f401e370",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
