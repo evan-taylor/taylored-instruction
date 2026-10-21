@@ -667,10 +667,13 @@ export function InvoicesPanel({
   focusOrder?: Id<"registrationOrders">;
 }) {
   const [status, setStatus] = useState<InvoiceStatus | "">("");
-  const rows = useQuery(
+  const invoicePage = usePaginatedQuery(
     api.registrationGroups.invoices,
-    status ? { status } : {}
+    status ? { status } : {},
+    { initialNumItems: 50 }
   );
+  const rows =
+    invoicePage.status === "LoadingFirstPage" ? undefined : invoicePage.results;
   const [creating, setCreating] = useState(Boolean(focusOrder));
   const [message, setMessage] = useState("");
   const open = rows?.filter((r) => r.invoice.status === "open") ?? [];
@@ -703,7 +706,7 @@ export function InvoicesPanel({
           {rows ? (
             <p className="m-0 pb-2 text-slate-500 text-sm">
               {pluralize(open.length, "open invoice")} ·{" "}
-              <Money cents={outstanding} /> outstanding
+              <Money cents={outstanding} /> outstanding in the loaded invoices
             </p>
           ) : null}
         </div>
@@ -753,6 +756,15 @@ export function InvoicesPanel({
           </TBody>
         </Table>
       </ListState>
+      {invoicePage.status === "CanLoadMore" ? (
+        <Button
+          onClick={() => invoicePage.loadMore(50)}
+          type="button"
+          variant="secondary"
+        >
+          Load more invoices
+        </Button>
+      ) : null}
       {creating ? (
         <CreateInvoiceModal
           onClose={() => setCreating(false)}

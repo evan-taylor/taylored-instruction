@@ -547,11 +547,7 @@ export const reserve = mutation({
     if (!order) {
       throw new Error("Order insert failed");
     }
-    const settled =
-      total === 0 || ["offline", "waived"].includes(args.admin?.payment ?? "");
-    if (settled) {
-      await settle(ctx, order, args.admin?.payment ?? "free");
-    }
+    const status = await settleReservation(ctx, order, args.admin);
     await audit(
       ctx,
       actor?.userId ?? "guest",
@@ -562,11 +558,31 @@ export const reserve = mutation({
     return {
       orderId: id,
       total,
-      status: settled ? "settled" : order.status,
+      status,
       expires,
     };
   },
 });
+
+async function settleReservation(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">,
+  admin?: { payment: string }
+) {
+  if (
+    order.total === 0 ||
+    ["offline", "waived"].includes(admin?.payment ?? "")
+  ) {
+    const source =
+      admin && order.total === 0 ? "staff-free" : (admin?.payment ?? "free");
+    await settle(ctx, order, source);
+  }
+  const saved = await ctx.db.get(order._id);
+  if (!saved) {
+    throw new Error("Order missing after settlement");
+  }
+  return saved.status;
+}
 
 /** Stamps each line with its Stripe tax code: tuition from settings, materials from the material. */
 async function withTaxCodes(

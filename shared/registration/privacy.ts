@@ -1,5 +1,5 @@
 const PRIVATE_ROUTE =
-  /^\/(api\/registration|courses(?:\/|$)|classes(?:\/|$)|s(?:\/|$)|register|registration|instructor\/sessions|admin\/(?:courses|sessions|materials|coupons|registration|groups))/u;
+  /^\/(api\/registration|courses(?:\/|$)|classes(?:\/|$)|s(?:\/|$)|register|registration|instructor\/sessions|admin(?:\/|$))/u;
 export function isPrivateRegistrationPath(path: string) {
   return PRIVATE_ROUTE.test(path);
 }

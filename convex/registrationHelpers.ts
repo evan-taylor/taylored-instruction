@@ -449,6 +449,7 @@ export async function settle(
     session?.state === "canceled" ||
     coupon?.disabled ||
     (!course.enrollmentOpen &&
+      source !== "staff-free" &&
       source !== "offline" &&
       source !== "waived" &&
       source !== "transfer" &&

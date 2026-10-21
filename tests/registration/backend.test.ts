@@ -1205,7 +1205,9 @@ describe("Group training and invoicing", () => {
       })
     ).rejects.toThrow("already open");
     await expect(
-      f.outsiderClient.query(api.registrationGroups.invoices, {})
+      f.outsiderClient.query(api.registrationGroups.invoices, {
+        paginationOpts: { cursor: null, numItems: 50 },
+      })
     ).rejects.toThrow("Forbidden");
     await f.t.mutation(internal.registrationGroups.attachStripeInvoice, {
       id: first,
@@ -2133,5 +2135,26 @@ describe("Fulfillment and transfer review coverage", () => {
       "name@example.test",
       "first@example.test",
     ]);
+  });
+});
+
+describe("Staff-only settlement", () => {
+  it("settles authorized free enrollment even when public enrollment is closed", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, {
+        enrollmentOpen: false,
+        settings: { ...config, tuition: 0 },
+      })
+    );
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { payment: "unpaid", overbook: false, reason: "Private group" },
+    });
+    expect(result.status).toBe("settled");
+    expect((await f.t.run((ctx) => ctx.db.get(result.orderId)))?.status).toBe(
+      result.status
+    );
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
   });
 });

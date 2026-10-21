@@ -1,3 +1,7 @@
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { ADMIN_EMAILS } from "../shared/adminEmails";
@@ -340,8 +344,11 @@ export const createInvoice = mutation({
   },
 });
 export const invoices = query({
-  args: { status: v.optional(invoiceStatus) },
-  returns: v.array(
+  args: {
+    status: v.optional(invoiceStatus),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(
     v.object({
       invoice: doc(schema, "registrationInvoices"),
       order: v.union(doc(schema, "registrationOrders"), v.null()),
@@ -355,14 +362,18 @@ export const invoices = query({
           .query("registrationInvoices")
           .withIndex("by_status", (q) => q.eq("status", status))
           .order("desc")
-          .take(BATCH)
-      : await ctx.db.query("registrationInvoices").order("desc").take(BATCH);
-    return await Promise.all(
-      rows.map(async (invoice) => ({
+          .paginate(args.paginationOpts)
+      : await ctx.db
+          .query("registrationInvoices")
+          .order("desc")
+          .paginate(args.paginationOpts);
+    const page = await Promise.all(
+      rows.page.map(async (invoice) => ({
         invoice,
         order: await ctx.db.get(invoice.orderId),
       }))
     );
+    return { ...rows, page };
   },
 });
 export const orderInvoices = query({

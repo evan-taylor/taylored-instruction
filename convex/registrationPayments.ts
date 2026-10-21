@@ -120,7 +120,12 @@ export const paymentEvent = internalMutation({
     ) {
       await release(ctx, order, args.type);
     } else if (args.paid) {
-      await settle(ctx, order, "stripe-test", args.paymentIntent);
+      await settle(
+        ctx,
+        order,
+        args.live ? "stripe-live" : "stripe-test",
+        args.paymentIntent
+      );
     } else {
       return null;
     }
