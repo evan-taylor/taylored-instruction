@@ -1,0 +1,29 @@
+components/ui/Button.tsx
+  s_d0a82c0dd5b547::t_06ea530bc99543 22,40,97
+convex/registrationOperations.ts
+  s_d0a82c0dd5b547::t_2b0fe6f7d99dbf 927-930
+convex/registrationTransfers.ts
+  s_d0a82c0dd5b547::t_3d2216b6443c96 28-36
+tests/registration/backend.test.ts
+  s_d0a82c0dd5b547::t_61338ff719de8a 1715-1743,2836-2875
+tests/registration/button.test.tsx
+  s_d0a82c0dd5b547::t_cc3f96a900d68e 1-12
+vitest.config.ts
+  s_d0a82c0dd5b547::t_9ec3e74bc08489 4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3747f75342da1c51a08d895143c27560414865e",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
