@@ -2987,3 +2987,96 @@ it("preserves overdue unsent registration steps during session edits", async () 
       ?.scheduleRevision
   ).toBe(2);
 });
+
+describe("Emailed payment requests", () => {
+  it("queues one request without billing information or starting checkout, then starts once using the secure link", async () => {
+    vi.stubEnv("SITE_URL", "https://training.example.test");
+    const f = await fixture();
+    const input = attempt(f.course, f.session);
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...input,
+      admin: { overbook: false, reason: "Staff enrollment", payment: "unpaid" },
+    });
+    const args = { orderId: result.orderId, requestId: crypto.randomUUID() };
+    await expect(
+      f.t.mutation(api.registrationPayments.requestPayment, args)
+    ).rejects.toThrow();
+    const url = await f.adminClient.mutation(
+      api.registrationPayments.requestPayment,
+      args
+    );
+    expect(new URL(url).searchParams.get("key")).toBe(input.requestKey);
+    await f.adminClient.mutation(api.registrationPayments.requestPayment, args);
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(
+      jobs.filter((j) => j.key.startsWith("payment-request:"))
+    ).toHaveLength(1);
+    const job = jobs.find((j) => j.key.startsWith("payment-request:"));
+    expect(job?.recipient).toBe(input.purchaser);
+    expect(
+      await f.t.run(async (ctx) => (await ctx.db.get(result.orderId))?.status)
+    ).toBe("unpaid");
+    if (!job) {
+      throw new Error("Missing payment request");
+    }
+    const mail = await f.t.mutation(internal.registrationMail.claim, {
+      id: job._id,
+    });
+    expect(mail?.category).toBe("Payment requested");
+    expect(mail?.body).toContain("billing address");
+    expect(mail?.body).not.toContain("Total paid");
+    await expect(
+      f.t.mutation(api.registrationPayments.beginRequestedPayment, {
+        orderId: result.orderId,
+        requestKey: "wrong",
+      })
+    ).rejects.toThrow("not found");
+    const payment = { orderId: result.orderId, requestKey: input.requestKey };
+    await f.t.mutation(api.registrationPayments.beginRequestedPayment, payment);
+    const first = await f.t.run((ctx) => ctx.db.get(result.orderId));
+    await f.t.mutation(api.registrationPayments.beginRequestedPayment, payment);
+    const second = await f.t.run((ctx) => ctx.db.get(result.orderId));
+    expect(second?.status).toBe("hold");
+    expect(second?.expires).toBe(first?.expires);
+    expect(
+      await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
+    ).toBe(1);
+  });
+  it("suppresses queued requests after payment and rejects paid links", async () => {
+    vi.stubEnv("SITE_URL", "https://training.example.test");
+    const f = await fixture();
+    const input = attempt(f.course, f.session);
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...input,
+      admin: { overbook: false, reason: "Staff enrollment", payment: "unpaid" },
+    });
+    await f.adminClient.mutation(api.registrationPayments.requestPayment, {
+      orderId: result.orderId,
+      requestId: crypto.randomUUID(),
+    });
+    await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+      orderId: result.orderId,
+      source: "offline",
+      reason: "Paid by check",
+    });
+    const job = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").collect()).find((j) =>
+        j.key.startsWith("payment-request:")
+      )
+    );
+    if (!job) {
+      throw new Error("Missing payment request");
+    }
+    expect(
+      await f.t.mutation(internal.registrationMail.claim, { id: job._id })
+    ).toBeNull();
+    await expect(
+      f.t.mutation(api.registrationPayments.beginRequestedPayment, {
+        orderId: result.orderId,
+        requestKey: input.requestKey,
+      })
+    ).rejects.toThrow("already paid");
+  });
+});

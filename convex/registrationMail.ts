@@ -59,6 +59,7 @@ function messageBody(
 ) {
   const categories: Record<string, string> = {
     receipt: "Payment receipt",
+    "payment-request": "Payment requested",
     confirmation: "Registration confirmed",
     invoice: "Invoice",
     "invoice-reminder": "Payment reminder",
@@ -184,6 +185,24 @@ async function offerStillOpen(ctx: MutationCtx, job: Doc<"registrationJobs">) {
   return offer?.state === "offered" && (offer.expires ?? 0) > Date.now();
 }
 
+async function paymentStillOpen(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">
+) {
+  if (!job.key.startsWith("payment-request:")) {
+    return true;
+  }
+  const [, reference] = job.key.split(":");
+  const id = reference
+    ? ctx.db.normalizeId("registrationOrders", reference)
+    : null;
+  const order = id ? await ctx.db.get(id) : null;
+  return (
+    order?.status === "unpaid" ||
+    (order?.status === "hold" && order.expires > Date.now())
+  );
+}
+
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
   returns: v.union(
@@ -223,9 +242,10 @@ export const claim = internalMutation({
     const explicit =
       job.key.startsWith("staff:") || job.key.startsWith("schedule:");
     const invoiceOpen = await invoiceStillOpen(ctx, job);
+    const paymentOpen = await paymentStillOpen(ctx, job);
     const offerOpen = await offerStillOpen(ctx, job);
     if (
-      !(invoiceOpen && offerOpen) ||
+      !(invoiceOpen && offerOpen && paymentOpen) ||
       (seat && seat.state !== "active" && !explicit) ||
       (session &&
         ((session.state === "canceled" && !explicit) ||

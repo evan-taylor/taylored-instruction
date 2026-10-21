@@ -914,23 +914,24 @@ export function SeatOperations({ seat }: { seat: Seat }) {
 
 function UnpaidActions({ order }: { order: Order }) {
   const record = useMutation(api.registrationOperations.recordPayment);
-  const createLink = useMutation(api.registrationPayments.createPaymentLink);
-  const checkout = useAction(api.registrationExternal.checkout);
+  const requestPayment = useMutation(api.registrationPayments.requestPayment);
   const [dialog, setDialog] = useState<"offline" | "waived" | null>(null);
   const [busy, setBusy] = useState(false);
-  const [createdUrl, setUrl] = useState("");
-  const url = order.checkoutUrl ?? createdUrl;
+  const [url, setUrl] = useState("");
+  const requestId = useRef(crypto.randomUUID());
   const [message, setMessage] = useState("");
   const createPaymentLink = async () => {
     setBusy(true);
     setMessage("");
     try {
-      const requestKey =
-        order.status === "hold" ? order.requestKey : crypto.randomUUID();
-      if (order.status === "unpaid") {
-        await createLink({ orderId: order._id, requestKey });
-      }
-      setUrl(await checkout({ orderId: order._id, requestKey }));
+      setUrl(
+        await requestPayment({
+          orderId: order._id,
+          requestId: requestId.current,
+        })
+      );
+      setMessage(`Payment request queued for ${order.purchaser}.`);
+      requestId.current = crypto.randomUUID();
     } catch (error) {
       setMessage(String(error));
     } finally {
@@ -966,12 +967,13 @@ function UnpaidActions({ order }: { order: Order }) {
           size="sm"
           type="button"
         >
-          {busy ? "Working…" : "Create card payment link"}
+          {busy ? "Sending…" : "Request payment"}
         </Button>
       </div>
       <p className="m-0 text-slate-500 text-xs">
-        A card link reserves the seats for 30 minutes while the customer pays.
-        Void any open invoice before creating one.
+        Emails {order.purchaser} a secure payment link for this entire order (
+        {order.seats.length} attendee{order.seats.length === 1 ? "" : "s"}).
+        They enter their billing address at checkout. No invoice is required.
       </p>
       {url ? (
         <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">

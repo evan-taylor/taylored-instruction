@@ -1,10 +1,19 @@
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
-import { BATCH, cents } from "../shared/registration/domain";
+import { BATCH, cents, formatMoney } from "../shared/registration/domain";
 import { assertRegistrationPaymentMode } from "../shared/registration/environment";
 import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery, mutation } from "./_generated/server";
-import { audit, offering, release, settle, staff } from "./registrationHelpers";
+import {
+  audit,
+  enqueue,
+  offering,
+  release,
+  settle,
+  staff,
+} from "./registrationHelpers";
 import { allocateRefund } from "./registrationRefundAllocation";
 import schema from "./schema";
 
@@ -264,6 +273,112 @@ export const finishRefund = internalMutation({
     return null;
   },
 });
+async function validatePayment(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">
+) {
+  const { course, session, config } = await offering(
+    ctx,
+    order.courseId,
+    order.sessionId
+  );
+  if (
+    !course.enrollmentOpen ||
+    course.publication !== "published" ||
+    (session &&
+      (session.state !== "open" ||
+        Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
+  ) {
+    throw new Error(
+      "Card checkout is closed for this offering. Use an invoice or record offline payment; the enrollment is unchanged."
+    );
+  }
+  const invoices = await ctx.db
+    .query("registrationInvoices")
+    .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+    .take(BATCH);
+  if (invoices.some((i) => i.status === "open" || i.status === "draft")) {
+    throw new Error(
+      "Void the open invoice before creating a card payment link"
+    );
+  }
+}
+async function preparePayment(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">,
+  requestKey: string
+) {
+  await validatePayment(ctx, order);
+  await ctx.db.patch(order._id, {
+    status: "hold",
+    requestKey,
+    expires: Date.now() + 1_800_000,
+  });
+}
+
+export const requestPayment = mutation({
+  args: { orderId: v.id("registrationOrders"), requestId: v.string() },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    const order = await ctx.db.get(args.orderId);
+    if (!(order && ["unpaid", "hold"].includes(order.status))) {
+      throw new Error("An unpaid registration is required");
+    }
+    if (order.status === "hold" && order.expires <= Date.now()) {
+      throw new Error(
+        "This reservation has expired. Enroll the student again before requesting payment."
+      );
+    }
+    await validatePayment(ctx, order);
+    const site = process.env.SITE_URL;
+    if (!site) {
+      throw new Error("Configure SITE_URL");
+    }
+    const url = new URL("/registration/payment", site);
+    url.searchParams.set("order", order._id);
+    url.searchParams.set("key", order.requestKey);
+    await enqueue(ctx, {
+      key: `payment-request:${order._id}:${args.requestId}`,
+      kind: "email",
+      recipient: order.purchaser,
+      subject: `Payment requested: ${order.title}`,
+      body: `Hello ${order.purchaserName}, please complete payment for your training registration.\nTraining subtotal: ${formatMoney(order.total)}. Any applicable sales tax is calculated at checkout.\nAttendees: ${order.seats.map((s) => s.attendee.name).join(", ")}.\nEnter your billing address and card details securely at checkout. Once you begin checkout, complete payment within 30 minutes. Your registration is confirmed after payment.\nIf you have already arranged payment another way, reply to this email before paying.`,
+      due: Date.now(),
+      link: { label: "Review and pay", url: url.toString() },
+    });
+    await audit(
+      ctx,
+      actor.userId,
+      "payment-request-emailed",
+      order._id,
+      order.purchaser
+    );
+    return url.toString();
+  },
+});
+
+export const beginRequestedPayment = mutation({
+  args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.requestKey !== args.requestKey) {
+      throw new Error("Payment request not found");
+    }
+    if (order.status === "hold" && order.expires > Date.now()) {
+      return null;
+    }
+    if (order.status !== "unpaid") {
+      throw new Error(
+        "This payment request is already paid, canceled, or expired. Contact us if you need help."
+      );
+    }
+    await preparePayment(ctx, order, args.requestKey);
+    return null;
+  },
+});
+
 export const createPaymentLink = mutation({
   args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
   returns: v.null(),
@@ -273,36 +388,7 @@ export const createPaymentLink = mutation({
     if (order?.status !== "unpaid" || args.requestKey.length < 24) {
       throw new Error("Unpaid order required");
     }
-    const { course, session, config } = await offering(
-      ctx,
-      order.courseId,
-      order.sessionId
-    );
-    if (
-      !course.enrollmentOpen ||
-      course.publication !== "published" ||
-      (session &&
-        (session.state !== "open" ||
-          Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
-    ) {
-      throw new Error(
-        "Card checkout is closed for this offering. Use an invoice or record offline payment; the enrollment is unchanged."
-      );
-    }
-    const invoices = await ctx.db
-      .query("registrationInvoices")
-      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-      .take(BATCH);
-    if (invoices.some((i) => i.status === "open" || i.status === "draft")) {
-      throw new Error(
-        "Void the open invoice before creating a card payment link"
-      );
-    }
-    await ctx.db.patch(order._id, {
-      status: "hold",
-      requestKey: args.requestKey,
-      expires: Date.now() + 1_800_000,
-    });
+    await preparePayment(ctx, order, args.requestKey);
     await audit(
       ctx,
       actor.userId,
