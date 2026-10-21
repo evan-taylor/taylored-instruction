@@ -377,7 +377,8 @@ export async function scheduleEmails(
   ctx: MutationCtx,
   seat: Doc<"registrationSeats">,
   session: Doc<"registrationSessions"> | null,
-  config: Doc<"registrationCourses">["settings"]
+  config: Doc<"registrationCourses">["settings"],
+  initialRegistration = false
 ) {
   const previousJobs = await ctx.db
     .query("registrationJobs")
@@ -410,7 +411,11 @@ export async function scheduleEmails(
         return;
       }
       const due = anchor + step.offsetMinutes * 60_000;
-      if (due < Date.now() && step.anchor !== "registration") {
+      const pending = previousJobs.some((job) => job.stepId === step.id);
+      if (
+        due < Date.now() &&
+        !(step.anchor === "registration" && (initialRegistration || pending))
+      ) {
         return;
       }
       await enqueue(ctx, {
@@ -432,7 +437,8 @@ export async function settle(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">,
   source: string,
-  paymentIntent?: string
+  paymentIntent?: string,
+  paidAt = Date.now()
 ) {
   if (order.status === "settled") {
     return;
@@ -459,7 +465,7 @@ export async function settle(
     coupon?.disabled ||
     (source.startsWith("stripe-") &&
       session &&
-      Date.now() >= session.firstStart - config.cutoffMinutes * 60_000) ||
+      paidAt >= session.firstStart - config.cutoffMinutes * 60_000) ||
     (!course.enrollmentOpen &&
       source !== "staff-free" &&
       source !== "offline" &&
@@ -516,7 +522,7 @@ export async function settle(
       seatId: seat._id,
       sessionId: session?._id,
     });
-    await scheduleEmails(ctx, paid, session, config);
+    await scheduleEmails(ctx, paid, session, config, true);
   }, Promise.resolve());
   await enqueue(ctx, {
     key: `receipt:${order._id}`,

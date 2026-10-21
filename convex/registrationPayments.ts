@@ -92,6 +92,7 @@ export const paymentEvent = internalMutation({
     live: v.boolean(),
     type: v.string(),
     paymentIntent: v.optional(v.string()),
+    paidAt: v.optional(v.number()),
     /** Sales tax Stripe collected on top of the quoted total. */
     tax: v.optional(v.number()),
   },
@@ -133,7 +134,8 @@ export const paymentEvent = internalMutation({
         ctx,
         order,
         args.live ? "stripe-live" : "stripe-test",
-        args.paymentIntent
+        args.paymentIntent,
+        args.paidAt
       );
     } else {
       return null;

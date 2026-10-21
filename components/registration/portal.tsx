@@ -56,6 +56,23 @@ const TABS: { id: PortalView; label: string }[] = [
   { id: "orders", label: "Orders" },
 ];
 
+async function fetchMaterialPage(
+  seatId: string,
+  cursor: string | null
+): Promise<{
+  page: NonNullable<PortalRow["materials"]>;
+  continueCursor: string;
+  isDone: boolean;
+}> {
+  const response = await fetch(
+    `/api/registration/portal?materials=${encodeURIComponent(seatId)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+  );
+  if (!response.ok) {
+    throw new Error("Unable to load materials");
+  }
+  return await response.json();
+}
+
 function MaterialList({
   row,
   onMessage,
@@ -93,20 +110,19 @@ function MaterialList({
           onClick={async () => {
             setBusy(true);
             try {
-              const response = await fetch(
-                `/api/registration/portal?materials=${encodeURIComponent(row.id)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
-              );
-              if (!response.ok) {
-                throw new Error("Unable to load materials");
-              }
-              const data: {
-                page: NonNullable<PortalRow["materials"]>;
-                continueCursor: string;
-                isDone: boolean;
-              } = await response.json();
-              setLoaded([...(loaded ?? []), ...data.page]);
-              setCursor(data.continueCursor);
-              setDone(data.isDone);
+              const first = await fetchMaterialPage(row.id, cursor);
+              // The card already includes page one. Fetch past it on the first click.
+              const next =
+                cursor || first.isDone
+                  ? null
+                  : await fetchMaterialPage(row.id, first.continueCursor);
+              setLoaded([
+                ...(loaded ?? []),
+                ...first.page,
+                ...(next?.page ?? []),
+              ]);
+              setCursor(next?.continueCursor ?? first.continueCursor);
+              setDone(next?.isDone ?? first.isDone);
             } catch {
               onMessage({ text: "Unable to load materials", tone: "danger" });
             } finally {

@@ -2603,11 +2603,46 @@ it("deducts refunded credit from transfer previews and collections", async () =>
       overrides: { tuition: 15_000 },
     });
   });
-  await f.adminClient.mutation(api.registrationPayments.requestRefund, {
-    orderId: order.orderId,
-    cents: 4000,
-    reason: "Partial refund",
-    key: crypto.randomUUID(),
+  const pendingRefund = await f.adminClient.mutation(
+    api.registrationPayments.requestRefund,
+    {
+      orderId: order.orderId,
+      cents: 4000,
+      reason: "Partial refund",
+      key: crypto.randomUUID(),
+    }
+  );
+  await expect(
+    f.adminClient.query(api.registrationTransfers.preview, {
+      seatId: source._id,
+      sessionId: target,
+    })
+  ).rejects.toThrow("pending refunds");
+  await f.t.mutation(internal.registrationPayments.refundFailure, {
+    id: pendingRefund,
+    error: "Rejected",
+    terminal: true,
+  });
+  expect(
+    (
+      await f.adminClient.query(api.registrationTransfers.preview, {
+        seatId: source._id,
+        sessionId: target,
+      })
+    ).difference
+  ).toBe(5000);
+  const refund = await f.adminClient.mutation(
+    api.registrationPayments.requestRefund,
+    {
+      orderId: order.orderId,
+      cents: 4000,
+      reason: "Partial refund",
+      key: crypto.randomUUID(),
+    }
+  );
+  await f.t.mutation(internal.registrationPayments.finishRefund, {
+    id: refund,
+    stripeId: "re_partial",
   });
   const preview = await f.adminClient.query(api.registrationTransfers.preview, {
     seatId: source._id,
@@ -2694,4 +2729,78 @@ it("queues cancellation notices for every unpaid attendee across page boundaries
   expect(
     await f.t.mutation(internal.registrationMail.claim, { id: notice._id })
   ).not.toBeNull();
+});
+
+it("honors payment completed before cutoff when its signed event arrives afterward", async () => {
+  const f = await fixture();
+  const order = await f.t.mutation(
+    api.registration.reserve,
+    attempt(f.course, f.session)
+  );
+  await f.t.mutation(internal.registrationPayments.attachCheckout, {
+    orderId: order.orderId,
+    session: "cs_delayed",
+    url: "https://checkout.stripe.com/test",
+  });
+  const cutoff = Date.now() - 1000;
+  await f.t.run((ctx) => ctx.db.patch(f.session, { firstStart: cutoff }));
+  await f.t.mutation(internal.registrationPayments.paymentEvent, {
+    orderId: order.orderId,
+    session: "cs_delayed",
+    eventId: "evt_delayed",
+    amount: 10_000,
+    currency: "usd",
+    paid: true,
+    live: false,
+    type: "checkout.session.completed",
+    paymentIntent: "pi_delayed",
+    paidAt: cutoff - 1000,
+  });
+  expect((await f.t.run((ctx) => ctx.db.get(order.orderId)))?.status).toBe(
+    "settled"
+  );
+  expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
+});
+
+it("does not send newly added overdue registration emails to historical customers", async () => {
+  const f = await fixture();
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { overbook: false, payment: "offline", reason: "Paid" },
+  });
+  await f.t.run(async (ctx) => {
+    const attendee = await ctx.db
+      .query("registrationSeats")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order.orderId))
+      .first();
+    if (!attendee) {
+      throw new Error("Missing attendee");
+    }
+    const { scheduleEmails } = await import("../../convex/registrationHelpers");
+    const settings = {
+      ...config,
+      emails: [
+        {
+          id: "new-step",
+          anchor: "registration" as const,
+          offsetMinutes: 0,
+          subject: "New step",
+          body: "Hello",
+        },
+      ],
+    };
+    const historical = { ...attendee, settledAt: Date.now() - 86_400_000 };
+    await scheduleEmails(ctx, historical, null, settings);
+    expect(
+      (await ctx.db.query("registrationJobs").collect()).filter(
+        (j) => j.stepId === "new-step"
+      )
+    ).toHaveLength(0);
+    await scheduleEmails(ctx, historical, null, settings, true);
+    expect(
+      (await ctx.db.query("registrationJobs").collect()).filter(
+        (j) => j.stepId === "new-step"
+      )
+    ).toHaveLength(1);
+  });
 });

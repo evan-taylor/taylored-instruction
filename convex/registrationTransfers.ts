@@ -37,6 +37,11 @@ async function retainedCredit(
     if (refund.state === "failed") {
       continue;
     }
+    if (refund.state === "pending") {
+      throw new Error(
+        "Wait for pending refunds to finish before transferring this registration"
+      );
+    }
     if (!refund.allocations) {
       throw new Error("Legacy refund requires line allocation reconciliation");
     }
@@ -461,10 +466,11 @@ export const preview = query({
     if (!priced) {
       throw new Error("Unable to price transfer");
     }
+    const credit = await retainedCredit(ctx, seat);
     return {
-      original: seat.snapshot.total,
+      original: credit,
       destination: priced.total,
-      difference: priced.total - (await retainedCredit(ctx, seat)),
+      difference: priced.total - credit,
     };
   },
 });

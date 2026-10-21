@@ -44,6 +44,7 @@ async function handleCheckout(ctx: ActionCtx, event: Stripe.Event) {
   }
   await ctx.runMutation(internal.registrationPayments.paymentEvent, {
     eventId: event.id,
+    paidAt: event.created * 1000,
     orderId: orderId as Id<"registrationOrders">,
     session: session.id,
     amount: session.amount_total ?? -1,

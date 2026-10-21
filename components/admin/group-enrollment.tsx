@@ -1148,8 +1148,10 @@ async function performEnrollment(
 ): Promise<Result> {
   const organizationId =
     input.organizationId === "new"
-      ? (attempt.organizationId ??
-        (await act.saveOrganization(input.newOrganization)))
+      ? await act.saveOrganization({
+          ...input.newOrganization,
+          id: attempt.organizationId,
+        })
       : input.organizationId || undefined;
   attempt.organizationId = organizationId;
   const reserved = await act.reserve({
