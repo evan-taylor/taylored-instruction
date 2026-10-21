@@ -1,5 +1,8 @@
 import { expect, it } from "vitest";
-import { shortZone } from "../../components/registration/format";
+import {
+  fromLocalInput,
+  shortZone,
+} from "../../components/registration/format";
 
 it("labels schedules using the class date across daylight saving changes", () => {
   expect(
@@ -24,4 +27,13 @@ it("excludes every admin entry point from registration analytics", async () => {
     expect(isPrivateRegistrationPath(path)).toBe(true);
   }
   expect(isPrivateRegistrationPath("/about")).toBe(false);
+});
+
+it("rejects nonexistent local times at the spring DST transition", () => {
+  expect(
+    Number.isNaN(fromLocalInput("2026-03-08T02:30", "America/Los_Angeles"))
+  ).toBe(true);
+  expect(fromLocalInput("2026-03-08T03:30", "America/Los_Angeles")).toBe(
+    Date.parse("2026-03-08T10:30:00Z")
+  );
 });

@@ -108,6 +108,22 @@ export const advance = internalMutation({
         if (reserved >= session.capacity) {
           return;
         }
+        const registered = await ctx.db
+          .query("registrationSeats")
+          .withIndex("by_sessionId_and_email", (q) =>
+            q.eq("sessionId", session._id).eq("email", entry.email)
+          )
+          .filter((q) =>
+            q.or(
+              q.eq(q.field("state"), "active"),
+              q.eq(q.field("state"), "held")
+            )
+          )
+          .first();
+        if (registered) {
+          await ctx.db.patch(entry._id, { state: "expired" });
+          return;
+        }
         const token = crypto.randomUUID() + crypto.randomUUID();
         const expires = Math.min(
           cutoff,
@@ -134,6 +150,13 @@ export const advance = internalMutation({
           args
         );
       }, Promise.resolve());
+      if (waiting.length > 0 && reserved < session.capacity) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.registrationWaitlist.advance,
+          args
+        );
+      }
     }
     await ctx.db.patch(session._id, { reserved });
     return null;

@@ -168,8 +168,12 @@ function MaterialsTable({ value, onChange }: SectionProps) {
     { initialNumItems: 50 }
   );
   const catalog = materials.results;
+  const available = catalog.filter(
+    (m) =>
+      !(m.archived || value.materials.some((row) => row.materialId === m._id))
+  );
   const attach = () => {
-    const [material] = catalog;
+    const [material] = available;
     if (!material) {
       return;
     }
@@ -192,7 +196,7 @@ function MaterialsTable({ value, onChange }: SectionProps) {
       <SectionHeading
         action={
           <Button
-            disabled={catalog.length === 0}
+            disabled={available.length === 0}
             onClick={attach}
             size="xs"
             type="button"
@@ -229,7 +233,16 @@ function MaterialsTable({ value, onChange }: SectionProps) {
           <TBody>
             {value.materials.map((row) => (
               <MaterialRow
-                catalog={catalog}
+                catalog={catalog.filter(
+                  (m) =>
+                    m._id === row.materialId ||
+                    !(
+                      m.archived ||
+                      value.materials.some(
+                        (attached) => attached.materialId === m._id
+                      )
+                    )
+                )}
                 key={row.id}
                 onChange={(patch) =>
                   onChange({

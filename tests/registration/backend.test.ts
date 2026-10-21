@@ -586,6 +586,18 @@ describe("Operational acceptance", () => {
 describe("Payment and material policies", () => {
   it("demonstrates the approved $130, $110, $125, $25 and $0 examples", async () => {
     const f = await fixture();
+    const extraMaterials = await f.t.run(async (ctx) =>
+      Promise.all(
+        ["Waivable", "Optional"].map((title) =>
+          ctx.db.insert("registrationMaterials", {
+            title,
+            kind: "link",
+            version: 1,
+            archived: false,
+          })
+        )
+      )
+    );
     const pricing = {
       ...config,
       materials: [
@@ -598,14 +610,14 @@ describe("Payment and material policies", () => {
         },
         {
           id: "waivable",
-          materialId: f.material,
+          materialId: extraMaterials[0] ?? f.material,
           title: "Waivable",
           policy: "waivable" as const,
           cents: 2000,
         },
         {
           id: "optional",
-          materialId: f.material,
+          materialId: extraMaterials[1] ?? f.material,
           title: "Optional",
           policy: "optional" as const,
           cents: 1500,
@@ -1374,12 +1386,17 @@ describe("Group training and invoicing", () => {
       })
     ).rejects.toThrow("number of attendees");
     await expect(
-      f.outsiderClient.query(api.registrationGroups.groupRequests, {})
+      f.outsiderClient.query(api.registrationGroups.groupRequests, {
+        paginationOpts: { numItems: 50, cursor: null },
+      })
     ).rejects.toThrow("Forbidden");
     expect(
-      await f.adminClient.query(api.registrationGroups.groupRequests, {
-        status: "new",
-      })
+      (
+        await f.adminClient.query(api.registrationGroups.groupRequests, {
+          paginationOpts: { numItems: 50, cursor: null },
+          status: "new",
+        })
+      ).page
     ).toHaveLength(1);
     await f.adminClient.mutation(api.registrationGroups.updateGroupRequest, {
       id,
@@ -1655,6 +1672,46 @@ describe("PR review regressions", () => {
     expect(
       jobs.find((j) => j.key === `receipt:${order.orderId}`)?.body
     ).toContain("108.50");
+    const invoiceJob = jobs.find((j) => j.key === `invoice:${id}`);
+    if (!invoiceJob) {
+      throw new Error("Missing invoice job");
+    }
+    expect(
+      await f.t.mutation(internal.registrationMail.claim, {
+        id: invoiceJob._id,
+      })
+    ).toBeNull();
+    vi.stubEnv("REGISTRATION_MODE", "test");
+    await f.t.mutation(internal.registrationGroups.invoicePaid, {
+      eventId: "evt_extra",
+      stripeInvoiceId: "in_tax",
+      amount: 10_850,
+      tax: 850,
+      currency: "usd",
+      paymentIntent: "pi_extra",
+      live: false,
+    });
+    const extra = await f.t.run((ctx) => ctx.db.get(order.orderId));
+    expect(extra?.status).toBe("exception");
+    expect(extra?.paymentIntent).toBe("pi_extra");
+    const refund = await f.adminClient.mutation(
+      api.registrationPayments.requestRefund,
+      {
+        orderId: order.orderId,
+        cents: 10_850,
+        reason: "Extra card payment",
+        key: crypto.randomUUID(),
+      }
+    );
+    await f.t.mutation(internal.registrationPayments.refundFailure, {
+      id: refund,
+      error: "Rejected",
+      terminal: true,
+    });
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.refundReserved
+    ).toBe(0);
+    expect((await f.t.run((ctx) => ctx.db.get(refund)))?.state).toBe("failed");
   });
   it("closes an invoice attached after cancellation without emailing its payment link", async () => {
     const f = await fixture();
@@ -1720,7 +1777,9 @@ describe("PR review regressions", () => {
       }
     });
     await expect(
-      f.instructorClient.query(api.registrationOperations.assignedSessions, {})
+      f.instructorClient.query(api.registrationOperations.assignedSessions, {
+        paginationOpts: { numItems: 50, cursor: null },
+      })
     ).rejects.toThrow("instructor");
   });
   it("does not invite waitlists for a closed course", async () => {
@@ -2209,4 +2268,430 @@ it("refuses manual code assignment after a paid seat is canceled", async () => {
   expect((await f.t.run((ctx) => ctx.db.get(code._id)))?.state).toBe(
     "available"
   );
+});
+
+it("rejects late checkout attachment without exposing a payable URL", async () => {
+  const f = await fixture();
+  const order = await f.t.mutation(
+    api.registration.reserve,
+    attempt(f.course, f.session)
+  );
+  await f.t.run((ctx) => ctx.db.patch(order.orderId, { status: "expired" }));
+  expect(
+    await f.t.mutation(internal.registrationPayments.attachCheckout, {
+      orderId: order.orderId,
+      session: "cs_race",
+      url: "https://checkout.stripe.com/race",
+    })
+  ).toBe(false);
+  expect(
+    (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.checkoutUrl
+  ).toBeUndefined();
+});
+
+it("retains late card payments for refund without activating seats after cutoff", async () => {
+  const f = await fixture();
+  const order = await f.t.mutation(
+    api.registration.reserve,
+    attempt(f.course, f.session)
+  );
+  await f.t.run(async (ctx) => {
+    await ctx.db.patch(f.session, { firstStart: Date.now() - 1 });
+    const saved = await ctx.db.get(order.orderId);
+    if (!saved) {
+      throw new Error("Missing order");
+    }
+    const { settle } = await import("../../convex/registrationHelpers");
+    await settle(ctx, saved, "stripe-test", "pi_after_cutoff");
+  });
+  const saved = await f.t.run((ctx) => ctx.db.get(order.orderId));
+  expect(saved?.status).toBe("exception");
+  expect(saved?.paymentIntent).toBe("pi_after_cutoff");
+  expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(0);
+  expect(
+    (await f.t.query(api.registration.detail, { code: "test-stable-code" }))
+      ?.state
+  ).toBe("closed");
+});
+
+it("delivers explicit staff messages to unpaid attendees without private joining instructions", async () => {
+  const f = await fixture();
+  await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { payment: "unpaid", overbook: false, reason: "Group" },
+  });
+  const enrolled = await f.t.run((ctx) =>
+    ctx.db.query("registrationSeats").first()
+  );
+  if (!enrolled) {
+    throw new Error("Missing attendee");
+  }
+  const id = await f.t.run((ctx) =>
+    ctx.db.insert("registrationJobs", {
+      key: "staff:test",
+      kind: "email",
+      recipient: enrolled.email,
+      subject: "Please confirm",
+      body: "Contact us",
+      state: "pending",
+      attempts: 0,
+      due: Date.now(),
+      seatId: enrolled._id,
+      sessionId: f.session,
+    })
+  );
+  const message = await f.t.mutation(internal.registrationMail.claim, { id });
+  expect(message?.body).toBe("Contact us");
+  expect(message?.schedule).not.toContain("Private");
+  expect(message?.calendar).toBeUndefined();
+});
+
+it("shows a waiver instead of claiming the quoted amount was paid", async () => {
+  const f = await fixture();
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { payment: "waived", overbook: false, reason: "Scholarship" },
+  });
+  const job = await f.t.run((ctx) =>
+    ctx.db
+      .query("registrationJobs")
+      .withIndex("by_key", (q) => q.eq("key", `receipt:${order.orderId}`))
+      .unique()
+  );
+  if (!job) {
+    throw new Error("Missing receipt");
+  }
+  const message = await f.t.mutation(internal.registrationMail.claim, {
+    id: job._id,
+  });
+  expect(message?.category).toBe("Payment waived");
+  expect(message?.details.find((d) => d.label === "Total paid")?.value).toBe(
+    "$0.00"
+  );
+});
+
+it("keeps material grants idempotent beyond the first fifty historical rows", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } })
+  );
+  await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+  await f.t.run(async (ctx) => {
+    const enrolled = await ctx.db.query("registrationSeats").first();
+    if (!enrolled) {
+      throw new Error("Missing attendee");
+    }
+    const oldMaterial = await ctx.db.insert("registrationMaterials", {
+      title: "Old",
+      kind: "link",
+      version: 1,
+      archived: true,
+    });
+    await Promise.all(
+      Array.from({ length: 51 }, (_, i) =>
+        ctx.db.insert("registrationEntitlements", {
+          seatId: enrolled._id,
+          materialId: oldMaterial,
+          attachmentId: `old-${i}`,
+          title: "Old",
+          version: 1,
+          kind: "link",
+          state: "ready",
+          paidAt: Date.now(),
+        })
+      )
+    );
+    await ctx.db.insert("registrationEntitlements", {
+      seatId: enrolled._id,
+      materialId: f.material,
+      attachmentId: "current",
+      title: "Current",
+      version: 1,
+      kind: "keycode",
+      state: "pending",
+      paidAt: Date.now(),
+    });
+    const { grantMaterial } = await import("../../convex/registrationHelpers");
+    await grantMaterial(ctx, enrolled, {
+      id: "current",
+      materialId: f.material,
+      title: "Current",
+      policy: "included",
+      cents: 0,
+    });
+    expect(
+      await ctx.db.query("registrationEntitlements").collect()
+    ).toHaveLength(52);
+  });
+});
+
+it("pages organizations without losing records after the first page", async () => {
+  const f = await fixture();
+  await f.t.run(async (ctx) => {
+    await Promise.all(
+      Array.from({ length: 55 }, (_, i) =>
+        ctx.db.insert("registrationOrganizations", {
+          name: `Org ${i}`,
+          address: "",
+          phone: "",
+          notes: "",
+          contactName: "Contact",
+          contactEmail: "contact@example.test",
+          archived: false,
+        })
+      )
+    );
+  });
+  const first = await f.adminClient.query(
+    api.registrationGroups.organizations,
+    { paginationOpts: { numItems: 50, cursor: null } }
+  );
+  const second = await f.adminClient.query(
+    api.registrationGroups.organizations,
+    { paginationOpts: { numItems: 50, cursor: first.continueCursor } }
+  );
+  expect(first.page).toHaveLength(50);
+  expect(second.page).toHaveLength(5);
+});
+
+it("uses current grades after more than two hundred historical versions", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } })
+  );
+  await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+  const enrolled = await f.t.run((ctx) =>
+    ctx.db.query("registrationSeats").first()
+  );
+  if (!enrolled) {
+    throw new Error("Missing attendee");
+  }
+  await f.t.run(async (ctx) => {
+    await ctx.db.patch(enrolled._id, {
+      outcomeDefinitions: [
+        {
+          id: "exam",
+          title: "Exam",
+          type: "percentage",
+          required: true,
+          minimum: 80,
+          options: [],
+          version: 202,
+        },
+      ],
+    });
+    await Promise.all(
+      Array.from({ length: 201 }, (_, i) =>
+        ctx.db.insert("registrationOutcomes", {
+          seatId: enrolled._id,
+          fieldId: "exam",
+          version: i + 1,
+          value: 10,
+          actor: f.admin,
+          at: Date.now(),
+        })
+      )
+    );
+  });
+  await f.adminClient.mutation(api.registrationOperations.recordOutcome, {
+    seatId: enrolled._id,
+    fieldId: "exam",
+    value: 85,
+  });
+  await f.adminClient.mutation(api.registrationOperations.recordOutcome, {
+    seatId: enrolled._id,
+    fieldId: "exam",
+    value: 90,
+  });
+  const state = await f.adminClient.query(
+    api.registrationOperations.outcomeState,
+    { seatId: enrolled._id }
+  );
+  expect(state.values).toHaveLength(1);
+  expect(state.values[0]?.value).toBe(90);
+  expect(state.completion).toBe("complete");
+  expect(
+    await f.t.run((ctx) => ctx.db.query("registrationOutcomes").collect())
+  ).toHaveLength(202);
+});
+
+it("does not resend a step buried behind canceled reminder history", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } })
+  );
+  await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+  await f.t.run(async (ctx) => {
+    const enrolled = await ctx.db.query("registrationSeats").first();
+    if (!enrolled) {
+      throw new Error("Missing attendee");
+    }
+    await Promise.all(
+      Array.from({ length: 210 }, (_, i) =>
+        ctx.db.insert("registrationJobs", {
+          key: `old:${i}`,
+          kind: "email",
+          recipient: enrolled.email,
+          subject: "Old",
+          body: "Old",
+          due: Date.now(),
+          state: "canceled",
+          attempts: 0,
+          seatId: enrolled._id,
+          stepId: "reminder",
+        })
+      )
+    );
+    await ctx.db.insert("registrationJobs", {
+      key: "sent-reminder",
+      kind: "email",
+      recipient: enrolled.email,
+      subject: "Sent",
+      body: "Sent",
+      due: Date.now(),
+      state: "sent",
+      attempts: 1,
+      seatId: enrolled._id,
+      stepId: "reminder",
+    });
+    const { scheduleEmails } = await import("../../convex/registrationHelpers");
+    await scheduleEmails(ctx, enrolled, await ctx.db.get(f.session), {
+      ...config,
+      emails: [
+        {
+          id: "reminder",
+          anchor: "registration",
+          offsetMinutes: 1,
+          subject: "Do not resend",
+          body: "Do not resend",
+        },
+      ],
+    });
+    expect(
+      (await ctx.db.query("registrationJobs").collect()).some(
+        (j) => j.subject === "Do not resend"
+      )
+    ).toBe(false);
+  });
+});
+
+it("deducts refunded credit from transfer previews and collections", async () => {
+  const f = await fixture();
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { overbook: false, payment: "offline", reason: "Paid" },
+  });
+  const source = (
+    await f.adminClient.query(api.registrationOperations.orderSeats, {
+      orderId: order.orderId,
+    })
+  ).at(0);
+  if (!source) {
+    throw new Error("Missing seat");
+  }
+  const target = await f.t.run(async (ctx) => {
+    await ctx.db.patch(order.orderId, { paymentIntent: "pi_partial" });
+    const session = await ctx.db.get(f.session);
+    if (!session) {
+      throw new Error("Missing session");
+    }
+    const { _id, _creationTime, ...value } = session;
+    return await ctx.db.insert("registrationSessions", {
+      ...value,
+      code: "partial-refund-target",
+      reserved: 0,
+      overrides: { tuition: 15_000 },
+    });
+  });
+  await f.adminClient.mutation(api.registrationPayments.requestRefund, {
+    orderId: order.orderId,
+    cents: 4000,
+    reason: "Partial refund",
+    key: crypto.randomUUID(),
+  });
+  const preview = await f.adminClient.query(api.registrationTransfers.preview, {
+    seatId: source._id,
+    sessionId: target,
+  });
+  expect(preview.difference).toBe(9000);
+  const result = await f.adminClient.mutation(
+    api.registrationTransfers.transfer,
+    {
+      seatId: source._id,
+      sessionId: target,
+      choice: "collect",
+      reason: "Transfer",
+      requestKey: crypto.randomUUID(),
+    }
+  );
+  expect(result.adjustment).toBe(9000);
+  expect((await f.t.run((ctx) => ctx.db.get(source._id)))?.snapshot.total).toBe(
+    10_000
+  );
+});
+
+it("suppresses expired offer emails and skips already registered waitlist entries", async () => {
+  const f = await fixture();
+  await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { overbook: false, payment: "offline", reason: "Paid" },
+  });
+  const entry = await f.t.run((ctx) =>
+    ctx.db.insert("registrationWaitlist", {
+      sessionId: f.session,
+      name: "Student",
+      email: "student@example.test",
+      state: "waiting",
+    })
+  );
+  await f.t.mutation(internal.registrationWaitlist.advance, {
+    sessionId: f.session,
+  });
+  expect((await f.t.run((ctx) => ctx.db.get(entry)))?.state).toBe("expired");
+  expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
+  const job = await f.t.run((ctx) =>
+    ctx.db.insert("registrationJobs", {
+      key: `offer:${entry}`,
+      kind: "email",
+      recipient: "student@example.test",
+      subject: "Opening",
+      body: "Expired",
+      due: Date.now(),
+      state: "pending",
+      attempts: 0,
+      sessionId: f.session,
+    })
+  );
+  expect(
+    await f.t.mutation(internal.registrationMail.claim, { id: job })
+  ).toBeNull();
+});
+
+it("queues cancellation notices for every unpaid attendee across page boundaries", async () => {
+  const f = await fixture(60);
+  await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    attendees: Array.from({ length: 60 }, (_, i) =>
+      seat(`group-${i}@example.test`)
+    ),
+    admin: { overbook: false, payment: "unpaid", reason: "Invoice later" },
+  });
+  await f.t.run((ctx) => ctx.db.patch(f.session, { state: "canceled" }));
+  await f.t.mutation(internal.registrationOperations.reschedule, {
+    sessionId: f.session,
+    notify: true,
+    cursor: null,
+  });
+  const jobs = await f.t.run((ctx) =>
+    ctx.db.query("registrationJobs").collect()
+  );
+  const notices = jobs.filter((job) => job.key.startsWith("schedule:"));
+  expect(notices).toHaveLength(60);
+  const notice = notices.at(-1);
+  if (!notice) {
+    throw new Error("Missing notice");
+  }
+  expect(
+    await f.t.mutation(internal.registrationMail.claim, { id: notice._id })
+  ).not.toBeNull();
 });

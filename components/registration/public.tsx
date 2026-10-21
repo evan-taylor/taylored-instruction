@@ -1668,7 +1668,7 @@ function ScheduledCourse({
             {sessions.map((s) => (
               <Card className="flex flex-col" key={s.code}>
                 <CardContent className="flex grow gap-4 p-5">
-                  <DateBlock start={s.start} />
+                  <DateBlock start={s.start} timeZone={s.timeZone} />
                   <div className="min-w-0 flex-1 space-y-1.5">
                     <h3 className="m-0 font-semibold text-lg text-slate-900 leading-snug">
                       <Link
@@ -1679,7 +1679,9 @@ function ScheduledCourse({
                       </Link>
                     </h3>
                     <p className="m-0 text-slate-600 text-sm">
-                      {formatWeekday(s.start)} · {formatTime(s.start)}
+                      {formatWeekday(s.start, s.timeZone)} ·{" "}
+                      {formatTime(s.start, s.timeZone)}{" "}
+                      {shortZone(s.timeZone, s.start)}
                     </p>
                     <SeatsBadge available={s.available} />
                   </div>

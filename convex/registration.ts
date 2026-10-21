@@ -91,7 +91,14 @@ export const discover = query({
     const page = await Promise.all(
       result.page.map(async (s) => {
         const course = await ctx.db.get(s.courseId);
-        if (course?.publication !== "published") {
+        if (
+          course?.publication !== "published" ||
+          !course.enrollmentOpen ||
+          s.state !== "open" ||
+          Date.now() >=
+            s.firstStart -
+              effective(course.settings, s.overrides).cutoffMinutes * 60_000
+        ) {
           return null;
         }
         return {
@@ -148,6 +155,15 @@ export const detail = query({
         return null;
       }
     }
+    const enrollmentOpen =
+      course.enrollmentOpen &&
+      (!session ||
+        (session.state === "open" &&
+          Date.now() <
+            session.firstStart -
+              effective(course.settings, session.overrides).cutoffMinutes *
+                60_000));
+    const enrollmentState = enrollmentOpen ? "open" : "closed";
     return {
       id: session?._id ?? course._id,
       courseId: course._id,
@@ -160,7 +176,7 @@ export const detail = query({
       available: session
         ? Math.max(0, session.capacity - session.reserved)
         : undefined,
-      state: session?.state ?? (course.enrollmentOpen ? "open" : "closed"),
+      state: session?.state === "canceled" ? "canceled" : enrollmentState,
       config: publicSettings(
         effective(course.settings, session?.overrides ?? {})
       ),
@@ -239,6 +255,11 @@ export const saveCourse = mutation({
       courseId: saved,
       cursor: null,
     });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.registrationOperations.advanceCourseWaitlists,
+      { courseId: saved, cursor: null }
+    );
     return saved;
   },
 });
@@ -776,6 +797,7 @@ export const publicCourseSessions = query({
       code: v.string(),
       title: v.string(),
       start: v.number(),
+      timeZone: v.string(),
       available: v.number(),
     })
   ),
@@ -803,6 +825,7 @@ export const publicCourseSessions = query({
         code: s.code,
         title: s.title,
         start: s.firstStart,
+        timeZone: s.timeZone,
         available: Math.max(0, s.capacity - s.reserved),
       }));
   },

@@ -2,6 +2,7 @@ import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { BATCH, cents } from "../shared/registration/domain";
 import { assertRegistrationPaymentMode } from "../shared/registration/environment";
+import { internal } from "./_generated/api";
 import { internalMutation, internalQuery, mutation } from "./_generated/server";
 import { audit, offering, release, settle, staff } from "./registrationHelpers";
 import { allocateRefund } from "./registrationRefundAllocation";
@@ -45,7 +46,7 @@ export const attachCheckout = internalMutation({
     session: v.string(),
     url: v.string(),
   },
-  returns: v.null(),
+  returns: v.boolean(),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (
@@ -54,11 +55,19 @@ export const attachCheckout = internalMutation({
     ) {
       throw new Error("Checkout mismatch");
     }
+    if (order.status !== "hold" || order.expires <= Date.now()) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationExternal.expireCheckout,
+        { session: args.session, attempt: 0 }
+      );
+      return false;
+    }
     await ctx.db.patch(order._id, {
       stripeSession: args.session,
       checkoutUrl: args.url,
     });
-    return null;
+    return true;
   },
 });
 export const checkoutFailed = internalMutation({
@@ -314,12 +323,34 @@ export const pendingRefunds = internalQuery({
   },
 });
 export const refundFailure = internalMutation({
-  args: { id: v.id("registrationRefunds"), error: v.string() },
+  args: {
+    id: v.id("registrationRefunds"),
+    error: v.string(),
+    terminal: v.optional(v.boolean()),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     const refund = await ctx.db.get(args.id);
     if (refund?.state === "pending") {
-      await ctx.db.patch(refund._id, { error: args.error });
+      await ctx.db.patch(refund._id, {
+        error: args.error,
+        ...(args.terminal ? { state: "failed" as const } : {}),
+      });
+      if (args.terminal) {
+        const order = await ctx.db.get(refund.orderId);
+        if (order) {
+          await ctx.db.patch(order._id, {
+            refundReserved: order.refundReserved - refund.cents,
+          });
+        }
+        await audit(
+          ctx,
+          refund.actor,
+          "refund-failed",
+          refund.orderId,
+          args.error
+        );
+      }
     }
     return null;
   },
@@ -343,6 +374,15 @@ export const refundEvent = internalMutation({
       order.paymentIntent !== args.paymentIntent
     ) {
       throw new Error("Refund event mismatch");
+    }
+    if ((args.failed || args.succeeded) && refund.state === "pending") {
+      await audit(
+        ctx,
+        refund.actor,
+        args.succeeded ? "refund-completed" : "refund-failed",
+        order._id,
+        `${refund.cents}`
+      );
     }
     if (args.failed && refund.state === "pending") {
       await ctx.db.patch(refund._id, {

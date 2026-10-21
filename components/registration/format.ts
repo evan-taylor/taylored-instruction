@@ -115,7 +115,8 @@ export function fromLocalInput(value: string, timeZone: string) {
     );
   };
   const first = guess - offsetAt(guess);
-  return guess - offsetAt(first);
+  const result = guess - offsetAt(first);
+  return toLocalInput(result, timeZone) === value ? result : Number.NaN;
 }
 export function initials(name: string) {
   return name

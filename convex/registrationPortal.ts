@@ -1,4 +1,7 @@
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { BATCH, email, HOLD_MS } from "../shared/registration/domain";
 import { calendar } from "../shared/registration/schedule";
@@ -281,6 +284,40 @@ export const review = query({
           cents,
           discount,
         })),
+      })),
+    };
+  },
+});
+
+export const materials = query({
+  args: {
+    grant: v.optional(v.string()),
+    seatId: v.id("registrationSeats"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(
+    v.object({
+      id: v.id("registrationEntitlements"),
+      title: v.string(),
+      state: v.string(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    const identity = await portalEmail(ctx, args.grant);
+    const seat = await ctx.db.get(args.seatId);
+    if (seat?.email !== identity || !seat.settledAt) {
+      throw new Error("Material access denied");
+    }
+    const result = await ctx.db
+      .query("registrationEntitlements")
+      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
+      .paginate(args.paginationOpts);
+    return {
+      ...result,
+      page: result.page.map((e) => ({
+        id: e._id,
+        title: e.title,
+        state: e.state,
       })),
     };
   },

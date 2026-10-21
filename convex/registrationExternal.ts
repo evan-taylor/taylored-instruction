@@ -74,11 +74,19 @@ export const checkout = action({
     if (!session.url) {
       throw new Error("A Checkout URL was not returned");
     }
-    await ctx.runMutation(internal.registrationPayments.attachCheckout, {
-      orderId: order._id,
-      session: session.id,
-      url: session.url,
-    });
+    const attached = await ctx.runMutation(
+      internal.registrationPayments.attachCheckout,
+      {
+        orderId: order._id,
+        session: session.id,
+        url: session.url,
+      }
+    );
+    if (!attached) {
+      throw new Error(
+        "Reservation ended before checkout was ready. No payment link was issued."
+      );
+    }
     return session.url;
   },
 });
@@ -268,6 +276,7 @@ export const reconcileRefunds = internalAction({
         } catch (error) {
           await ctx.runMutation(internal.registrationPayments.refundFailure, {
             id,
+            terminal: error instanceof Stripe.errors.StripeInvalidRequestError,
             error:
               error instanceof Error
                 ? error.message

@@ -226,6 +226,8 @@ export const registrationTables = {
     codeId: v.optional(v.id("registrationCodes")),
   })
     .index("by_seatId", ["seatId"])
+    .index("by_seatId_and_materialId", ["seatId", "materialId"])
+    .index("by_seatId_and_attachmentId", ["seatId", "attachmentId"])
     .index("by_materialId_and_state_and_paidAt", [
       "materialId",
       "state",
@@ -271,6 +273,8 @@ export const registrationTables = {
     .index("by_key", ["key"])
     .index("by_state_and_due", ["state", "due"])
     .index("by_sessionId", ["sessionId"])
+    .index("by_seatId_and_state", ["seatId", "state"])
+    .index("by_seatId_and_stepId_and_state", ["seatId", "stepId", "state"])
     .index("by_seatId", ["seatId"]),
   registrationEvents: defineTable({
     eventId: v.string(),
@@ -292,7 +296,13 @@ export const registrationTables = {
     value: v.union(v.string(), v.number()),
     actor: v.id("users"),
     at: v.number(),
-  }).index("by_seatId", ["seatId"]),
+  })
+    .index("by_seatId", ["seatId"])
+    .index("by_seatId_and_fieldId_and_version", [
+      "seatId",
+      "fieldId",
+      "version",
+    ]),
   registrationAttendance: defineTable({
     seatId: v.id("registrationSeats"),
     meetingId: v.string(),

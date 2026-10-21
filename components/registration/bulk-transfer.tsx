@@ -1,17 +1,22 @@
 "use client";
 import { useConvex, useMutation } from "convex/react";
 import { useState } from "react";
-import { useSessions } from "@/components/registration/catalog";
+import { useCourses, useSessions } from "@/components/registration/catalog";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Field, Select } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import { formatMoney } from "@/shared/registration/domain";
+import type { Doc, Id } from "@/convex/_generated/dataModel";
+import {
+  effective,
+  formatMoney,
+  type Settings,
+} from "@/shared/registration/domain";
 import {
   AdjustmentChoice,
   type AdjustmentChoiceValue,
+  QuestionInput,
   ReasonDialog,
   sessionLabel,
 } from "./operations";
@@ -69,6 +74,10 @@ export function BulkResults({
 function useBulkTransfer(orders: Id<"registrationOrders">[]) {
   const convex = useConvex();
   const transfer = useMutation(api.registrationTransfers.transfer);
+  const [previewSeats, setPreviewSeats] = useState<Doc<"registrationSeats">[]>(
+    []
+  );
+  const [previewTarget, setPreviewTarget] = useState("");
   const [results, setResults] = useState<BulkResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -85,6 +94,8 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
     setMessage("");
     try {
       const seats = await activeSeats();
+      setPreviewSeats(seats);
+      setPreviewTarget(sessionId);
       const rows = await Promise.all(
         seats.map(async (seat): Promise<BulkResult> => {
           try {
@@ -121,7 +132,9 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
   const run = async (
     sessionId: Id<"registrationSessions">,
     choice: AdjustmentChoiceValue,
-    reason: string
+    reason: string,
+    questions: Settings["questions"],
+    answers: Record<string, string | boolean>
   ) => {
     const seats = await activeSeats();
     const rows = await Promise.all(
@@ -132,6 +145,10 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
             sessionId,
             choice,
             reason,
+            answers: questions.flatMap((q) => {
+              const value = answers[`${sessionId}:${seat._id}:${q.id}`];
+              return value === undefined ? [] : [{ id: q.id, value }];
+            }),
             requestKey: crypto.randomUUID(),
           });
           return {
@@ -157,7 +174,7 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
         : "No active, paid seats were found in the selected orders."
     );
   };
-  return { results, busy, message, preview, run };
+  return { results, busy, message, preview, run, previewSeats, previewTarget };
 }
 
 /** Moves every active seat in the selected orders to one destination session. */
@@ -167,12 +184,19 @@ export function BulkTransfer({
   orders: Id<"registrationOrders">[];
 }) {
   const sessions = useSessions();
+  const courses = useCourses();
+  const [answers, setAnswers] = useState<Record<string, string | boolean>>({});
   const [target, setTarget] = useState<Id<"registrationSessions"> | "">("");
   const [choice, setChoice] = useState<AdjustmentChoiceValue>("keep");
   const [open, setOpen] = useState(false);
-  const { results, busy, message, preview, run } = useBulkTransfer(orders);
+  const { results, busy, message, preview, run, previewSeats, previewTarget } =
+    useBulkTransfer(orders);
   const destinations = sessions?.filter((s) => s.state === "open");
   const destination = destinations?.find((s) => s._id === target);
+  const course = courses?.find((c) => c._id === destination?.courseId);
+  const questions = course
+    ? effective(course.settings, destination?.overrides ?? {}).questions
+    : [];
   return (
     <div className="space-y-5">
       <p className="m-0 text-slate-600 text-sm">
@@ -199,6 +223,27 @@ export function BulkTransfer({
         )}
       </Field>
       <AdjustmentChoice onChange={setChoice} value={choice} />
+      {previewTarget === target && questions.length > 0
+        ? previewSeats.map((seat) => (
+            <section className="space-y-3" key={seat._id}>
+              <h4>{seat.name} — destination questions</h4>
+              {questions.map((q) => (
+                <QuestionInput
+                  key={q.id}
+                  onChange={(value) =>
+                    setAnswers({
+                      ...answers,
+                      [`${target}:${seat._id}:${q.id}`]: value,
+                    })
+                  }
+                  question={q}
+                  value={answers[`${target}:${seat._id}:${q.id}`]}
+                />
+              ))}
+            </section>
+          ))
+        : null}
+
       <div className="flex flex-wrap justify-end gap-2">
         <Button
           disabled={!target || busy}
@@ -214,7 +259,12 @@ export function BulkTransfer({
           {busy ? "Working…" : "Preview"}
         </Button>
         <Button
-          disabled={!target || busy}
+          disabled={
+            !target ||
+            busy ||
+            previewTarget !== target ||
+            previewSeats.length === 0
+          }
           onClick={() => setOpen(true)}
           size="sm"
           type="button"
@@ -230,7 +280,7 @@ export function BulkTransfer({
         onClose={() => setOpen(false)}
         onConfirm={async (reason) => {
           if (target) {
-            await run(target, choice, reason);
+            await run(target, choice, reason, questions, answers);
           }
         }}
         open={open}

@@ -115,6 +115,12 @@ export function validateSettings(config: Settings) {
       throw new Error("Use at most 50 unique fields per section");
     }
   }
+  if (
+    new Set(config.materials.map((m) => m.materialId)).size !==
+    config.materials.length
+  ) {
+    throw new Error("Each material can only be attached once");
+  }
   for (const material of config.materials) {
     cents(material.cents);
   }

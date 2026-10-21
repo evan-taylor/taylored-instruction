@@ -345,7 +345,7 @@ function OverdueInvoices({ invoices }: { invoices: Attention["invoices"] }) {
                 <div className="text-slate-500 text-xs">{i.billToEmail}</div>
               </TD>
               <TD className="text-right">
-                <Money cents={i.amount} />
+                <Money cents={i.amount + (i.tax ?? 0)} />
               </TD>
               <TD className="whitespace-nowrap">
                 <div className="text-rose-700">{formatDate(i.dueAt)}</div>

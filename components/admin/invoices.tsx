@@ -8,6 +8,7 @@ import {
 import { ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useOrganizations } from "@/components/registration/catalog";
 import {
   formatDate,
   formatDateTime,
@@ -413,7 +414,7 @@ export function CreateInvoiceModal({
     { unpaid: true },
     { initialNumItems: 50 }
   );
-  const organizations = useQuery(api.registrationGroups.organizations);
+  const organizations = useOrganizations();
   const create = useMutation(api.registrationGroups.createInvoice);
   const issue = useAction(api.registrationInvoiceActions.issue);
   const [selected, setSelected] = useState<Id<"registrationOrders"> | "">(
@@ -431,7 +432,7 @@ export function CreateInvoiceModal({
     selected ? { orderId: selected } : "skip"
   );
   useEffect(() => {
-    if (!order) {
+    if (!(order && organizations)) {
       return;
     }
     const organization = organizations?.find(
@@ -514,9 +515,11 @@ export function CreateInvoiceModal({
           {(p) => (
             <Select
               {...p}
-              onChange={(e) =>
-                setSelected(e.target.value as Id<"registrationOrders"> | "")
-              }
+              onChange={(e) => {
+                setDraft(emptyInvoiceDraft);
+                setOrganizationId("");
+                setSelected(e.target.value as Id<"registrationOrders"> | "");
+              }}
               value={selected}
             >
               <option value="">Choose an unpaid enrollment…</option>
@@ -551,11 +554,12 @@ export function CreateInvoiceModal({
           {(p) => (
             <Select
               {...p}
-              onChange={(e) =>
+              onChange={(e) => {
+                setDraft(emptyInvoiceDraft);
                 setOrganizationId(
                   e.target.value as Id<"registrationOrganizations"> | ""
-                )
-              }
+                );
+              }}
               value={organizationId}
             >
               <option value="">No organization</option>

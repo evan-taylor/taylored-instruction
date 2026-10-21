@@ -1,11 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ADMIN_EMAILS, isAdminEmail } from "../shared/adminEmails";
-import {
-  BATCH,
-  effective,
-  email,
-  HOLD_MS,
-} from "../shared/registration/domain";
+import { effective, email, HOLD_MS } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -229,17 +224,21 @@ export async function grantMaterial(
   seat: Doc<"registrationSeats">,
   attachment: Doc<"registrationSeats">["snapshot"]["materials"][number]
 ) {
-  const existing = await ctx.db
-    .query("registrationEntitlements")
-    .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-    .take(BATCH);
-  if (
-    existing.some(
-      (e) =>
-        e.attachmentId === attachment.id ||
-        e.materialId === attachment.materialId
-    )
-  ) {
+  const [sameMaterial, sameAttachment] = await Promise.all([
+    ctx.db
+      .query("registrationEntitlements")
+      .withIndex("by_seatId_and_materialId", (q) =>
+        q.eq("seatId", seat._id).eq("materialId", attachment.materialId)
+      )
+      .first(),
+    ctx.db
+      .query("registrationEntitlements")
+      .withIndex("by_seatId_and_attachmentId", (q) =>
+        q.eq("seatId", seat._id).eq("attachmentId", attachment.id)
+      )
+      .first(),
+  ]);
+  if (sameMaterial || sameAttachment) {
     return;
   }
   const material = await ctx.db.get(attachment.materialId);
@@ -382,20 +381,24 @@ export async function scheduleEmails(
 ) {
   const previousJobs = await ctx.db
     .query("registrationJobs")
-    .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-    .take(200);
+    .withIndex("by_seatId_and_state", (q) =>
+      q.eq("seatId", seat._id).eq("state", "pending")
+    )
+    .take(100);
   await Promise.all(
     previousJobs
-      .filter((job) => job.stepId && job.state === "pending")
+      .filter((job) => job.stepId)
       .map((job) => ctx.db.patch(job._id, { state: "canceled" }))
   );
   await Promise.all(
     config.emails.map(async (step) => {
-      if (
-        previousJobs.some(
-          (job) => job.stepId === step.id && job.state === "sent"
+      const sent = await ctx.db
+        .query("registrationJobs")
+        .withIndex("by_seatId_and_stepId_and_state", (q) =>
+          q.eq("seatId", seat._id).eq("stepId", step.id).eq("state", "sent")
         )
-      ) {
+        .first();
+      if (sent) {
         return;
       }
       const anchor = {
@@ -454,6 +457,9 @@ export async function settle(
   if (
     session?.state === "canceled" ||
     coupon?.disabled ||
+    (source.startsWith("stripe-") &&
+      session &&
+      Date.now() >= session.firstStart - config.cutoffMinutes * 60_000) ||
     (!course.enrollmentOpen &&
       source !== "staff-free" &&
       source !== "offline" &&

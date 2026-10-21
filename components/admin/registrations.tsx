@@ -349,7 +349,14 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
             { orderId }
           );
           const outcomes = await Promise.allSettled(
-            seats.map((seat) => cancel({ seatId: seat._id, reason, notify }))
+            seats.map((seat) =>
+              cancel({
+                seatId: seat._id,
+                reason,
+                notify,
+                cancelWholeOrder: true,
+              })
+            )
           );
           const failed = outcomes.filter((r) => r.status === "rejected").length;
           return {

@@ -1007,7 +1007,7 @@ function SessionEditorModal({
   draft: SessionDraft;
   onChange: (draft: SessionDraft) => void;
   onClose: () => void;
-  onSubmit: () => void;
+  onSubmit: (publication?: Session["publication"]) => void;
   busy: boolean;
   message: string;
   notify: boolean;
@@ -1019,7 +1019,8 @@ function SessionEditorModal({
 }) {
   const [tab, setTab] = useState<EditorTab>("schedule");
   const course = courses.find((c) => c._id === draft.courseId);
-  const saveLabel = draft.id ? "Save session" : "Create session";
+  const publish = !draft.id || draft.publication === "draft";
+  const saveLabel = publish ? "Save and publish" : "Save session";
   return (
     <Modal
       description={
@@ -1039,7 +1040,23 @@ function SessionEditorModal({
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
-          <Button disabled={busy} onClick={onSubmit} size="sm" type="button">
+          {publish ? (
+            <Button
+              disabled={busy}
+              onClick={() => onSubmit("draft")}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Save draft
+            </Button>
+          ) : null}
+          <Button
+            disabled={busy}
+            onClick={() => onSubmit(publish ? "published" : draft.publication)}
+            size="sm"
+            type="button"
+          >
             {busy ? "Working…" : saveLabel}
           </Button>
         </>
@@ -1051,6 +1068,12 @@ function SessionEditorModal({
     >
       <div className="space-y-4">
         <ResultNotice message={message} />
+        {course && course.publication !== "published" ? (
+          <Notice tone="warning">
+            This course template is not published. Publish the course template
+            before its sessions can accept public registrations.
+          </Notice>
+        ) : null}
         <Tabs
           label="Session sections"
           onChange={setTab}
@@ -1140,7 +1163,7 @@ function RecurrenceModal({
   draft: SessionDraft;
   course: Course | undefined;
   onClose: () => void;
-  onCreate: (occurrences: Occurrence[]) => Promise<boolean>;
+  onCreate: (occurrences: Occurrence[]) => Promise<Occurrence[]>;
   busy: boolean;
   message: string;
 }) {
@@ -1178,9 +1201,7 @@ function RecurrenceModal({
           <Button
             disabled={busy || preview.length === 0 || !ready}
             onClick={async () => {
-              if (await onCreate(preview)) {
-                setPreview([]);
-              }
+              setPreview(await onCreate(preview));
             }}
             size="sm"
             type="button"
@@ -1226,7 +1247,10 @@ function RecurrenceModal({
             {(props) => (
               <TextInput
                 {...props}
-                onChange={(e) => setStartDate(e.target.value)}
+                onChange={(e) => {
+                  setStartDate(e.target.value);
+                  setPreview([]);
+                }}
                 type="date"
                 value={startDate}
               />
@@ -1236,14 +1260,23 @@ function RecurrenceModal({
             {(props) => (
               <TextInput
                 {...props}
-                onChange={(e) => setEndDate(e.target.value)}
+                onChange={(e) => {
+                  setEndDate(e.target.value);
+                  setPreview([]);
+                }}
                 type="date"
                 value={endDate}
               />
             )}
           </Field>
         </div>
-        <WeekdayChips onChange={setWeekdays} value={weekdays} />
+        <WeekdayChips
+          onChange={(days) => {
+            setWeekdays(days);
+            setPreview([]);
+          }}
+          value={weekdays}
+        />
         <div className="flex flex-wrap items-center gap-3">
           <Button
             disabled={!(ready && startDate && endDate && weekdays.length)}
@@ -1415,7 +1448,7 @@ export function SessionAdmin() {
   useDeepLinks(sessions, courses, openEditor);
   const course = courses?.find((c) => c._id === draft.courseId);
 
-  const submit = async () => {
+  const submit = async (publication?: Session["publication"]) => {
     if (!draft.courseId) {
       setError("Choose a course before saving");
       return;
@@ -1430,7 +1463,7 @@ export function SessionAdmin() {
         timeZone: draft.timeZone,
         capacity: draft.capacity,
         visibility: draft.visibility,
-        publication: draft.publication,
+        publication: publication ?? draft.publication,
         meetings: draft.meetings,
         overrides: draft.override ? draft.settings : {},
         instructors: draft.instructors,
@@ -1467,13 +1500,13 @@ export function SessionAdmin() {
   };
   const createRecurring = async (occurrences: Occurrence[]) => {
     if (!draft.courseId) {
-      return false;
+      return occurrences;
     }
     const { courseId } = draft;
     setError("");
     setBusy(true);
     try {
-      await Promise.all(
+      const results = await Promise.allSettled(
         occurrences.map((occurrence) =>
           save({
             courseId,
@@ -1498,13 +1531,21 @@ export function SessionAdmin() {
           })
         )
       );
-      setNotice(
-        `Created ${pluralize(occurrences.length, "independent draft session")}.`
+      const remaining = occurrences.filter(
+        (_, index) => results[index]?.status === "rejected"
       );
-      return true;
+      const created = occurrences.length - remaining.length;
+      const failed = results.find((result) => result.status === "rejected");
+      setNotice(`Created ${pluralize(created, "independent draft session")}.`);
+      setError(
+        failed?.status === "rejected"
+          ? `${created} drafts created. ${remaining.length} failed; retry creates only the remaining drafts. ${String(failed.reason)}`
+          : ""
+      );
+      return remaining;
     } catch (caught) {
       setError(String(caught));
-      return false;
+      return occurrences;
     } finally {
       setBusy(false);
     }
@@ -1603,7 +1644,7 @@ export function SessionAdmin() {
           busy={busy}
           course={course}
           draft={draft}
-          message={notice}
+          message={error || notice}
           onClose={() => setRecurrenceOpen(false)}
           onCreate={createRecurring}
         />

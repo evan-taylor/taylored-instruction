@@ -267,7 +267,7 @@ const PAYMENT_OPTIONS: { id: PaymentHandling; label: string; hint: string }[] =
 
 type Answers = Record<string, string | boolean>;
 
-function QuestionInput({
+export function QuestionInput({
   question,
   value,
   onChange,
@@ -925,8 +925,11 @@ function UnpaidActions({ order }: { order: Order }) {
     setBusy(true);
     setMessage("");
     try {
-      const requestKey = crypto.randomUUID();
-      await createLink({ orderId: order._id, requestKey });
+      const requestKey =
+        order.status === "hold" ? order.requestKey : crypto.randomUUID();
+      if (order.status === "unpaid") {
+        await createLink({ orderId: order._id, requestKey });
+      }
       setUrl(await checkout({ orderId: order._id, requestKey }));
     } catch (error) {
       setMessage(String(error));
@@ -956,7 +959,9 @@ function UnpaidActions({ order }: { order: Order }) {
           Waive payment
         </Button>
         <Button
-          disabled={busy || order.status !== "unpaid"}
+          disabled={
+            busy || (order.status !== "unpaid" && order.status !== "hold")
+          }
           onClick={createPaymentLink}
           size="sm"
           type="button"

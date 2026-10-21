@@ -11,13 +11,20 @@ function billingDetails(
 ) {
   const details: { label: string; value: string }[] = [];
   if (order) {
-    const tax = invoice?.tax ?? order.tax ?? 0;
+    const waived = order.source === "waived";
+    const tax = waived ? 0 : (invoice?.tax ?? order.tax ?? 0);
+    if (waived) {
+      details.push({
+        label: "Payment waived",
+        value: formatMoney(order.total),
+      });
+    }
     details.push(
       { label: "Subtotal", value: formatMoney(order.total) },
       { label: "Sales tax", value: formatMoney(tax) },
       {
         label: invoice ? "Invoice total" : "Total paid",
-        value: formatMoney(order.total + tax),
+        value: formatMoney(waived ? 0 : order.total + tax),
       },
       {
         label: "Attendees",
@@ -105,6 +112,14 @@ async function messageContext(
     }
   }
   details.push(...billingDetails(order, invoice));
+  if (order?.source === "waived" && kind === "receipt") {
+    return {
+      title,
+      details,
+      category: "Payment waived",
+      body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
+    };
+  }
   return { title, details, ...messageBody(job, kind, seat, session, invoice) };
 }
 
@@ -127,6 +142,48 @@ export const due = internalQuery({
     return [...pending, ...abandoned].map((j) => j._id);
   },
 });
+function scheduleContent(
+  session: Doc<"registrationSessions"> | null,
+  seat: Doc<"registrationSeats"> | null
+) {
+  return {
+    schedule: session
+      ? session.meetings
+          .map(
+            (m) =>
+              `${new Date(m.start).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: session.timeZone })} – ${new Date(m.end).toLocaleTimeString("en-US", { timeStyle: "short", timeZone: session.timeZone })} (${session.timeZone})\n${m.location}${seat?.state === "active" && seat.settledAt && m.instructions ? `\n${m.instructions}` : ""}`
+          )
+          .join("\n")
+      : "",
+    calendar:
+      session && seat?.state === "active" && seat.settledAt
+        ? calendar(session, Date.now())
+        : undefined,
+  };
+}
+
+async function invoiceStillOpen(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">
+) {
+  const [kind, reference] = job.key.split(":");
+  const invoiceId =
+    (kind === "invoice" || kind === "invoice-reminder") && reference
+      ? ctx.db.normalizeId("registrationInvoices", reference)
+      : null;
+  const invoice = invoiceId ? await ctx.db.get(invoiceId) : null;
+  return !invoiceId || invoice?.status === "open";
+}
+
+async function offerStillOpen(ctx: MutationCtx, job: Doc<"registrationJobs">) {
+  if (!job.key.startsWith("offer:")) {
+    return true;
+  }
+  const id = ctx.db.normalizeId("registrationWaitlist", job.key.slice(6));
+  const offer = id ? await ctx.db.get(id) : null;
+  return offer?.state === "offered" && (offer.expires ?? 0) > Date.now();
+}
+
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
   returns: v.union(
@@ -163,10 +220,15 @@ export const claim = internalMutation({
     const entitlement = job.entitlementId
       ? await ctx.db.get(job.entitlementId)
       : null;
+    const explicit =
+      job.key.startsWith("staff:") || job.key.startsWith("schedule:");
+    const invoiceOpen = await invoiceStillOpen(ctx, job);
+    const offerOpen = await offerStillOpen(ctx, job);
     if (
-      (seat && seat.state !== "active") ||
+      !(invoiceOpen && offerOpen) ||
+      (seat && seat.state !== "active" && !explicit) ||
       (session &&
-        ((session.state === "canceled" && !job.key.startsWith("schedule:")) ||
+        ((session.state === "canceled" && !explicit) ||
           (job.stepId && job.scheduleRevision !== session.revision))) ||
       (entitlement && job.kind !== "email" && entitlement.state !== "pending")
     ) {
@@ -201,15 +263,7 @@ export const claim = internalMutation({
       subject: job.subject,
       recipient: job.recipient,
       name: seat?.name ?? "",
-      schedule: session
-        ? session.meetings
-            .map(
-              (m) =>
-                `${new Date(m.start).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: session.timeZone })} – ${new Date(m.end).toLocaleTimeString("en-US", { timeStyle: "short", timeZone: session.timeZone })} (${session.timeZone})\n${m.location}${m.instructions ? `\n${m.instructions}` : ""}`
-            )
-            .join("\n")
-        : "",
-      calendar: session ? calendar(session, Date.now()) : undefined,
+      ...scheduleContent(session, seat),
       link: job.link,
     };
   },

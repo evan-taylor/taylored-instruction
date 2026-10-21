@@ -122,8 +122,11 @@ export const submitGroupRequest = mutation({
   },
 });
 export const groupRequests = query({
-  args: { status: v.optional(groupStatus) },
-  returns: v.array(doc(schema, "registrationGroupRequests")),
+  args: {
+    status: v.optional(groupStatus),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(doc(schema, "registrationGroupRequests")),
   handler: async (ctx, args) => {
     await staff(ctx);
     const { status } = args;
@@ -132,12 +135,12 @@ export const groupRequests = query({
         .query("registrationGroupRequests")
         .withIndex("by_status", (q) => q.eq("status", status))
         .order("desc")
-        .take(BATCH);
+        .paginate(args.paginationOpts);
     }
     return await ctx.db
       .query("registrationGroupRequests")
       .order("desc")
-      .take(BATCH);
+      .paginate(args.paginationOpts);
   },
 });
 export const updateGroupRequest = mutation({
@@ -219,23 +222,28 @@ export const saveOrganization = mutation({
   },
 });
 export const organizations = query({
-  args: {},
-  returns: v.array(doc(schema, "registrationOrganizations")),
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(doc(schema, "registrationOrganizations")),
+  handler: async (ctx, args) => {
     await staff(ctx);
-    return await ctx.db.query("registrationOrganizations").take(BATCH * 4);
+    return await ctx.db
+      .query("registrationOrganizations")
+      .paginate(args.paginationOpts);
   },
 });
 export const organizationOrders = query({
-  args: { id: v.id("registrationOrganizations") },
-  returns: v.array(doc(schema, "registrationOrders")),
+  args: {
+    id: v.id("registrationOrganizations"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(doc(schema, "registrationOrders")),
   handler: async (ctx, args) => {
     await staff(ctx);
     return await ctx.db
       .query("registrationOrders")
       .withIndex("by_organizationId", (q) => q.eq("organizationId", args.id))
       .order("desc")
-      .take(BATCH);
+      .paginate(args.paginationOpts);
   },
 });
 
@@ -537,6 +545,38 @@ export const invoicePaid = internalMutation({
     const order = invoice ? await ctx.db.get(invoice.orderId) : null;
     if (!(invoice && order)) {
       throw new Error("Unknown invoice payment");
+    }
+    if (
+      invoice.status === "paid" &&
+      order.paymentIntent !== args.paymentIntent
+    ) {
+      if (!args.paymentIntent || order.paymentIntent) {
+        throw new Error(
+          "Unexpected additional invoice payment requires reconciliation"
+        );
+      }
+      const tax = args.tax ?? invoice.tax ?? 0;
+      if (
+        args.currency !== order.currency ||
+        args.amount !== order.total + tax
+      ) {
+        throw new Error("Invoice payment mismatch");
+      }
+      await ctx.db.patch(order._id, {
+        status: "exception",
+        paymentIntent: args.paymentIntent,
+        tax,
+        source: "invoice-extra-payment",
+        error:
+          "Card payment received after offline settlement; refund or reconcile the extra payment",
+      });
+      await audit(
+        ctx,
+        "system",
+        "invoice-extra-payment",
+        order._id,
+        args.paymentIntent
+      );
     }
     if (invoice.status !== "paid") {
       const tax = args.tax ?? invoice.tax ?? 0;

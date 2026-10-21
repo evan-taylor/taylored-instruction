@@ -56,6 +56,72 @@ const TABS: { id: PortalView; label: string }[] = [
   { id: "orders", label: "Orders" },
 ];
 
+function MaterialList({
+  row,
+  onMessage,
+}: {
+  row: PortalRow;
+  onMessage: (message: Message) => void;
+}) {
+  const [loaded, setLoaded] = useState<NonNullable<
+    PortalRow["materials"]
+  > | null>(null);
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const materials = loaded ?? row.materials ?? [];
+  return (
+    <>
+      {materials.length ? (
+        <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+          {materials.map((m) => (
+            <MaterialRow
+              key={m.id}
+              material={m}
+              onUnavailable={() =>
+                onMessage({ text: "Material unavailable", tone: "danger" })
+              }
+            />
+          ))}
+        </ul>
+      ) : (
+        <p>No materials are currently available for this registration.</p>
+      )}
+      {!done && (row.materials?.length ?? 0) >= 50 ? (
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              const response = await fetch(
+                `/api/registration/portal?materials=${encodeURIComponent(row.id)}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+              );
+              if (!response.ok) {
+                throw new Error("Unable to load materials");
+              }
+              const data: {
+                page: NonNullable<PortalRow["materials"]>;
+                continueCursor: string;
+                isDone: boolean;
+              } = await response.json();
+              setLoaded([...(loaded ?? []), ...data.page]);
+              setCursor(data.continueCursor);
+              setDone(data.isDone);
+            } catch {
+              onMessage({ text: "Unable to load materials", tone: "danger" });
+            } finally {
+              setBusy(false);
+            }
+          }}
+          type="button"
+        >
+          {busy ? "Loading…" : "Load material history"}
+        </Button>
+      ) : null}
+    </>
+  );
+}
+
 function MaterialRow({
   material,
   onUnavailable,
@@ -81,7 +147,7 @@ function MaterialRow({
               );
               const data = await response.json();
               if (response.ok && data.url) {
-                window.open(data.url, "_blank", "noopener,noreferrer");
+                window.location.assign(data.url);
               } else {
                 onUnavailable();
               }
@@ -188,23 +254,7 @@ function RegistrationCard({
           <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
             Materials
           </h3>
-          {row.materials?.length ? (
-            <ul className="m-0 list-none divide-y divide-slate-100 p-0">
-              {row.materials.map((m) => (
-                <MaterialRow
-                  key={m.id}
-                  material={m}
-                  onUnavailable={() =>
-                    onMessage({ text: "Material unavailable", tone: "danger" })
-                  }
-                />
-              ))}
-            </ul>
-          ) : (
-            <p className="m-0 text-slate-500 text-sm">
-              No materials are currently available for this registration.
-            </p>
-          )}
+          <MaterialList onMessage={onMessage} row={row} />
         </section>
       </CardContent>
     </Card>

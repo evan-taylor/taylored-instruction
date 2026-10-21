@@ -13,6 +13,55 @@ import { mutation, query } from "./_generated/server";
 import { audit, offering, settle, staff } from "./registrationHelpers";
 import { allocateRefund } from "./registrationRefundAllocation";
 
+async function retainedCredit(
+  ctx: QueryCtx,
+  seat: Doc<"registrationSeats">,
+  depth = 0
+): Promise<number> {
+  if (depth >= 100) {
+    throw new Error("Transfer history requires reconciliation");
+  }
+  const order = await ctx.db.get(seat.orderId);
+  if (!order) {
+    throw new Error("Original order missing");
+  }
+  const refunds = await ctx.db
+    .query("registrationRefunds")
+    .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+    .take(1000);
+  if (refunds.length === 1000) {
+    throw new Error("Refund history requires reconciliation");
+  }
+  let refunded = 0;
+  for (const refund of refunds) {
+    if (refund.state === "failed") {
+      continue;
+    }
+    if (!refund.allocations) {
+      throw new Error("Legacy refund requires line allocation reconciliation");
+    }
+    refunded += refund.allocations
+      .filter((allocation) => allocation.email === seat.email)
+      .reduce((sum, allocation) => sum + allocation.cents, 0);
+  }
+  const purchased =
+    order.source === "waived"
+      ? 0
+      : order.seats
+          .filter((item) => item.attendee.email === seat.email)
+          .reduce((sum, item) => sum + item.total, 0);
+  const previous = seat.transferredFrom
+    ? await ctx.db.get(seat.transferredFrom)
+    : null;
+  const inherited = previous
+    ? await retainedCredit(ctx, previous, depth + 1)
+    : 0;
+  return Math.max(
+    0,
+    Math.min(seat.snapshot.total, purchased - refunded + inherited)
+  );
+}
+
 export const transfer = mutation({
   args: {
     seatId: v.id("registrationSeats"),
@@ -68,6 +117,7 @@ export const transfer = mutation({
     ) {
       throw new Error("Attendee already registered in destination");
     }
+    await rejectOfferedSeat(ctx, target._id, source.email);
     const selections = new Set(config.materials.map((m) => m.id));
     const [snapshot] = quote(
       config,
@@ -93,7 +143,8 @@ export const transfer = mutation({
     if (!snapshot) {
       throw new Error("Unable to price transfer");
     }
-    const difference = snapshot.total - source.snapshot.total;
+    const credit = await retainedCredit(ctx, source);
+    const difference = snapshot.total - credit;
     if (difference > 0 && args.choice === "refund") {
       throw new Error("Choose collect or keep for a higher-price transfer");
     }
@@ -138,7 +189,7 @@ export const transfer = mutation({
       state: "held",
       snapshot: {
         ...snapshot,
-        total: args.choice === "keep" ? source.snapshot.total : snapshot.total,
+        total: args.choice === "keep" ? credit : snapshot.total,
       },
       outcomeDefinitions: config.outcomes,
       transferredFrom: source._id,
@@ -413,7 +464,25 @@ export const preview = query({
     return {
       original: seat.snapshot.total,
       destination: priced.total,
-      difference: priced.total - seat.snapshot.total,
+      difference: priced.total - (await retainedCredit(ctx, seat)),
     };
   },
 });
+
+async function rejectOfferedSeat(
+  ctx: MutationCtx,
+  sessionId: Id<"registrationSessions">,
+  email: string
+) {
+  const offer = await ctx.db
+    .query("registrationWaitlist")
+    .withIndex("by_sessionId_and_email", (q) =>
+      q.eq("sessionId", sessionId).eq("email", email)
+    )
+    .first();
+  if (offer?.state === "offered") {
+    throw new Error(
+      "Decline the attendee’s waitlist offer before transferring into this session"
+    );
+  }
+}

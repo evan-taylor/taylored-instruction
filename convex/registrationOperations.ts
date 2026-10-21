@@ -1,5 +1,8 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { isAdminEmail } from "../shared/adminEmails";
@@ -13,6 +16,8 @@ import {
   taxCode,
 } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import {
   assignCode,
@@ -337,10 +342,23 @@ export const outcomeState = query({
       throw new Error("Registration not found");
     }
     await staff(ctx, seat.sessionId);
-    const values = await ctx.db
-      .query("registrationOutcomes")
-      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-      .take(200);
+    const current = await Promise.all(
+      seat.outcomeDefinitions.map((d) =>
+        ctx.db
+          .query("registrationOutcomes")
+          .withIndex("by_seatId_and_fieldId_and_version", (q) =>
+            q
+              .eq("seatId", seat._id)
+              .eq("fieldId", d.id)
+              .eq("version", d.version)
+          )
+          .order("desc")
+          .first()
+      )
+    );
+    const values = current.filter(
+      (value): value is NonNullable<typeof value> => value !== null
+    );
     const attendance = await ctx.db
       .query("registrationAttendance")
       .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
@@ -387,14 +405,16 @@ export const recordOutcome = mutation({
     ) {
       throw new Error("Invalid outcome value");
     }
-    const values = await ctx.db
+    const previous = await ctx.db
       .query("registrationOutcomes")
-      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-      .take(200);
-    const previous = values.find(
-      (entry) =>
-        entry.fieldId === args.fieldId && entry.version === definition.version
-    );
+      .withIndex("by_seatId_and_fieldId_and_version", (q) =>
+        q
+          .eq("seatId", seat._id)
+          .eq("fieldId", args.fieldId)
+          .eq("version", definition.version)
+      )
+      .order("desc")
+      .first();
     const value = {
       ...args,
       version: definition.version,
@@ -769,6 +789,59 @@ export const cancelSession = mutation({
     return null;
   },
 });
+async function cancelPendingSteps(
+  ctx: MutationCtx,
+  seatId: Id<"registrationSeats">
+) {
+  const jobs = await ctx.db
+    .query("registrationJobs")
+    .withIndex("by_seatId_and_state", (q) =>
+      q.eq("seatId", seatId).eq("state", "pending")
+    )
+    .take(100);
+  await Promise.all(
+    jobs
+      .filter((j) => j.stepId && j.state === "pending")
+      .map((j) => ctx.db.patch(j._id, { state: "canceled" }))
+  );
+}
+
+async function releaseCanceledOrder(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats">,
+  session: Doc<"registrationSessions">,
+  notify: boolean
+) {
+  const order = await ctx.db.get(seat.orderId);
+  if (order && (order.status === "hold" || order.status === "unpaid")) {
+    // Release cancels the whole order, including seats on later pages.
+    // Queue every attendee before those seats lose their held state.
+    if (notify) {
+      const orderSeats = await ctx.db
+        .query("registrationSeats")
+        .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+        .collect();
+      await Promise.all(
+        orderSeats
+          .filter((item) => item.state === "held")
+          .map((item) =>
+            enqueue(ctx, {
+              key: `schedule:${item._id}:${session.revision}`,
+              kind: "email",
+              recipient: item.email,
+              subject: `Session canceled: ${session.title}`,
+              body: "Your session has been canceled. Contact us for assistance with another session.",
+              due: Date.now(),
+              seatId: item._id,
+              sessionId: session._id,
+            })
+          )
+      );
+    }
+    await release(ctx, order, "Session canceled");
+  }
+}
+
 export const reschedule = internalMutation({
   args: {
     sessionId: v.id("registrationSessions"),
@@ -790,38 +863,31 @@ export const reschedule = internalMutation({
       .paginate({ cursor: args.cursor, numItems: BATCH });
     await page.page.reduce(async (prior, seat) => {
       await prior;
-      const jobs = await ctx.db
-        .query("registrationJobs")
-        .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-        .take(200);
-      await Promise.all(
-        jobs
-          .filter((j) => j.stepId && j.state === "pending")
-          .map((j) => ctx.db.patch(j._id, { state: "canceled" }))
-      );
+      await cancelPendingSteps(ctx, seat._id);
       if (session.state === "canceled" && seat.state === "held") {
-        const order = await ctx.db.get(seat.orderId);
-        if (order) {
-          await release(ctx, order, "Session canceled");
-        }
+        await releaseCanceledOrder(ctx, seat, session, args.notify);
       }
-      if (seat.state === "active" && seat.settledAt) {
-        if (session.state === "open") {
-          await ctx.db.patch(seat._id, { outcomeDefinitions: config.outcomes });
-          await scheduleEmails(ctx, seat, session, config);
-        }
-        if (args.notify) {
-          await enqueue(ctx, {
-            key: `schedule:${seat._id}:${session.revision}`,
-            kind: "email",
-            recipient: seat.email,
-            subject: `Session ${session.state === "canceled" ? "canceled" : "updated"}: ${session.title}`,
-            body: "Your session has changed. View the latest schedule in your portal. Contact us for assistance.",
-            due: Date.now(),
-            seatId: seat._id,
-            sessionId: session._id,
-          });
-        }
+      const paid = seat.state === "active" && Boolean(seat.settledAt);
+      const canceledHold =
+        session.state === "canceled" && seat.state === "held";
+      if (!(paid || canceledHold)) {
+        return;
+      }
+      if (session.state === "open") {
+        await ctx.db.patch(seat._id, { outcomeDefinitions: config.outcomes });
+        await scheduleEmails(ctx, seat, session, config);
+      }
+      if (args.notify) {
+        await enqueue(ctx, {
+          key: `schedule:${seat._id}:${session.revision}`,
+          kind: "email",
+          recipient: seat.email,
+          subject: `Session ${session.state === "canceled" ? "canceled" : "updated"}: ${session.title}`,
+          body: "Your session has changed. View the latest schedule in your portal. Contact us for assistance.",
+          due: Date.now(),
+          seatId: seat._id,
+          sessionId: session._id,
+        });
       }
     }, Promise.resolve());
     if (!page.isDone) {
@@ -842,7 +908,7 @@ export const propagate = internalMutation({
   returns: v.null(),
   handler: async (ctx, args) => {
     const course = await ctx.db.get(args.courseId);
-    if (course?.delivery !== "scheduled") {
+    if (!course) {
       return null;
     }
     const page = await ctx.db
@@ -851,27 +917,31 @@ export const propagate = internalMutation({
       .paginate({ cursor: args.cursor, numItems: BATCH });
     await page.page.reduce(async (prior, seat) => {
       await prior;
-      if (!seat.settledAt || seat.state !== "active" || !seat.sessionId) {
+      if (!seat.settledAt || seat.state !== "active") {
         return;
       }
-      const session = await ctx.db.get(seat.sessionId);
-      if (session?.state !== "open" || session.firstStart <= Date.now()) {
+      const session = seat.sessionId ? await ctx.db.get(seat.sessionId) : null;
+      if (session?.state === "canceled") {
         return;
       }
-      if (session.overrides.outcomes === undefined) {
+      if (session?.overrides.outcomes === undefined) {
         await ctx.db.patch(seat._id, {
           outcomeDefinitions: course.settings.outcomes,
         });
       }
-      if (session.overrides.emails === undefined) {
+      if (session?.overrides.emails === undefined) {
         await scheduleEmails(
           ctx,
           seat,
           session,
-          effective(course.settings, session.overrides)
+          effective(course.settings, session?.overrides ?? {})
         );
       }
-      if (session.overrides.materials !== undefined) {
+      if (
+        session?.state !== "open" ||
+        session.firstStart <= Date.now() ||
+        session.overrides.materials !== undefined
+      ) {
         return;
       }
       await course.settings.materials
@@ -1011,9 +1081,9 @@ export const retryEmail = mutation({
   },
 });
 export const assignedSessions = query({
-  args: {},
-  returns: v.array(doc(schema, "registrationSessions")),
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(doc(schema, "registrationSessions")),
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     const user = userId ? await ctx.db.get(userId) : null;
     const profile = userId
@@ -1033,13 +1103,16 @@ export const assignedSessions = query({
     const assignments = await ctx.db
       .query("registrationInstructorAssignments")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
-      .take(BATCH);
+      .paginate(args.paginationOpts);
     const sessions = await Promise.all(
-      assignments.map((a) => ctx.db.get(a.sessionId))
+      assignments.page.map((a) => ctx.db.get(a.sessionId))
     );
-    return sessions.filter((s): s is NonNullable<typeof s> =>
-      Boolean(s?.instructors.includes(userId))
-    );
+    return {
+      ...assignments,
+      page: sessions.filter((s): s is NonNullable<typeof s> =>
+        Boolean(s?.instructors.includes(userId))
+      ),
+    };
   },
 });
 export const sessionForStaff = query({
@@ -1269,5 +1342,36 @@ export const assignmentHistory = query({
         url: (await ctx.db.get(row.codeId))?.url ?? "Unavailable",
       }))
     );
+  },
+});
+
+export const advanceCourseWaitlists = internalMutation({
+  args: {
+    courseId: v.id("registrationCourses"),
+    cursor: v.union(v.string(), v.null()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const page = await ctx.db
+      .query("registrationSessions")
+      .withIndex("by_courseId_and_firstStart", (q) =>
+        q.eq("courseId", args.courseId).gt("firstStart", Date.now())
+      )
+      .paginate({ numItems: BATCH, cursor: args.cursor });
+    await Promise.all(
+      page.page.map((s) =>
+        ctx.scheduler.runAfter(0, internal.registrationWaitlist.advance, {
+          sessionId: s._id,
+        })
+      )
+    );
+    if (!page.isDone) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationOperations.advanceCourseWaitlists,
+        { ...args, cursor: page.continueCursor }
+      );
+    }
+    return null;
   },
 });

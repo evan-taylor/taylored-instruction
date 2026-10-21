@@ -24,6 +24,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import { useAssignedSessions } from "./catalog";
 import {
   formatMeeting,
   formatRelative,
@@ -39,7 +40,7 @@ type AttendanceStatus = "present" | "absent" | "not-recorded";
 /* ---------------------------- Session list --------------------------- */
 
 export function InstructorSessions() {
-  const sessions = useQuery(api.registrationOperations.assignedSessions);
+  const sessions = useAssignedSessions();
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -350,7 +351,7 @@ function SeatDetails({
                 )?.value
               }
               definition={d}
-              key={d.id}
+              key={`${d.id}:${d.version}:${JSON.stringify(data?.values.find((v) => v.fieldId === d.id && v.version === d.version)?.value)}`}
               onResult={setMessage}
               seat={seat}
             />

@@ -1,9 +1,13 @@
 "use client";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useCourses, useSessions } from "@/components/registration/catalog";
+import { useMemo, useRef, useState } from "react";
+import {
+  useCourses,
+  useOrganizations,
+  useSessions,
+} from "@/components/registration/catalog";
 import {
   formatMeeting,
   formatWeekday,
@@ -1139,16 +1143,19 @@ async function attachInvoice(
 }
 async function performEnrollment(
   input: EnrollmentInput,
-  act: EnrollmentActions
+  act: EnrollmentActions,
+  attempt: { key: string; organizationId?: Id<"registrationOrganizations"> }
 ): Promise<Result> {
   const organizationId =
     input.organizationId === "new"
-      ? await act.saveOrganization(input.newOrganization)
+      ? (attempt.organizationId ??
+        (await act.saveOrganization(input.newOrganization)))
       : input.organizationId || undefined;
+  attempt.organizationId = organizationId;
   const reserved = await act.reserve({
     courseId: input.course._id,
     sessionId: input.sessionId,
-    requestKey: crypto.randomUUID(),
+    requestKey: attempt.key,
     purchaser: input.purchaserEmail,
     purchaserName: input.purchaserName,
     attendees: input.attendees,
@@ -1171,13 +1178,17 @@ async function performEnrollment(
     await attachInvoice(input, act, outcome, organizationId);
   }
   if (input.requestId) {
-    await act.updateRequest({
-      id: input.requestId,
-      status: "scheduled",
-      internalNotes: `Enrolled via group wizard; order ${reserved.orderId}`,
-      organizationId,
-      orderId: reserved.orderId,
-    });
+    try {
+      await act.updateRequest({
+        id: input.requestId,
+        status: "scheduled",
+        internalNotes: `Enrolled via group wizard; order ${reserved.orderId}`,
+        organizationId,
+        orderId: reserved.orderId,
+      });
+    } catch (error) {
+      outcome.warning = `Enrollment saved, but the group request could not be updated: ${String(error)}`;
+    }
   }
   return outcome;
 }
@@ -1481,8 +1492,9 @@ function WizardFooter({
 
 export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
   const w = useWizardState(prefill);
+  const [linkedRequest, setLinkedRequest] = useState(prefill?.requestId);
   const offering = useOffering(w.mode, w.sessionId, w.courseId);
-  const organizations = useQuery(api.registrationGroups.organizations);
+  const organizations = useOrganizations();
   const actions: EnrollmentActions = {
     reserve: useMutation(api.registration.reserve),
     saveOrganization: useMutation(api.registrationGroups.saveOrganization),
@@ -1501,6 +1513,10 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  const attempt = useRef<{
+    key: string;
+    organizationId?: Id<"registrationOrganizations">;
+  }>({ key: crypto.randomUUID() });
   const index = STEPS.findIndex((s) => s.id === w.step);
 
   async function submit() {
@@ -1518,9 +1534,10 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
             course,
             sessionId: w.mode === "session" ? session?._id : undefined,
             attendees: derived.attendees,
-            requestId: prefill?.requestId,
+            requestId: linkedRequest,
           },
-          actions
+          actions,
+          attempt.current
         )
       );
     } catch (error) {
@@ -1534,6 +1551,8 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
     return (
       <ResultPanel
         onReset={() => {
+          attempt.current = { key: crypto.randomUUID() };
+          setLinkedRequest(undefined);
           setResult(null);
           w.setStep("offering");
           w.setRosterText("");

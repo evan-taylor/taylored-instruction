@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import {
+  useGroupRequests,
+  useOrganizationOrders,
+  useOrganizations,
+} from "@/components/registration/catalog";
+import {
   formatDateTime,
   formatRelative,
   pluralize,
@@ -247,11 +252,8 @@ function RequestsPanel({
   initialRequest?: string;
 }) {
   const [status, setStatus] = useState<RequestStatus | "">("");
-  const requests = useQuery(
-    api.registrationGroups.groupRequests,
-    status ? { status } : {}
-  );
-  const organizations = useQuery(api.registrationGroups.organizations);
+  const requests = useGroupRequests(status || undefined);
+  const organizations = useOrganizations();
   const [openId, setOpenId] = useState<string | undefined>(initialRequest);
   const open = requests?.find((r) => r._id === openId);
   return (
@@ -377,9 +379,7 @@ function OrganizationOrders({
   organization: Doc<"registrationOrganizations">;
   onClose: () => void;
 }) {
-  const orders = useQuery(api.registrationGroups.organizationOrders, {
-    id: organization._id,
-  });
+  const orders = useOrganizationOrders(organization._id);
   return (
     <Modal
       description={[
@@ -445,7 +445,7 @@ function OrganizationOrders({
 }
 
 function OrganizationsPanel() {
-  const organizations = useQuery(api.registrationGroups.organizations);
+  const organizations = useOrganizations();
   const [editing, setEditing] =
     useState<Doc<"registrationOrganizations"> | null>(null);
   const [creating, setCreating] = useState(false);

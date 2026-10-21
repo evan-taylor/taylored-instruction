@@ -87,6 +87,18 @@ export async function GET(request: Request) {
       });
       return NextResponse.json({ url: target }, { headers });
     }
+    const seatMaterials = url.searchParams.get("materials");
+    if (seatMaterials) {
+      const data = await backend.query(api.registrationPortal.materials, {
+        grant,
+        seatId: seatMaterials as Id<"registrationSeats">,
+        paginationOpts: {
+          numItems: 50,
+          cursor: url.searchParams.get("cursor"),
+        },
+      });
+      return NextResponse.json(data, { headers });
+    }
     const calendar = url.searchParams.get("calendar");
     if (calendar) {
       const content = await backend.query(api.registrationPortal.calendarFile, {

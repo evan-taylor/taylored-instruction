@@ -107,7 +107,7 @@ test("existing login and contact routes still render without sending email", asy
 }) => {
   await page.goto("/login");
   await expect(
-    page.getByText("Continue with Google", { exact: false })
+    page.getByRole("button", { name: "Send Code", exact: true })
   ).toBeVisible();
   await page.goto("/contact");
   await expect(
