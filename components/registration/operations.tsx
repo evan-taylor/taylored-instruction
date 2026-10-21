@@ -704,6 +704,11 @@ function SeatActions({ seat }: { seat: Seat }) {
         </Button>
       </div>
       <ResultNotice message={message} />
+      {seat.state === "held" &&
+      order &&
+      (order.status === "unpaid" || order.status === "hold") ? (
+        <RequestPayment order={order} />
+      ) : null}
       <ReasonDialog
         confirmLabel="Cancel registration"
         danger
@@ -912,10 +917,8 @@ export function SeatOperations({ seat }: { seat: Seat }) {
 /* Order payments                                                      */
 /* ------------------------------------------------------------------ */
 
-function UnpaidActions({ order }: { order: Order }) {
-  const record = useMutation(api.registrationOperations.recordPayment);
+function RequestPayment({ order }: { order: Order }) {
   const requestPayment = useMutation(api.registrationPayments.requestPayment);
-  const [dialog, setDialog] = useState<"offline" | "waived" | null>(null);
   const [busy, setBusy] = useState(false);
   const [url, setUrl] = useState("");
   const requestId = useRef(crypto.randomUUID());
@@ -940,6 +943,45 @@ function UnpaidActions({ order }: { order: Order }) {
   };
   return (
     <div className="space-y-3">
+      <Button
+        disabled={
+          busy || (order.status !== "unpaid" && order.status !== "hold")
+        }
+        onClick={createPaymentLink}
+        size="sm"
+        type="button"
+      >
+        {busy ? "Sending…" : "Request payment"}
+      </Button>
+      <p className="m-0 text-slate-500 text-xs">
+        Emails {order.purchaser} a secure payment link for this entire order (
+        {order.seats.length} attendee{order.seats.length === 1 ? "" : "s"}).
+        They enter their billing address at checkout. No invoice is required.
+      </p>
+      {url ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          <a
+            className="min-w-0 flex-1 truncate text-primary text-sm underline"
+            href={url}
+            rel="noreferrer"
+            target="_blank"
+          >
+            {url}
+          </a>
+          <CopyButton value={url} />
+        </div>
+      ) : null}
+      <ResultNotice message={message} />
+    </div>
+  );
+}
+
+function UnpaidActions({ order }: { order: Order }) {
+  const record = useMutation(api.registrationOperations.recordPayment);
+  const [dialog, setDialog] = useState<"offline" | "waived" | null>(null);
+  const [message, setMessage] = useState("");
+  return (
+    <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <Button
           disabled={order.status !== "unpaid"}
@@ -959,35 +1001,8 @@ function UnpaidActions({ order }: { order: Order }) {
         >
           Waive payment
         </Button>
-        <Button
-          disabled={
-            busy || (order.status !== "unpaid" && order.status !== "hold")
-          }
-          onClick={createPaymentLink}
-          size="sm"
-          type="button"
-        >
-          {busy ? "Sending…" : "Request payment"}
-        </Button>
       </div>
-      <p className="m-0 text-slate-500 text-xs">
-        Emails {order.purchaser} a secure payment link for this entire order (
-        {order.seats.length} attendee{order.seats.length === 1 ? "" : "s"}).
-        They enter their billing address at checkout. No invoice is required.
-      </p>
-      {url ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
-          <a
-            className="min-w-0 flex-1 truncate text-primary text-sm underline"
-            href={url}
-            rel="noreferrer"
-            target="_blank"
-          >
-            {url}
-          </a>
-          <CopyButton value={url} />
-        </div>
-      ) : null}
+      <RequestPayment order={order} />
       <ResultNotice message={message} />
       <ReasonDialog
         confirmLabel="Record payment"
