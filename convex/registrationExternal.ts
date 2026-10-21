@@ -2,11 +2,7 @@
 import { v } from "convex/values";
 import { Resend } from "resend";
 import Stripe from "stripe";
-import {
-  escapeHtml,
-  renderEmail,
-  renderSubject,
-} from "../shared/registration/domain";
+import { brandedEmail, registrationEmail } from "../shared/registration/email";
 import {
   assertRegistrationPaymentMode,
   registrationRecipient,
@@ -14,9 +10,6 @@ import {
 } from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import { action, internalAction } from "./_generated/server";
-
-const INVITATION_PATH =
-  /Register at (\/s\/[A-Za-z0-9_-]+#invitation=[A-Za-z0-9-]+)/u;
 
 function stripe() {
   return new Stripe(registrationStripeKey(), {
@@ -120,48 +113,6 @@ export const refund = action({
   },
 });
 
-type RenderableJob = {
-  body: string;
-  subject: string;
-  name: string;
-  title: string;
-  schedule: string;
-  materials: { title: string; url: string | null }[];
-  link?: { label: string; url: string };
-};
-function absolute(url: string) {
-  return url.startsWith("/") ? baseUrl() + url : url;
-}
-/** Renders a queued job into a safe subject and HTML body with structural details appended. */
-function renderJob(job: RenderableJob) {
-  const variables = {
-    attendeeName: job.name,
-    courseTitle: job.title,
-    meetingDates: job.schedule,
-    materials: job.materials
-      .map((m) => `${m.title}: ${m.url ?? "Open portal"}`)
-      .join("\n"),
-    portalLink: `${baseUrl()}/registrations`,
-  };
-  const content = renderEmail(job.body, variables);
-  const invitationPath = job.body.match(INVITATION_PATH)?.[1];
-  const invitationLink = invitationPath
-    ? `<p><a href="${escapeHtml(baseUrl() + invitationPath)}">Accept or decline your reserved opening</a></p>`
-    : "";
-  const actionLink = job.link
-    ? `<p><a href="${escapeHtml(absolute(job.link.url))}">${escapeHtml(job.link.label)}</a></p>`
-    : "";
-  const materialList = job.materials
-    .map(
-      (m) =>
-        `<li>${m.url ? `<a href="${escapeHtml(m.url)}">${escapeHtml(m.title)}</a>` : escapeHtml(m.title)}</li>`
-    )
-    .join("");
-  return {
-    subject: renderSubject(job.subject, variables),
-    html: `${content}${actionLink}${invitationLink}<p>${escapeHtml(job.title)}</p><p>${escapeHtml(job.schedule)}</p><ul>${materialList}</ul><p><a href="${escapeHtml(baseUrl())}/registrations">Secure registration access</a></p>`,
-  };
-}
 export const deliver = internalAction({
   args: {},
   returns: v.null(),
@@ -181,7 +132,7 @@ export const deliver = internalAction({
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
             throw new Error("Recipient, sender, and Resend key required");
           }
-          const rendered = renderJob(job);
+          const rendered = registrationEmail(job, baseUrl());
           const response = await new Resend(
             process.env.RESEND_API_KEY
           ).emails.send(
@@ -189,6 +140,8 @@ export const deliver = internalAction({
               from,
               to: recipient,
               subject: rendered.subject,
+              replyTo: "info@tayloredinstruction.com",
+              text: rendered.text,
               attachments: job.calendar
                 ? [
                     {
@@ -247,7 +200,22 @@ export const requestPortal = action({
       from,
       to: recipient,
       subject: "Your secure registration access",
-      text: `Open ${baseUrl()}/registrations/access#${token} and confirm access. This link expires in 30 minutes.`,
+      replyTo: "info@tayloredinstruction.com",
+      ...brandedEmail({
+        eyebrow: "Secure registration access",
+        title: "Your training, all in one place.",
+        preview:
+          "Access your registrations, class details, materials, and payment records. Link expires in 30 minutes.",
+        paragraphs: [
+          "View your class schedule and joining instructions, open available course materials, or check your orders and payments.",
+          "Select the button below, then confirm access on the page. No password needed.",
+        ],
+        action: {
+          label: "Access my registrations",
+          url: `${baseUrl()}/registrations/access#${token}`,
+        },
+        note: "This one-time link expires in 30 minutes. After you confirm, this device has access for 24 hours. Keep this link private. If you didn’t request it, you can ignore this email.",
+      }),
     });
     if (response.error) {
       throw new Error("Access email could not be sent. Try again later.");

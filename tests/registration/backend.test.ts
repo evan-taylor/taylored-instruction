@@ -929,6 +929,51 @@ describe("Operational regression coverage", () => {
     ).toHaveLength(1);
     expect(jobs.some((j) => j.key.startsWith("schedule:"))).toBe(false);
   });
+  it("email context keeps self-paced course names and tax-inclusive receipts", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { delivery: "self-paced" });
+    });
+    const args = attempt(f.course, f.session);
+    const { sessionId: _sessionId, ...selfPaced } = args;
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...selfPaced,
+      admin: { overbook: false, reason: "Email test", payment: "offline" },
+    });
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(order.orderId, { tax: 890 });
+    });
+    const jobs = await f.t.run(
+      async (ctx) => await ctx.db.query("registrationJobs").take(20)
+    );
+    const confirmation = jobs.find((job) =>
+      job.key.startsWith("confirmation:")
+    );
+    const receipt = jobs.find((job) => job.key.startsWith("receipt:"));
+    if (!(confirmation && receipt)) {
+      throw new Error("Missing settlement emails");
+    }
+    const confirmed = await f.t.mutation(internal.registrationMail.claim, {
+      id: confirmation._id,
+    });
+    const paid = await f.t.mutation(internal.registrationMail.claim, {
+      id: receipt._id,
+    });
+    expect(confirmed?.title).toBe("Blended course");
+    expect(confirmed?.details).toContainEqual({
+      label: "Attendee",
+      value: "Student",
+    });
+    expect(confirmed?.body).toContain("self-paced");
+    expect(paid?.details).toContainEqual({
+      label: "Total paid",
+      value: "$108.90",
+    });
+    expect(paid?.details).toContainEqual({
+      label: "Sales tax",
+      value: "$8.90",
+    });
+  });
   it("email leases prevent parallel delivery and exhaust retries into attention", async () => {
     const f = await fixture();
     const job = await f.t.run(
