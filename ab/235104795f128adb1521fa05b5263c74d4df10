@@ -1,0 +1,83 @@
+biome.jsonc
+  s_d0a82c0dd5b547::t_77f17375c78721 8-10
+components/admin/coupons.tsx
+  s_d0a82c0dd5b547::t_892c030182bc2e 2,5,744-745
+components/admin/courses.tsx
+  s_d0a82c0dd5b547::t_cee2a521bb392c 2,5,421
+components/admin/dashboard.tsx
+  s_d0a82c0dd5b547::t_70d94cc8c39ad1 30-35,114-121,126
+components/admin/group-enrollment.tsx
+  s_d0a82c0dd5b547::t_ae3085eb1ea0ac 6,109-110
+components/admin/groups.tsx
+  s_d0a82c0dd5b547::t_2f27cd56cd57b3 575,577-578,580
+components/admin/invoices.tsx
+  s_d0a82c0dd5b547::t_852afb60edb303 2-7,411-415,429-432,523-526,535-543
+components/admin/sessions.tsx
+  s_d0a82c0dd5b547::t_d7a340dab050f9 6,192-193,449,1393-1394
+components/registration/bulk-transfer.tsx
+  s_d0a82c0dd5b547::t_a63ac07869733b 2,4,169
+components/registration/catalog.ts
+  s_d0a82c0dd5b547::t_714f8815caf928 1-44
+components/registration/format.ts
+  s_d0a82c0dd5b547::t_e1032930bb763d 54,59
+components/registration/instructor.tsx
+  s_d0a82c0dd5b547::t_b41abb6df1a175 97,198,347-351,643
+components/registration/operations.tsx
+  s_d0a82c0dd5b547::t_a640d6cbd06c23 6,340-341,669-676,710-714,717-722,728-730,801-803,814-817,846-855,881-884,921-922,941,950,959,1117,1119-1120
+components/registration/portal.tsx
+  s_d0a82c0dd5b547::t_9a8df69ebdb2e9 29,36,110,112,116-117,125,175
+components/registration/public.tsx
+  s_d0a82c0dd5b547::t_40ac691cfd92c5 188,1263
+components/ui/dialog.tsx
+  s_d0a82c0dd5b547::t_7ec53507ffd0a2 4,29,50,74-79
+components/ui/tabs.tsx
+  s_d0a82c0dd5b547::t_d1ef5ec44f7fdf 34-52
+convex/registration.ts
+  s_d0a82c0dd5b547::t_3b3a0a3b64c25c 1-4,174-176,178-180,184-188,197-201,326-328,414-416,418-420,773-781
+convex/registrationDashboard.ts
+  s_d0a82c0dd5b547::t_6a472205055fc2 21,54-55,65-68,101-116,125-128
+convex/registrationExternal.ts
+  s_d0a82c0dd5b547::t_062dbd2fdf143d 252-261
+convex/registrationGroups.ts
+  s_d0a82c0dd5b547::t_93b1ae11837a05 441-457,620-621
+convex/registrationHelpers.ts
+  s_d0a82c0dd5b547::t_c56c1cb0795a4f 145-151,171,197-217,279-285,288-294,323-324,330-332,349-362,381-385,434-436,451-455,460-462,487
+convex/registrationInvoiceActions.ts
+  s_d0a82c0dd5b547::t_e29761f7596ef9 92
+convex/registrationOperations.ts
+  s_d0a82c0dd5b547::t_ec62aa7d5df104 5,10,596-604,634,648-652,654-669,810,866-873,895-898,914-920,1018-1031,1040-1042,1117,1233-1240
+convex/registrationPayments.ts
+  s_d0a82c0dd5b547::t_65023827655760 181,260-275,329,342-351
+convex/registrationPortal.ts
+  s_d0a82c0dd5b547::t_4442767ddc837c 58,116-117
+convex/registrationSchema.ts
+  s_d0a82c0dd5b547::t_b34aef76dd475b 35,37
+convex/registrationTransfers.ts
+  s_d0a82c0dd5b547::t_d400bf50553468 2-9,27,77-81,120,139-142,152-154,184,238-278,281,287-320,322-351,354-373,396,400
+convex/registrationWaitlist.ts
+  s_d0a82c0dd5b547::t_c7b636f96c1960 24,72-77,93,99
+convex/registrationWebhook.ts
+  s_d0a82c0dd5b547::t_369e5339e07087 23-34,104
+shared/registration/roster.ts
+  s_d0a82c0dd5b547::t_a337ef551f17a1 30
+tests/registration/backend.test.ts
+  s_d0a82c0dd5b547::t_bcf395087f05dd 1540-2137
+tests/registration/format.test.ts
+  s_d0a82c0dd5b547::t_5d93e8f69f569d 1-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ab235104795f128adb1521fa05b5263c74d4df10",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
