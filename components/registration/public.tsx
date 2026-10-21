@@ -20,7 +20,14 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { type ReactNode, useCallback, useEffect, useId, useState } from "react";
+import {
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -552,9 +559,18 @@ function useRegistrationForm(
 ) {
   const reserve = useMutation(api.registration.reserve);
   const checkout = useAction(api.registrationExternal.checkout);
-  const [attendees, setAttendees] = useState<AttendeeRow[]>([]);
+  const [registeringSelf, setRegisteringSelf] = useState(true);
+  const [self, setSelf] = useState<AttendeeRow>(newAttendee);
+  const [otherAttendees, setAttendees] = useState<AttendeeRow[]>(() => [
+    newAttendee(),
+  ]);
+  const attempt = useRef({ signature: "", key: "" });
+  const submitting = useRef(false);
   const [purchaser, setPurchaser] = useState("");
   const [name, setName] = useState("");
+  const attendees = registeringSelf
+    ? [{ ...self, name, email: purchaser }]
+    : otherAttendees;
   const [coupon, setCoupon] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -563,11 +579,18 @@ function useRegistrationForm(
     api.registrationPortal.review,
     review ? { orderId: review.orderId, requestKey: review.requestKey } : "skip"
   );
-  const change = useCallback((key: string, patch: Partial<Attendee>) => {
-    setAttendees((rows) =>
-      rows.map((row) => (row.key === key ? { ...row, ...patch } : row))
-    );
-  }, []);
+  const change = useCallback(
+    (key: string, patch: Partial<Attendee>) => {
+      if (registeringSelf) {
+        setSelf((current) => ({ ...current, ...patch }));
+        return;
+      }
+      setAttendees((rows) =>
+        rows.map((row) => (row.key === key ? { ...row, ...patch } : row))
+      );
+    },
+    [registeringSelf]
+  );
   const remove = useCallback((key: string) => {
     setAttendees((rows) => rows.filter((row) => row.key !== key));
   }, []);
@@ -576,11 +599,32 @@ function useRegistrationForm(
       rows.length >= MAX_SEATS ? rows : [...rows, newAttendee()]
     );
   }, []);
+  async function continueToPayment(order: Review) {
+    if (order.status === "settled") {
+      window.location.assign("/registration/success");
+      return;
+    }
+    window.location.assign(
+      await checkout({ orderId: order.orderId, requestKey: order.requestKey })
+    );
+  }
   async function submit() {
+    if (submitting.current) {
+      return;
+    }
+    submitting.current = true;
     setBusy(true);
     setError("");
     try {
-      const requestKey = crypto.randomUUID();
+      if (review) {
+        await continueToPayment(review);
+        return;
+      }
+      const signature = JSON.stringify({ purchaser, name, attendees, coupon });
+      if (attempt.current.signature !== signature) {
+        attempt.current = { signature, key: crypto.randomUUID() };
+      }
+      const requestKey = attempt.current.key;
       const invitation =
         new URLSearchParams(window.location.hash.slice(1)).get("invitation") ??
         undefined;
@@ -598,31 +642,17 @@ function useRegistrationForm(
         "registration-order",
         JSON.stringify({ ...result, requestKey })
       );
-      setReview({ ...result, requestKey });
-      if (result.status === "settled") {
-        window.location.assign("/registration/success");
-      }
+      const order = { ...result, requestKey };
+      setReview(order);
+      await continueToPayment(order);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to reserve");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function pay() {
-    if (!review) {
-      return;
-    }
-    setBusy(true);
-    setError("");
-    try {
-      window.location.assign(
-        await checkout({
-          orderId: review.orderId,
-          requestKey: review.requestKey,
-        })
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Unable to start checkout. Please try again."
       );
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Unable to start payment");
+    } finally {
+      submitting.current = false;
       setBusy(false);
     }
   }
@@ -632,6 +662,8 @@ function useRegistrationForm(
   );
   return {
     attendees,
+    registeringSelf,
+    setRegisteringSelf,
     add,
     remove,
     change,
@@ -647,7 +679,7 @@ function useRegistrationForm(
     review,
     authoritativeReview,
     submit,
-    pay,
+    pay: submit,
     estimate,
   };
 }
@@ -830,6 +862,56 @@ function QuestionField({
   );
 }
 
+function AttendeeOptions({
+  attendee,
+  config,
+  onChange,
+}: {
+  attendee: AttendeeRow;
+  config: Settings;
+  onChange: (patch: Partial<Attendee>) => void;
+}) {
+  return (
+    <>
+      {" "}
+      <div className="space-y-3 rounded-lg bg-slate-50 p-4">
+        <div className="flex items-center justify-between gap-3 text-sm">
+          <span className="font-medium text-slate-800">Tuition</span>
+          <span className="text-slate-700 tabular-nums">
+            {formatMoney(config.tuition)}
+          </span>
+        </div>
+        {config.materials.map((m) => (
+          <MaterialChoice
+            attendee={attendee}
+            key={m.id}
+            material={m}
+            onChange={onChange}
+          />
+        ))}
+        <div className="flex items-center justify-between gap-3 border-slate-200 border-t pt-3 text-sm">
+          <span className="font-semibold text-slate-900">Subtotal</span>
+          <span className="font-semibold text-slate-900 tabular-nums">
+            {formatMoney(attendeeSubtotal(config, attendee))}
+          </span>
+        </div>
+      </div>
+      {config.questions.length ? (
+        <div className="space-y-4">
+          {config.questions.map((q) => (
+            <QuestionField
+              attendee={attendee}
+              key={q.id}
+              onChange={onChange}
+              question={q}
+            />
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function AttendeeCard({
   attendee,
   index,
@@ -887,59 +969,68 @@ function AttendeeCard({
               )}
             </Field>
           </div>
-          <div className="space-y-3 rounded-lg bg-slate-50 p-4">
-            <div className="flex items-center justify-between gap-3 text-sm">
-              <span className="font-medium text-slate-800">Tuition</span>
-              <span className="text-slate-700 tabular-nums">
-                {formatMoney(config.tuition)}
-              </span>
-            </div>
-            {config.materials.map((m) => (
-              <MaterialChoice
-                attendee={attendee}
-                key={m.id}
-                material={m}
-                onChange={onChange}
-              />
-            ))}
-            <div className="flex items-center justify-between gap-3 border-slate-200 border-t pt-3 text-sm">
-              <span className="font-semibold text-slate-900">
-                Attendee subtotal
-              </span>
-              <span className="font-semibold text-slate-900 tabular-nums">
-                {formatMoney(attendeeSubtotal(config, attendee))}
-              </span>
-            </div>
-          </div>
-          {config.questions.length ? (
-            <div className="space-y-4">
-              {config.questions.map((q) => (
-                <QuestionField
-                  attendee={attendee}
-                  key={q.id}
-                  onChange={onChange}
-                  question={q}
-                />
-              ))}
-            </div>
-          ) : null}
+          <AttendeeOptions
+            attendee={attendee}
+            config={config}
+            onChange={onChange}
+          />
         </CardContent>
       </fieldset>
     </Card>
   );
 }
 
-function PurchaserCard({ form }: { form: RegistrationForm }) {
+function RegistrationMode({ form }: { form: RegistrationForm }) {
+  return (
+    <fieldset
+      className="space-y-3"
+      disabled={form.busy || form.review !== null}
+    >
+      <legend className="font-semibold text-slate-900">
+        Who are you registering?
+      </legend>
+      <div className="flex flex-wrap gap-3">
+        <Button
+          aria-pressed={form.registeringSelf}
+          onClick={() => form.setRegisteringSelf(true)}
+          type="button"
+          variant={form.registeringSelf ? "primary" : "secondary"}
+        >
+          I am registering myself
+        </Button>
+        <Button
+          aria-pressed={!form.registeringSelf}
+          onClick={() => form.setRegisteringSelf(false)}
+          type="button"
+          variant={form.registeringSelf ? "secondary" : "primary"}
+        >
+          I am registering others
+        </Button>
+      </div>
+    </fieldset>
+  );
+}
+
+function PurchaserCard({
+  form,
+  config,
+}: {
+  form: RegistrationForm;
+  config: Settings;
+}) {
   const disabled = form.busy || form.review !== null;
   return (
     <Card>
       <fieldset className="m-0 min-w-0 border-0 p-0" disabled={disabled}>
         <CardHeader>
           <div>
-            <CardTitle>Purchaser</CardTitle>
+            <CardTitle>
+              {form.registeringSelf ? "Your details" : "Purchaser details"}
+            </CardTitle>
             <CardDescription>
-              Receipts and access links are sent to this address. You can
-              register yourself or others.
+              {form.registeringSelf
+                ? "Your registration, receipt, and course access will use these details."
+                : "We’ll send the receipt to you and course access to each attendee."}
             </CardDescription>
           </div>
         </CardHeader>
@@ -967,6 +1058,17 @@ function PurchaserCard({ form }: { form: RegistrationForm }) {
               />
             )}
           </Field>
+          {form.registeringSelf
+            ? form.attendees.map((attendee) => (
+                <div className="space-y-5 sm:col-span-2" key={attendee.key}>
+                  <AttendeeOptions
+                    attendee={attendee}
+                    config={config}
+                    onChange={(patch) => form.change(attendee.key, patch)}
+                  />
+                </div>
+              ))
+            : null}
         </CardContent>
       </fieldset>
     </Card>
@@ -1022,7 +1124,7 @@ function CouponCard({ form }: { form: RegistrationForm }) {
     <Card>
       <CardContent className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <Field
-          hint="Discounts are applied per attendee when you review your total."
+          hint="Discounts are applied per attendee at checkout."
           label="Coupon code"
         >
           {(props) => (
@@ -1118,7 +1220,7 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
         onClick={form.pay}
         type="button"
       >
-        {form.busy ? "Working…" : "Continue to secure payment"}
+        {form.busy ? "Opening checkout…" : "Try checkout again"}
       </Button>
     </div>
   );
@@ -1235,9 +1337,7 @@ function OrderSummary({
                 disabled={form.busy || !form.attendees.length}
                 type="submit"
               >
-                {form.busy
-                  ? "Working…"
-                  : "Review final total and reserve seats"}
+                {form.busy ? "Opening checkout…" : "Continue to checkout"}
               </Button>
             ) : null}
             {open && offering.available === 0 && sessionId ? (
@@ -1426,8 +1526,11 @@ function OfferingPage({
             <OfferingDetails offering={offering} />
             {open ? (
               <>
-                <PurchaserCard form={form} />
-                <AttendeesSection config={offering.config} form={form} />
+                <RegistrationMode form={form} />
+                <PurchaserCard config={offering.config} form={form} />
+                {form.registeringSelf ? null : (
+                  <AttendeesSection config={offering.config} form={form} />
+                )}
                 {form.review ? null : <CouponCard form={form} />}
               </>
             ) : (

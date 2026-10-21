@@ -29,7 +29,9 @@ test("per-attendee waivers and optional selections update the itemized estimate"
   page,
 }) => {
   await page.goto("/s/registration-test-public");
-  await page.getByRole("button", { name: "Add attendee", exact: true }).click();
+  await page
+    .getByRole("button", { name: "I am registering others", exact: true })
+    .click();
   await page.getByLabel("Full name", { exact: true }).fill("Safe Test Student");
   await page.getByLabel("Email", { exact: true }).fill("student@example.test");
   await page
@@ -55,16 +57,13 @@ test("free checkout completes without a card and the success page reads backend 
   await page
     .getByLabel("Your email", { exact: true })
     .fill(`buyer-${crypto.randomUUID()}@example.test`);
-  await page.getByRole("button", { name: "Add attendee", exact: true }).click();
-  await page
-    .getByLabel("Full name", { exact: true })
-    .fill("Safe Test Attendee");
-  await page
-    .getByLabel("Email", { exact: true })
-    .fill(`attendee-${crypto.randomUUID()}@example.test`);
+  await expect(
+    page.getByRole("button", { name: "I am registering myself", exact: true })
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Full name", { exact: true })).toHaveCount(0);
   await page
     .getByRole("button", {
-      name: "Review final total and reserve seats",
+      name: "Continue to checkout",
       exact: true,
     })
     .click();
@@ -115,4 +114,33 @@ test("existing login and contact routes still render without sending email", asy
   ).toBeVisible();
   await page.goto("/ecards");
   await expect(page).toHaveURL(LOGIN_URL);
+});
+
+test("self-registration reuses purchaser details and switching modes preserves attendee inputs", async ({
+  page,
+}) => {
+  await page.goto("/s/registration-test-public");
+  await page.getByLabel("Your name", { exact: true }).fill("Self Student");
+  await page
+    .getByLabel("Your email", { exact: true })
+    .fill("self@example.test");
+  await expect(page.getByLabel("Full name", { exact: true })).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "I am registering others", exact: true })
+    .click();
+  await page.getByLabel("Full name", { exact: true }).fill("Other Student");
+  await page.getByLabel("Email", { exact: true }).fill("other@example.test");
+  await page
+    .getByRole("button", { name: "I am registering myself", exact: true })
+    .click();
+  await expect(page.getByLabel("Your name", { exact: true })).toHaveValue(
+    "Self Student"
+  );
+  await expect(page.getByLabel("Full name", { exact: true })).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "I am registering others", exact: true })
+    .click();
+  await expect(page.getByLabel("Full name", { exact: true })).toHaveValue(
+    "Other Student"
+  );
 });
