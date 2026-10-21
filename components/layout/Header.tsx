@@ -6,7 +6,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { isAdminEmail } from "@/lib/admin";
 import { registrationBookingUrl } from "@/lib/registration-launch";
+import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
@@ -69,8 +71,9 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
 
 // Function to generate nav links based on auth state
 const generateNavLinks = (
-  _isLoggedIn: boolean,
-  isInstructor: boolean
+  isLoggedIn: boolean,
+  isInstructor: boolean,
+  isAdmin: boolean
 ): NavTopLevelLink[] => [
   {
     label: "About Us",
@@ -146,39 +149,9 @@ const generateNavLinks = (
     ],
   },
   {
-    label: "Instructors",
-    dropdown: [
-      // Hide Alignment if logged in as an instructor
-      ...(isInstructor
-        ? ([] as NavLinkItem[])
-        : ([{ label: "Alignment", href: "/alignment" }] as NavLinkItem[])),
-      {
-        label: "Instructor Resources",
-        href: "https://docs.tayloredinstruction.com/",
-        requiresInstructor: true,
-      },
-      // Conditionally add eCards if instructor
-      ...(isInstructor
-        ? [
-            {
-              label: "eCards",
-              href: "/ecards",
-              requiresInstructor: true,
-            } as NavLinkItem,
-          ]
-        : []),
-      { type: "divider", label: "Account" },
-      {
-        label: "Login",
-        href: "/login",
-        hideWhenLoggedIn: true,
-      },
-      {
-        label: "My Account",
-        href: "/my-account",
-        hideWhenLoggedOut: true,
-      },
-    ],
+    label:
+      isLoggedIn && (isInstructor || isAdmin) ? "Workspace" : "Instructors",
+    dropdown: workspaceLinks(isLoggedIn, isInstructor, isAdmin),
   },
 ];
 
@@ -191,7 +164,7 @@ export const Header = () => {
   const _pathname = usePathname() ?? ""; // Provide default empty string if null
 
   // --- Authentication State ---
-  const { session, isInstructor } = useProfile();
+  const { session, isInstructor, email } = useProfile();
   const { signOut } = useAuthActions();
   const router = useRouter();
 
@@ -209,7 +182,11 @@ export const Header = () => {
   };
 
   // Generate nav links based on current auth state
-  const currentNavLinks = generateNavLinks(isLoggedIn, isInstructor);
+  const currentNavLinks = generateNavLinks(
+    isLoggedIn,
+    isInstructor,
+    isAdminEmail(email)
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {

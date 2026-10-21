@@ -3,9 +3,10 @@
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
+import { workspaceLinks } from "@/lib/workspace-navigation";
 
 const _getProfileStatus = (
   profile: unknown,
@@ -26,12 +27,7 @@ export default function MyAccountPage() {
   const authToken = useAuthToken();
   const { profile, loading, isInstructor, error, email } = useProfile();
 
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-
-  useEffect(() => {
-    setIsAdmin(isAdminEmail(email));
-  }, [email]);
+  const isAdmin = isAdminEmail(email);
 
   useEffect(() => {
     if (!loading && authToken === null) {
@@ -110,58 +106,20 @@ export default function MyAccountPage() {
         {/* Quick Links */}
         <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
           <h2 className="mb-4 font-semibold text-xl">Quick Links</h2>
-          <div className="space-y-2">
-            {isInstructor && profile && (
-              <>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {workspaceLinks(true, isInstructor, isAdmin)
+              .filter(
+                (item) => item.type !== "divider" && item.href !== "/my-account"
+              )
+              .map((item) => (
                 <Link
-                  className="block text-primary hover:underline"
-                  href="/ecards"
+                  className="rounded-md border border-slate-200 p-3 font-medium text-primary hover:bg-slate-50"
+                  href={item.href ?? "/my-account"}
+                  key={item.label}
                 >
-                  Purchase eCards
+                  {item.label}
                 </Link>
-                <Link
-                  className="block text-primary hover:underline"
-                  href="/instructor-resources"
-                  rel="noopener"
-                  target="_blank"
-                >
-                  Instructor Resources
-                </Link>
-              </>
-            )}
-            {isAdmin && (
-              <div>
-                <button
-                  className="block text-primary hover:underline"
-                  onClick={() => setShowAdmin(!showAdmin)}
-                  type="button"
-                >
-                  Admin
-                </button>
-                {showAdmin && (
-                  <div className="mt-2 ml-4 space-y-1">
-                    <Link
-                      className="block text-primary hover:underline"
-                      href="/admin"
-                    >
-                      Registration admin
-                    </Link>
-                    <Link
-                      className="block text-primary hover:underline"
-                      href="/admin/instructors"
-                    >
-                      Manage Instructors
-                    </Link>
-                    <Link
-                      className="block text-primary hover:underline"
-                      href="/admin/studio"
-                    >
-                      Sanity Studio
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
+              ))}
           </div>
         </div>
 

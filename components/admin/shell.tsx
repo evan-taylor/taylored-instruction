@@ -5,6 +5,7 @@ import {
   BookOpen,
   Building2,
   CalendarDays,
+  ExternalLink,
   Globe,
   GraduationCap,
   KeyRound,
@@ -69,6 +70,12 @@ const NAV: { group: string; items: NavItem[] }[] = [
       },
       { label: "Instructors", href: "/admin/instructors", icon: GraduationCap },
       { label: "SEO content", href: "/admin/seo-content", icon: Globe },
+      { label: "Content studio", href: "/admin/studio", icon: Globe },
+      {
+        label: "Instructor workspace",
+        href: "/instructor/sessions",
+        icon: ExternalLink,
+      },
     ],
   },
 ];
@@ -160,7 +167,8 @@ function Gate({ children }: { children: React.ReactNode }): React.ReactNode {
       <div className="mx-auto max-w-lg p-10 text-center">
         <h1 className="m-0 font-bold text-2xl">Staff sign-in required</h1>
         <p className="m-0 mt-2 text-slate-600">
-          Sign in with an administrator account to manage registration.
+          Sign in with an administrator account to manage classes,
+          registrations, instructors, and content.
         </p>
         <div className="mt-6">
           <Button href="/login">Sign in</Button>

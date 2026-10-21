@@ -67,7 +67,7 @@ export function InstructorsTable({
                   className="px-6 py-4 text-center text-gray-500 text-sm"
                   colSpan={6}
                 >
-                  No users found or access denied by RLS.
+                  No instructor accounts to show yet.
                 </td>
               </tr>
             ) : (

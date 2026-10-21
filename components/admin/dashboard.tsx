@@ -108,7 +108,7 @@ export function AdminDashboard() {
             </Button>
           </>
         }
-        description="Registrations, payments, and fulfillment at a glance."
+        description="Classes, registrations, payments, and fulfillment at a glance."
         title="Dashboard"
       />
       {summary.sampled ? (

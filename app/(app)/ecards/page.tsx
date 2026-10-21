@@ -37,7 +37,10 @@ export default function ECardsPage() {
   const router = useRouter();
   const posthog = usePostHog();
   const { isInstructor, loading, session } = useProfile();
-  const ecardProducts = useQuery(api.products.getEcardProducts);
+  const ecardProducts = useQuery(
+    api.products.getEcardProducts,
+    session && isInstructor ? {} : "skip"
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuantities, setSelectedQuantities] = useState<

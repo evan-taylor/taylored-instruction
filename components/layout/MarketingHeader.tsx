@@ -5,7 +5,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { isAdminEmail } from "@/lib/admin";
 import { registrationBookingUrl } from "@/lib/registration-launch";
+import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
@@ -58,7 +60,8 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
 
 const generateNavLinks = (
   isAuthenticated: boolean,
-  isInstructor: boolean
+  isInstructor: boolean,
+  isAdmin: boolean
 ): NavTopLevelLink[] => [
   {
     label: "About Us",
@@ -135,32 +138,11 @@ const generateNavLinks = (
     ],
   },
   {
-    label: "Instructors",
-    dropdown: [
-      ...(isInstructor
-        ? ([] as NavLinkItem[])
-        : ([{ label: "Alignment", href: "/alignment" }] as NavLinkItem[])),
-      ...(isInstructor
-        ? [
-            {
-              label: "Instructor Resources",
-              href: "https://docs.tayloredinstruction.com/",
-            } as NavLinkItem,
-          ]
-        : []),
-      ...(isInstructor
-        ? [
-            {
-              label: "eCards",
-              href: "/ecards",
-            } as NavLinkItem,
-          ]
-        : []),
-      { type: "divider", label: "Account" },
-      ...(isAuthenticated
-        ? [{ label: "My Account", href: "/my-account" }]
-        : [{ label: "Login", href: "/login" }]),
-    ],
+    label:
+      isAuthenticated && (isInstructor || isAdmin)
+        ? "Workspace"
+        : "Instructors",
+    dropdown: workspaceLinks(isAuthenticated, isInstructor, isAdmin),
   },
 ];
 
@@ -171,10 +153,14 @@ export const MarketingHeader = () => {
   >(null);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname() ?? "";
-  const { session, isInstructor } = useProfile();
+  const { session, isInstructor, email } = useProfile();
 
   const isAuthenticated = !!session;
-  const navLinks = generateNavLinks(isAuthenticated, isInstructor);
+  const navLinks = generateNavLinks(
+    isAuthenticated,
+    isInstructor,
+    isAdminEmail(email)
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
