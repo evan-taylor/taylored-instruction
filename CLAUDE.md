@@ -1,180 +1,57 @@
-# CLAUDE.md
+# Project guide
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Taylored Instruction is a Next.js 16 App Router site with a Convex backend,
+Convex Auth (Google and six-digit email OTP), Stripe commerce, Resend email,
+Sanity content, and PostHog/Sentry monitoring. Follow `AGENTS.md` for code rules.
 
-## Project Overview
+## Commands
 
-Taylored Instruction is a Next.js 14 website for a CPR/BLS training company in Vancouver, WA. The site handles course information, instructor resources, e-commerce functionality, and user authentication using App Router architecture.
+Use Bun 1.3.14 and Node 24 (`nvm use`).
 
-## Development Commands
+- `bun install --frozen-lockfile`
+- `bun run dev` — Next.js on port 3000
+- `bunx convex dev --once` — generate types and push to the selected dev backend
+- `bun run test` — Ultracite lint, TypeScript, and Vitest registration tests
+- `bun run test:e2e` — Playwright against a prepared isolated fixture deployment
+- `bun run build` — production frontend build, no backend deployment
+- `bun run start` — serve the production build
 
-```bash
-# Development
-bun run dev             # Start development server
-bun run build           # Build for production
-bun run start           # Start production server
-bun run lint            # Run Ultracite
-bun run type-check      # Run TypeScript compiler check
-bun run test            # Run both lint and type-check (no separate test suite)
-```
+`vercel.json` configures hosted builds through Convex. See
+`docs/registration-deployment.md` for production/preview/dev setup and secret
+ownership. Never assume Next.js `.env.local` variables also exist in Convex.
+`.env.example` documents the frontend configuration without secret values.
 
 ## Architecture
 
-### App Router Structure
-- **Fully migrated to App Router** (Next.js 14)
-- Routes in `/app` directory with file-based routing
-- Server Components by default, Client Components marked with 'use client'
-- Server Actions for form handling in `/app/actions/`
+- `app/(marketing)` — public marketing/content routes
+- `app/(app)` — commerce, registration, portal, instructor, and admin routes
+- `components/admin` and `components/registration` — registration UI
+- `convex/schema.ts` / `convex/registrationSchema.ts` — database schemas
+- `convex/registration*.ts` — registration functions, payments, jobs, and webhook
+- `shared/registration` — pricing, scheduling, validation, and environment policy
+- `proxy.ts` — route protection
+- `app/actions` and `app/api` — Next.js email, existing eCard commerce, and CMS hooks
+- `sanity` — content schemas and CMS helpers
 
-### Key Technologies
-- **Database**: Supabase (PostgreSQL with RLS)
-- **Authentication**: Supabase Auth + NextAuth.js
-- **Payments**: Stripe integration 
-- **Styling**: Tailwind CSS + Shadcn/ui components
-- **Email**: React Email + Resend
-- **Content**: Notion API for instructor resources
-- **Monitoring**: Vercel Analytics + Sentry
+Supabase is legacy; do not add new Supabase tables or auth flows. Preserve Convex
+Auth v1 and existing identities until the required passwordless OTP flow is supported
+by a reviewed migration. Regenerate `convex/_generated` with the CLI.
 
-### Route Protection
-- Authentication middleware in `middleware.ts`
-- Protected routes: `/my-account`, `/ecards`, `/instructor-resources`
-- Admin routes: `/admin/*`
+## Registration
 
-## Database Schema (Supabase)
+Production explicitly sets `REGISTRATION_MODE=live`; dev/preview use `test`.
+Test mode refuses live keys/events and redirects registration mail to
+`REGISTRATION_TEST_RECIPIENT`. Live mode validates live keys/events and sends to
+intended recipients. Both payment finalizers validate amount, tax, and replay.
+Hosted builds reject `REGISTRATION_ALLOW_TEST_FIXTURES=true`.
 
-### Key Tables
-- `products` - Course offerings and eCards (types: digital, AED, ecard)
-- `user_profiles` - Extended user data with instructor permissions
-- Authentication handled by Supabase Auth
+Keep `NEXT_PUBLIC_NATIVE_REGISTRATION` off until reviewed offerings are published.
+The switch controls marketing links; direct registration routes still exist.
+Never seed fixture users or enable the test password provider on shared deployments.
 
-### Important Fields
-- `products.type` - Determines product category and handling
-- `user_profiles.is_instructor` - Controls access to instructor resources
-- Row Level Security (RLS) enabled for data protection
+## Validation
 
-## Component Architecture
-
-```
-/components/
-├── ui/                    # Shadcn/ui base components (Button, Input, etc.)
-├── layout/                # Header, Footer, Navigation
-├── home/                  # Homepage-specific sections
-└── [Feature]PageContent.tsx # Page-specific content components
-```
-
-### Styling Patterns
-- Tailwind classes with custom design system
-- CSS variables for theming (HSL color system)
-- Component variants using `class-variance-authority`
-- Responsive design with mobile-first approach
-
-## API Routes
-
-### Structure
-- RESTful endpoints in `/app/api/`
-- Server Actions for form submissions
-- Type validation with Zod schemas
-
-### Key Endpoints
-- `/api/stripe/*` - Payment processing
-- `/api/notion/*` - Content fetching
-- `/api/send-email` - Contact form handling
-- `/api/auth/callback` - Authentication flow
-
-## E-commerce Flow
-
-### Products
-1. **Digital courses** - Instant access after payment
-2. **AED equipment** - Physical products with shipping
-3. **eCards** - Digital certifications with custom recipient info
-
-### Payment Process
-1. Stripe Checkout Session creation
-2. Success page with conditional content
-3. Email notifications via React Email templates
-
-## Development Patterns
-
-### Form Handling
-- React Hook Form + Zod validation
-- Server Actions for processing
-- Type-safe form schemas in `/lib/schemas.ts`
-
-### Data Fetching
-- Server Components for initial data
-- Supabase client for database queries
-- Error boundaries for graceful failures
-
-### Authentication Flow
-1. Supabase Auth for registration/login
-2. Middleware for route protection
-3. User profiles for additional permissions
-
-## Environment Variables Required
-
-```
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-
-# Stripe
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
-STRIPE_SECRET_KEY=
-
-# Email
-RESEND_API_KEY=
-
-# Notion
-NOTION_API_TOKEN=
-NOTION_DATABASE_ID=
-
-# Sentry
-SENTRY_DSN=
-```
-
-## Common Tasks
-
-### Adding New Course Pages
-1. Create route in `/app/[course-name]/page.tsx`
-2. Add course data to products table
-3. Update navigation in Header component
-4. Add Stripe product integration if paid
-
-### Adding New UI Components
-1. Use Shadcn/ui CLI: `bunx shadcn@latest add [component]`
-2. Customize in `/components/ui/`
-3. Follow existing Tailwind patterns
-
-### Modifying Email Templates
-- Templates in `/app/emails/`
-- Use React Email components
-- Test with development endpoint
-
-### Database Changes
-- Use Supabase dashboard for schema changes
-- Update TypeScript types in `/types.ts`
-- Ensure RLS policies are updated
-
-## Build and Deployment
-
-- **Platform**: Vercel
-- **Automatic deployments** from Git
-- **Image optimization** configured for external domains
-- **Analytics** via Vercel Analytics and Speed Insights
-- **Error tracking** via Sentry integration in `next.config.js`
-
-## Testing Strategy
-
-- TypeScript compiler for type checking
-- ESLint for code quality
-- No unit testing framework currently configured
-- Manual testing for UI/UX flows
-
-## Key Files
-
-- `/middleware.ts` - Route protection and authentication
-- `/app/layout.tsx` - Root layout with analytics and fonts
-- `/lib/utils.ts` - Utility functions and cn() helper
-- `/types.ts` - TypeScript definitions
-- `/tailwind.config.js` - Design system configuration
+Run `bun run test` and `bun run build` for dependency/runtime changes. Run relevant
+Playwright scenarios for UI changes; see `docs/plans/registration-validation.md`
+for fixture requirements. A passing build does not verify Stripe payment, email
+delivery, or Google/OTP login. Do not send test messages to customers.
