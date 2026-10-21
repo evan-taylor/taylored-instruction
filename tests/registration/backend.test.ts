@@ -1712,6 +1712,36 @@ describe("PR review regressions", () => {
       (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.refundReserved
     ).toBe(0);
     expect((await f.t.run((ctx) => ctx.db.get(refund)))?.state).toBe("failed");
+    const originalSeat = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: order.orderId,
+      })
+    ).at(0);
+    if (!originalSeat) {
+      throw new Error("Missing attendee");
+    }
+    const cheaper = await f.t.run(async (ctx) => {
+      const session = await ctx.db.get(f.session);
+      if (!session) {
+        throw new Error("Missing session");
+      }
+      const { _id, _creationTime, ...value } = session;
+      return await ctx.db.insert("registrationSessions", {
+        ...value,
+        code: "duplicate-payment-transfer",
+        reserved: 0,
+        overrides: { tuition: 5000 },
+      });
+    });
+    await expect(
+      f.adminClient.mutation(api.registrationTransfers.transfer, {
+        seatId: originalSeat._id,
+        sessionId: cheaper,
+        choice: "refund",
+        reason: "Lower price",
+        requestKey: crypto.randomUUID(),
+      })
+    ).rejects.toThrow("reconcile first");
     const returned = await f.adminClient.mutation(
       api.registrationPayments.requestRefund,
       {

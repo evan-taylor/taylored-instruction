@@ -365,7 +365,7 @@ async function refundLineage(
   }
   const order = await ctx.db.get(seat.orderId);
   let remaining = amount;
-  if (order?.paymentIntent) {
+  if (order?.paymentIntent && order.source !== "invoice-extra-payment") {
     const history = await ctx.db
       .query("registrationRefunds")
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
