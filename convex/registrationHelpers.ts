@@ -333,6 +333,15 @@ export async function assignCode(
   ) {
     throw new Error("Code unavailable or wrong inventory");
   }
+  const seat = await ctx.db.get(entitlement.seatId);
+  const session = seat?.sessionId ? await ctx.db.get(seat.sessionId) : null;
+  if (
+    !seat?.settledAt ||
+    seat.state !== "active" ||
+    session?.state === "canceled"
+  ) {
+    throw new Error("Code assignment requires an active paid registration");
+  }
   const material = await ctx.db.get(code.materialId);
   if (material) {
     await ctx.db.patch(material._id, {
@@ -346,20 +355,17 @@ export async function assignCode(
     codeId: code._id,
     url: code.url,
   });
-  const seat = await ctx.db.get(entitlement.seatId);
-  if (seat) {
-    await enqueue(ctx, {
-      key: `assigned:${entitlementId}:${code._id}`,
-      kind: "email",
-      recipient: seat.email,
-      subject: replace
-        ? "Your replacement course code is ready"
-        : "Your course material is ready",
-      body: "Your course code is available in your secure registration portal.",
-      due: Date.now(),
-      seatId: seat._id,
-    });
-  }
+  await enqueue(ctx, {
+    key: `assigned:${entitlementId}:${code._id}`,
+    kind: "email",
+    recipient: seat.email,
+    subject: replace
+      ? "Your replacement course code is ready"
+      : "Your course material is ready",
+    body: "Your course code is available in your secure registration portal.",
+    due: Date.now(),
+    seatId: seat._id,
+  });
   await ctx.db.insert("registrationAssignments", {
     entitlementId,
     codeId: code._id,

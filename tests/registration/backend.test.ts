@@ -2158,3 +2158,55 @@ describe("Staff-only settlement", () => {
     expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
   });
 });
+
+it("refuses manual code assignment after a paid seat is canceled", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        tuition: 0,
+        materials: [
+          {
+            id: "code",
+            materialId: f.material,
+            title: "Code",
+            policy: "included",
+            cents: 0,
+          },
+        ],
+      },
+    })
+  );
+  await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+  const entitlement = await f.t.run((ctx) =>
+    ctx.db.query("registrationEntitlements").first()
+  );
+  if (!entitlement) {
+    throw new Error("Missing entitlement");
+  }
+  await f.t.run((ctx) =>
+    ctx.db.patch(entitlement.seatId, { state: "canceled" })
+  );
+  await f.adminClient.mutation(api.registrationOperations.addStock, {
+    materialId: f.material,
+    input: "https://codes.example.test/manual",
+    preview: false,
+  });
+  const code = await f.t.run((ctx) =>
+    ctx.db.query("registrationCodes").first()
+  );
+  if (!code) {
+    throw new Error("Missing code");
+  }
+  await expect(
+    f.adminClient.mutation(api.registrationOperations.manageCode, {
+      codeId: code._id,
+      entitlementId: entitlement._id,
+      reason: "Assign",
+    })
+  ).rejects.toThrow("active paid");
+  expect((await f.t.run((ctx) => ctx.db.get(code._id)))?.state).toBe(
+    "available"
+  );
+});
