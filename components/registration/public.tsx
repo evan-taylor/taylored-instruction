@@ -185,7 +185,7 @@ function meetingsSummary(s: DiscoveredSession) {
   if (!s.firstStart) {
     return "Self-paced";
   }
-  const zone = s.timeZone ? shortZone(s.timeZone) : "";
+  const zone = s.timeZone ? shortZone(s.timeZone, s.firstStart) : "";
   return `${pluralize(s.meetings.length, "meeting")} · starts ${formatWeekday(s.firstStart, s.timeZone)} · ${formatTime(s.firstStart, s.timeZone)} ${zone}`.trim();
 }
 
@@ -1260,7 +1260,7 @@ function OrderSummary({
 
 function OfferingDetails({ offering }: { offering: Offering }) {
   const zone = offering.timeZone;
-  const abbreviation = zone ? shortZone(zone) : "";
+  const abbreviation = zone ? shortZone(zone, offering.firstStart) : "";
   const cutoff =
     offering.firstStart && offering.config.cutoffMinutes > 0
       ? offering.firstStart - offering.config.cutoffMinutes * 60_000

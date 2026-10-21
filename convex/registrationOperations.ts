@@ -2,10 +2,12 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
+import { isAdminEmail } from "../shared/adminEmails";
 import {
   BATCH,
   completion,
   csv,
+  effective,
   inventoryPreview,
   safeUrl,
   taxCode,
@@ -239,15 +241,6 @@ export const restock = internalMutation({
       }
       await assignCode(ctx, entitlement._id, code, "system", "FIFO restock");
       assigned += 1;
-      await enqueue(ctx, {
-        key: `restock:${entitlement._id}`,
-        kind: "email",
-        recipient: seat.email,
-        subject: "Your course material is ready",
-        body: "Your outstanding material is now available in your secure portal.",
-        due: Date.now(),
-        seatId: seat._id,
-      });
     }, Promise.resolve());
     if (pending.length === BATCH && codes.length > 0) {
       await ctx.scheduler.runAfter(
@@ -600,6 +593,15 @@ export const recordPayment = mutation({
     if (order?.status !== "unpaid") {
       throw new Error("Unpaid enrollment required");
     }
+    const invoices = await ctx.db
+      .query("registrationInvoices")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .collect();
+    if (invoices.some((i) => i.status === "draft" || i.status === "open")) {
+      throw new Error(
+        "Record payment on the invoice, or void it before recording an order payment"
+      );
+    }
     await settle(ctx, order, args.source);
     await audit(ctx, actor.userId, args.source, order._id, args.reason);
     return null;
@@ -629,6 +631,7 @@ export const cancelSeat = mutation({
     seatId: v.id("registrationSeats"),
     reason: v.string(),
     notify: v.boolean(),
+    cancelWholeOrder: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -642,7 +645,28 @@ export const cancelSeat = mutation({
     }
     const order = await ctx.db.get(seat.orderId);
     if (order && (order.status === "hold" || order.status === "unpaid")) {
+      if (order.seats.length > 1 && !args.cancelWholeOrder) {
+        throw new Error(
+          "This unpaid group must be canceled as a whole order. Confirm cancellation of all attendees."
+        );
+      }
       await release(ctx, order, args.reason);
+      if (args.notify) {
+        await Promise.all(
+          order.seats
+            .filter((s) => s.attendee.email !== seat.email)
+            .map((s) =>
+              enqueue(ctx, {
+                key: `cancel-order:${order._id}:${s.attendee.email}`,
+                kind: "email",
+                recipient: s.attendee.email,
+                subject: "Registration canceled",
+                body: "Your unpaid group registration was canceled. Contact us for assistance.",
+                due: Date.now(),
+              })
+            )
+        );
+      }
     } else {
       await ctx.db.patch(seat._id, { state: "canceled" });
       if (seat.sessionId) {
@@ -783,6 +807,7 @@ export const reschedule = internalMutation({
       }
       if (seat.state === "active" && seat.settledAt) {
         if (session.state === "open") {
+          await ctx.db.patch(seat._id, { outcomeDefinitions: config.outcomes });
           await scheduleEmails(ctx, seat, session, config);
         }
         if (args.notify) {
@@ -838,6 +863,14 @@ export const propagate = internalMutation({
           outcomeDefinitions: course.settings.outcomes,
         });
       }
+      if (session.overrides.emails === undefined) {
+        await scheduleEmails(
+          ctx,
+          seat,
+          session,
+          effective(course.settings, session.overrides)
+        );
+      }
       if (session.overrides.materials !== undefined) {
         return;
       }
@@ -859,7 +892,10 @@ export const propagate = internalMutation({
   },
 });
 export const orders = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    unpaid: v.optional(v.boolean()),
+  },
   returns: v.object({
     page: v.array(doc(schema, "registrationOrders")),
     continueCursor: v.string(),
@@ -875,8 +911,13 @@ export const orders = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx);
-    return await ctx.db
-      .query("registrationOrders")
+    const orderQuery = ctx.db.query("registrationOrders");
+    return await (args.unpaid
+      ? orderQuery.withIndex("by_status_and_expires", (q) =>
+          q.eq("status", "unpaid")
+        )
+      : orderQuery
+    )
       .order("desc")
       .paginate(args.paginationOpts);
   },
@@ -974,8 +1015,20 @@ export const assignedSessions = query({
   returns: v.array(doc(schema, "registrationSessions")),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Sign in required");
+    const user = userId ? await ctx.db.get(userId) : null;
+    const profile = userId
+      ? await ctx.db
+          .query("profiles")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .unique()
+      : null;
+    if (
+      !(userId && user?.email) ||
+      user.emailVerificationTime === undefined ||
+      (!isAdminEmail(user.email) &&
+        (!profile?.isInstructor || Boolean(profile.deactivatedAt)))
+    ) {
+      throw new Error("Active verified instructor required");
     }
     const assignments = await ctx.db
       .query("registrationInstructorAssignments")
@@ -984,7 +1037,9 @@ export const assignedSessions = query({
     const sessions = await Promise.all(
       assignments.map((a) => ctx.db.get(a.sessionId))
     );
-    return sessions.filter((s) => s !== null);
+    return sessions.filter((s): s is NonNullable<typeof s> =>
+      Boolean(s?.instructors.includes(userId))
+    );
   },
 });
 export const sessionForStaff = query({
@@ -1059,7 +1114,7 @@ export const orderSeats = query({
     return await ctx.db
       .query("registrationSeats")
       .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
-      .take(BATCH);
+      .collect();
   },
 });
 export const seatMaterials = query({
@@ -1175,7 +1230,14 @@ export const replaceCode = mutation({
     if (!code) {
       throw new Error("Restock this inventory before replacing a code");
     }
-    await assignCode(ctx, entitlement._id, code, actor.userId, args.reason);
+    await assignCode(
+      ctx,
+      entitlement._id,
+      code,
+      actor.userId,
+      args.reason,
+      true
+    );
     await audit(
       ctx,
       actor.userId,

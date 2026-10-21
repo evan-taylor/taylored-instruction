@@ -89,7 +89,7 @@ export const issue = action({
           collection_method: "send_invoice",
           due_date: Math.max(
             Math.ceil(invoice.dueAt / 1000),
-            Math.floor(Date.now() / 1000) + HOUR_S
+            Math.floor(invoice._creationTime / 1000) + HOUR_S
           ),
           auto_advance: false,
           automatic_tax: { enabled: true },

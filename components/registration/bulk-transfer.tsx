@@ -1,6 +1,7 @@
 "use client";
-import { useConvex, useMutation, useQuery } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import { useState } from "react";
+import { useSessions } from "@/components/registration/catalog";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Field, Select } from "@/components/ui/field";
@@ -165,7 +166,7 @@ export function BulkTransfer({
 }: {
   orders: Id<"registrationOrders">[];
 }) {
-  const sessions = useQuery(api.registration.sessions, {});
+  const sessions = useSessions();
   const [target, setTarget] = useState<Id<"registrationSessions"> | "">("");
   const [choice, setChoice] = useState<AdjustmentChoiceValue>("keep");
   const [open, setOpen] = useState(false);

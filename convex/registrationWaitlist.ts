@@ -21,6 +21,7 @@ export const join = mutation({
       session.visibility === "admin" ||
       session.publication !== "published" ||
       course.publication !== "published" ||
+      !course.enrollmentOpen ||
       session.state !== "open" ||
       !args.name.trim() ||
       Date.now() >=
@@ -68,6 +69,12 @@ export const advance = internalMutation({
     if (!(session && course)) {
       return null;
     }
+    const eligible =
+      course.enrollmentOpen &&
+      course.publication === "published" &&
+      session.publication === "published" &&
+      session.visibility !== "admin" &&
+      session.state === "open";
     const cutoff =
       session.firstStart -
       effective(course.settings, session.overrides).cutoffMinutes * 60_000;
@@ -83,13 +90,13 @@ export const advance = internalMutation({
       if (
         (offer.expires ?? 0) <= Date.now() ||
         cutoff <= Date.now() ||
-        session.state !== "open"
+        !eligible
       ) {
         await ctx.db.patch(offer._id, { state: "expired" });
         reserved -= 1;
       }
     }, Promise.resolve());
-    if (session.state === "open" && cutoff > Date.now()) {
+    if (eligible && cutoff > Date.now()) {
       const waiting = await ctx.db
         .query("registrationWaitlist")
         .withIndex("by_sessionId_and_state", (q) =>

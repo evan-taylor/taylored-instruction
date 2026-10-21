@@ -1,7 +1,8 @@
 "use client";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
+import { useCoupons, useCourses } from "@/components/registration/catalog";
 import { formatDate } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -740,8 +741,8 @@ function ToggleDialog({
 
 export function CouponAdmin() {
   const params = useSearchParams();
-  const courses = useQuery(api.registration.courses);
-  const coupons = useQuery(api.registration.coupons);
+  const courses = useCourses();
+  const coupons = useCoupons();
   const materials = usePaginatedQuery(
     api.registrationOperations.materials,
     {},

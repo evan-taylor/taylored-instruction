@@ -1,5 +1,10 @@
 "use client";
-import { useAction, useMutation, useQuery } from "convex/react";
+import {
+  useAction,
+  useMutation,
+  usePaginatedQuery,
+  useQuery,
+} from "convex/react";
 import { ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -403,7 +408,11 @@ export function CreateInvoiceModal({
   orderId?: Id<"registrationOrders">;
   onCreated?: (id: Id<"registrationInvoices">) => void;
 }) {
-  const attention = useQuery(api.registrationOperations.attention);
+  const unpaid = usePaginatedQuery(
+    api.registrationOperations.orders,
+    { unpaid: true },
+    { initialNumItems: 50 }
+  );
   const organizations = useQuery(api.registrationGroups.organizations);
   const create = useMutation(api.registrationGroups.createInvoice);
   const issue = useAction(api.registrationInvoiceActions.issue);
@@ -417,7 +426,10 @@ export function CreateInvoiceModal({
   const [sendNow, setSendNow] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
-  const order = attention?.unpaid.find((o) => o._id === selected);
+  const order = useQuery(
+    api.registrationOperations.order,
+    selected ? { orderId: selected } : "skip"
+  );
   useEffect(() => {
     if (!order) {
       return;
@@ -508,7 +520,10 @@ export function CreateInvoiceModal({
               value={selected}
             >
               <option value="">Choose an unpaid enrollment…</option>
-              {attention?.unpaid.map((o) => (
+              {(order && !unpaid.results.some((o) => o._id === order._id)
+                ? [order, ...unpaid.results]
+                : unpaid.results
+              ).map((o) => (
                 <option key={o._id} value={o._id}>
                   {o.title} · {o.purchaserName} ·{" "}
                   {pluralize(o.seats.length, "seat")} · {formatMoney(o.total)}
@@ -517,6 +532,15 @@ export function CreateInvoiceModal({
             </Select>
           )}
         </Field>
+        {unpaid.status === "CanLoadMore" ? (
+          <Button
+            onClick={() => unpaid.loadMore(50)}
+            type="button"
+            variant="secondary"
+          >
+            Load more unpaid orders
+          </Button>
+        ) : null}
         {order ? (
           <Notice tone="info">
             Invoicing <strong>{formatMoney(order.total)}</strong> for{" "}

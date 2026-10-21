@@ -438,6 +438,23 @@ export const attachStripeInvoice = internalMutation({
       throw new Error("Invoice already attached to a different Stripe invoice");
     }
     const order = await ctx.db.get(invoice.orderId);
+    if (
+      invoice.status === "paid" ||
+      invoice.status === "void" ||
+      order?.status !== "unpaid"
+    ) {
+      await ctx.db.patch(invoice._id, {
+        stripeInvoiceId: args.stripeInvoiceId,
+        stripeCustomerId: args.stripeCustomerId,
+        status: invoice.status === "paid" ? "paid" : "void",
+      });
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationInvoiceActions.closeRemote,
+        { id: invoice._id, attempt: 0 }
+      );
+      return null;
+    }
     await ctx.db.patch(invoice._id, {
       stripeInvoiceId: args.stripeInvoiceId,
       stripeCustomerId: args.stripeCustomerId,
@@ -600,7 +617,8 @@ export const recordInvoicePayment = mutation({
       method: "offline",
       paidAt: Date.now(),
     });
-    await settle(ctx, order, "offline");
+    await ctx.db.patch(order._id, { tax: invoice.tax ?? 0 });
+    await settle(ctx, { ...order, tax: invoice.tax ?? 0 }, "offline");
     if (invoice.stripeInvoiceId) {
       await ctx.scheduler.runAfter(
         0,

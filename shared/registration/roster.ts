@@ -27,7 +27,7 @@ function clean(value: string) {
 
 export function parseRosterLine(line: string, key: string): RosterRow | null {
   const trimmed = line.trim();
-  if (!trimmed || HEADER.test(trimmed)) {
+  if (!trimmed || (HEADER.test(trimmed) && !EMAIL.test(trimmed))) {
     return null;
   }
   const match = trimmed.match(EMAIL);

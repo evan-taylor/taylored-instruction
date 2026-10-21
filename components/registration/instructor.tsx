@@ -94,7 +94,7 @@ export function InstructorSessions() {
                         </Link>
                         <div className="text-slate-500 text-xs">
                           {pluralize(s.meetings.length, "meeting")} ·{" "}
-                          {shortZone(s.timeZone)}
+                          {shortZone(s.timeZone, s.firstStart)}
                         </div>
                       </TD>
                       <TD>
@@ -195,7 +195,7 @@ function AttendanceControls({
       {meetings.map((m) => (
         <Field
           key={m.id}
-          label={`${formatMeeting(m, timeZone)}${timeZone ? ` ${shortZone(timeZone)}` : ""}`}
+          label={`${formatMeeting(m, timeZone)}${timeZone ? ` ${shortZone(timeZone, m.start)}` : ""}`}
         >
           {(props) => (
             <Select
@@ -344,7 +344,11 @@ function SeatDetails({
         {seat.outcomeDefinitions.length ? (
           seat.outcomeDefinitions.map((d) => (
             <OutcomeForm
-              current={data?.values.find((v) => v.fieldId === d.id)?.value}
+              current={
+                data?.values.find(
+                  (v) => v.fieldId === d.id && v.version === d.version
+                )?.value
+              }
               definition={d}
               key={d.id}
               onResult={setMessage}
@@ -636,7 +640,7 @@ export function InstructorRoster({
           }
           description={
             session
-              ? `${meetings.map((m) => formatMeeting(m, session.timeZone)).join(" · ")} ${shortZone(session.timeZone)} · ${session.reserved} of ${session.capacity} seats reserved`
+              ? `${meetings.map((m) => formatMeeting(m, session.timeZone)).join(" · ")} ${shortZone(session.timeZone, session.firstStart)} · ${session.reserved} of ${session.capacity} seats reserved`
               : "Loading session details…"
           }
           eyebrow="Roster"

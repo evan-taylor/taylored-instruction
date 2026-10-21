@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Plus, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useCourses, useSessions } from "@/components/registration/catalog";
 import {
   formatRelative,
   formatTime,
@@ -188,7 +189,8 @@ function SessionRow({
           {formatWeekday(session.firstStart, zone)}
         </div>
         <div className="text-slate-500 text-xs">
-          {formatTime(session.firstStart, zone)} {shortZone(zone)} ·{" "}
+          {formatTime(session.firstStart, zone)}{" "}
+          {shortZone(zone, session.firstStart)} ·{" "}
           {formatRelative(session.firstStart)}
         </div>
       </TD>
@@ -444,7 +446,7 @@ function MeetingCard({
   onChange: (patch: Partial<Meeting>) => void;
   onRemove: () => void;
 }) {
-  const zone = shortZone(timeZone);
+  const zone = shortZone(timeZone, meeting.start);
   const setTime = (key: "start" | "end", value: string) => {
     const ms = fromLocalInput(value, timeZone);
     if (!Number.isNaN(ms)) {
@@ -1388,8 +1390,8 @@ function SessionListCard({
 }
 
 export function SessionAdmin() {
-  const courses = useQuery(api.registration.courses);
-  const sessions = useQuery(api.registration.sessions, {});
+  const courses = useCourses();
+  const sessions = useSessions();
   const locations = useQuery(api.registrationOperations.locations);
   const directory = useQuery(api.registrationOperations.staffDirectory);
   const save = useMutation(api.registration.saveSession);

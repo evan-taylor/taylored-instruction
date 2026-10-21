@@ -20,22 +20,19 @@ const INVOICE_CLOSED_EVENTS = [
 ];
 
 async function invoicePaymentIntent(client: Stripe, invoiceId: string) {
-  try {
-    const payments = await client.invoicePayments.list({
-      invoice: invoiceId,
-      status: "paid",
-    });
-    for (const payment of payments.data) {
-      const intent = payment.payment.payment_intent;
-      if (typeof intent === "string") {
-        return intent;
-      }
-      if (intent?.id) {
-        return intent.id;
-      }
+  // Let lookup failures fail the webhook so Stripe retries before recording the event.
+  const payments = await client.invoicePayments.list({
+    invoice: invoiceId,
+    status: "paid",
+  });
+  for (const payment of payments.data) {
+    const intent = payment.payment.payment_intent;
+    if (typeof intent === "string") {
+      return intent;
     }
-  } catch {
-    // Settlement proceeds without a payment intent; refunds reconcile later.
+    if (intent?.id) {
+      return intent.id;
+    }
   }
 }
 
@@ -104,6 +101,7 @@ async function handleRefund(ctx: ActionCtx, event: Stripe.Event) {
       amount: refund.amount,
       paymentIntent: refund.payment_intent,
       succeeded: refund.status === "succeeded",
+      failed: refund.status === "failed" || refund.status === "canceled",
     });
   }
 }

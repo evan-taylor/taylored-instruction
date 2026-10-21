@@ -31,10 +31,25 @@ export function Tabs<T extends string>({
       )}
       onKeyDown={(e) => {
         const index = tabs.findIndex((t) => t.id === value);
-        if (e.key === "ArrowRight") {
-          onChange(tabs[(index + 1) % tabs.length]?.id ?? value);
-        } else if (e.key === "ArrowLeft") {
-          onChange(tabs[(index - 1 + tabs.length) % tabs.length]?.id ?? value);
+        const offsets: Record<string, number> = {
+          ArrowRight: 1,
+          ArrowLeft: -1,
+          Home: -index,
+          End: tabs.length - 1 - index,
+        };
+        const offset = offsets[e.key];
+        if (offset === undefined || tabs.length === 0) {
+          return;
+        }
+        e.preventDefault();
+        const next = (index + offset + tabs.length) % tabs.length;
+        const tab = tabs.at(next);
+        if (tab) {
+          onChange(tab.id);
+          e.currentTarget
+            .querySelectorAll<HTMLButtonElement>('[role="tab"]')
+            .item(next)
+            ?.focus();
         }
       }}
       role="tablist"

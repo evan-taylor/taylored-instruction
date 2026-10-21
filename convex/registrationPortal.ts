@@ -55,6 +55,7 @@ const portalSeat = v.object({
   state: v.string(),
   title: v.string(),
   sessionId: v.optional(v.id("registrationSessions")),
+  timeZone: v.optional(v.string()),
   materials: v.array(
     v.object({
       id: v.id("registrationEntitlements"),
@@ -112,7 +113,8 @@ export const registrations = query({
         return {
           id: seat._id,
           name: seat.name,
-          state: seat.state,
+          state: session?.state === "canceled" ? "canceled" : seat.state,
+          timeZone: session?.timeZone,
           title: session?.title ?? course?.title ?? "Course",
           sessionId: session?._id,
           materials: entitlements.map((e) => ({

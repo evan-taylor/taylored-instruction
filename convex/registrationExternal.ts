@@ -249,6 +249,16 @@ export const reconcileRefunds = internalAction({
             },
             { idempotencyKey: `registration-refund:${intent._id}` }
           );
+          if (result.status === "failed" || result.status === "canceled") {
+            await ctx.runMutation(internal.registrationPayments.refundEvent, {
+              id,
+              stripeId: result.id,
+              amount: intent.cents,
+              paymentIntent: order.paymentIntent,
+              succeeded: false,
+              failed: true,
+            });
+          }
           if (result.status === "succeeded") {
             await ctx.runMutation(internal.registrationPayments.finishRefund, {
               id,

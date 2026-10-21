@@ -18,6 +18,7 @@ export const summary = query({
   args: {},
   returns: v.object({
     windowDays: v.number(),
+    sampled: v.boolean(),
     revenue: v.number(),
     seatsSold: v.number(),
     ordersSettled: v.number(),
@@ -50,7 +51,8 @@ export const summary = query({
     const since = now - WINDOW_DAYS * DAY_MS;
     const sessions = await ctx.db
       .query("registrationSessions")
-      .withIndex("by_publication_and_visibility_and_firstStart")
+      .withIndex("by_firstStart", (q) => q.gte("firstStart", now))
+      .filter((q) => q.eq(q.field("state"), "open"))
       .take(BATCH * 4);
     const upcoming = sessions
       .filter((s) => s.state === "open" && s.firstStart >= now)
@@ -60,7 +62,10 @@ export const summary = query({
       .order("desc")
       .take(BATCH * 4);
     const settled = orders.filter(
-      (o) => o.status === "settled" && (o.settledAt ?? 0) >= since
+      (o) =>
+        o.status === "settled" &&
+        o.source !== "waived" &&
+        (o.settledAt ?? 0) >= since
     );
     const unpaid = await ctx.db
       .query("registrationOrders")
@@ -93,7 +98,22 @@ export const summary = query({
       .take(RECENT);
     return {
       windowDays: WINDOW_DAYS,
-      revenue: settled.reduce((sum, o) => sum + o.total - o.refunded, 0),
+      sampled:
+        sessions.length === BATCH * 4 ||
+        orders.length === BATCH * 4 ||
+        [
+          unpaid,
+          exceptions,
+          openInvoices,
+          requests,
+          failedEmails,
+          refunds,
+          materials,
+        ].some((rows) => rows.length === BATCH),
+      revenue: settled.reduce(
+        (sum, o) => sum + o.total + (o.tax ?? 0) - o.refunded,
+        0
+      ),
       seatsSold: settled.reduce((sum, o) => sum + o.seats.length, 0),
       ordersSettled: settled.length,
       upcomingSessions: upcoming.length,
@@ -102,7 +122,10 @@ export const summary = query({
       unpaidOrders: unpaid.length,
       unpaidTotal: unpaid.reduce((sum, o) => sum + o.total, 0),
       openInvoices: openInvoices.length,
-      openInvoiceTotal: openInvoices.reduce((sum, i) => sum + i.amount, 0),
+      openInvoiceTotal: openInvoices.reduce(
+        (sum, i) => sum + i.amount + (i.tax ?? 0),
+        0
+      ),
       overdueInvoices: openInvoices.filter((i) => i.dueAt < now).length,
       newGroupRequests: requests.length,
       failedEmails: failedEmails.length,

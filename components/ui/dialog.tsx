@@ -1,7 +1,7 @@
 "use client";
 import { X } from "lucide-react";
 import type * as React from "react";
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -26,6 +26,7 @@ export function Modal({
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }) {
+  const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
@@ -46,6 +47,7 @@ export function Modal({
   };
   return (
     <dialog
+      aria-labelledby={titleId}
       className={cn(
         "open:fade-in-0 open:zoom-in-95 m-auto w-[calc(100%-2rem)] rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-[2px] open:animate-in",
         widths[size]
@@ -69,7 +71,12 @@ export function Modal({
       <div className="flex max-h-[85vh] flex-col">
         <div className="flex items-start justify-between gap-4 border-slate-100 border-b px-6 py-4">
           <div>
-            <h2 className="m-0 font-semibold text-lg leading-tight">{title}</h2>
+            <h2
+              className="m-0 font-semibold text-lg leading-tight"
+              id={titleId}
+            >
+              {title}
+            </h2>
             {description ? (
               <p className="m-0 mt-1 text-slate-500 text-sm">{description}</p>
             ) : null}

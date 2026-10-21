@@ -3,6 +3,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import type * as React from "react";
 import { useEffect, useId, useRef, useState } from "react";
+import { useCourses, useSessions } from "@/components/registration/catalog";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -336,8 +337,8 @@ const EMPTY_ENROLLMENT = {
 };
 
 function useManualEnrollment() {
-  const courses = useQuery(api.registration.courses);
-  const sessions = useQuery(api.registration.sessions, {});
+  const courses = useCourses();
+  const sessions = useSessions();
   const reserve = useMutation(api.registration.reserve);
   const [form, setForm] = useState(EMPTY_ENROLLMENT);
   const [message, setMessage] = useState("");
@@ -665,6 +666,14 @@ function SeatMaterials({ seat }: { seat: Seat }) {
 }
 
 function SeatActions({ seat }: { seat: Seat }) {
+  const order = useQuery(api.registrationOperations.order, {
+    orderId: seat.orderId,
+  });
+  const wholeOrder = Boolean(
+    order &&
+      (order.status === "unpaid" || order.status === "hold") &&
+      order.seats.length > 1
+  );
   const cancel = useMutation(api.registrationOperations.cancelSeat);
   const override = useMutation(api.registrationOperations.overrideCompletion);
   const [dialog, setDialog] = useState<"cancel" | "override" | null>(null);
@@ -698,16 +707,27 @@ function SeatActions({ seat }: { seat: Seat }) {
       <ReasonDialog
         confirmLabel="Cancel registration"
         danger
-        description="Releases this seat and cancels undelivered materials. Cancelling does not refund any payment; use the Payments section to refund."
+        description={
+          wholeOrder
+            ? `Cancels ALL ${order?.seats.length} attendees in this unpaid group and closes its payment links and invoices. This cannot cancel only one attendee.`
+            : "Releases this seat and cancels undelivered materials. Cancelling does not refund any payment; use the Payments section to refund."
+        }
         onClose={() => setDialog(null)}
         onConfirm={async (reason) => {
-          await cancel({ seatId: seat._id, reason, notify });
+          await cancel({
+            seatId: seat._id,
+            reason,
+            notify,
+            cancelWholeOrder: wholeOrder,
+          });
           setMessage(
             "Registration canceled. Payment and delivered codes are unchanged."
           );
         }}
         open={dialog === "cancel"}
-        title={`Cancel ${seat.name}`}
+        title={
+          wholeOrder ? "Cancel entire unpaid group" : `Cancel ${seat.name}`
+        }
       >
         <Toggle
           checked={notify}
@@ -778,7 +798,9 @@ function TransferPreview({
 }
 
 function TransferSeat({ seat }: { seat: Seat }) {
-  const sessions = useQuery(api.registration.sessions, {});
+  const courses = useCourses();
+  const [answers, setAnswers] = useState<Answers>({});
+  const sessions = useSessions();
   const transfer = useMutation(api.registrationTransfers.transfer);
   const [target, setTarget] = useState<Id<"registrationSessions"> | "">("");
   const [choice, setChoice] = useState<AdjustmentChoiceValue>("keep");
@@ -789,6 +811,10 @@ function TransferSeat({ seat }: { seat: Seat }) {
     (s) => s._id !== seat.sessionId && s.state === "open"
   );
   const destination = destinations?.find((s) => s._id === target);
+  const course = courses?.find((c) => c._id === destination?.courseId);
+  const config = course
+    ? effective(course.settings, destination?.overrides ?? {})
+    : null;
   return (
     <section className="space-y-3">
       <h4 className="m-0 font-semibold text-slate-900 text-sm">Transfer</h4>
@@ -817,6 +843,16 @@ function TransferSeat({ seat }: { seat: Seat }) {
         )}
       </Field>
       {target ? <TransferPreview seatId={seat._id} sessionId={target} /> : null}
+      {config?.questions.map((q) => (
+        <QuestionInput
+          key={`${target}:${q.id}`}
+          onChange={(value) =>
+            setAnswers({ ...answers, [`${target}:${q.id}`]: value })
+          }
+          question={q}
+          value={answers[`${target}:${q.id}`]}
+        />
+      ))}
       <AdjustmentChoice onChange={setChoice} value={choice} />
       <div className="flex justify-end">
         <Button
@@ -842,6 +878,10 @@ function TransferSeat({ seat }: { seat: Seat }) {
             sessionId: target,
             choice,
             reason,
+            answers: (config?.questions ?? []).flatMap((q) => {
+              const value = answers[`${target}:${q.id}`];
+              return value === undefined ? [] : [{ id: q.id, value }];
+            }),
             requestKey: crypto.randomUUID(),
           });
           setMessage(
@@ -878,7 +918,8 @@ function UnpaidActions({ order }: { order: Order }) {
   const checkout = useAction(api.registrationExternal.checkout);
   const [dialog, setDialog] = useState<"offline" | "waived" | null>(null);
   const [busy, setBusy] = useState(false);
-  const [url, setUrl] = useState("");
+  const [createdUrl, setUrl] = useState("");
+  const url = order.checkoutUrl ?? createdUrl;
   const [message, setMessage] = useState("");
   const createPaymentLink = async () => {
     setBusy(true);
@@ -897,6 +938,7 @@ function UnpaidActions({ order }: { order: Order }) {
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
         <Button
+          disabled={order.status !== "unpaid"}
           onClick={() => setDialog("offline")}
           size="sm"
           type="button"
@@ -905,6 +947,7 @@ function UnpaidActions({ order }: { order: Order }) {
           Record offline payment
         </Button>
         <Button
+          disabled={order.status !== "unpaid"}
           onClick={() => setDialog("waived")}
           size="sm"
           type="button"
@@ -913,7 +956,7 @@ function UnpaidActions({ order }: { order: Order }) {
           Waive payment
         </Button>
         <Button
-          disabled={busy}
+          disabled={busy || order.status !== "unpaid"}
           onClick={createPaymentLink}
           size="sm"
           type="button"
@@ -1071,9 +1114,10 @@ function RestoreCoupon({ order }: { order: Order }) {
 
 /** Payment, refund, and coupon actions available for an order. */
 export function OrderPayments({ order }: { order: Order }) {
-  const unpaid = order.status === "unpaid";
+  const unpaid = order.status === "unpaid" || order.status === "hold";
   const refundableCard =
-    Boolean(order.paymentIntent) && order.status === "settled";
+    Boolean(order.paymentIntent) &&
+    (order.status === "settled" || order.status === "exception");
   const coupon = Boolean(order.couponId) && order.status === "settled";
   if (!(unpaid || refundableCard || coupon)) {
     return (

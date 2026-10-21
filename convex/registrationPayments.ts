@@ -178,7 +178,7 @@ export const requestRefund = mutation({
     const order = await ctx.db.get(args.orderId);
     if (
       !order?.paymentIntent ||
-      order.status !== "settled" ||
+      (order.status !== "settled" && order.status !== "exception") ||
       args.cents >
         order.total + (order.tax ?? 0) - order.refunded - order.refundReserved
     ) {
@@ -257,6 +257,22 @@ export const createPaymentLink = mutation({
     if (order?.status !== "unpaid" || args.requestKey.length < 24) {
       throw new Error("Unpaid order required");
     }
+    const { course, session, config } = await offering(
+      ctx,
+      order.courseId,
+      order.sessionId
+    );
+    if (
+      !course.enrollmentOpen ||
+      course.publication !== "published" ||
+      (session &&
+        (session.state !== "open" ||
+          Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
+    ) {
+      throw new Error(
+        "Card checkout is closed for this offering. Use an invoice or record offline payment; the enrollment is unchanged."
+      );
+    }
     const invoices = await ctx.db
       .query("registrationInvoices")
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
@@ -310,6 +326,7 @@ export const refundEvent = internalMutation({
     amount: v.number(),
     paymentIntent: v.string(),
     succeeded: v.boolean(),
+    failed: v.optional(v.boolean()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -321,6 +338,16 @@ export const refundEvent = internalMutation({
       order.paymentIntent !== args.paymentIntent
     ) {
       throw new Error("Refund event mismatch");
+    }
+    if (args.failed && refund.state === "pending") {
+      await ctx.db.patch(refund._id, {
+        state: "failed",
+        stripeId: args.stripeId,
+        error: "Stripe refund failed or was canceled",
+      });
+      await ctx.db.patch(order._id, {
+        refundReserved: order.refundReserved - refund.cents,
+      });
     }
     if (args.succeeded && refund.state === "pending") {
       await ctx.db.patch(refund._id, {

@@ -1,5 +1,12 @@
 import { v } from "convex/values";
-import { BATCH, quote } from "../shared/registration/domain";
+import {
+  type Attendee,
+  BATCH,
+  quote,
+  type Settings,
+} from "../shared/registration/domain";
+import { answer } from "../shared/registration/validators";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -17,6 +24,7 @@ export const transfer = mutation({
     ),
     reason: v.string(),
     requestKey: v.string(),
+    answers: v.optional(v.array(answer)),
   },
   returns: v.object({
     orderId: v.id("registrationOrders"),
@@ -66,6 +74,11 @@ export const transfer = mutation({
       [
         {
           ...source.snapshot.attendee,
+          answers: destinationAnswers(
+            config,
+            source.snapshot.attendee,
+            args.answers
+          ),
           selected: source.snapshot.attendee.selected.filter((id) =>
             selections.has(id)
           ),
@@ -104,14 +117,7 @@ export const transfer = mutation({
       seats: [
         {
           ...snapshot,
-          lines: [
-            {
-              id: "adjustment",
-              title: "Transfer price difference",
-              cents: total,
-              discount: 0,
-            },
-          ],
+          lines: await adjustmentLines(ctx, snapshot, total, config.taxCode),
           total,
         },
       ],
@@ -130,7 +136,10 @@ export const transfer = mutation({
       email: source.email,
       name: source.name,
       state: "held",
-      snapshot,
+      snapshot: {
+        ...snapshot,
+        total: args.choice === "keep" ? source.snapshot.total : snapshot.total,
+      },
       outcomeDefinitions: config.outcomes,
       transferredFrom: source._id,
     });
@@ -140,6 +149,9 @@ export const transfer = mutation({
       const old = await ctx.db.get(source.sessionId);
       if (old) {
         await ctx.db.patch(old._id, { reserved: old.reserved - 1 });
+        await ctx.scheduler.runAfter(0, internal.registrationWaitlist.advance, {
+          sessionId: old._id,
+        });
       }
     }
     // Preserve historical assignments, and reference matching already-delivered assets without consuming stock again.
@@ -169,7 +181,7 @@ export const transfer = mutation({
     );
     await queueTransferRefund(
       ctx,
-      sourceOrder,
+      source,
       adjustment,
       args.requestKey,
       args.reason,
@@ -223,38 +235,142 @@ async function previousTransfer(
   return null;
 }
 
+function destinationAnswers(
+  config: Settings,
+  attendee: Attendee,
+  supplied?: Attendee["answers"]
+) {
+  return (supplied ?? attendee.answers).filter((a) =>
+    config.questions.some((q) => q.id === a.id)
+  );
+}
+
+async function adjustmentLines(
+  ctx: QueryCtx,
+  snapshot: Doc<"registrationSeats">["snapshot"],
+  total: number,
+  tuitionTax?: string
+) {
+  let remaining = total;
+  return await Promise.all(
+    snapshot.lines.map(async (line, index) => {
+      const cents =
+        index === snapshot.lines.length - 1
+          ? remaining
+          : Math.floor(
+              (total * (line.cents - line.discount)) /
+                Math.max(1, snapshot.total)
+            );
+      remaining -= cents;
+      const material = line.materialId
+        ? await ctx.db.get(line.materialId)
+        : null;
+      return {
+        ...line,
+        title: `Transfer adjustment: ${line.title}`,
+        cents,
+        discount: 0,
+        taxCode: line.materialId ? material?.taxCode : tuitionTax,
+      };
+    })
+  );
+}
+
 async function queueTransferRefund(
   ctx: MutationCtx,
-  sourceOrder: Doc<"registrationOrders">,
+  source: Doc<"registrationSeats">,
   adjustment: number,
   requestKey: string,
   reason: string,
   actorId: Id<"users">
 ) {
-  if (adjustment < 0) {
-    const refund = -adjustment;
-    if (
-      !sourceOrder.paymentIntent ||
-      refund >
-        sourceOrder.total - sourceOrder.refunded - sourceOrder.refundReserved
-    ) {
-      throw new Error(
-        "Original payment cannot support this refund; choose keep or reconcile first"
-      );
-    }
-    await ctx.db.patch(sourceOrder._id, {
-      refundReserved: sourceOrder.refundReserved + refund,
-    });
-    await ctx.db.insert("registrationRefunds", {
-      orderId: sourceOrder._id,
-      key: `transfer:${requestKey}`,
-      cents: refund,
-      allocations: await allocateRefund(ctx, sourceOrder, refund),
-      reason,
-      actor: actorId,
-      state: "pending",
-    });
+  if (adjustment >= 0) {
+    return;
   }
+  await refundLineage(ctx, source, -adjustment, requestKey, reason, actorId, 0);
+}
+
+async function refundLineage(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats">,
+  amount: number,
+  requestKey: string,
+  reason: string,
+  actor: Id<"users">,
+  depth: number
+): Promise<void> {
+  if (depth >= 100) {
+    throw new Error("Transfer history requires reconciliation");
+  }
+  const order = await ctx.db.get(seat.orderId);
+  let remaining = amount;
+  if (order?.paymentIntent) {
+    const history = await ctx.db
+      .query("registrationRefunds")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .collect();
+    const spent = history
+      .filter((r) => r.state !== "failed")
+      .reduce(
+        (sum, r) =>
+          sum +
+          (r.allocations ?? [])
+            .filter((a) => a.email === seat.email)
+            .reduce((n, a) => n + a.cents, 0),
+        0
+      );
+    const purchased = order.seats.filter(
+      (s) => s.attendee.email === seat.email
+    );
+    const balance = purchased.reduce((sum, s) => sum + s.total, 0) - spent;
+    const cents = Math.max(
+      0,
+      Math.min(
+        remaining,
+        balance,
+        order.total - order.refunded - order.refundReserved
+      )
+    );
+    if (cents > 0) {
+      await ctx.db.patch(order._id, {
+        refundReserved: order.refundReserved + cents,
+      });
+      await ctx.db.insert("registrationRefunds", {
+        orderId: order._id,
+        key: `transfer:${requestKey}:${order._id}`,
+        cents,
+        allocations: await allocateRefund(
+          ctx,
+          { ...order, seats: purchased, tax: 0 },
+          cents
+        ),
+        reason,
+        actor,
+        state: "pending",
+      });
+      remaining -= cents;
+    }
+  }
+  if (remaining === 0) {
+    return;
+  }
+  const previous = seat.transferredFrom
+    ? await ctx.db.get(seat.transferredFrom)
+    : null;
+  if (!previous) {
+    throw new Error(
+      "Original payments cannot support this refund; choose keep or reconcile first"
+    );
+  }
+  await refundLineage(
+    ctx,
+    previous,
+    remaining,
+    requestKey,
+    reason,
+    actor,
+    depth + 1
+  );
 }
 
 export const preview = query({
@@ -277,10 +393,11 @@ export const preview = query({
     const { config } = await offering(ctx, target.courseId, target._id);
     const allowed = new Set(config.materials.map((m) => m.id));
     const [priced] = quote(
-      config,
+      { ...config, questions: [] },
       [
         {
           ...seat.snapshot.attendee,
+          answers: [],
           selected: seat.snapshot.attendee.selected.filter((id) =>
             allowed.has(id)
           ),

@@ -1,7 +1,8 @@
 "use client";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useCourses } from "@/components/registration/catalog";
 import { pluralize } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -417,7 +418,7 @@ function CourseList({
 }
 
 export function CourseAdmin() {
-  const courses = useQuery(api.registration.courses);
+  const courses = useCourses();
   const save = useMutation(api.registration.saveCourse);
   const params = useSearchParams();
   const [draft, setDraft] = useState<CourseDraft | null>(null);

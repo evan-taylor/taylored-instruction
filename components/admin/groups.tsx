@@ -572,18 +572,16 @@ export function GroupsAdmin() {
   const params = useSearchParams();
   const router = useRouter();
   const requested = params.get("tab");
-  const [tab, setTab] = useState<Tab>(
+  const tab: Tab =
     requested === "organizations" ||
-      requested === "invoices" ||
-      requested === "enroll"
+    requested === "invoices" ||
+    requested === "enroll"
       ? requested
-      : "requests"
-  );
+      : "requests";
   const [prefill, setPrefill] = useState<EnrollmentPrefill | undefined>();
   const attention = useQuery(api.registrationOperations.attention);
   const focusOrder = params.get("order") as Id<"registrationOrders"> | null;
   function go(next: Tab) {
-    setTab(next);
     router.replace(`/admin/groups?tab=${next}`);
   }
   return (

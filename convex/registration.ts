@@ -1,4 +1,7 @@
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  paginationResultValidator,
+} from "convex/server";
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import type { Quote, Settings } from "../shared/registration/domain";
@@ -168,16 +171,21 @@ export const detail = query({
   },
 });
 export const courses = query({
-  args: {},
-  returns: v.array(doc(schema, "registrationCourses")),
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(doc(schema, "registrationCourses")),
+  handler: async (ctx, args) => {
     await staff(ctx);
-    return await ctx.db.query("registrationCourses").take(BATCH);
+    return await ctx.db
+      .query("registrationCourses")
+      .paginate(args.paginationOpts);
   },
 });
 export const sessions = query({
-  args: { courseId: v.optional(v.id("registrationCourses")) },
-  returns: v.array(doc(schema, "registrationSessions")),
+  args: {
+    courseId: v.optional(v.id("registrationCourses")),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(doc(schema, "registrationSessions")),
   handler: async (ctx, args) => {
     await staff(ctx);
     return args.courseId
@@ -186,8 +194,11 @@ export const sessions = query({
           .withIndex("by_courseId", (q) =>
             q.eq("courseId", args.courseId as Doc<"registrationCourses">["_id"])
           )
-          .take(BATCH)
-      : await ctx.db.query("registrationSessions").order("desc").take(BATCH);
+          .paginate(args.paginationOpts)
+      : await ctx.db
+          .query("registrationSessions")
+          .order("desc")
+          .paginate(args.paginationOpts);
   },
 });
 export const saveCourse = mutation({
@@ -312,6 +323,9 @@ export const saveSession = mutation({
         { sessionId: id, notify, cursor: null }
       );
     }
+    await ctx.scheduler.runAfter(0, internal.registrationWaitlist.advance, {
+      sessionId: saved,
+    });
     const assignments = await ctx.db
       .query("registrationInstructorAssignments")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", saved))
@@ -397,11 +411,13 @@ export const saveCoupon = mutation({
   },
 });
 export const coupons = query({
-  args: {},
-  returns: v.array(doc(schema, "registrationCoupons")),
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  returns: paginationResultValidator(doc(schema, "registrationCoupons")),
+  handler: async (ctx, args) => {
     await staff(ctx);
-    return await ctx.db.query("registrationCoupons").take(BATCH);
+    return await ctx.db
+      .query("registrationCoupons")
+      .paginate(args.paginationOpts);
   },
 });
 export const reserve = mutation({
@@ -754,11 +770,15 @@ export const publicCourseSessions = query({
     }
     const matchingSessions = await ctx.db
       .query("registrationSessions")
-      .withIndex("by_courseId_and_visibility_and_publication", (q) =>
-        q
-          .eq("courseId", args.courseId)
-          .eq("visibility", "public")
-          .eq("publication", "published")
+      .withIndex("by_courseId_and_firstStart", (q) =>
+        q.eq("courseId", args.courseId).gt("firstStart", Date.now())
+      )
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("visibility"), "public"),
+          q.eq(q.field("publication"), "published"),
+          q.eq(q.field("state"), "open")
+        )
       )
       .take(BATCH);
     return matchingSessions

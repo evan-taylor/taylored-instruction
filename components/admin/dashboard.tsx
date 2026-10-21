@@ -27,7 +27,12 @@ import {
 } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { Money } from "@/components/ui/field";
-import { EmptyState, PageHeader, Skeleton } from "@/components/ui/page-header";
+import {
+  EmptyState,
+  Notice,
+  PageHeader,
+  Skeleton,
+} from "@/components/ui/page-header";
 import { Meter, StatTile } from "@/components/ui/stat";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
@@ -106,11 +111,19 @@ export function AdminDashboard() {
         description="Registrations, payments, and fulfillment at a glance."
         title="Dashboard"
       />
+      {summary.sampled ? (
+        <Notice tone="info">
+          This overview has reached its display limit. Figures summarize up to
+          200 recent orders and upcoming sessions, and up to 50 items in each
+          attention category; they are not complete account totals. Use order
+          history and provider records for complete financial reporting.
+        </Notice>
+      ) : null}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatTile
           hint={`${pluralize(summary.seatsSold, "seat")} across ${pluralize(summary.ordersSettled, "order")} in ${summary.windowDays} days`}
           icon={<Banknote aria-hidden="true" className="h-5 w-5" />}
-          label="Revenue"
+          label="Payments including tax"
           tone="primary"
           value={formatMoney(summary.revenue)}
         />

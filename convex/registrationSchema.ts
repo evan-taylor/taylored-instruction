@@ -32,7 +32,9 @@ export const registrationTables = {
     .index("by_publication_and_delivery", ["publication", "delivery"]),
   registrationSessions: defineTable(sessionFields)
     .index("by_code", ["code"])
+    .index("by_firstStart", ["firstStart"])
     .index("by_courseId", ["courseId"])
+    .index("by_courseId_and_firstStart", ["courseId", "firstStart"])
     .index("by_courseId_and_visibility_and_publication", [
       "courseId",
       "visibility",

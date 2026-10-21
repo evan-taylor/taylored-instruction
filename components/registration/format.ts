@@ -51,12 +51,12 @@ export function formatRelative(ms: number, now = Date.now()) {
   }
   return formatter.format(0, "minute");
 }
-export function shortZone(timeZone: string) {
+export function shortZone(timeZone: string, at = Date.now()) {
   const part = new Intl.DateTimeFormat("en-US", {
     timeZone,
     timeZoneName: "short",
   })
-    .formatToParts(new Date())
+    .formatToParts(new Date(at))
     .find((p) => p.type === "timeZoneName");
   return part?.value ?? timeZone;
 }

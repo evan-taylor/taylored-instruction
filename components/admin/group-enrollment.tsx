@@ -3,6 +3,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { useCourses, useSessions } from "@/components/registration/catalog";
 import {
   formatMeeting,
   formatWeekday,
@@ -105,8 +106,8 @@ function useOffering(
   sessionId: string,
   courseId: string
 ) {
-  const sessions = useQuery(api.registration.sessions, {});
-  const courses = useQuery(api.registration.courses);
+  const sessions = useSessions();
+  const courses = useCourses();
   const session = sessions?.find((s) => s._id === sessionId);
   const course = courses?.find(
     (c) => c._id === (mode === "session" ? session?.courseId : courseId)

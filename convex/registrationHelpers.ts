@@ -142,6 +142,13 @@ export async function enqueue(
     .query("registrationJobs")
     .withIndex("by_key", (q) => q.eq("key", job.key))
     .unique();
+  if (
+    existing &&
+    job.stepId &&
+    (existing.state === "pending" || existing.state === "canceled")
+  ) {
+    await ctx.db.patch(existing._id, { ...job, state: "pending", attempts: 0 });
+  }
   if (!existing) {
     await ctx.db.insert("registrationJobs", {
       ...job,
@@ -161,7 +168,7 @@ export async function release(
   const seats = await ctx.db
     .query("registrationSeats")
     .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-    .take(BATCH);
+    .collect();
   const active = seats.filter(
     (seat) => seat.state === "held" || seat.state === "active"
   );
@@ -187,6 +194,27 @@ export async function release(
       });
     }
   }
+  const invoices = await ctx.db
+    .query("registrationInvoices")
+    .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+    .collect();
+  await Promise.all(
+    invoices
+      .filter((i) => i.status === "open" || i.status === "draft")
+      .map(async (invoice) => {
+        await ctx.db.patch(invoice._id, {
+          status: "void",
+          voidedAt: Date.now(),
+        });
+        if (invoice.stripeInvoiceId) {
+          await ctx.scheduler.runAfter(
+            0,
+            internal.registrationInvoiceActions.closeRemote,
+            { id: invoice._id, attempt: 0 }
+          );
+        }
+      })
+  );
   await ctx.db.patch(order._id, { status: "expired", error: reason });
   if (order.stripeSession) {
     await ctx.scheduler.runAfter(
@@ -248,9 +276,22 @@ export async function grantMaterial(
         q.eq("materialId", material._id).eq("state", "available")
       )
       .first();
-    if (code) {
+    const firstPending = await ctx.db
+      .query("registrationEntitlements")
+      .withIndex("by_materialId_and_state_and_paidAt", (q) =>
+        q.eq("materialId", material._id).eq("state", "pending")
+      )
+      .first();
+    if (code && firstPending?._id === id) {
       await assignCode(ctx, id, code, "system", "settlement");
     } else {
+      if (code) {
+        await ctx.scheduler.runAfter(
+          0,
+          internal.registrationOperations.restock,
+          { materialId: material._id }
+        );
+      }
       await enqueue(ctx, {
         key: `shortage:${id}`,
         kind: "shortage",
@@ -279,13 +320,16 @@ export async function assignCode(
   entitlementId: Id<"registrationEntitlements">,
   code: Doc<"registrationCodes">,
   actor: string,
-  reason: string
+  reason: string,
+  replace = false
 ) {
   const entitlement = await ctx.db.get(entitlementId);
   if (
     !entitlement ||
     code.state !== "available" ||
-    code.materialId !== entitlement.materialId
+    code.materialId !== entitlement.materialId ||
+    entitlement.state === "canceled" ||
+    (entitlement.codeId !== undefined && !replace)
   ) {
     throw new Error("Code unavailable or wrong inventory");
   }
@@ -302,6 +346,20 @@ export async function assignCode(
     codeId: code._id,
     url: code.url,
   });
+  const seat = await ctx.db.get(entitlement.seatId);
+  if (seat) {
+    await enqueue(ctx, {
+      key: `assigned:${entitlementId}:${code._id}`,
+      kind: "email",
+      recipient: seat.email,
+      subject: replace
+        ? "Your replacement course code is ready"
+        : "Your course material is ready",
+      body: "Your course code is available in your secure registration portal.",
+      due: Date.now(),
+      seatId: seat._id,
+    });
+  }
   await ctx.db.insert("registrationAssignments", {
     entitlementId,
     codeId: code._id,
@@ -320,6 +378,11 @@ export async function scheduleEmails(
     .query("registrationJobs")
     .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
     .take(200);
+  await Promise.all(
+    previousJobs
+      .filter((job) => job.stepId && job.state === "pending")
+      .map((job) => ctx.db.patch(job._id, { state: "canceled" }))
+  );
   await Promise.all(
     config.emails.map(async (step) => {
       if (
@@ -368,6 +431,9 @@ export async function settle(
   if (order.status !== "hold" && order.status !== "unpaid") {
     await ctx.db.patch(order._id, {
       status: "exception",
+      paymentIntent,
+      source,
+      settledAt: Date.now(),
       error:
         "Payment arrived after reservation release; reconcile or refund without overbooking",
     });
@@ -382,11 +448,18 @@ export async function settle(
   if (
     session?.state === "canceled" ||
     coupon?.disabled ||
-    !course.enrollmentOpen
+    (!course.enrollmentOpen &&
+      source !== "offline" &&
+      source !== "waived" &&
+      source !== "transfer" &&
+      source !== "invoice")
   ) {
     await release(ctx, order, "Session canceled");
     await ctx.db.patch(order._id, {
       status: "exception",
+      paymentIntent,
+      source,
+      settledAt: Date.now(),
       error:
         "Payment for canceled or disabled offering/coupon requires reconciliation",
     });
@@ -411,7 +484,7 @@ export async function settle(
   const seats = await ctx.db
     .query("registrationSeats")
     .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-    .take(BATCH);
+    .collect();
   await seats.reduce(async (previous, seat) => {
     await previous;
     await ctx.db.patch(seat._id, { state: "active", settledAt: now });

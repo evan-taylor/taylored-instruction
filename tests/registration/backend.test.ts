@@ -1537,3 +1537,601 @@ describe("Stripe Tax", () => {
     ]);
   });
 });
+
+describe("PR review regressions", () => {
+  const admin = {
+    payment: "unpaid" as const,
+    overbook: false,
+    reason: "Regression test",
+  };
+  const bill = {
+    billToName: "Test",
+    billToEmail: "buyer@example.test",
+    billToAddress: "100 Main St",
+    city: "Vancouver",
+    state: "WA",
+    postalCode: "98660",
+    country: "US",
+    poNumber: "",
+    notes: "",
+    dueDays: 30,
+  };
+  it("settles all 100 supported seats and requires explicit whole-group cancellation", async () => {
+    const f = await fixture(200);
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin,
+      attendees: Array.from({ length: 100 }, (_, i) =>
+        seat(`large${i}@example.test`)
+      ),
+    });
+    const seats = await f.adminClient.query(
+      api.registrationOperations.orderSeats,
+      { orderId: result.orderId }
+    );
+    expect(seats).toHaveLength(100);
+    await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+      orderId: result.orderId,
+      source: "offline",
+      reason: "Paid",
+    });
+    const paid = await f.adminClient.query(
+      api.registrationOperations.orderSeats,
+      { orderId: result.orderId }
+    );
+    expect(paid.every((s) => s.state === "active" && s.settledAt)).toBe(true);
+    const unpaid = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin,
+      attendees: Array.from({ length: 60 }, (_, i) =>
+        seat(`cancel${i}@example.test`)
+      ),
+    });
+    const members = await f.adminClient.query(
+      api.registrationOperations.orderSeats,
+      { orderId: unpaid.orderId }
+    );
+    const first = members.at(0);
+    if (!first) {
+      throw new Error("Missing seat");
+    }
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.cancelSeat, {
+        seatId: first._id,
+        reason: "Cancel",
+        notify: true,
+      })
+    ).rejects.toThrow("whole order");
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(160);
+    await f.adminClient.mutation(api.registrationOperations.cancelSeat, {
+      seatId: first._id,
+      reason: "Cancel",
+      notify: true,
+      cancelWholeOrder: true,
+    });
+    expect(
+      (
+        await f.adminClient.query(api.registrationOperations.orderSeats, {
+          orderId: unpaid.orderId,
+        })
+      ).every((s) => s.state === "canceled")
+    ).toBe(true);
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(100);
+  });
+  it("retains invoice tax on offline settlement and blocks bypassing a payable invoice", async () => {
+    const f = await fixture();
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin,
+    });
+    const id = await f.adminClient.mutation(
+      api.registrationGroups.createInvoice,
+      { orderId: order.orderId, ...bill }
+    );
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.recordPayment, {
+        orderId: order.orderId,
+        source: "offline",
+        reason: "Paid",
+      })
+    ).rejects.toThrow("invoice");
+    await f.t.mutation(internal.registrationGroups.attachStripeInvoice, {
+      id,
+      stripeInvoiceId: "in_tax",
+      stripeCustomerId: "cus_test",
+      hostedUrl: "https://invoice.stripe.com/test",
+      tax: 850,
+    });
+    await f.adminClient.mutation(api.registrationGroups.recordInvoicePayment, {
+      id,
+      reason: "Check",
+    });
+    expect((await f.t.run((ctx) => ctx.db.get(order.orderId)))?.tax).toBe(850);
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(
+      jobs.find((j) => j.key === `receipt:${order.orderId}`)?.body
+    ).toContain("108.50");
+  });
+  it("closes an invoice attached after cancellation without emailing its payment link", async () => {
+    const f = await fixture();
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin,
+    });
+    const id = await f.adminClient.mutation(
+      api.registrationGroups.createInvoice,
+      { orderId: order.orderId, ...bill }
+    );
+    await f.adminClient.mutation(api.registrationGroups.voidInvoice, {
+      id,
+      reason: "Cancel",
+    });
+    await f.t.mutation(internal.registrationGroups.attachStripeInvoice, {
+      id,
+      stripeInvoiceId: "in_late",
+      stripeCustomerId: "cus_test",
+      hostedUrl: "https://invoice.stripe.com/test",
+      tax: 850,
+    });
+    expect((await f.t.run((ctx) => ctx.db.get(id)))?.status).toBe("void");
+    expect(
+      (await f.t.run((ctx) => ctx.db.query("registrationJobs").collect())).some(
+        (j) => j.key === `invoice:${id}`
+      )
+    ).toBe(false);
+  });
+  it("preserves unpaid staff enrollment when checkout is past the public cutoff", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.session, { firstStart: Date.now() - 1000 })
+    );
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin,
+    });
+    await expect(
+      f.adminClient.mutation(api.registrationPayments.createPaymentLink, {
+        orderId: order.orderId,
+        requestKey: crypto.randomUUID(),
+      })
+    ).rejects.toThrow("closed");
+    expect((await f.t.run((ctx) => ctx.db.get(order.orderId)))?.status).toBe(
+      "unpaid"
+    );
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
+  });
+  it("revokes instructor access even when stale assignments remain", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.insert("registrationInstructorAssignments", {
+        userId: f.instructor,
+        sessionId: f.session,
+      });
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", f.instructor))
+        .unique();
+      if (profile) {
+        await ctx.db.patch(profile._id, { isInstructor: false });
+      }
+    });
+    await expect(
+      f.instructorClient.query(api.registrationOperations.assignedSessions, {})
+    ).rejects.toThrow("instructor");
+  });
+  it("does not invite waitlists for a closed course", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { enrollmentOpen: false });
+      await ctx.db.insert("registrationWaitlist", {
+        sessionId: f.session,
+        name: "Waiting",
+        email: "wait@example.test",
+        state: "waiting",
+      });
+    });
+    await f.t.mutation(internal.registrationWaitlist.advance, {
+      sessionId: f.session,
+    });
+    expect(
+      (await f.t.run((ctx) => ctx.db.query("registrationWaitlist").first()))
+        ?.state
+    ).toBe("waiting");
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(0);
+  });
+  it("keeps reminders after repeated reschedules and applies edited grading rules", async () => {
+    const f = await fixture();
+    const email = {
+      id: "reminder",
+      anchor: "first" as const,
+      offsetMinutes: -10,
+      subject: "Old",
+      body: "Old",
+    };
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, { settings: { ...config, emails: [email] } })
+    );
+    await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { ...admin, payment: "offline" },
+    });
+    const outcome = {
+      id: "exam",
+      title: "Exam",
+      type: "percentage" as const,
+      required: true,
+      minimum: 90,
+      options: [],
+      version: 2,
+    };
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.session, {
+        revision: 2,
+        overrides: {
+          outcomes: [outcome],
+          emails: [{ ...email, subject: "New" }],
+        },
+      })
+    );
+    await f.t.mutation(internal.registrationOperations.reschedule, {
+      sessionId: f.session,
+      notify: false,
+      cursor: null,
+    });
+    await f.t.mutation(internal.registrationOperations.reschedule, {
+      sessionId: f.session,
+      notify: false,
+      cursor: null,
+    });
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(jobs.filter((j) => j.stepId && j.state === "pending")).toHaveLength(
+      1
+    );
+    expect(jobs.find((j) => j.stepId && j.state === "pending")?.subject).toBe(
+      "New"
+    );
+    expect(
+      (await f.t.run((ctx) => ctx.db.query("registrationSeats").first()))
+        ?.outcomeDefinitions
+    ).toEqual([outcome]);
+  });
+  it("finds future classes after more than 50 historical sessions and pages staff catalogs", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      const original = await ctx.db.get(f.session);
+      if (!original) {
+        throw new Error("Missing session");
+      }
+      const { _id, _creationTime, ...value } = original;
+      await ctx.db.patch(_id, { firstStart: Date.now() - 86_400_000 });
+      await Promise.all(
+        Array.from({ length: 60 }, (_, i) =>
+          ctx.db.insert("registrationSessions", {
+            ...value,
+            code: `past-${i}`,
+            firstStart: Date.now() - 86_400_000,
+          })
+        )
+      );
+      await ctx.db.insert("registrationSessions", {
+        ...value,
+        code: "future-last",
+      });
+    });
+    const upcoming = await f.t.query(api.registration.publicCourseSessions, {
+      courseId: f.course,
+    });
+    expect(upcoming.map((s) => s.code)).toContain("future-last");
+    const page = await f.adminClient.query(api.registration.sessions, {
+      paginationOpts: { cursor: null, numItems: 50 },
+    });
+    expect(page.isDone).toBe(false);
+    const rest = await f.adminClient.query(api.registration.sessions, {
+      paginationOpts: { cursor: page.continueCursor, numItems: 50 },
+    });
+    expect(page.page.length + rest.page.length).toBe(62);
+  });
+  it("refunds the original payment after a keep-price transfer chain", async () => {
+    const f = await fixture();
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { ...admin, payment: "offline" },
+    });
+    const targets = await f.t.run(async (ctx) => {
+      await ctx.db.patch(order.orderId, { paymentIntent: "pi_original" });
+      const original = await ctx.db.get(f.session);
+      if (!original) {
+        throw new Error("Missing session");
+      }
+      const { _id, _creationTime, ...value } = original;
+      return await Promise.all(
+        [15_000, 8000].map((tuition, i) =>
+          ctx.db.insert("registrationSessions", {
+            ...value,
+            code: `transfer-${i}`,
+            reserved: 0,
+            overrides: { tuition },
+          })
+        )
+      );
+    });
+    const source = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: order.orderId,
+      })
+    ).at(0);
+    const [higher, lower] = targets;
+    if (!(source && higher && lower)) {
+      throw new Error("Missing transfer fixture");
+    }
+    const first = await f.adminClient.mutation(
+      api.registrationTransfers.transfer,
+      {
+        seatId: source._id,
+        sessionId: higher,
+        choice: "keep",
+        reason: "Keep paid price",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(first.seatId)))?.snapshot.total
+    ).toBe(10_000);
+    const second = await f.adminClient.mutation(
+      api.registrationTransfers.transfer,
+      {
+        seatId: first.seatId,
+        sessionId: lower,
+        choice: "refund",
+        reason: "Lower price",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    expect(second.adjustment).toBe(-2000);
+    const refund = await f.t.run((ctx) =>
+      ctx.db.query("registrationRefunds").first()
+    );
+    expect(refund?.orderId).toBe(order.orderId);
+    expect(refund?.cents).toBe(2000);
+  });
+  it("releases failed refund reservations and reports zero after a tax-inclusive full refund", async () => {
+    const f = await fixture();
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { ...admin, payment: "offline" },
+    });
+    await f.t.run((ctx) =>
+      ctx.db.patch(order.orderId, { paymentIntent: "pi_refund", tax: 850 })
+    );
+    const id = await f.adminClient.mutation(
+      api.registrationPayments.requestRefund,
+      {
+        orderId: order.orderId,
+        cents: 10_850,
+        key: crypto.randomUUID(),
+        reason: "Test",
+      }
+    );
+    await f.t.mutation(internal.registrationPayments.refundEvent, {
+      id,
+      stripeId: "re_failed",
+      amount: 10_850,
+      paymentIntent: "pi_refund",
+      succeeded: false,
+      failed: true,
+    });
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.refundReserved
+    ).toBe(0);
+    const retry = await f.adminClient.mutation(
+      api.registrationPayments.requestRefund,
+      {
+        orderId: order.orderId,
+        cents: 10_850,
+        key: crypto.randomUUID(),
+        reason: "Retry",
+      }
+    );
+    await f.t.mutation(internal.registrationPayments.finishRefund, {
+      id: retry,
+      stripeId: "re_success",
+    });
+    expect(
+      (await f.adminClient.query(api.registrationDashboard.summary, {})).revenue
+    ).toBe(0);
+  });
+});
+
+describe("Fulfillment and transfer review coverage", () => {
+  it("does not let a later buyer consume inventory ahead of an earlier paid entitlement", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          tuition: 0,
+          materials: [
+            {
+              id: "code",
+              materialId: f.material,
+              title: "Code",
+              policy: "included",
+              cents: 0,
+            },
+          ],
+        },
+      })
+    );
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "first@example.test")
+    );
+    await f.adminClient.mutation(api.registrationOperations.addStock, {
+      materialId: f.material,
+      input: "https://codes.example.test/fifo",
+      preview: false,
+    });
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "second@example.test")
+    );
+    await f.t.mutation(internal.registrationOperations.restock, {
+      materialId: f.material,
+    });
+    const entitlements = await f.t.run((ctx) =>
+      ctx.db.query("registrationEntitlements").collect()
+    );
+    const ready = entitlements.find((e) => e.state === "ready");
+    expect(ready).toBeDefined();
+    expect(
+      ready ? (await f.t.run((ctx) => ctx.db.get(ready.seatId)))?.email : ""
+    ).toBe("first@example.test");
+    expect(entitlements.filter((e) => e.state === "pending")).toHaveLength(1);
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(jobs.filter((j) => j.key.startsWith("assigned:"))).toHaveLength(1);
+  });
+  it("requires new destination answers and stamps transfer adjustment tax codes", async () => {
+    const f = await fixture();
+    const original = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { payment: "offline", overbook: false, reason: "Test" },
+    });
+    const target = await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.material, { taxCode: "txcd_10000000" });
+      const source = await ctx.db.get(f.session);
+      if (!source) {
+        throw new Error("Missing session");
+      }
+      const { _id, _creationTime, ...value } = source;
+      return await ctx.db.insert("registrationSessions", {
+        ...value,
+        code: "questions-and-tax",
+        reserved: 0,
+        overrides: {
+          tuition: 15_000,
+          taxCode: "txcd_20030000",
+          materials: [
+            {
+              id: "new-code",
+              materialId: f.material,
+              title: "Online",
+              policy: "included",
+              cents: 5000,
+            },
+          ],
+          questions: [
+            {
+              id: "new-policy",
+              title: "New policy",
+              type: "checkbox",
+              required: true,
+              options: [],
+              version: 1,
+            },
+          ],
+        },
+      });
+    });
+    const source = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: original.orderId,
+      })
+    ).at(0);
+    if (!source) {
+      throw new Error("Missing seat");
+    }
+    const args = {
+      seatId: source._id,
+      sessionId: target,
+      choice: "collect" as const,
+      reason: "Transfer",
+      requestKey: crypto.randomUUID(),
+    };
+    expect(
+      (
+        await f.adminClient.query(api.registrationTransfers.preview, {
+          seatId: source._id,
+          sessionId: target,
+        })
+      ).difference
+    ).toBe(10_000);
+    await expect(
+      f.adminClient.mutation(api.registrationTransfers.transfer, args)
+    ).rejects.toThrow("Required");
+    const moved = await f.adminClient.mutation(
+      api.registrationTransfers.transfer,
+      { ...args, answers: [{ id: "new-policy", value: true }] }
+    );
+    const order = await f.t.run((ctx) => ctx.db.get(moved.orderId));
+    expect(order?.seats.at(0)?.lines.map((l) => [l.cents, l.taxCode])).toEqual([
+      [7500, "txcd_20030000"],
+      [2500, "txcd_10000000"],
+    ]);
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(source._id)))?.snapshot.attendee
+        .answers
+    ).toEqual([]);
+  });
+  it("applies template reminder edits and removes deleted reminders from existing registrations", async () => {
+    const f = await fixture();
+    const reminder = {
+      id: "reminder",
+      anchor: "first" as const,
+      offsetMinutes: -10,
+      subject: "Before",
+      body: "Before",
+    };
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, { settings: { ...config, emails: [reminder] } })
+    );
+    await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { payment: "offline", overbook: false, reason: "Test" },
+    });
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          emails: [{ ...reminder, subject: "After", offsetMinutes: -20 }],
+        },
+      })
+    );
+    await f.t.mutation(internal.registrationOperations.propagate, {
+      courseId: f.course,
+      cursor: null,
+    });
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(jobs.find((j) => j.stepId && j.state === "pending")?.subject).toBe(
+      "After"
+    );
+    await f.t.run((ctx) => ctx.db.patch(f.course, { settings: config }));
+    await f.t.mutation(internal.registrationOperations.propagate, {
+      courseId: f.course,
+      cursor: null,
+    });
+    expect(
+      (
+        await f.t.run((ctx) => ctx.db.query("registrationJobs").collect())
+      ).filter((j) => j.stepId && j.state === "pending")
+    ).toHaveLength(0);
+  });
+  it("retains real roster rows whose names look like headers", () => {
+    const rows = parseRoster(
+      "Name Person, name@example.test\nFirst Student, first@example.test",
+      String
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.email)).toEqual([
+      "name@example.test",
+      "first@example.test",
+    ]);
+  });
+});

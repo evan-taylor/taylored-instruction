@@ -26,13 +26,14 @@ import {
 } from "@/components/ui/page-header";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { formatMoney } from "@/shared/registration/domain";
-import { formatMeeting, formatTime } from "./format";
+import { formatMeeting, formatTime, shortZone } from "./format";
 
 type PortalView = "registrations" | "orders";
 type PortalRow = {
   id: string;
   title: string;
   state?: string;
+  timeZone?: string;
   status?: string;
   total?: number;
   refunded?: number;
@@ -106,12 +107,14 @@ function MaterialRow({
 
 function MeetingRow({
   meeting,
+  timeZone,
 }: {
+  timeZone?: string;
   meeting: NonNullable<PortalRow["meetings"]>[number];
 }) {
   const when = meeting.end
-    ? formatMeeting({ start: meeting.start, end: meeting.end })
-    : `${formatTime(meeting.start)}`;
+    ? formatMeeting({ start: meeting.start, end: meeting.end }, timeZone)
+    : `${formatTime(meeting.start, timeZone)}`;
   return (
     <li className="space-y-1 py-2 text-sm">
       <p className="m-0 flex items-start gap-2 text-slate-900">
@@ -119,7 +122,7 @@ function MeetingRow({
           aria-hidden="true"
           className="mt-0.5 h-4 w-4 shrink-0 text-primary"
         />
-        {when}
+        {when} {timeZone ? shortZone(timeZone, meeting.start) : ""}
       </p>
       <p className="m-0 flex items-start gap-2 text-slate-600">
         <MapPin
@@ -169,7 +172,7 @@ function RegistrationCard({
             </h3>
             <ul className="m-0 list-none divide-y divide-slate-100 p-0">
               {row.meetings.map((m) => (
-                <MeetingRow key={m.id} meeting={m} />
+                <MeetingRow key={m.id} meeting={m} timeZone={row.timeZone} />
               ))}
             </ul>
             <a
