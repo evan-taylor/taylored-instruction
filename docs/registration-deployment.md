@@ -22,6 +22,12 @@ also needs its existing `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` and the deployment
 callback URL registered with Google. Google/OTP provider acceptance is separate from
 build validation. Vercel environment variables do not automatically populate Convex.
 
+Use a sender on a verified Resend domain. The configured sender is
+`Taylored Instruction <info@mail.tayloredinstruction.com>`; the root-domain sender
+was rejected by Resend. This sender is configured in Vercel and Convex for production,
+preview, and development, plus Convex preview defaults. Preview exposes email-code
+login; Google is shown only when both OAuth credentials are configured.
+
 The hosted build runs `convex deploy --cmd 'bun run build:vercel'`. Convex supplies
 that backend's client and HTTP URLs. The build script sets `SITE_URL` and registration
 mode, validates backend prerequisites, creates or updates the matching Stripe endpoint,
@@ -66,3 +72,22 @@ have the business address and appropriate tax registrations configured by the ac
 owner. No live purchase, refund, or customer email is needed for build verification.
 `NEXT_PUBLIC_NATIVE_REGISTRATION` stays off until reviewed offerings are published.
 This PR does not migrate auth, merge itself, or deploy the production application.
+
+## Hosted preview acceptance (October 21, 2026)
+
+On the PR 79 branch preview (`blissful-snake-462`), using a labeled QA self-paced
+offering, Stripe sandbox cards, and the designated tester inbox:
+
+- Email OTP delivered and login opened the account and registration admin.
+- Checkout charged $10.89 ($10 tuition plus $0.89 tax); the signed Stripe webhook
+  settled the order and the success page confirmed the same total.
+- Receipt and attendee confirmation emails arrived in the tester inbox.
+- Admin refunded $5, then the remaining $5.89 including tax; the order showed
+  $10.89 refunded without canceling enrollment.
+- Group enrollment issued invoice TI-2026-0001; its hosted page accepted a $10.89
+  sandbox payment, and the webhook marked the invoice Paid Online and order paid.
+- The invoice email and secure portal access email arrived in the tester inbox.
+- Confirming the emailed portal link opened both attendee registrations and purchaser
+  orders, including the refunded balance.
+
+These are sandbox acceptance results, not live-charge or Google OAuth validation.

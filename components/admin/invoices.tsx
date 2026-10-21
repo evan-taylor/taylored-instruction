@@ -603,7 +603,12 @@ function InvoiceRowView({
         )}
       </TD>
       <TD className="text-right">
-        <Money cents={row.invoice.amount} />
+        <Money cents={row.invoice.amount + (row.invoice.tax ?? 0)} />
+        {row.invoice.tax ? (
+          <div className="text-slate-500 text-xs">
+            incl. <Money cents={row.invoice.tax} /> tax
+          </div>
+        ) : null}
       </TD>
       <TD>
         <div className="text-slate-900">{formatDate(row.invoice.dueAt)}</div>

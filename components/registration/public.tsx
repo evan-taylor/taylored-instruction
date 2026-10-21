@@ -1118,7 +1118,7 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
         onClick={form.pay}
         type="button"
       >
-        {form.busy ? "Working…" : "Continue to secure test payment"}
+        {form.busy ? "Working…" : "Continue to secure payment"}
       </Button>
     </div>
   );

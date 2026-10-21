@@ -199,7 +199,7 @@ function RegistrationCard({
             </ul>
           ) : (
             <p className="m-0 text-slate-500 text-sm">
-              Materials appear here once your registration is paid.
+              No materials are currently available for this registration.
             </p>
           )}
         </section>
@@ -219,7 +219,7 @@ function OrderCard({ row }: { row: PortalRow }) {
         <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:block sm:space-y-2">
           <div>
             <dt className="text-slate-500 text-xs uppercase tracking-wide">
-              Paid total
+              Subtotal before tax
             </dt>
             <dd className="m-0 font-semibold text-slate-900 tabular-nums">
               {formatMoney(row.total ?? 0)}

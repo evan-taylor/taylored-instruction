@@ -70,7 +70,6 @@ type Result = {
   orderId: Id<"registrationOrders">;
   total: number;
   status: string;
-  invoiceNumber?: string;
   invoiceUrl?: string;
   warning?: string;
 };
@@ -942,7 +941,7 @@ function ResultPanel({
             Group enrolled
           </h2>
           <p className="mt-1 text-slate-600 text-sm">
-            Order total <Money cents={result.total} /> ·{" "}
+            Order subtotal before tax <Money cents={result.total} /> ·{" "}
             {result.status === "settled"
               ? "paid and materials delivering"
               : "awaiting payment"}
@@ -951,7 +950,7 @@ function ResultPanel({
         {result.invoiceUrl ? (
           <div className="mx-auto max-w-md space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-4 text-left text-sm">
             <p className="font-medium text-slate-900">
-              Invoice {result.invoiceNumber} sent with a hosted pay link
+              Invoice created with a hosted pay link. Email delivery is queued.
             </p>
             <div className="flex items-center gap-2">
               <a
@@ -1133,7 +1132,6 @@ async function attachInvoice(
       organizationId,
     });
     outcome.invoiceUrl = await act.issue({ id: invoiceId });
-    outcome.invoiceNumber = "created";
   } catch (error) {
     outcome.warning = `Enrollment saved, but the invoice could not be sent: ${String(error)}. Create it from the Invoices tab.`;
   }
