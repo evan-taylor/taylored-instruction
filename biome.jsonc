@@ -10,6 +10,12 @@
   },
   "overrides": [
     {
+      "includes": [".agents/**", ".claude/**", ".pi/**"],
+      "linter": { "enabled": false },
+      "formatter": { "enabled": false },
+      "assist": { "enabled": false }
+    },
+    {
       "includes": ["**/*.css"],
       "linter": {
         "rules": {
