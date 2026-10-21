@@ -260,6 +260,10 @@ export const finishRefund = internalMutation({
       stripeId: args.stripeId,
     });
     await ctx.db.patch(order._id, {
+      ...(order.source === "invoice-extra-payment" &&
+      order.refunded + refund.cents >= order.total + (order.tax ?? 0)
+        ? { status: "settled" as const, error: undefined }
+        : {}),
       refunded: order.refunded + refund.cents,
       refundReserved: order.refundReserved - refund.cents,
     });
@@ -488,6 +492,10 @@ export const refundEvent = internalMutation({
         stripeId: args.stripeId,
       });
       await ctx.db.patch(order._id, {
+        ...(order.source === "invoice-extra-payment" &&
+        order.refunded + refund.cents >= order.total + (order.tax ?? 0)
+          ? { status: "settled" as const, error: undefined }
+          : {}),
         refunded: order.refunded + refund.cents,
         refundReserved: order.refundReserved - refund.cents,
       });

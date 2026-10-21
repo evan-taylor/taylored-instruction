@@ -341,6 +341,7 @@ export const registrationTables = {
     ])
     .index("by_sessionId_and_state", ["sessionId", "state"])
     .index("by_sessionId_and_email", ["sessionId", "email"])
+    .index("by_sessionId_and_email_and_state", ["sessionId", "email", "state"])
     .index("by_tokenHash", ["tokenHash"]),
   registrationGrants: defineTable({
     hash: v.string(),

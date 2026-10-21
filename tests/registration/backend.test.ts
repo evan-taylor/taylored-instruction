@@ -1755,6 +1755,12 @@ describe("PR review regressions", () => {
       id: returned,
       stripeId: "re_duplicate",
     });
+    expect((await f.t.run((ctx) => ctx.db.get(order.orderId)))?.status).toBe(
+      "settled"
+    );
+    expect(
+      (await f.adminClient.query(api.registrationDashboard.summary, {})).revenue
+    ).toBe(10_000);
     const attendee = (
       await f.adminClient.query(api.registrationOperations.orderSeats, {
         orderId: order.orderId,
@@ -2671,12 +2677,14 @@ it("deducts refunded credit from transfer previews and collections", async () =>
       key: crypto.randomUUID(),
     }
   );
-  await expect(
-    f.adminClient.query(api.registrationTransfers.preview, {
-      seatId: source._id,
-      sessionId: target,
-    })
-  ).rejects.toThrow("pending refunds");
+  expect(
+    (
+      await f.adminClient.query(api.registrationTransfers.preview, {
+        seatId: source._id,
+        sessionId: target,
+      })
+    ).blocked
+  ).toContain("pending refunds");
   await f.t.mutation(internal.registrationPayments.refundFailure, {
     id: pendingRefund,
     error: "Rejected",
@@ -2864,45 +2872,61 @@ it("does not send newly added overdue registration emails to historical customer
   });
 });
 
-it("preserves grading definitions for past classes when templates change", async () => {
-  const f = await fixture();
-  const order = await f.adminClient.mutation(api.registration.reserve, {
-    ...attempt(f.course, f.session),
-    admin: { overbook: false, payment: "offline", reason: "Paid" },
-  });
-  await f.t.run(async (ctx) => {
-    await ctx.db.patch(f.session, {
-      firstStart: Date.now() - 86_400_000,
-      lastEnd: Date.now() - 1000,
+it.each([false, true])(
+  "preserves historical grading definitions (self-paced: %s)",
+  async (selfPaced) => {
+    const f = await fixture();
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { overbook: false, payment: "offline", reason: "Paid" },
     });
-    await ctx.db.patch(f.course, {
-      settings: {
-        ...config,
-        outcomes: [
-          {
-            id: "new-exam",
-            title: "New exam",
-            type: "percentage",
-            minimum: 80,
-            required: true,
-            options: [],
-            version: 2,
-          },
-        ],
-      },
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.session, {
+        firstStart: Date.now() - 86_400_000,
+        lastEnd: Date.now() - 1000,
+      });
+      await ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          outcomes: [
+            {
+              id: "new-exam",
+              title: "New exam",
+              type: "percentage",
+              minimum: 80,
+              required: true,
+              options: [],
+              version: 2,
+            },
+          ],
+        },
+      });
     });
-  });
-  await f.t.mutation(internal.registrationOperations.propagate, {
-    courseId: f.course,
-    cursor: null,
-  });
-  const attendee = (
-    await f.adminClient.query(api.registrationOperations.orderSeats, {
-      orderId: order.orderId,
-    })
-  ).at(0);
-  expect(attendee?.outcomeDefinitions).toEqual([]);
-});
+    if (selfPaced) {
+      await f.t.run(async (ctx) => {
+        const enrolled = await ctx.db
+          .query("registrationSeats")
+          .withIndex("by_orderId", (q) => q.eq("orderId", order.orderId))
+          .first();
+        if (!enrolled) {
+          throw new Error("Missing seat");
+        }
+        await ctx.db.patch(enrolled._id, { sessionId: undefined });
+        await ctx.db.patch(f.course, { delivery: "self-paced" });
+      });
+    }
+    await f.t.mutation(internal.registrationOperations.propagate, {
+      courseId: f.course,
+      cursor: null,
+    });
+    const attendee = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: order.orderId,
+      })
+    ).at(0);
+    expect(attendee?.outcomeDefinitions).toEqual([]);
+  }
+);
 
 it("drains more than fifty invalid offers after enrollment closes", async () => {
   const f = await fixture(100);
@@ -2938,55 +2962,64 @@ it("drains more than fifty invalid offers after enrollment closes", async () => 
   expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(0);
 });
 
-it("preserves overdue unsent registration steps during session edits", async () => {
-  const f = await fixture();
-  await f.t.run((ctx) =>
-    ctx.db.patch(f.course, {
-      settings: {
-        ...config,
-        emails: [
-          {
-            id: "immediate",
-            anchor: "registration",
-            offsetMinutes: 0,
-            subject: "Immediate",
-            body: "Welcome",
-          },
-        ],
-      },
-    })
-  );
-  const order = await f.adminClient.mutation(api.registration.reserve, {
-    ...attempt(f.course, f.session),
-    admin: { overbook: false, payment: "offline", reason: "Paid" },
-  });
-  await f.t.run(async (ctx) => {
-    const attendee = await ctx.db
-      .query("registrationSeats")
-      .withIndex("by_orderId", (q) => q.eq("orderId", order.orderId))
-      .first();
-    if (!attendee) {
-      throw new Error("Missing attendee");
-    }
-    await ctx.db.patch(attendee._id, { settledAt: Date.now() - 60_000 });
-    await ctx.db.patch(f.session, { revision: 2 });
-  });
-  await f.t.mutation(internal.registrationOperations.reschedule, {
-    sessionId: f.session,
-    cursor: null,
-    notify: false,
-  });
-  const jobs = await f.t.run((ctx) =>
-    ctx.db.query("registrationJobs").collect()
-  );
-  expect(
-    jobs.filter((job) => job.stepId === "immediate" && job.state === "pending")
-  ).toHaveLength(1);
-  expect(
-    jobs.find((job) => job.stepId === "immediate" && job.state === "pending")
-      ?.scheduleRevision
-  ).toBe(2);
-});
+it.each(["registration", "first", "last"] as const)(
+  "preserves overdue unsent %s steps during session edits",
+  async (anchor) => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          emails: [
+            {
+              id: "immediate",
+              anchor,
+              offsetMinutes: 0,
+              subject: "Immediate",
+              body: "Welcome",
+            },
+          ],
+        },
+      })
+    );
+    const order = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: { overbook: false, payment: "offline", reason: "Paid" },
+    });
+    await f.t.run(async (ctx) => {
+      const attendee = await ctx.db
+        .query("registrationSeats")
+        .withIndex("by_orderId", (q) => q.eq("orderId", order.orderId))
+        .first();
+      if (!attendee) {
+        throw new Error("Missing attendee");
+      }
+      await ctx.db.patch(attendee._id, { settledAt: Date.now() - 60_000 });
+      await ctx.db.patch(f.session, {
+        revision: 2,
+        firstStart: Date.now() - 120_000,
+        lastEnd: Date.now() - 60_000,
+      });
+    });
+    await f.t.mutation(internal.registrationOperations.reschedule, {
+      sessionId: f.session,
+      cursor: null,
+      notify: false,
+    });
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(
+      jobs.filter(
+        (job) => job.stepId === "immediate" && job.state === "pending"
+      )
+    ).toHaveLength(1);
+    expect(
+      jobs.find((job) => job.stepId === "immediate" && job.state === "pending")
+        ?.scheduleRevision
+    ).toBe(2);
+  }
+);
 
 describe("Emailed payment requests", () => {
   it("queues one request without billing information or starting checkout, then starts once using the secure link", async () => {
@@ -3079,4 +3112,56 @@ describe("Emailed payment requests", () => {
       })
     ).rejects.toThrow("already paid");
   });
+});
+
+it("rejects a transfer when a newer waitlist entry has an active offer", async () => {
+  const f = await fixture();
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { overbook: false, payment: "offline", reason: "Paid" },
+  });
+  const source = (
+    await f.adminClient.query(api.registrationOperations.orderSeats, {
+      orderId: order.orderId,
+    })
+  ).at(0);
+  if (!source) {
+    throw new Error("Missing seat");
+  }
+  const target = await f.t.run(async (ctx) => {
+    const session = await ctx.db.get(f.session);
+    if (!session) {
+      throw new Error("Missing session");
+    }
+    const { _id, _creationTime, ...value } = session;
+    const id = await ctx.db.insert("registrationSessions", {
+      ...value,
+      code: "newer-offer",
+      reserved: 1,
+    });
+    await ctx.db.insert("registrationWaitlist", {
+      sessionId: id,
+      name: source.name,
+      email: source.email,
+      state: "expired",
+    });
+    await ctx.db.insert("registrationWaitlist", {
+      sessionId: id,
+      name: source.name,
+      email: source.email,
+      state: "offered",
+      expires: Date.now() + 60_000,
+    });
+    return id;
+  });
+  await expect(
+    f.adminClient.mutation(api.registrationTransfers.transfer, {
+      seatId: source._id,
+      sessionId: target,
+      choice: "keep",
+      reason: "Move",
+      requestKey: crypto.randomUUID(),
+    })
+  ).rejects.toThrow("waitlist offer");
+  expect((await f.t.run((ctx) => ctx.db.get(target)))?.reserved).toBe(1);
 });

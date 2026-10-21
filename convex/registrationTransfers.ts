@@ -13,6 +13,9 @@ import { mutation, query } from "./_generated/server";
 import { audit, offering, settle, staff } from "./registrationHelpers";
 import { allocateRefund } from "./registrationRefundAllocation";
 
+const PENDING_REFUND =
+  "Wait for pending refunds to finish before transferring this registration";
+
 async function retainedCredit(
   ctx: QueryCtx,
   seat: Doc<"registrationSeats">,
@@ -43,9 +46,7 @@ async function retainedCredit(
       continue;
     }
     if (refund.state === "pending") {
-      throw new Error(
-        "Wait for pending refunds to finish before transferring this registration"
-      );
+      throw new Error(PENDING_REFUND);
     }
     if (!refund.allocations) {
       throw new Error("Legacy refund requires line allocation reconciliation");
@@ -443,6 +444,7 @@ export const preview = query({
     original: v.number(),
     destination: v.number(),
     difference: v.number(),
+    blocked: v.optional(v.string()),
   }),
   handler: async (ctx, args) => {
     await staff(ctx);
@@ -471,7 +473,20 @@ export const preview = query({
     if (!priced) {
       throw new Error("Unable to price transfer");
     }
-    const credit = await retainedCredit(ctx, seat);
+    let credit: number;
+    try {
+      credit = await retainedCredit(ctx, seat);
+    } catch (error) {
+      if (error instanceof Error && error.message === PENDING_REFUND) {
+        return {
+          original: 0,
+          destination: priced.total,
+          difference: 0,
+          blocked: PENDING_REFUND,
+        };
+      }
+      throw error;
+    }
     return {
       original: credit,
       destination: priced.total,
@@ -487,8 +502,8 @@ async function rejectOfferedSeat(
 ) {
   const offer = await ctx.db
     .query("registrationWaitlist")
-    .withIndex("by_sessionId_and_email", (q) =>
-      q.eq("sessionId", sessionId).eq("email", email)
+    .withIndex("by_sessionId_and_email_and_state", (q) =>
+      q.eq("sessionId", sessionId).eq("email", email).eq("state", "offered")
     )
     .first();
   if (offer?.state === "offered") {

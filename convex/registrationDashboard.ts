@@ -111,7 +111,12 @@ export const summary = query({
           materials,
         ].some((rows) => rows.length === BATCH),
       revenue: settled.reduce(
-        (sum, o) => sum + o.total + (o.tax ?? 0) - o.refunded,
+        (sum, o) =>
+          sum +
+          o.total +
+          (o.source === "invoice-extra-payment"
+            ? 0
+            : (o.tax ?? 0) - o.refunded),
         0
       ),
       seatsSold: settled.reduce((sum, o) => sum + o.seats.length, 0),

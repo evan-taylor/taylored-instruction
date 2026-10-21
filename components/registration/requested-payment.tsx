@@ -26,7 +26,9 @@ export function RequestedPayment() {
     try {
       const args = { orderId: orderId as Id<"registrationOrders">, requestKey };
       await begin(args);
-      window.location.assign(await checkout(args));
+      const url = await checkout(args);
+      sessionStorage.setItem("registration-order", JSON.stringify(args));
+      window.location.assign(url);
     } catch (cause) {
       setError(
         cause instanceof Error

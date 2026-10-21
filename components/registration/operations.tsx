@@ -770,6 +770,13 @@ function TransferPreview({
   if (!preview) {
     return <Skeleton className="h-14" />;
   }
+  if (preview.blocked) {
+    return (
+      <p className="text-amber-700 text-sm" role="status">
+        {preview.blocked}
+      </p>
+    );
+  }
   const tone = preview.difference > 0 ? "text-amber-700" : "text-slate-900";
   return (
     <dl className="m-0 grid grid-cols-3 gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-200 ring-inset">

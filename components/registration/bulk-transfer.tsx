@@ -103,6 +103,14 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
               api.registrationTransfers.preview,
               { seatId: seat._id, sessionId }
             );
+            if (price.blocked) {
+              return {
+                key: seat._id,
+                label: seat.name,
+                ok: false,
+                detail: price.blocked,
+              };
+            }
             return {
               key: seat._id,
               label: seat.name,

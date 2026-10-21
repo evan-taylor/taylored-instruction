@@ -414,7 +414,7 @@ export async function scheduleEmails(
       const pending = previousJobs.some((job) => job.stepId === step.id);
       if (
         due < Date.now() &&
-        !(step.anchor === "registration" && (initialRegistration || pending))
+        !(pending || (step.anchor === "registration" && initialRegistration))
       ) {
         return;
       }
