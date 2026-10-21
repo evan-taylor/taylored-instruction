@@ -1,0 +1,31 @@
+components/admin/group-enrollment.tsx
+  s_d0a82c0dd5b547::t_3a57feabd538de 1151-1154
+components/registration/portal.tsx
+  s_d0a82c0dd5b547::t_a4e36f8c801cb7 59-75,113-125
+convex/registrationHelpers.ts
+  s_d0a82c0dd5b547::t_0977fe41a69df0 380-381,414-418,440-441,468,525
+convex/registrationPayments.ts
+  s_d0a82c0dd5b547::t_a827253f85ce89 95,137-138
+convex/registrationTransfers.ts
+  s_d0a82c0dd5b547::t_4c702b13410527 40-44,469,471,473
+convex/registrationWebhook.ts
+  s_d0a82c0dd5b547::t_790e5e6d7148ca 47
+tests/registration/backend.test.ts
+  s_d0a82c0dd5b547::t_3501506af3c791 2606-2645,2733-2806
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dee141154b1a1e3b9eb38019b9b1e053b290dbec",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
