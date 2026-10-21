@@ -1173,7 +1173,7 @@ export function OrderInvoices({ order }: { order: Order }) {
                   <StatusBadge status={invoice.status} />
                 </TD>
                 <TD className="text-right">
-                  <Money cents={invoice.amount} />
+                  <Money cents={invoice.amount + (invoice.tax ?? 0)} />
                 </TD>
                 <TD className="whitespace-nowrap">
                   {formatDate(invoice.dueAt)}
