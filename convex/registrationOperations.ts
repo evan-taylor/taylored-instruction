@@ -924,7 +924,10 @@ export const propagate = internalMutation({
       if (session?.state === "canceled") {
         return;
       }
-      if (session?.overrides.outcomes === undefined) {
+      if (
+        session?.overrides.outcomes === undefined &&
+        (!session || session.firstStart > Date.now())
+      ) {
         await ctx.db.patch(seat._id, {
           outcomeDefinitions: course.settings.outcomes,
         });

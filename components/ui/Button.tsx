@@ -19,6 +19,7 @@ type ButtonProps = {
   "aria-label"?: string;
   "aria-expanded"?: boolean;
   "aria-controls"?: string;
+  "aria-pressed"?: boolean;
 };
 
 export const Button = ({
@@ -36,6 +37,7 @@ export const Button = ({
   "aria-label": ariaLabel,
   "aria-expanded": ariaExpanded,
   "aria-controls": ariaControls,
+  "aria-pressed": ariaPressed,
 }: ButtonProps) => {
   const baseClasses =
     "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 whitespace-nowrap";
@@ -92,6 +94,7 @@ export const Button = ({
       aria-controls={ariaControls}
       aria-expanded={ariaExpanded}
       aria-label={ariaLabel}
+      aria-pressed={ariaPressed}
       className={classes}
       disabled={disabled}
       onClick={onClick}

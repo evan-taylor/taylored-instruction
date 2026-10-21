@@ -1712,6 +1712,35 @@ describe("PR review regressions", () => {
       (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.refundReserved
     ).toBe(0);
     expect((await f.t.run((ctx) => ctx.db.get(refund)))?.state).toBe("failed");
+    const returned = await f.adminClient.mutation(
+      api.registrationPayments.requestRefund,
+      {
+        orderId: order.orderId,
+        cents: 10_850,
+        reason: "Return duplicate payment",
+        key: crypto.randomUUID(),
+      }
+    );
+    await f.t.mutation(internal.registrationPayments.finishRefund, {
+      id: returned,
+      stripeId: "re_duplicate",
+    });
+    const attendee = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: order.orderId,
+      })
+    ).at(0);
+    if (!attendee) {
+      throw new Error("Missing attendee");
+    }
+    expect(
+      (
+        await f.adminClient.query(api.registrationTransfers.preview, {
+          seatId: attendee._id,
+          sessionId: f.session,
+        })
+      ).original
+    ).toBe(10_000);
   });
   it("closes an invoice attached after cancellation without emailing its payment link", async () => {
     const f = await fixture();
@@ -2803,4 +2832,44 @@ it("does not send newly added overdue registration emails to historical customer
       )
     ).toHaveLength(1);
   });
+});
+
+it("preserves grading definitions for past classes when templates change", async () => {
+  const f = await fixture();
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { overbook: false, payment: "offline", reason: "Paid" },
+  });
+  await f.t.run(async (ctx) => {
+    await ctx.db.patch(f.session, {
+      firstStart: Date.now() - 86_400_000,
+      lastEnd: Date.now() - 1000,
+    });
+    await ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        outcomes: [
+          {
+            id: "new-exam",
+            title: "New exam",
+            type: "percentage",
+            minimum: 80,
+            required: true,
+            options: [],
+            version: 2,
+          },
+        ],
+      },
+    });
+  });
+  await f.t.mutation(internal.registrationOperations.propagate, {
+    courseId: f.course,
+    cursor: null,
+  });
+  const attendee = (
+    await f.adminClient.query(api.registrationOperations.orderSeats, {
+      orderId: order.orderId,
+    })
+  ).at(0);
+  expect(attendee?.outcomeDefinitions).toEqual([]);
 });

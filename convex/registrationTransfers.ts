@@ -25,10 +25,15 @@ async function retainedCredit(
   if (!order) {
     throw new Error("Original order missing");
   }
-  const refunds = await ctx.db
-    .query("registrationRefunds")
-    .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-    .take(1000);
+  // This source marks a separate card payment received after offline settlement.
+  // Returning that duplicate does not return the original offline tuition.
+  const refunds =
+    order.source === "invoice-extra-payment"
+      ? []
+      : await ctx.db
+          .query("registrationRefunds")
+          .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+          .take(1000);
   if (refunds.length === 1000) {
     throw new Error("Refund history requires reconciliation");
   }
