@@ -334,6 +334,11 @@ export const registrationTables = {
     tokenHash: v.optional(v.string()),
     expires: v.optional(v.number()),
   })
+    .index("by_sessionId_and_state_and_expires", [
+      "sessionId",
+      "state",
+      "expires",
+    ])
     .index("by_sessionId_and_state", ["sessionId", "state"])
     .index("by_sessionId_and_email", ["sessionId", "email"])
     .index("by_tokenHash", ["tokenHash"]),

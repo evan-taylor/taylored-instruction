@@ -1144,16 +1144,21 @@ async function attachInvoice(
 async function performEnrollment(
   input: EnrollmentInput,
   act: EnrollmentActions,
-  attempt: { key: string; organizationId?: Id<"registrationOrganizations"> }
+  attempt: {
+    key: string;
+    createdOrganizationId?: Id<"registrationOrganizations">;
+  }
 ): Promise<Result> {
   const organizationId =
     input.organizationId === "new"
       ? await act.saveOrganization({
           ...input.newOrganization,
-          id: attempt.organizationId,
+          id: attempt.createdOrganizationId,
         })
       : input.organizationId || undefined;
-  attempt.organizationId = organizationId;
+  if (input.organizationId === "new") {
+    attempt.createdOrganizationId = organizationId;
+  }
   const reserved = await act.reserve({
     courseId: input.course._id,
     sessionId: input.sessionId,
@@ -1517,7 +1522,7 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
   const [result, setResult] = useState<Result | null>(null);
   const attempt = useRef<{
     key: string;
-    organizationId?: Id<"registrationOrganizations">;
+    createdOrganizationId?: Id<"registrationOrganizations">;
   }>({ key: crypto.randomUUID() });
   const index = STEPS.findIndex((s) => s.id === w.step);
 

@@ -78,24 +78,27 @@ export const advance = internalMutation({
     const cutoff =
       session.firstStart -
       effective(course.settings, session.overrides).cutoffMinutes * 60_000;
-    const offers = await ctx.db
+    const offerQuery = ctx.db
       .query("registrationWaitlist")
-      .withIndex("by_sessionId_and_state", (q) =>
-        q.eq("sessionId", session._id).eq("state", "offered")
-      )
-      .take(BATCH);
+      .withIndex("by_sessionId_and_state_and_expires", (q) => {
+        const offered = q.eq("sessionId", session._id).eq("state", "offered");
+        return eligible && cutoff > Date.now()
+          ? offered.lte("expires", Date.now())
+          : offered;
+      });
+    const offers = await offerQuery.take(BATCH);
     let { reserved } = session;
-    await offers.reduce(async (prior, offer) => {
-      await prior;
-      if (
-        (offer.expires ?? 0) <= Date.now() ||
-        cutoff <= Date.now() ||
-        !eligible
-      ) {
-        await ctx.db.patch(offer._id, { state: "expired" });
-        reserved -= 1;
-      }
-    }, Promise.resolve());
+    await Promise.all(
+      offers.map((offer) => ctx.db.patch(offer._id, { state: "expired" }))
+    );
+    reserved -= offers.length;
+    if (offers.length === BATCH) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationWaitlist.advance,
+        args
+      );
+    }
     if (eligible && cutoff > Date.now()) {
       const waiting = await ctx.db
         .query("registrationWaitlist")

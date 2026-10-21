@@ -863,7 +863,9 @@ export const reschedule = internalMutation({
       .paginate({ cursor: args.cursor, numItems: BATCH });
     await page.page.reduce(async (prior, seat) => {
       await prior;
-      await cancelPendingSteps(ctx, seat._id);
+      if (session.state === "canceled") {
+        await cancelPendingSteps(ctx, seat._id);
+      }
       if (session.state === "canceled" && seat.state === "held") {
         await releaseCanceledOrder(ctx, seat, session, args.notify);
       }

@@ -2903,3 +2903,87 @@ it("preserves grading definitions for past classes when templates change", async
   ).at(0);
   expect(attendee?.outcomeDefinitions).toEqual([]);
 });
+
+it("drains more than fifty invalid offers after enrollment closes", async () => {
+  const f = await fixture(100);
+  await f.t.run(async (ctx) => {
+    await ctx.db.patch(f.course, { enrollmentOpen: false });
+    await ctx.db.patch(f.session, { reserved: 100 });
+    await Promise.all(
+      Array.from({ length: 100 }, (_, i) =>
+        ctx.db.insert("registrationWaitlist", {
+          sessionId: f.session,
+          name: "Waiting",
+          email: `waiting-${i}@example.test`,
+          state: "offered",
+          expires: Date.now() + 86_400_000,
+        })
+      )
+    );
+  });
+  await f.t.mutation(internal.registrationWaitlist.advance, {
+    sessionId: f.session,
+  });
+  expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(50);
+  expect(
+    (
+      await f.t.run((ctx) =>
+        ctx.db.system.query("_scheduled_functions").collect()
+      )
+    ).some((job) => job.name.includes("registrationWaitlist"))
+  ).toBe(true);
+  await f.t.mutation(internal.registrationWaitlist.advance, {
+    sessionId: f.session,
+  });
+  expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(0);
+});
+
+it("preserves overdue unsent registration steps during session edits", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        emails: [
+          {
+            id: "immediate",
+            anchor: "registration",
+            offsetMinutes: 0,
+            subject: "Immediate",
+            body: "Welcome",
+          },
+        ],
+      },
+    })
+  );
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { overbook: false, payment: "offline", reason: "Paid" },
+  });
+  await f.t.run(async (ctx) => {
+    const attendee = await ctx.db
+      .query("registrationSeats")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order.orderId))
+      .first();
+    if (!attendee) {
+      throw new Error("Missing attendee");
+    }
+    await ctx.db.patch(attendee._id, { settledAt: Date.now() - 60_000 });
+    await ctx.db.patch(f.session, { revision: 2 });
+  });
+  await f.t.mutation(internal.registrationOperations.reschedule, {
+    sessionId: f.session,
+    cursor: null,
+    notify: false,
+  });
+  const jobs = await f.t.run((ctx) =>
+    ctx.db.query("registrationJobs").collect()
+  );
+  expect(
+    jobs.filter((job) => job.stepId === "immediate" && job.state === "pending")
+  ).toHaveLength(1);
+  expect(
+    jobs.find((job) => job.stepId === "immediate" && job.state === "pending")
+      ?.scheduleRevision
+  ).toBe(2);
+});
