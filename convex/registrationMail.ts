@@ -60,10 +60,10 @@ function messageBody(
   let { body } = job;
   if (kind === "receipt") {
     body =
-      "Thank you for choosing Taylored Instruction. Your payment has been recorded. Keep this email for your records.\nEach attendee receives their own registration confirmation. You can review your purchaser orders in the secure portal.";
+      "Thank you for your payment. Keep this receipt for your records.\nClass details and materials are sent separately to each attendee.";
   }
   if (kind === "confirmation") {
-    body = `Hi ${seat?.name ?? "there"}, your registration is confirmed. We’re glad you’re training with us.\nOpen your secure portal for available materials and the latest class details.${session ? " Review the schedule below and save the attached calendar invitation." : " This is a self-paced course, so there’s no scheduled class meeting."}`;
+    body = `Hi ${seat?.name ?? "there"}, your place is confirmed.${session ? " Your class details are below. Please review your materials before class." : " This is a self-paced course. Open your registration to access the available course materials."}`;
   }
   if (kind === "invoice" && invoice) {
     body = `Hello ${invoice.billToName}, your training invoice is ready.\nView the itemized invoice, download a PDF, or pay securely online using the button below.${invoice.notes ? `\n${invoice.notes}` : ""}`;

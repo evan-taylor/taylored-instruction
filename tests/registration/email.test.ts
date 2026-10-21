@@ -54,7 +54,7 @@ it("renders billing details and preserves the invoice destination", () => {
     },
     "https://example.com"
   );
-  expect(result.html).toContain("Your training invoice.");
+  expect(result.html).toContain("Your training invoice");
   expect(result.html).toContain("Evan &amp; Co");
   expect(result.html).toContain('href="https://invoice.stripe.com/test"');
   expect(result.text).toContain("Invoice total: $10.89");
@@ -82,4 +82,33 @@ it("preserves invitation actions and includes readable schedules and material ti
   expect(result.text).toContain("Preparation guide");
   expect(result.text).toContain("Saturday at 9 AM");
   expect(result.text).toContain("calendar invitation is attached");
+});
+
+it("keeps branded emails accessible and below inbox clipping limits", () => {
+  const result = brandedEmail({
+    eyebrow: "Invoice",
+    title: "Your training invoice",
+    preview: "Your invoice is ready",
+    paragraphs: ["Review your training invoice."],
+    details: [
+      { label: "Invoice total", value: "$108.90" },
+      { label: "Due date", value: "November 20, 2026" },
+    ],
+    action: {
+      label: "View and pay invoice",
+      url: "https://example.com/invoice",
+    },
+  });
+  expect(result.html).toContain('<html lang="en" dir="ltr">');
+  expect(result.html).toContain('table lang="en" dir="ltr"');
+  expect(result.html).toContain('alt="Taylored Instruction"');
+  expect(result.html).toContain('<th scope="row"');
+  expect(result.html).toContain("Transaction details</caption>");
+  expect(result.html.match(/<h1\b/gu)).toHaveLength(1);
+  expect(result.html.match(/\$108\.90/gu)).toHaveLength(1);
+  expect(new TextEncoder().encode(result.html).byteLength).toBeLessThan(
+    102_000
+  );
+  expect(result.text).toContain("Invoice total: $108.90");
+  expect(result.text).toContain("Due date: November 20, 2026");
 });

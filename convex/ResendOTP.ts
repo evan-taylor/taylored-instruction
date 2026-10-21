@@ -39,7 +39,7 @@ export const ResendOTP = Email({
       replyTo: "info@tayloredinstruction.com",
       ...brandedEmail({
         eyebrow: "Account sign-in",
-        title: "Your sign-in code.",
+        title: "Your sign-in code",
         preview:
           "Use this code to finish signing in to Taylored Instruction. Expires in 10 minutes.",
         paragraphs: [

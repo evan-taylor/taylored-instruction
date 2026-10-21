@@ -30,25 +30,67 @@ export function emailParagraphs(body: string) {
     .filter(Boolean);
 }
 
-/** Table layout and inline styles keep the essential design usable in Outlook. */
+// Use the public PNG already served by the production site. The renderer stays
+// synchronous so the same template works in Convex Auth's non-Node runtime.
+const BRAND = {
+  logo: "https://tayloredinstruction.com/horizontal-logo-black.png",
+  ink: "#192224",
+  muted: "#555d60",
+  red: "#b8231b",
+  rule: "#deded9",
+  paper: "#f3f2ee",
+};
+
+/** Fluid tables and inline pixel styles preserve the layout in email clients. */
 export function brandedEmail(content: EmailContent) {
   const details = content.details ?? [];
+  const total = details.find(({ label }) =>
+    ["Total paid", "Invoice total"].includes(label)
+  );
   const rows = details
+    .filter((detail) => detail !== total)
     .map(
       ({ label, value }) =>
-        `<tr><td style="padding:12px 16px;border-bottom:1px solid #e4eaf0;font-size:13px;color:#526477;vertical-align:top;width:34%">${escapeHtml(label)}</td><td style="padding:12px 16px;border-bottom:1px solid #e4eaf0;font-size:15px;line-height:1.5;font-weight:600;color:#173b5c;white-space:pre-line;overflow-wrap:anywhere">${escapeHtml(value)}</td></tr>`
+        `<tr><th scope="row" align="left" style="padding:13px 12px 13px 0;border-bottom:1px solid ${BRAND.rule};font-size:14px;line-height:21px;font-weight:400;color:${BRAND.muted};vertical-align:top;width:32%">${escapeHtml(label)}</th><td style="padding:13px 0;border-bottom:1px solid ${BRAND.rule};font-size:15px;line-height:23px;color:${BRAND.ink};white-space:pre-line;overflow-wrap:break-word;word-break:break-word">${escapeHtml(value)}</td></tr>`
     )
     .join("");
   const paragraphs = content.paragraphs
     .map(
       (paragraph) =>
-        `<p style="margin:0 0 18px;font-size:16px;line-height:1.65;color:#42566b">${escapeHtml(paragraph)}</p>`
+        `<p style="margin:0 0 16px;font-size:16px;line-height:26px;color:${BRAND.muted}">${escapeHtml(paragraph)}</p>`
     )
     .join("");
   const action = content.action
-    ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:28px 0 18px"><tr><td bgcolor="#163f69" style="border-radius:8px"><a href="${emailUrl(content.action.url)}" style="display:inline-block;padding:16px 24px;border:1px solid #163f69;border-radius:8px;font-size:16px;font-weight:700;color:#ffffff;text-decoration:none">${escapeHtml(content.action.label)} &rarr;</a></td></tr></table><p style="font-size:12px;line-height:1.6;color:#64748b;overflow-wrap:anywhere;word-break:break-all">Button not working? <a href="${emailUrl(content.action.url)}" style="color:#163f69;text-decoration:underline">Open this link</a> in your browser.</p>`
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:28px 0 0"><tr><td align="center" bgcolor="${BRAND.red}" style="border:1px solid ${BRAND.red};border-radius:3px;mso-padding-alt:16px 20px"><a href="${emailUrl(content.action.url)}" style="display:block;box-sizing:border-box;padding:16px 20px;font-size:16px;line-height:22px;font-weight:700;color:#ffffff;text-decoration:none">${escapeHtml(content.action.label)}</a></td></tr></table>`
     : "";
-  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(content.title)}</title><style>@media(max-width:620px){.outer{padding:16px 8px!important}.content{padding:28px 22px!important}.headline{font-size:28px!important}}</style></head><body style="margin:0;padding:0;background:#f1f5f8;font-family:Arial,Helvetica,sans-serif"><div style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escapeHtml(content.preview)}</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td class="outer" align="center" style="padding:40px 16px"><table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:100%;max-width:600px"><tr><td style="padding:0 8px 24px"><span style="font-size:21px;letter-spacing:-0.5px;font-weight:800;color:#163f69">TAYLORED<span style="color:#457c86"> / </span>INSTRUCTION</span><div style="margin-top:6px;font-size:12px;color:#61758a;letter-spacing:1px">CPR · BLS · FIRST AID TRAINING</div></td></tr><tr><td class="content" bgcolor="#ffffff" style="padding:38px;border:1px solid #e0e7ef;border-top:5px solid #397c86;border-radius:12px"><p style="margin:0 0 12px;font-size:12px;line-height:1.5;font-weight:700;letter-spacing:1.5px;color:#397580;text-transform:uppercase">${escapeHtml(content.eyebrow)}</p><h1 class="headline" style="margin:0 0 24px;font-size:32px;line-height:1.2;letter-spacing:-0.8px;color:#173b5c">${escapeHtml(content.title)}</h1>${paragraphs}${content.code ? `<div style="margin:26px 0;padding:24px 12px;background:#eef4f8;border:1px solid #d9e5ee;border-radius:10px;text-align:center;font-family:monospace;font-size:38px;font-weight:700;letter-spacing:8px;color:#163f69">${escapeHtml(content.code)}</div>` : ""}${rows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;background:#f7f9fb;border:1px solid #e4eaf0;border-radius:8px">${rows}</table>` : ""}${action}${content.note ? `<p style="margin:22px 0 0;padding-top:20px;border-top:1px solid #e4eaf0;font-size:13px;line-height:1.6;color:#64748b">${escapeHtml(content.note)}</p>` : ""}</td></tr><tr><td style="padding:24px 8px;font-size:13px;line-height:1.7;color:#61758a"><strong style="color:#173b5c">Here to help.</strong> Questions about your training or payment?<br>Reply to this email or contact <a href="mailto:info@tayloredinstruction.com" style="color:#163f69">info@tayloredinstruction.com</a><br><a href="tel:+13606588199" style="color:#163f69">(360) 658-8199</a><p style="margin:18px 0 0;font-size:11px;color:#7b8c9c">Taylored Instruction LLC<br>This is a service email about your account or registration.</p></td></tr></table></td></tr></table></body></html>`;
+  const summary = total
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-top:2px solid ${BRAND.ink};border-bottom:1px solid ${BRAND.rule}"><tr><td style="padding:20px 0"><p style="margin:0 0 5px;font-size:14px;color:${BRAND.muted}">${escapeHtml(total.label)}</p><p style="margin:0;font-size:38px;line-height:44px;font-weight:700;letter-spacing:-1px;color:${BRAND.ink}">${escapeHtml(total.value)}</p></td></tr></table>`
+    : "";
+  const code = content.code
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0;border-top:2px solid ${BRAND.ink};border-bottom:1px solid ${BRAND.rule}"><tr><td style="padding:24px 0"><p style="margin:0 0 10px;font-size:14px;color:${BRAND.muted}">Your one-time code</p><p style="margin:0;font-family:Consolas,monospace;font-size:32px;line-height:40px;letter-spacing:6px;font-weight:700;color:${BRAND.ink}">${escapeHtml(content.code)}</p></td></tr></table>`
+    : "";
+  const html = `<!doctype html>
+<html lang="en" dir="ltr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(content.title)}</title></head>
+<body style="margin:0;padding:0;background-color:${BRAND.paper};font-family:Arial,Helvetica,sans-serif;color:${BRAND.ink};-webkit-text-size-adjust:100%">
+<div lang="en" dir="ltr" style="display:none;max-height:0;overflow:hidden;mso-hide:all">${escapeHtml(content.preview.slice(0, 90))}</div>
+<table lang="en" dir="ltr" role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="${BRAND.paper}"><tr><td align="center" style="padding:24px 12px">
+<!--[if mso]><table role="presentation" width="600" align="center"><tr><td><![endif]-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#ffffff" style="max-width:600px;border-top:4px solid ${BRAND.red}">
+<tr><td style="padding:28px 24px 24px;border-bottom:1px solid ${BRAND.rule}"><a href="https://tayloredinstruction.com" style="text-decoration:none"><img src="${BRAND.logo}" alt="Taylored Instruction" width="238" height="70" style="display:block;width:238px;max-width:100%;height:auto;border:0;background-color:#ffffff;color:${BRAND.ink};font-size:18px"></a></td></tr>
+<tr><td style="padding:32px 24px 28px">
+<p style="margin:0 0 12px;font-size:12px;line-height:18px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:${BRAND.red}">${escapeHtml(content.eyebrow)}</p>
+<h1 style="margin:0 0 20px;font-size:28px;line-height:34px;font-weight:700;letter-spacing:-0.6px;color:${BRAND.ink}">${escapeHtml(content.title)}</h1>
+${paragraphs}${summary}${code}${action}
+${rows ? `<table width="100%" cellpadding="0" cellspacing="0" style="margin:24px 0 0;border-collapse:collapse"><caption style="text-align:left;padding:0 0 8px;font-size:16px;line-height:24px;font-weight:700;color:${BRAND.ink}">${total ? "Transaction details" : "Your training details"}</caption>${rows}</table>` : ""}
+${content.note ? `<p style="margin:24px 0 0;font-size:14px;line-height:22px;color:${BRAND.muted}">${escapeHtml(content.note)}</p>` : ""}
+</td></tr>
+<tr><td style="padding:24px;border-top:1px solid ${BRAND.rule}"><p style="margin:0 0 6px;font-size:16px;line-height:24px;font-weight:700;color:${BRAND.ink}">Questions? We’re here to help.</p><p style="margin:0;font-size:14px;line-height:23px;color:${BRAND.muted}">Reply to this email or call <a href="tel:+13606588199" style="color:${BRAND.ink};text-decoration:underline">(360) 658-8199</a>.<br><a href="mailto:info@tayloredinstruction.com" style="color:${BRAND.ink};text-decoration:underline">info@tayloredinstruction.com</a></p></td></tr>
+</table>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px"><tr><td style="padding:20px 24px;font-size:12px;line-height:20px;color:${BRAND.muted}">Taylored Instruction LLC<br>Health &amp; safety training · Washington
+${content.action ? `<p style="margin:12px 0 0">If the button doesn’t open, <a href="${emailUrl(content.action.url)}" style="color:${BRAND.ink};text-decoration:underline">${escapeHtml(content.action.label.toLowerCase())}</a> using this link.</p>` : ""}
+</td></tr></table>
+<!--[if mso]></td></tr></table><![endif]-->
+</td></tr></table></body></html>`;
   const text = [
     content.title,
     ...content.paragraphs,
@@ -115,9 +157,9 @@ export function registrationEmail(job: RenderableJob, origin: string) {
     });
   }
   const headlines: Record<string, string> = {
-    "Payment receipt": "Your payment receipt.",
-    "Registration confirmed": "You’re registered.",
-    Invoice: "Your training invoice.",
+    "Payment receipt": "Payment received",
+    "Registration confirmed": "You’re registered",
+    Invoice: "Your training invoice",
   };
   return {
     subject,
@@ -129,8 +171,8 @@ export function registrationEmail(job: RenderableJob, origin: string) {
       details,
       action: primaryAction,
       note: job.calendar
-        ? "Your calendar invitation is attached. Add it to your calendar, and check the portal for the latest joining instructions. Need a change? Reply and we’ll help."
-        : "Use the email address you registered with to access your portal. For registration changes or billing questions, reply and we’ll help.",
+        ? "Your calendar invitation is attached. Add it to your calendar to keep the class time and location handy."
+        : "Use the email address you registered with to access your registration.",
     }),
   };
 }

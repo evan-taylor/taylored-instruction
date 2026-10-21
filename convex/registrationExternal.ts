@@ -203,7 +203,7 @@ export const requestPortal = action({
       replyTo: "info@tayloredinstruction.com",
       ...brandedEmail({
         eyebrow: "Secure registration access",
-        title: "Your training, all in one place.",
+        title: "Access your registrations",
         preview:
           "Access your registrations, class details, materials, and payment records. Link expires in 30 minutes.",
         paragraphs: [
