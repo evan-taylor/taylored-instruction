@@ -359,7 +359,7 @@ function SelfPacedSection({
             </CardContent>
             <CardFooter className="justify-between">
               <p className="m-0 font-semibold text-slate-900">
-                {`${formatMoney(c.tuition)} per attendee`}
+                {`${formatMoney(c.tuition)} per learner`}
               </p>
               <Button href={`/courses/${c.slug}`} size="sm" variant="secondary">
                 View course

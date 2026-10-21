@@ -94,3 +94,14 @@ Evidence: `bun run lint` and `bun run type-check` pass; `bunx vitest run` passes
 ### Sales tax
 
 Stripe Tax is now enabled for registration Checkout (`automatic_tax` on, billing address collected) and hosted invoices (customer created with the full billing address). Tax codes are set per course template (`settings.taxCode`, session-overridable) and per material (`taxCode`); the admin pickers read the account's tax code list through `registrationInvoiceActions.taxCodes` and fall back to a short built-in list offline. Local totals remain pre-tax; `orders.tax` and `invoices.tax` store what Stripe collected. Before testing, enable Stripe Tax in the dashboard with an origin address, a default product tax code, and the Washington registration; invoices require street, city, state, and ZIP. Tests: 33 passing, including tax-code stamping and inheritance, Checkout amount-plus-tax verification, tax on receipts, refund caps that include tax, and taxed invoice settlement.
+
+### Browser acceptance (October 21, 2026)
+
+The cloud workspace's local Convex backend was made to run by launching the precompiled binary through an extracted Ubuntu glibc 2.39 (`ld-linux-x86-64.so.2 --library-path …`), wrapped at `~/.cache/convex/binaries/<version>/convex-local-backend`. With `CONVEX_AGENT_MODE=anonymous bunx convex dev`, the fixture seeded, and the Next dev server on http://localhost:3000, the following ran against the real backend in Chrome:
+
+- `bun run test:e2e`: all 10 public scenarios pass (desktop and mobile).
+- `ADMIN_QA=true bunx playwright test tests/e2e/admin.spec.ts --project=desktop`: 4 staff scenarios pass: every admin page renders for an administrator; course and session editors open with fixture data; the group wizard enrolls a pasted roster at a custom price, the invoice is created as TI-YYYY-NNNN, and recording an offline payment settles the order; a public group request appears in the admin queue.
+
+Staff sign-in for tests uses a password provider that only exists when `REGISTRATION_ALLOW_TEST_FIXTURES=true` on the deployment, with the form rendered only when `NEXT_PUBLIC_REGISTRATION_TEST_LOGIN=true` on the web app. Never set either on a shared deployment. Set `PLAYWRIGHT_CHROMIUM` to the browser path when it is not `/usr/bin/chromium`.
+
+Not exercised here: Stripe test-mode calls (the workspace only has a live key, which registration refuses), real email delivery, and Google or OTP login. Next's dev overlay reports "instant navigation" validation notes for admin routes because the admin shell gates rendering on client auth; these are development diagnostics only.

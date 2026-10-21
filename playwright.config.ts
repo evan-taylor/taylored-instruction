@@ -5,7 +5,7 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     launchOptions: {
-      executablePath: "/usr/bin/chromium",
+      executablePath: process.env.PLAYWRIGHT_CHROMIUM ?? "/usr/bin/chromium",
       args: ["--no-sandbox"],
     },
     trace: "retain-on-failure",

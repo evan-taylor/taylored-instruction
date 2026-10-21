@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TestSignIn } from "@/components/auth/test-sign-in";
 
 export const metadata: Metadata = {
   title: "Instructor Login | Taylored Instruction",
@@ -11,5 +12,12 @@ export default function LoginLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return children;
+  return (
+    <>
+      {children}
+      <div className="mx-auto max-w-md px-4 pb-12">
+        <TestSignIn />
+      </div>
+    </>
+  );
 }
