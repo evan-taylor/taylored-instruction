@@ -1,5 +1,9 @@
 # Native registration: implementation and validation
 
+> Historical validation log. For the current test/live environment model and
+> hosted deployment setup, see [registration-deployment.md](../registration-deployment.md).
+> The October 21 deployment update supersedes the test-only release restrictions below.
+
 Implementation branch: `codex/native-registration`, based on `codex/registration-plan-package-updates`. October 3, 2026.
 
 ## Authentication decision and preserved upgrades

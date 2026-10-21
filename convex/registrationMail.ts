@@ -28,6 +28,7 @@ export const claim = internalMutation({
     v.object({
       body: v.string(),
       subject: v.string(),
+      recipient: v.string(),
       name: v.string(),
       title: v.string(),
       schedule: v.string(),
@@ -90,6 +91,7 @@ export const claim = internalMutation({
       materials,
       body: job.body,
       subject: job.subject,
+      recipient: job.recipient,
       name: seat?.name ?? "",
       title: session?.title ?? "Taylored Instruction",
       schedule: session

@@ -7,6 +7,11 @@ import {
   renderEmail,
   renderSubject,
 } from "../shared/registration/domain";
+import {
+  assertRegistrationPaymentMode,
+  registrationRecipient,
+  registrationStripeKey,
+} from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import { action, internalAction } from "./_generated/server";
 
@@ -14,11 +19,9 @@ const INVITATION_PATH =
   /Register at (\/s\/[A-Za-z0-9_-]+#invitation=[A-Za-z0-9-]+)/u;
 
 function stripe() {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!(key?.startsWith("sk_test_") || key?.startsWith("rk_test_"))) {
-    throw new Error("Configure STRIPE_SECRET_KEY with a test key");
-  }
-  return new Stripe(key, { apiVersion: "2026-09-30.endive" });
+  return new Stripe(registrationStripeKey(), {
+    apiVersion: "2026-09-30.endive",
+  });
 }
 function baseUrl() {
   const url = process.env.SITE_URL;
@@ -74,8 +77,9 @@ export const checkout = action({
       },
       { idempotencyKey: `registration:${order._id}` }
     );
-    if (!session.url || session.livemode) {
-      throw new Error("A test Checkout URL was not returned");
+    assertRegistrationPaymentMode(session.livemode);
+    if (!session.url) {
+      throw new Error("A Checkout URL was not returned");
     }
     await ctx.runMutation(internal.registrationPayments.attachCheckout, {
       orderId: order._id,
@@ -172,14 +176,11 @@ export const deliver = internalAction({
           return;
         }
         try {
-          const recipient = process.env.REGISTRATION_TEST_RECIPIENT;
+          const recipient = registrationRecipient(job.recipient);
           const from = process.env.AUTH_EMAIL_FROM;
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
-            throw new Error(
-              "Safe test recipient, sender, and Resend key required"
-            );
+            throw new Error("Recipient, sender, and Resend key required");
           }
-          // All registration mail is forced to the explicit safe test recipient until a separate release change.
           const rendered = renderJob(job);
           const response = await new Resend(
             process.env.RESEND_API_KEY
@@ -237,10 +238,10 @@ export const requestPortal = action({
       email: args.email,
       tokenHash,
     });
-    const recipient = process.env.REGISTRATION_TEST_RECIPIENT;
+    const recipient = registrationRecipient(args.email.trim().toLowerCase());
     const from = process.env.AUTH_EMAIL_FROM;
     if (!(recipient && from && process.env.RESEND_API_KEY)) {
-      throw new Error("Safe test email configuration required");
+      throw new Error("Email configuration required");
     }
     const response = await new Resend(process.env.RESEND_API_KEY).emails.send({
       from,

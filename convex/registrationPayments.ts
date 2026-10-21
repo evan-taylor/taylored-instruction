@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { BATCH, cents } from "../shared/registration/domain";
+import { assertRegistrationPaymentMode } from "../shared/registration/environment";
 import { internalMutation, internalQuery, mutation } from "./_generated/server";
 import { audit, offering, release, settle, staff } from "./registrationHelpers";
 import { allocateRefund } from "./registrationRefundAllocation";
@@ -87,9 +88,7 @@ export const paymentEvent = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (args.live) {
-      throw new Error("Registration accepts test-mode events only");
-    }
+    assertRegistrationPaymentMode(args.live);
     const event = await ctx.db
       .query("registrationEvents")
       .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))

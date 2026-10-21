@@ -644,66 +644,80 @@ describe("Payment and material policies", () => {
       quote(pricing, [{ ...attendee, waived: ["included"] }], null, 0)
     ).toThrow("waivable");
   });
-  it("verifies a real Stripe HMAC signature, rejects a tampered payload and deduplicates replay", async () => {
-    vi.stubEnv("STRIPE_SECRET_KEY", "sk_test_local_signature_only");
-    vi.stubEnv("REGISTRATION_STRIPE_WEBHOOK_SECRET", "whsec_local_acceptance");
-    const f = await fixture();
-    const order = await f.t.mutation(
-      api.registration.reserve,
-      attempt(f.course, f.session)
-    );
-    await f.t.mutation(internal.registrationPayments.attachCheckout, {
-      orderId: order.orderId,
-      session: "cs_signed",
-      url: "https://checkout.stripe.com/test",
-    });
-    const payload = JSON.stringify({
-      id: "evt_signed",
-      type: "checkout.session.completed",
-      livemode: false,
-      data: {
-        object: {
-          id: "cs_signed",
-          metadata: { registrationOrder: order.orderId },
-          amount_total: 10_000,
-          currency: "usd",
-          payment_status: "paid",
-          livemode: false,
-          payment_intent: "pi_signed",
+  it.each([false, true])(
+    "verifies signatures and replay with live=%s",
+    async (live) => {
+      vi.stubEnv("REGISTRATION_MODE", live ? "live" : "test");
+      vi.stubEnv(
+        "STRIPE_SECRET_KEY",
+        `sk_${live ? "live" : "test"}_local_signature_only`
+      );
+      vi.stubEnv(
+        "REGISTRATION_STRIPE_WEBHOOK_SECRET",
+        "whsec_local_acceptance"
+      );
+      const f = await fixture();
+      const order = await f.t.mutation(
+        api.registration.reserve,
+        attempt(f.course, f.session)
+      );
+      await f.t.mutation(internal.registrationPayments.attachCheckout, {
+        orderId: order.orderId,
+        session: "cs_signed",
+        url: "https://checkout.stripe.com/test",
+      });
+      const payload = JSON.stringify({
+        id: "evt_signed",
+        type: "checkout.session.completed",
+        livemode: live,
+        data: {
+          object: {
+            id: "cs_signed",
+            metadata: { registrationOrder: order.orderId },
+            amount_total: 10_000,
+            currency: "usd",
+            payment_status: "paid",
+            livemode: live,
+            payment_intent: "pi_signed",
+          },
         },
-      },
-    });
-    const signature = new Stripe(
-      "sk_test_local_signature_only"
-    ).webhooks.generateTestHeaderString({
-      payload,
-      secret: "whsec_local_acceptance",
-    });
-    const options = {
-      method: "POST",
-      headers: { "stripe-signature": signature },
-      body: payload,
-    };
-    expect(
-      (
-        await f.t.fetch("/registration/stripe", {
-          ...options,
-          body: `${payload} `,
-        })
-      ).status
-    ).toBe(400);
-    expect((await f.t.fetch("/registration/stripe", options)).status).toBe(200);
-    expect((await f.t.fetch("/registration/stripe", options)).status).toBe(200);
-    expect(
-      await f.t.run(async (ctx) => (await ctx.db.get(order.orderId))?.status)
-    ).toBe("settled");
-    expect(
-      await f.t.run(
-        async (ctx) =>
-          (await ctx.db.query("registrationEvents").collect()).length
-      )
-    ).toBe(1);
-  });
+      });
+      const signature = new Stripe(
+        `sk_${live ? "live" : "test"}_local_signature_only`
+      ).webhooks.generateTestHeaderString({
+        payload,
+        secret: "whsec_local_acceptance",
+      });
+      const options = {
+        method: "POST",
+        headers: { "stripe-signature": signature },
+        body: payload,
+      };
+      expect(
+        (
+          await f.t.fetch("/registration/stripe", {
+            ...options,
+            body: `${payload} `,
+          })
+        ).status
+      ).toBe(400);
+      expect((await f.t.fetch("/registration/stripe", options)).status).toBe(
+        200
+      );
+      expect((await f.t.fetch("/registration/stripe", options)).status).toBe(
+        200
+      );
+      expect(
+        await f.t.run(async (ctx) => (await ctx.db.get(order.orderId))?.status)
+      ).toBe("settled");
+      expect(
+        await f.t.run(
+          async (ctx) =>
+            (await ctx.db.query("registrationEvents").collect()).length
+        )
+      ).toBe(1);
+    }
+  );
   it("propagates included materials only into paid upcoming inheriting sessions", async () => {
     const f = await fixture();
     const order = await f.adminClient.mutation(api.registration.reserve, {
@@ -1025,33 +1039,39 @@ describe("Shared development service settings", () => {
       })
     ).rejects.toThrow("Configure STRIPE_SECRET_KEY with a test key");
   });
-  it("reuses the auth sender and website origin while forcing portal mail to the safe recipient", async () => {
-    const f = await fixture();
-    vi.stubEnv("SITE_URL", "https://preview.example.test");
-    vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
-    vi.stubEnv("RESEND_API_KEY", "re_local_mock_only");
-    vi.stubEnv("REGISTRATION_TEST_RECIPIENT", "safe@example.test");
-    const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ id: "local-email" }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      })
-    );
-    try {
-      await f.t.action(api.registrationExternal.requestPortal, {
-        email: "student@example.test",
-      });
-      expect(send).toHaveBeenCalledTimes(1);
-      const body = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
-      expect(body.to).toBe("safe@example.test");
-      expect(body.from).toBe("Training <sender@example.test>");
-      expect(body.text).toContain(
-        "https://preview.example.test/registrations/access#"
+  it.each([false, true])(
+    "routes portal mail correctly with live=%s",
+    async (live) => {
+      vi.stubEnv("REGISTRATION_MODE", live ? "live" : "test");
+      const f = await fixture();
+      vi.stubEnv("SITE_URL", "https://preview.example.test");
+      vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
+      vi.stubEnv("RESEND_API_KEY", "re_local_mock_only");
+      vi.stubEnv("REGISTRATION_TEST_RECIPIENT", "safe@example.test");
+      const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+        new Response(JSON.stringify({ id: "local-email" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
       );
-    } finally {
-      send.mockRestore();
+      try {
+        await f.t.action(api.registrationExternal.requestPortal, {
+          email: "student@example.test",
+        });
+        expect(send).toHaveBeenCalledTimes(1);
+        const body = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
+        expect(body.to).toBe(
+          live ? "student@example.test" : "safe@example.test"
+        );
+        expect(body.from).toBe("Training <sender@example.test>");
+        expect(body.text).toContain(
+          "https://preview.example.test/registrations/access#"
+        );
+      } finally {
+        send.mockRestore();
+      }
     }
-  });
+  );
 });
 
 describe("Group training and invoicing", () => {

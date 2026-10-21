@@ -43,3 +43,7 @@ supabase/migrations/*
 .convex/
 test-results/
 playwright-report/
+
+# Safe onboarding template
+!.env.example
+.vercel/

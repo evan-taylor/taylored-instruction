@@ -7,6 +7,7 @@ import {
   formatMoney,
   invoiceNumber,
 } from "../shared/registration/domain";
+import { assertRegistrationPaymentMode } from "../shared/registration/environment";
 import { postalAddress } from "../shared/registration/validators";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -491,9 +492,7 @@ export const invoicePaid = internalMutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (args.live) {
-      throw new Error("Registration accepts test-mode events only");
-    }
+    assertRegistrationPaymentMode(args.live);
     const seen = await ctx.db
       .query("registrationEvents")
       .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))

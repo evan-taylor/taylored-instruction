@@ -2,6 +2,10 @@
 import { v } from "convex/values";
 import Stripe from "stripe";
 import { DEFAULT_TAX_CODES } from "../shared/registration/domain";
+import {
+  assertRegistrationPaymentMode,
+  registrationStripeKey,
+} from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalAction } from "./_generated/server";
@@ -11,11 +15,9 @@ const TAX_CODE_PAGE = 100;
 const TAX_CODE_LIMIT = 600;
 
 function stripe() {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!(key?.startsWith("sk_test_") || key?.startsWith("rk_test_"))) {
-    throw new Error("Configure STRIPE_SECRET_KEY with a test key");
-  }
-  return new Stripe(key, { apiVersion: "2026-09-30.endive" });
+  return new Stripe(registrationStripeKey(), {
+    apiVersion: "2026-09-30.endive",
+  });
 }
 
 /**
@@ -152,8 +154,9 @@ export const issue = action({
         { auto_advance: false },
         { idempotencyKey: `registration-invoice-finalize:${invoice._id}` }
       );
-      if (finalized.livemode || !finalized.hosted_invoice_url) {
-        throw new Error("A test invoice URL was not returned");
+      assertRegistrationPaymentMode(finalized.livemode);
+      if (!finalized.hosted_invoice_url) {
+        throw new Error("An invoice URL was not returned");
       }
       const preTax = finalized.total_excluding_tax ?? finalized.subtotal;
       if (preTax !== order.total) {

@@ -1,4 +1,8 @@
 import Stripe from "stripe";
+import {
+  registrationIsLive,
+  registrationStripeKey,
+} from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import type { ActionCtx } from "./_generated/server";
@@ -106,15 +110,14 @@ async function handleRefund(ctx: ActionCtx, event: Stripe.Event) {
 
 export const stripeWebhook = httpAction(async (ctx, request) => {
   const secret = process.env.REGISTRATION_STRIPE_WEBHOOK_SECRET;
-  const key = process.env.STRIPE_SECRET_KEY;
   const signature = request.headers.get("stripe-signature");
-  if (
-    !(
-      secret &&
-      signature &&
-      (key?.startsWith("sk_test_") || key?.startsWith("rk_test_"))
-    )
-  ) {
+  if (!(secret && signature)) {
+    return new Response("Webhook not configured", { status: 400 });
+  }
+  let key: string;
+  try {
+    key = registrationStripeKey();
+  } catch {
     return new Response("Webhook not configured", { status: 400 });
   }
   const client = new Stripe(key, { apiVersion: "2026-09-30.endive" });
@@ -128,7 +131,7 @@ export const stripeWebhook = httpAction(async (ctx, request) => {
   } catch {
     return new Response("Invalid signature", { status: 400 });
   }
-  if (event.livemode || event.account) {
+  if (event.livemode !== registrationIsLive() || event.account) {
     return new Response("Unexpected payment account or mode", { status: 400 });
   }
   if (CHECKOUT_EVENTS.includes(event.type)) {

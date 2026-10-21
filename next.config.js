@@ -4,6 +4,7 @@ const nextConfig = {
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
   cacheComponents: true, // Enable Cache Components (PPR) for Next.js 16
+  partialPrefetching: false, // Preserve existing prefetch behavior during the upgrade.
   // Avoid browser source map requests (404s). Sentry receives maps via build upload.
   productionBrowserSourceMaps: false,
   images: {
@@ -270,7 +271,7 @@ module.exports = nextConfig;
 
 // Injected content via Sentry wizard below
 
-const { withSentryConfig } = require("@sentry/nextjs");
+const { withSentryConfig } = require("@sentry/nextjs/config");
 
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;
