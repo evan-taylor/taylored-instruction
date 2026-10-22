@@ -591,11 +591,19 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
           <AccessCard
             busy={busy}
             onConfirm={async () => {
-              if (await post({ token })) {
-                setToken("");
-                window.history.replaceState(null, "", "/registrations");
+              const ok = await post({ token });
+              // Either way the emailed token is spent: drop it from the URL,
+              // then fall back to any access this browser already has or the
+              // request form (the failure notice stays visible).
+              setToken("");
+              window.history.replaceState(null, "", "/registrations");
+              if (ok) {
                 await load("registrations");
+                return;
               }
+              setProbing(true);
+              await load("registrations", null, true);
+              setProbing(false);
             }}
           />
         ) : null}
