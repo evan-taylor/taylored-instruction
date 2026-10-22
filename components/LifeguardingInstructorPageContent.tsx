@@ -1,22 +1,25 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function LifeguardingInstructorPageContent() {
   return (
     <ClassPageLayout
-      badgeLabel="Instructor Training"
+      badgeLabel="Instructor training"
       courseName="Lifeguarding Instructor"
       image={{
         alt: "Lifeguarding instructor course training",
         src: "/lifeguard-training.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
-      secondaryActions={[{ href: "/contact", label: "Host This Course" }]}
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
+      )}
+      secondaryActions={[{ href: "/contact", label: "Host this course" }]}
       subtitle="Train to teach Red Cross Lifeguarding courses through blended online and in-person sessions led by an Instructor Trainer."
       title="American Red Cross Lifeguarding Instructor Course"
     >
-      <ClassPageSection title="Course Overview">
+      <ClassPageSection title="Course overview">
         <p>
           The Lifeguarding Instructor course prepares instructor candidates to
           teach American Red Cross Lifeguarding courses. Candidates learn to
@@ -48,7 +51,7 @@ export default function LifeguardingInstructorPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Format and Length">
+      <ClassPageSection title="Course format and length">
         <p>
           This is a blended learning course consisting of an online session
           completed independently, followed by instructor-led classroom and
@@ -67,7 +70,7 @@ export default function LifeguardingInstructorPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Materials">
+      <ClassPageSection title="Course materials">
         <p>
           Lifeguarding Instructor candidates should obtain and review the
           following r.24 materials before attending:
@@ -81,7 +84,7 @@ export default function LifeguardingInstructorPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="What You Will Learn">
+      <ClassPageSection title="What you will learn">
         <ul className="list-disc space-y-2 pl-5">
           <li>
             How to teach and evaluate Red Cross Lifeguarding course
@@ -101,7 +104,7 @@ export default function LifeguardingInstructorPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Successful Completion">
+      <ClassPageSection title="Successful completion">
         <ul className="list-disc space-y-2 pl-5">
           <li>
             Complete the Lifeguarding Instructor Course online session and
@@ -122,7 +125,7 @@ export default function LifeguardingInstructorPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Certification and Recertification">
+      <ClassPageSection title="Certification and recertification">
         <p>
           Candidates who successfully complete the course are issued the
           American Red Cross Lifeguarding Instructor certificate, valid for 2

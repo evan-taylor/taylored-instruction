@@ -1,8 +1,5 @@
 import { PostHog } from "posthog-node";
-import {
-  getMissingPostHogEnvVariable,
-  getPostHogEnv,
-} from "@/lib/posthog-env";
+import { getMissingPostHogEnvVariable, getPostHogEnv } from "@/lib/posthog-env";
 
 export default function PostHogClient() {
   const { host, projectToken } = getPostHogEnv();

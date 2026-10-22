@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const adminEmail =
@@ -84,6 +85,7 @@ export async function POST(req: NextRequest) {
       const emailData = await getResendClient().emails.send({
         from: `Taylored Instruction <${fromEmail}>`,
         to: [adminEmail],
+        replyTo: SUPPORT_EMAIL,
         subject,
         html: htmlBody,
       });

@@ -1,10 +1,38 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "extends": ["ultracite"],
+  "extends": [
+    "ultracite/biome/core",
+    "ultracite/biome/react",
+    "ultracite/biome/next"
+  ],
+  "files": {
+    "includes": ["!!.agents", "!!.codex"]
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        // Preserve existing object order during the preset upgrade.
+        "useSortedKeys": "off"
+      }
+    }
+  },
   "linter": {
     "rules": {
       "style": {
-        "useFilenamingConvention": "off"
+        "useFilenamingConvention": "off",
+        "useConsistentTypeDefinitions": {
+          "level": "error",
+          "options": { "style": "type" }
+        }
+      },
+      "performance": {
+        // Inline JSX callbacks are an established project pattern.
+        "noJsxPropsBind": "off"
+      },
+      "suspicious": {
+        // The new rules misidentify boolean props and mutable React refs.
+        "noLeakedRender": "off",
+        "noUnnecessaryConditions": "off"
       }
     }
   },
@@ -14,6 +42,30 @@
       "linter": { "enabled": false },
       "formatter": { "enabled": false },
       "assist": { "enabled": false }
+    },
+    {
+      "includes": [
+        "components/registration/**/*.tsx",
+        "components/admin/**/*.tsx"
+      ],
+      "linter": {
+        "rules": {
+          "a11y": {
+            "noLabelWithoutControl": {
+              "level": "error",
+              "options": {
+                "inputComponents": [
+                  "Input",
+                  "TextInput",
+                  "TextArea",
+                  "Select",
+                  "MoneyInput"
+                ]
+              }
+            }
+          }
+        }
+      }
     },
     {
       "includes": ["**/*.css"],

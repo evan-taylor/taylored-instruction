@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 import { AuthEffects } from "@/components/auth-effects";
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
+import { ConnectionBanner } from "@/components/connection-banner";
+import { AppChrome } from "@/components/layout/app-chrome";
 import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
 
 export const metadata: Metadata = {
@@ -27,11 +27,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <ConvexAuthNextjsServerProvider>
         <ConvexClientProvider>
           <AuthEffects />
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-grow">{children}</main>
-            <Footer />
-          </div>
+          <ConnectionBanner />
+          <AppChrome>{children}</AppChrome>
         </ConvexClientProvider>
       </ConvexAuthNextjsServerProvider>
     </Suspense>

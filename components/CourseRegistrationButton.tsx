@@ -45,7 +45,6 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
         )}
         href={registrationUrl}
         onClick={handleClick}
-        rel="noopener noreferrer"
         size={size}
         target="_blank"
         variant={variant}

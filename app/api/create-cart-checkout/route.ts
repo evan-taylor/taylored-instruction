@@ -8,7 +8,7 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2023-10-16",
+    apiVersion: "2026-09-30.endive",
   });
 }
 
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     // Stripe API parameters use snake_case as required by their API
     const session = await getStripeClient().checkout.sessions.create({
       mode: "payment",
-      payment_method_types: ["card"],
+      allowed_payment_method_types: ["card"],
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
       customer_email: email,

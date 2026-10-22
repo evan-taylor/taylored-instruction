@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { internal } from "./_generated/api";
 import {
@@ -48,7 +48,7 @@ export const updateLastLogin = mutation({
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new ConvexError("Unauthorized");
     }
 
     const profile = await ctx.db
@@ -126,16 +126,16 @@ export const getProfileByUserId = query({
   handler: async (ctx, args) => {
     const currentUserId = await auth.getUserId(ctx);
     if (!currentUserId) {
-      throw new Error("Unauthorized");
+      throw new ConvexError("Unauthorized");
     }
 
     const user = await ctx.db.get(currentUserId);
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError("User not found");
     }
 
     if (!isAdminEmail(user.email)) {
-      throw new Error("Forbidden");
+      throw new ConvexError("Forbidden");
     }
 
     const profile = await ctx.db
@@ -160,16 +160,16 @@ export const getProfileByUserId = query({
 const assertAdmin = async (ctx: MutationCtx) => {
   const currentUserId = await auth.getUserId(ctx);
   if (!currentUserId) {
-    throw new Error("Unauthorized");
+    throw new ConvexError("Unauthorized");
   }
 
   const user = await ctx.db.get(currentUserId);
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError("User not found");
   }
 
   if (!isAdminEmail(user.email)) {
-    throw new Error("Forbidden: Admin access required");
+    throw new ConvexError("Forbidden: Admin access required");
   }
 };
 
@@ -187,7 +187,7 @@ export const approveInstructor = mutation({
       .first();
 
     if (!profile) {
-      throw new Error("Profile not found");
+      throw new ConvexError("Profile not found");
     }
 
     const wasInstructor = profile.isInstructor;
@@ -219,7 +219,7 @@ export const markUserNotified = internalMutation({
       .first();
 
     if (!profile) {
-      throw new Error("Profile not found");
+      throw new ConvexError("Profile not found");
     }
 
     const now = new Date().toISOString();
@@ -242,7 +242,7 @@ export const deactivateUser = mutation({
       .first();
 
     if (!profile) {
-      throw new Error("Profile not found");
+      throw new ConvexError("Profile not found");
     }
 
     const now = new Date().toISOString();

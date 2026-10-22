@@ -3,6 +3,7 @@ import React from "react";
 import { z } from "zod";
 import InstructorApprovalEmail from "@/emails/InstructorApprovalEmail";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const internalSecret = process.env.INTERNAL_EMAIL_WEBHOOK_SECRET;
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
       const emailData = await getResendClient().emails.send({
         from: `Taylored Instruction <${fromEmail}>`,
         to: [email],
+        replyTo: SUPPORT_EMAIL,
         subject: "You're approved as an instructor at Taylored Instruction",
         react: React.createElement(InstructorApprovalEmail, {
           firstName: name,

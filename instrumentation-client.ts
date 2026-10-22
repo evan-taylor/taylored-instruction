@@ -8,10 +8,8 @@ import {
   replayIntegration,
 } from "@sentry/nextjs";
 import posthog from "posthog-js";
-import {
-  getMissingPostHogEnvVariable,
-  getPostHogEnv,
-} from "@/lib/posthog-env";
+import { getMissingPostHogEnvVariable, getPostHogEnv } from "@/lib/posthog-env";
+import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
 
 const { host: posthogHost, projectToken: posthogProjectToken } =
   getPostHogEnv();
@@ -21,6 +19,8 @@ if (posthogProjectToken && posthogHost) {
     api_host: posthogHost,
     person_profiles: "identified_only",
     capture_pageview: false,
+    before_send: (event) =>
+      isPrivateRegistrationPath(window.location.pathname) ? null : event,
     capture_pageleave: true,
     capture_exceptions: true,
     defaults: "2025-05-24",
@@ -40,12 +40,20 @@ init({
   dsn: "https://f31f65850f94006f5f71c6a16458e0aa@o4510288242933760.ingest.us.sentry.io/4510288256958464",
 
   // Add optional integrations for additional features
-  integrations: [replayIntegration()],
+  integrations: [
+    replayIntegration({
+      beforeAddRecordingEvent: (event) =>
+        isPrivateRegistrationPath(window.location.pathname) ? null : event,
+    }),
+  ],
+  beforeSend: (event) =>
+    isPrivateRegistrationPath(window.location.pathname) ? null : event,
+  beforeSendTransaction: (event) =>
+    isPrivateRegistrationPath(window.location.pathname) ? null : event,
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
-  enableLogs: true,
+  traceLifecycle: "static",
 
   // Define how likely Replay events are sampled.
   // This sets the sample rate to be 10%. You may want this to be 100% while
@@ -55,7 +63,17 @@ init({
   // Define how likely Replay events are sampled when an error occurs.
   replaysOnErrorSampleRate: 1.0,
 
-  // Enable sending user PII (Personally Identifiable Information)
-  // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
-  sendDefaultPii: true,
+  // Preserve user context without enabling v11's new payload collection defaults.
+  dataCollection: {
+    userInfo: true,
+    cookies: true,
+    httpHeaders: { request: true, response: false },
+    urlQueryParams: true,
+    httpBodies: ["incomingRequest"],
+    databaseQueryData: false,
+    queues: false,
+    stackFrameVariables: false,
+    graphQL: { document: true, variables: false },
+    genAI: { inputs: false, outputs: false },
+  },
 });

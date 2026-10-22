@@ -6,6 +6,7 @@ import ContactConfirmationEmail from "@/emails/ContactConfirmationEmail";
 import ContactFormEmail from "@/emails/ContactFormEmail";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 // Resend client will be initialized lazily via getResendClient()
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
@@ -131,6 +132,7 @@ export async function sendContactEmail(
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [email],
+      replyTo: SUPPORT_EMAIL,
       subject: "Message Received - Taylored Instruction",
       react: React.createElement(ContactConfirmationEmail, { firstName }),
     });

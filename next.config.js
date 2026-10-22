@@ -4,6 +4,7 @@ const nextConfig = {
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
   cacheComponents: true, // Enable Cache Components (PPR) for Next.js 16
+  partialPrefetching: false, // Preserve existing prefetch behavior during the upgrade.
   // Avoid browser source map requests (404s). Sentry receives maps via build upload.
   productionBrowserSourceMaps: false,
   images: {
@@ -27,12 +28,12 @@ const nextConfig = {
   async headers() {
     const contentSecurityPolicy = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://core.sanity-cdn.com https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://embed.typeform.com https://vancouverusa.chambermaster.com https://*.cal.com",
-      "connect-src 'self' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://*.api.sanity.io wss://*.api.sanity.io https://cdn.sanity.io https://sanity-cdn.com https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://us-assets.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://core.sanity-cdn.com https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://embed.typeform.com https://vancouverusa.chambermaster.com https://*.cal.com https://js.stripe.com",
+      "connect-src 'self' https://*.vercel-insights.com https://*.posthog.com https://us.i.posthog.com https://*.sentry.io https://*.ingest.sentry.io https://*.convex.cloud https://*.sanity.io https://*.apicdn.sanity.io https://*.api.sanity.io wss://*.api.sanity.io https://cdn.sanity.io https://sanity-cdn.com https://assets.apollo.io https://cdn.visitors.now https://assets.onedollarstats.com https://api.stripe.com https://*.stripe.com",
       "img-src 'self' data: blob: https:",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com",
-      "frame-src 'self' https://cap.so https://www.loom.com https://embed.typeform.com https://*.cal.com",
+      "frame-src 'self' https://cap.so https://www.loom.com https://embed.typeform.com https://*.cal.com https://js.stripe.com https://hooks.stripe.com https://*.stripe.com",
       "worker-src 'self' blob:",
     ];
     const sharedSecurityHeaders = [
@@ -86,6 +87,25 @@ const nextConfig = {
     ];
 
     return [
+      ...[
+        "/s/:path*",
+        ...(process.env.NEXT_PUBLIC_NATIVE_REGISTRATION === "true"
+          ? []
+          : ["/courses/:path*"]),
+        "/instructor/sessions/:path*",
+        "/admin/registrations/:path*",
+        "/admin/registration-activity/:path*",
+        "/registrations/:path*",
+        "/registration/:path*",
+        "/api/registration/:path*",
+      ].map((source) => ({
+        source,
+        headers: [
+          { key: "Cache-Control", value: "private, no-store" },
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      })),
       {
         source: "/admin/studio/:path*",
         headers: studioSecurityHeaders,
@@ -253,7 +273,7 @@ module.exports = nextConfig;
 
 // Injected content via Sentry wizard below
 
-const { withSentryConfig } = require("@sentry/nextjs");
+const { withSentryConfig } = require("@sentry/nextjs/config");
 
 const sentryOrg = process.env.SENTRY_ORG;
 const sentryProject = process.env.SENTRY_PROJECT;

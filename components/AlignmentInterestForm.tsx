@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { trackVisitorsEvent } from "@/lib/analytics";
@@ -99,7 +100,7 @@ const AlignmentInterestForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setStatus("Submitting...");
+    setStatus("Submitting…");
 
     // Track form submission attempt
     posthog.capture("alignment_interest_submitted", {
@@ -159,7 +160,7 @@ const AlignmentInterestForm: React.FC = () => {
           `Submission failed: ${result.error || "Unknown error. Please check your input and try again."}`
         );
       }
-    } catch (_error) {
+    } catch {
       // Track unexpected error
       posthog.capture("alignment_interest_error", {
         error: "Network or server error",
@@ -174,13 +175,13 @@ const AlignmentInterestForm: React.FC = () => {
 
   return (
     <form
-      className="mx-auto max-w-xl space-y-6 rounded-lg bg-white p-6 shadow-md"
+      className="mx-auto max-w-xl space-y-6 rounded-lg border border-slate-200 bg-white p-6"
       onSubmit={handleSubmit}
     >
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
           <Label htmlFor="firstName">
-            First Name <span className="text-red-500">*</span>
+            First name <span className="text-rose-600">*</span>
           </Label>
           <Input
             className="mt-1"
@@ -194,7 +195,7 @@ const AlignmentInterestForm: React.FC = () => {
         </div>
         <div>
           <Label htmlFor="lastName">
-            Last Name <span className="text-red-500">*</span>
+            Last name <span className="text-rose-600">*</span>
           </Label>
           <Input
             className="mt-1"
@@ -210,7 +211,7 @@ const AlignmentInterestForm: React.FC = () => {
 
       <div>
         <Label htmlFor="email">
-          Email <span className="text-red-500">*</span>
+          Email <span className="text-rose-600">*</span>
         </Label>
         <Input
           className="mt-1"
@@ -225,7 +226,7 @@ const AlignmentInterestForm: React.FC = () => {
 
       <div>
         <Label htmlFor="phone">
-          Phone <span className="text-red-500">*</span>
+          Phone <span className="text-rose-600">*</span>
         </Label>
         <Input
           className="mt-1"
@@ -241,7 +242,7 @@ const AlignmentInterestForm: React.FC = () => {
       <div>
         <Label>
           Do you currently hold an instructor certification?{" "}
-          <span className="text-red-500">*</span>
+          <span className="text-rose-600">*</span>
         </Label>
         <RadioGroup
           className="mt-2 space-y-2"
@@ -350,13 +351,13 @@ const AlignmentInterestForm: React.FC = () => {
         />
         <div className="grid gap-1.5 leading-none">
           <Label
-            className="font-normal text-gray-600 text-sm"
+            className="font-normal text-slate-600 text-sm"
             htmlFor="smsOptIn"
           >
             Yes, I agree to receive text messages from Taylored Instruction sent
             from 360-685-8199.
           </Label>
-          <p className="text-gray-500 text-xs">
+          <p className="text-slate-500 text-xs">
             Message frequency varies and may include appointment reminders,
             course information, or promotional messages. Message and data rates
             may apply. Reply STOP at any time to unsubscribe or HELP for
@@ -367,7 +368,7 @@ const AlignmentInterestForm: React.FC = () => {
               rel="noopener noreferrer"
               target="_blank"
             >
-              Privacy Policy
+              privacy policy
             </a>{" "}
             for details on how we handle your information.
           </p>
@@ -384,7 +385,7 @@ const AlignmentInterestForm: React.FC = () => {
         />
         <div className="grid gap-1.5 leading-none">
           <Label
-            className="font-normal text-gray-600 text-sm"
+            className="font-normal text-slate-600 text-sm"
             htmlFor="smsOptOut"
           >
             No, I do not want to receive text messages from Taylored
@@ -395,24 +396,22 @@ const AlignmentInterestForm: React.FC = () => {
 
       <div>
         <Button className="w-full" type="submit">
-          Submit
+          Send interest form
         </Button>
       </div>
 
       {status &&
         (() => {
-          let statusClass = "bg-blue-100 text-blue-800";
+          let tone: "info" | "success" | "danger" = "info";
           if (status.includes("successfully")) {
-            statusClass = "bg-green-100 text-green-800";
+            tone = "success";
           } else if (status.includes("failed")) {
-            statusClass = "bg-red-100 text-red-800";
+            tone = "danger";
           }
           return (
-            <p
-              className={`mt-4 rounded p-3 text-center text-sm ${statusClass}`}
-            >
+            <Notice className="mt-4" tone={tone}>
               {status}
-            </p>
+            </Notice>
           );
         })()}
     </form>

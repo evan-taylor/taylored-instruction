@@ -5,7 +5,7 @@ export const CertificationsSection = () => (
     <div className="container mx-auto px-4">
       <div className="mb-12 text-center">
         <h2 className="font-bold text-3xl text-text md:text-4xl">
-          Trusted Certifications & Alignments
+          Certifications and alignments
         </h2>
         <p className="mt-2 text-text-light">
           We are proud to be recognized by leading organizations.

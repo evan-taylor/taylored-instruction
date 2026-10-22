@@ -2,6 +2,7 @@ import { useMutation } from "convex/react";
 import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 import { sendInstructorApprovalEmail } from "@/app/actions/send-instructor-approval-email";
+import { errorText } from "@/components/registration/errors";
 import { api } from "@/convex/_generated/api";
 import type { ProfileWithUser } from "./types";
 
@@ -83,7 +84,7 @@ export function useInstructorActions(
         `Instructor status successfully ${currentStatus ? "revoked" : "approved"}. ${currentStatus ? "" : emailStatus}`
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = errorText(err);
       setError(`Failed to update status: ${message}`);
     }
   };
@@ -118,7 +119,7 @@ export function useInstructorActions(
         `User ${userEmail || userId} successfully rejected and deleted.`
       );
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = errorText(err);
       setError(`Failed to reject user: ${message}`);
     }
   };

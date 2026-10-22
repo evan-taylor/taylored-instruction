@@ -138,7 +138,7 @@ export async function GET(req: NextRequest) {
           });
           const linkedPageTitle = extractPageTitle(linkedPage);
           return { ...block, linked_page_title: linkedPageTitle };
-        } catch (_error) {
+        } catch {
           return { ...block, linked_page_title: "Linked Page" };
         }
       }
@@ -179,7 +179,7 @@ export async function GET(req: NextRequest) {
           });
           const children = await processBlocks(childBlocks.results, depth + 1);
           return { ...block, children };
-        } catch (_childError) {
+        } catch {
           return { ...block, children: [] };
         }
       }

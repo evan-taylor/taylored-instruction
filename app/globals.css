@@ -1,53 +1,80 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Silk sheets: declare its layer before Tailwind so utilities can override defaults. */
+@import "@silk-hq/components/unlayered-styles.css" layer(silk);
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
-html {
-  scroll-behavior: smooth;
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  body {
+    @apply bg-background font-readex text-text;
+  }
+
+  :target {
+    scroll-margin-top: 6rem;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+    @apply font-bold;
+  }
+
+  p,
+  li {
+    text-wrap: pretty;
+  }
+
+  /*
+   * Editorial defaults for long-form marketing copy only. Product screens lay
+   * out with gap/space utilities and must not inherit margins; otherwise every
+   * paragraph needs an m-0, which also cancels space-y spacing in Tailwind v4.
+   */
+  .prose-site h1 {
+    @apply text-3xl lg:text-4xl mb-6;
+  }
+
+  .prose-site h2 {
+    @apply text-2xl lg:text-3xl mb-4;
+  }
+
+  .prose-site h3 {
+    @apply text-xl lg:text-2xl mb-3;
+  }
+
+  .prose-site p {
+    @apply mb-4;
+  }
 }
 
-body {
-  @apply bg-background font-readex text-text;
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-md px-6 py-2 font-medium transition-colors duration-150 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-white hover:opacity-90;
+  }
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  @apply font-bold;
-}
-
-h1 {
-  @apply text-3xl lg:text-4xl mb-6;
-}
-
-h2 {
-  @apply text-2xl lg:text-3xl mb-4;
-}
-
-h3 {
-  @apply text-xl lg:text-2xl mb-3;
-}
-
-p {
-  @apply mb-4;
-}
-
-.btn {
-  @apply px-6 py-2 rounded font-medium transition-all duration-200;
-}
-
-.btn-primary {
-  @apply bg-primary text-white hover:bg-primary-dark;
-}
-
-.btn-secondary {
-  @apply bg-secondary text-white hover:opacity-90;
-}
-
-.container {
+@utility container {
   @apply mx-auto px-4 max-w-7xl;
 }
 
@@ -63,15 +90,15 @@ p {
     --primary-foreground: 0 0% 98%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
     --accent: 0 0% 96.1%;
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 211 60% 33%;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -112,6 +139,70 @@ p {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background font-readex text-text;
   }
+}
+
+/* Reduced motion: keep fades, drop movement and looping animations. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-out {
+    animation-duration: 0.01ms !important;
+  }
+  .animate-pulse,
+  .animate-spin,
+  .animate-bounce {
+    animation: none !important;
+  }
+}
+
+/* Silk sheet surfaces used by components/ui/dialog.tsx and the admin drawer. */
+.app-sheet-view {
+  z-index: 60;
+  height: var(--silk-100-lvh-dvh-pct);
+}
+.app-sheet-view-center {
+  height: 100vh;
+}
+.app-sheet-content {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  padding-inline: 0;
+  /* The view spans the large viewport; this lifts the panel above a
+     collapsed-but-present browser bar (large minus dynamic viewport). */
+  padding-bottom: calc(var(--silk-100-lvh-dvh-pct) - 100dvh);
+  background-color: transparent;
+}
+.app-sheet-view-center .app-sheet-content {
+  padding-inline: 1rem;
+  padding-bottom: 0;
+}
+.app-sheet-panel {
+  min-height: 0;
+  max-height: calc(100dvh - 2.5rem - env(safe-area-inset-top, 0px));
+}
+.app-sheet-view-center .app-sheet-panel {
+  max-height: 85vh;
+}
+.app-sheet-handle {
+  --silk-defaults: silk-reset;
+  align-self: center;
+  width: 44px;
+  height: 5px;
+  margin-top: 0.625rem;
+  margin-bottom: 0.25rem;
+  cursor: pointer;
+  background-color: rgb(203 213 225);
+  border: 0;
+  border-radius: 9999px;
+}
+.app-drawer-view {
+  z-index: 60;
+  height: var(--silk-100-lvh-dvh-pct);
+}
+.app-drawer-content {
+  box-sizing: border-box;
+  width: min(85vw, 18rem);
+  height: 100%;
 }
