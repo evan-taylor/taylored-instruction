@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatMoney, parseDollars } from "@/shared/registration/domain";
 
 export const controlClass =
-  "block min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-xs md:text-sm transition-colors placeholder:text-slate-400 focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+  "block min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-xs md:pointer-fine:text-sm transition-colors placeholder:text-slate-400 focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
 /** Label, control, hint, and error laid out consistently. */
 export function Field({

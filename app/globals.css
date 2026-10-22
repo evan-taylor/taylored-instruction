@@ -21,6 +21,19 @@
     touch-action: manipulation;
   }
 
+  /*
+   * iOS zooms into any field under 16px and never zooms back out. A base
+   * floor that utilities may still raise (text-2xl on a code field) or,
+   * on fine-pointer screens only, lower (md:pointer-fine:text-sm).
+   */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: 1rem;
+    }
+  }
+
   /* A long press on a control must not select its label or open the callout. */
   button,
   summary,
@@ -229,18 +242,6 @@
   box-sizing: border-box;
   width: min(85vw, 18rem);
   height: 100%;
-}
-
-/*
- * Outside every layer so these beat Tailwind utilities such as md:text-sm.
- * iOS zooms into any field under 16px and never zooms back out.
- */
-@media (pointer: coarse) {
-  input,
-  select,
-  textarea {
-    font-size: max(16px, 1em);
-  }
 }
 
 /*
