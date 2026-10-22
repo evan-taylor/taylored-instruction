@@ -488,7 +488,12 @@ function useDebounced<T>(value: T, delay: number) {
 export function ClassDiscovery() {
   const selfPaced = useQuery(api.registration.selfPaced);
   const params = useSearchParams();
-  const [search, setSearch] = useState(() => params.get("q") ?? "");
+  const preset = params.get("q") ?? "";
+  const [search, setSearch] = useState(preset);
+  // Header links change ?q= while this page stays mounted.
+  useEffect(() => {
+    setSearch(preset);
+  }, [preset]);
   const [date, setDate] = useState("");
   const [calendar, setCalendar] = useState(false);
   const needle = useDebounced(search.trim().toLowerCase(), 300);

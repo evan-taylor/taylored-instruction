@@ -88,10 +88,6 @@ const nextConfig = {
 
     return [
       ...[
-        "/s/:path*",
-        ...(process.env.NEXT_PUBLIC_NATIVE_REGISTRATION === "true"
-          ? []
-          : ["/courses/:path*"]),
         "/instructor/sessions/:path*",
         "/admin/registrations/:path*",
         "/admin/registration-activity/:path*",

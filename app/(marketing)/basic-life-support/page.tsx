@@ -1,5 +1,6 @@
 "use cache";
 
+import { cacheLife } from "next/cache";
 import BasicLifeSupportPageContent from "@/components/BasicLifeSupportPageContent";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
@@ -39,6 +40,8 @@ export const metadata = buildPageMetadata({
 });
 
 const BasicLifeSupportPage = async () => {
+  // Live dates and prices are attached to the Course markup below.
+  cacheLife("hours");
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,

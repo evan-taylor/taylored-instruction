@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ClassDiscovery } from "@/components/registration/public";
+import { indexable } from "@/lib/registration-seo";
 import { buildPageMetadata, SITE_URL } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -12,22 +13,24 @@ const title =
 const description =
   "Browse upcoming American Red Cross and AHA classes in Vancouver, WA and Clark County. See every date, location, and the full price, then register online in minutes.";
 
-export const metadata: Metadata = buildPageMetadata({
-  title,
-  description,
-  path: "/classes",
-  keywords: [
-    "CPR classes near me",
-    "BLS class Vancouver WA",
-    "lifeguard class Vancouver WA",
-    "first aid class Clark County",
-    "register for CPR class online",
-  ],
-  image: {
-    title: "Find your next class",
-    description: "Dates, locations, and full pricing before you register",
-  },
-});
+export const metadata: Metadata = indexable(
+  buildPageMetadata({
+    title,
+    description,
+    path: "/classes",
+    keywords: [
+      "CPR classes near me",
+      "BLS class Vancouver WA",
+      "lifeguard class Vancouver WA",
+      "first aid class Clark County",
+      "register for CPR class online",
+    ],
+    image: {
+      title: "Find your next class",
+      description: "Dates, locations, and full pricing before you register",
+    },
+  })
+);
 
 export default function Page() {
   const schemas = [
