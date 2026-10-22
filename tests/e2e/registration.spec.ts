@@ -39,15 +39,21 @@ test("per-attendee waivers and optional selections update the itemized estimate"
     .getByLabel("I accept the course participation policy (required)")
     .check();
   await expect(
-    page.getByText("Estimated total before coupon: $130.00")
+    page
+      .locator("p", { hasText: "Estimated total" })
+      .getByText("$130.00", { exact: true })
   ).toBeVisible();
   await page.getByLabel("I already have this material").check();
   await expect(
-    page.getByText("Estimated total before coupon: $110.00")
+    page
+      .locator("p", { hasText: "Estimated total" })
+      .getByText("$110.00", { exact: true })
   ).toBeVisible();
   await page.getByLabel("Add this material").check();
   await expect(
-    page.getByText("Estimated total before coupon: $125.00")
+    page
+      .locator("p", { hasText: "Estimated total" })
+      .getByText("$125.00", { exact: true })
   ).toBeVisible();
 });
 test("free checkout completes without a card and the success page reads backend status", async ({

@@ -195,11 +195,13 @@ export function PaymentStep({
   const checkout = useAction(api.registrationExternal.checkout);
   const [secret, setSecret] = useState<string | null>(null);
   const [failure, setFailure] = useState("");
+  const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` re-runs the request on retry
   useEffect(() => {
     let cancelled = false;
     checkout({ orderId, requestKey })
@@ -221,7 +223,7 @@ export function PaymentStep({
     return () => {
       cancelled = true;
     };
-  }, [checkout, orderId, requestKey]);
+  }, [checkout, orderId, requestKey, attempt]);
   const expired = expires <= now;
   if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
     return (
@@ -261,7 +263,11 @@ export function PaymentStep({
           {failure}
           <div className="mt-3">
             <Button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                // Same order and request key, so the held seats are reused.
+                setFailure("");
+                setAttempt((n) => n + 1);
+              }}
               size="sm"
               type="button"
               variant="secondary"

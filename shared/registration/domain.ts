@@ -13,14 +13,15 @@ export type Quote = Infer<typeof quotedSeat>;
 export type Coupon = {
   [K in keyof typeof couponFields]: Infer<(typeof couponFields)[K]>;
 };
-const PHONE_CHARS = /^[+\d][\d\s().-]{5,24}$/u;
-/** Optional phone number: blank becomes undefined, anything else must look dialable. */
+const PHONE_PUNCTUATION = /[\s().-]/gu;
+const PHONE_DIGITS = /^\+?\d{7,15}$/u;
+/** Optional phone number: blank becomes undefined, anything else must dial. */
 export function normalizePhone(value: string | undefined) {
   const trimmed = value?.trim() ?? "";
   if (!trimmed) {
     return;
   }
-  if (!PHONE_CHARS.test(trimmed)) {
+  if (!PHONE_DIGITS.test(trimmed.replace(PHONE_PUNCTUATION, ""))) {
     throw new Error("Enter a valid phone number or leave it blank");
   }
   return trimmed;
