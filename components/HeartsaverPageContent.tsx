@@ -1,20 +1,17 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function HeartsaverPageContent() {
   return (
     <ClassPageLayout
+      course="heartsaver"
       courseName="Heartsaver Certification"
       image={{
         alt: "CPR training class",
         position: "54% 66%",
         src: "/CPR-stock-photo-scaled.jpeg",
       }}
-      registrationUrl={registrationBookingUrl(
-        "https://www.hovn.app/tayloredinstruction/certifications/aha-heartsaver-first-aid-cpr-aed-2025"
-      )}
       title="American Heart Association Heartsaver First Aid CPR AED"
     >
       <ClassPageSection title="Course overview">

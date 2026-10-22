@@ -1,6 +1,8 @@
 "use cache";
 
+import { cacheLife } from "next/cache";
 import FirstAidCprAedPageContent from "@/components/FirstAidCprAedPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -37,6 +39,8 @@ export const metadata = buildPageMetadata({
 });
 
 const FirstAidCprAedPage = async () => {
+  // Live dates and prices are attached to the Course markup below.
+  cacheLife("hours");
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,
@@ -44,7 +48,10 @@ const FirstAidCprAedPage = async () => {
   });
 
   // Generate structured data
-  const courseSchema = getFirstAidCPRAEDCourseSchema();
+  const courseSchema = await withLiveInstances(
+    getFirstAidCPRAEDCourseSchema(),
+    "first-aid-cpr-aed"
+  );
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {

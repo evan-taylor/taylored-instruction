@@ -1,6 +1,8 @@
 "use cache";
 
+import { cacheLife } from "next/cache";
 import LifeguardingPageContent from "@/components/LifeguardingPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -38,6 +40,8 @@ export const metadata = buildPageMetadata({
 });
 
 const LifeguardingPage = async () => {
+  // Live dates and prices are attached to the Course markup below.
+  cacheLife("hours");
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,
@@ -45,7 +49,10 @@ const LifeguardingPage = async () => {
   });
 
   // Generate structured data
-  const courseSchema = getLifeguardingCourseSchema();
+  const courseSchema = await withLiveInstances(
+    getLifeguardingCourseSchema(),
+    "lifeguarding"
+  );
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {

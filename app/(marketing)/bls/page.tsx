@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import BlsPageContent from "@/components/BlsPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -39,7 +40,8 @@ export const metadata = buildPageMetadata({
 });
 
 export default async function BlsPage() {
-  cacheLife("days");
+  // Live dates and prices are attached to the Course markup below.
+  cacheLife("hours");
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,
@@ -47,7 +49,7 @@ export default async function BlsPage() {
   });
 
   // Generate structured data
-  const courseSchema = getBLSCourseSchema();
+  const courseSchema = await withLiveInstances(getBLSCourseSchema(), "bls");
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     { name: "BLS Certification", url: "https://tayloredinstruction.com/bls" },

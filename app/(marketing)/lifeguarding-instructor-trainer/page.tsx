@@ -2,7 +2,6 @@
 
 import { cacheLife } from "next/cache";
 import { Button } from "@/components/ui/Button";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -164,14 +163,7 @@ export default async function Page() {
           <Button href="/contact" size="lg">
             Request an on-site course
           </Button>
-          <Button
-            href={registrationBookingUrl(
-              "https://www.hovn.app/tayloredinstruction"
-            )}
-            size="lg"
-            target="_blank"
-            variant="secondary"
-          >
+          <Button href="/classes" size="lg" variant="secondary">
             See upcoming classes
           </Button>
         </div>

@@ -7,14 +7,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { isAdminEmail } from "@/lib/admin";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
-const REGISTER_URL = registrationBookingUrl(
-  "https://www.hovn.app/tayloredinstruction"
-);
+const REGISTER_URL = "/classes";
 const REGISTER_EXTERNAL = EXTERNAL_LINK_REGEX.test(REGISTER_URL);
 
 // --- Type Definitions ---
@@ -92,16 +89,11 @@ const generateNavLinks = (
     dropdown: [
       {
         label: "Register for classes",
-        href: registrationBookingUrl(
-          "https://www.hovn.app/tayloredinstruction"
-        ),
+        href: "/classes",
       },
       {
         type: "divider",
         label: "American Heart Association courses",
-        href: registrationBookingUrl(
-          "https://www.hovn.app/tayloredinstruction/agencies/aha"
-        ),
       },
       { label: "BLS", href: "/bls", indent: true },
       { label: "Heartsaver", href: "/heartsaver", indent: true },
@@ -113,9 +105,6 @@ const generateNavLinks = (
       {
         type: "divider",
         label: "American Red Cross courses",
-        href: registrationBookingUrl(
-          "https://www.hovn.app/tayloredinstruction/agencies/arc"
-        ),
       },
       {
         label: "Adult and Pediatric First Aid/CPR/AED",

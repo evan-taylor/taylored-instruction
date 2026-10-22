@@ -1,16 +1,56 @@
 import type { Metadata } from "next";
 import { ClassDiscovery } from "@/components/registration/public";
-import { nativeRegistrationEnabled } from "@/lib/registration-launch";
+import { indexable } from "@/lib/registration-seo";
+import { buildPageMetadata, SITE_URL } from "@/lib/seo";
+import {
+  generateJSONLD,
+  getBreadcrumbSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-export const metadata: Metadata = {
-  title: "Find a Class | Taylored Instruction",
-  description:
-    "Browse upcoming CPR, BLS, first aid, and lifeguarding classes in Vancouver, WA. See dates, locations, and full pricing before you register.",
-  robots: nativeRegistrationEnabled()
-    ? { index: true, follow: true }
-    : { index: false, follow: false },
-};
+const title =
+  "CPR, BLS, First Aid & Lifeguarding Classes | Vancouver WA | Taylored Instruction";
+const description =
+  "Browse upcoming American Red Cross and AHA classes in Vancouver, WA and Clark County. See every date, location, and the full price, then register online in minutes.";
+
+export const metadata: Metadata = indexable(
+  buildPageMetadata({
+    title,
+    description,
+    path: "/classes",
+    keywords: [
+      "CPR classes near me",
+      "BLS class Vancouver WA",
+      "lifeguard class Vancouver WA",
+      "first aid class Clark County",
+      "register for CPR class online",
+    ],
+    image: {
+      title: "Find your next class",
+      description: "Dates, locations, and full pricing before you register",
+    },
+  })
+);
 
 export default function Page() {
-  return <ClassDiscovery />;
+  const schemas = [
+    getWebPageSchema({ name: title, description, path: "/classes" }),
+    getBreadcrumbSchema([
+      { name: "Home", url: SITE_URL },
+      { name: "Classes", url: `${SITE_URL}/classes` },
+    ]),
+  ];
+  return (
+    <>
+      {schemas.map((schema, index) => (
+        <script
+          dangerouslySetInnerHTML={generateJSONLD(schema)}
+          // biome-ignore lint/suspicious/noArrayIndexKey: static list of distinct schema types
+          key={index}
+          type="application/ld+json"
+        />
+      ))}
+      <ClassDiscovery />
+    </>
+  );
 }

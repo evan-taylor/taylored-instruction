@@ -1,6 +1,5 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export const Hero = () => (
   <div className="relative flex min-h-[550px] items-center justify-center overflow-hidden px-4 text-center md:min-h-[600px]">
@@ -20,14 +19,7 @@ export const Hero = () => (
         Safety tailored to your needs.
       </h1>
 
-      <Button
-        className="mt-4"
-        href={registrationBookingUrl(
-          "https://www.hovn.app/tayloredinstruction"
-        )}
-        size="lg"
-        target="_blank"
-      >
+      <Button className="mt-4" href="/classes" size="lg">
         Register for classes
       </Button>
     </div>

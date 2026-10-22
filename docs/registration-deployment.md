@@ -84,7 +84,7 @@ Configuration is not payment acceptance: run a test Checkout, invoice, signed we
 refund, and portal-email flow before enabling native booking links. Stripe Tax must
 have the business address and appropriate tax registrations configured by the account
 owner. No live purchase, refund, or customer email is needed for build verification.
-`NEXT_PUBLIC_NATIVE_REGISTRATION` stays off until reviewed offerings are published.
+Marketing pages and the header link to the in-house registration routes.
 This PR does not migrate auth, merge itself, or deploy the production application.
 
 ## Hosted preview acceptance (October 21, 2026)

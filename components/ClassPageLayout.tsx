@@ -2,9 +2,9 @@ import { ArrowUpRight, FileText } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import CourseRegistrationButton from "@/components/CourseRegistrationButton";
+import { UpcomingClasses } from "@/components/registration/upcoming-classes";
 import { Button } from "@/components/ui/Button";
-import { nativeRegistrationEnabled } from "@/lib/registration-launch";
+import { COURSE_CATALOG, type CourseKey } from "@/lib/course-catalog";
 
 type HeroImage = {
   alt: string;
@@ -26,9 +26,10 @@ type SecondaryAction = {
 type ClassPageLayoutProps = {
   badgeLabel?: string;
   children: ReactNode;
+  /** Which registration course templates this page is about. */
+  course: CourseKey;
   courseName: string;
   image: HeroImage;
-  registrationUrl: string;
   resources?: ResourceLink[];
   secondaryActions?: SecondaryAction[];
   subtitle?: string;
@@ -52,9 +53,9 @@ export function ClassPageSection({ children, title }: ClassPageSectionProps) {
 export default function ClassPageLayout({
   badgeLabel = "Certification course",
   children,
+  course,
   courseName,
   image,
-  registrationUrl,
   resources = [],
   secondaryActions = [],
   subtitle,
@@ -95,26 +96,25 @@ export default function ClassPageLayout({
 
       <section className="relative z-20 mx-auto -mt-14 max-w-5xl px-4 sm:px-6 lg:px-8">
         <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-md md:p-6">
-          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-start">
             <div>
-              <h2 className="mb-2 font-bold text-slate-950 text-xl">
-                Find an upcoming class
+              <h2 className="mb-1 font-bold text-slate-950 text-xl">
+                Upcoming {courseName} classes
               </h2>
               <p className="mb-0 text-slate-600">
-                {nativeRegistrationEnabled()
-                  ? "See every date, location, and the full price before you register."
-                  : "View current dates, locations, and registration details on Hovn."}
+                Every date, location, and the full price before you register. No
+                account needed.
               </p>
             </div>
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center lg:justify-end">
-              <CourseRegistrationButton
-                buttonClassName="h-12 px-5 py-0 text-base"
-                buttonText="See upcoming classes"
-                className="mb-0"
-                courseName={courseName}
-                registrationUrl={registrationUrl}
-                size="md"
-              />
+              <Button
+                className="h-12 w-full whitespace-nowrap px-5 py-0 text-base sm:w-auto"
+                href="/classes"
+                size="lg"
+                variant="outline"
+              >
+                Browse all classes
+              </Button>
               {secondaryActions.map((action) => (
                 <Button
                   className="h-12 w-full whitespace-nowrap px-5 py-0 text-base sm:w-auto"
@@ -136,6 +136,13 @@ export default function ClassPageLayout({
                 </Button>
               ))}
             </div>
+          </div>
+
+          <div className="mt-5 border-slate-200 border-t pt-5">
+            <UpcomingClasses
+              courseName={courseName}
+              match={COURSE_CATALOG[course]}
+            />
           </div>
 
           {resources.length > 0 ? (
