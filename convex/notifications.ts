@@ -1,5 +1,8 @@
 import { v } from "convex/values";
+import { createElement } from "react";
 import { Resend } from "resend";
+import { renderEmailHtml } from "../emails/components/render";
+import NewInstructorEmail from "../emails/NewInstructorEmail";
 import { SUPPORT_EMAIL } from "../shared/email";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
@@ -15,14 +18,6 @@ const ADMIN_NOTIF_EMAIL =
 const WEBSITE_NAME = process.env.WEBSITE_NAME || "Taylored Instruction";
 const { RESEND_AUDIENCE_ID } = process.env;
 
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-
 export const sendNewUserAdminNotification = internalAction({
   args: {
     userId: v.id("users"),
@@ -36,22 +31,15 @@ export const sendNewUserAdminNotification = internalAction({
       return;
     }
 
-    const userEmail = args.userEmail || "No email provided";
-    const escapedUserId = escapeHtml(args.userId);
-    const escapedUserEmail = escapeHtml(userEmail);
-
     try {
       const resend = new Resend(RESEND_API_KEY);
-      const subject = "New Instructor Signup";
-      const htmlBody = `
-        <h1>New Instructor Signup</h1>
-        <p>A new instructor has signed up:</p>
-        <ul>
-          <li><strong>User ID:</strong> ${escapedUserId}</li>
-          <li><strong>Email:</strong> ${escapedUserEmail}</li>
-        </ul>
-        <p>You can manage this instructor and others by visiting the <a href="https://tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
-      `;
+      const subject = "New instructor signup";
+      const htmlBody = renderEmailHtml(
+        createElement(NewInstructorEmail, {
+          userId: args.userId,
+          email: args.userEmail || undefined,
+        })
+      );
 
       const result = await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,

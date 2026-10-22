@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { createElement } from "react";
 import { z } from "zod";
+import NewInstructorEmail from "@/emails/NewInstructorEmail";
 import { getResendClient } from "@/lib/resend";
 import { SUPPORT_EMAIL } from "@/shared/email";
 
@@ -14,14 +16,6 @@ const NewUserNotificationSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
   userEmail: z.string().optional(),
 });
-
-const escapeHtml = (value: string): string =>
-  value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
 
 export async function POST(req: NextRequest) {
   try {
@@ -55,9 +49,6 @@ export async function POST(req: NextRequest) {
     }
 
     const { userId, userEmail } = validatedFields.data;
-    const displayEmail = userEmail || "No email provided";
-    const escapedUserId = escapeHtml(userId);
-    const escapedDisplayEmail = escapeHtml(displayEmail);
 
     const resendApiKey = process.env.RESEND_API_KEY;
     if (!resendApiKey) {
@@ -71,23 +62,17 @@ export async function POST(req: NextRequest) {
     }
 
     try {
-      const subject = "New Instructor Signup";
-      const htmlBody = `
-        <h1>New Instructor Signup</h1>
-        <p>A new instructor has signed up:</p>
-        <ul>
-          <li><strong>User ID:</strong> ${escapedUserId}</li>
-          <li><strong>Email:</strong> ${escapedDisplayEmail}</li>
-        </ul>
-        <p>You can manage this instructor and others by visiting the <a href="https://tayloredinstruction.com/admin/instructors">Manage Instructors page</a>.</p>
-      `;
+      const subject = "New instructor signup";
 
       const emailData = await getResendClient().emails.send({
         from: `Taylored Instruction <${fromEmail}>`,
         to: [adminEmail],
         replyTo: SUPPORT_EMAIL,
         subject,
-        html: htmlBody,
+        react: createElement(NewInstructorEmail, {
+          userId,
+          email: userEmail || undefined,
+        }),
       });
 
       if (emailData.error) {

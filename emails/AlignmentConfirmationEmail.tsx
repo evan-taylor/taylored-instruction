@@ -1,15 +1,5 @@
-import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Preview,
-  Section,
-  Text,
-} from "@react-email/components";
-import { Tailwind } from "@react-email/tailwind";
+import { Paragraph, Title } from "./components/blocks";
+import { EmailLayout } from "./components/layout";
 
 type AlignmentConfirmationEmailProps = {
   firstName: string;
@@ -19,32 +9,25 @@ export default function AlignmentConfirmationEmail({
   firstName,
 }: AlignmentConfirmationEmailProps) {
   return (
-    <Html>
-      <Head />
-      <Preview>Alignment Interest Received</Preview>
-      <Tailwind>
-        <Body className="bg-gray-100 text-black">
-          <Container>
-            <Section className="my-10 rounded-md border border-black/10 bg-white px-10 py-4">
-              <Heading className="leading-tight">
-                Thank You for Your Interest!
-              </Heading>
-              <Text>Hi {firstName},</Text>
-              <Text>
-                We have received your alignment interest form submission. Thank
-                you for considering Taylored Instruction!
-              </Text>
-              <Text>
-                We will review your information and get back to you as soon as
-                possible to discuss potential alignment opportunities.
-              </Text>
-              <Hr />
-              <Text>Best Regards,</Text>
-              <Text>The Taylored Instruction Team</Text>
-            </Section>
-          </Container>
-        </Body>
-      </Tailwind>
-    </Html>
+    <EmailLayout preview="We received your alignment request and will be in touch soon.">
+      <Title>Thanks for your interest in aligning with us</Title>
+      <Paragraph>
+        Hi {firstName}, we received your request to align with Taylored
+        Instruction as an instructor.
+      </Paragraph>
+      <Paragraph>
+        We’ll review your details and reach out soon to talk through next steps.
+        If anything changes in the meantime, just reply to this email.
+      </Paragraph>
+      <Paragraph>
+        Thanks,
+        <br />
+        The Taylored Instruction team
+      </Paragraph>
+    </EmailLayout>
   );
 }
+
+AlignmentConfirmationEmail.PreviewProps = {
+  firstName: "Jordan",
+} satisfies AlignmentConfirmationEmailProps;

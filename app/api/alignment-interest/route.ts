@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       from: `Alignment Form <${fromEmail}>`, // Updated sender name
       to: [adminEmail],
       replyTo: email,
-      subject: `New Alignment Interest Submission from ${firstName} ${lastName}`,
+      subject: `Alignment request from ${firstName} ${lastName}`,
       react: React.createElement(AlignmentInterestEmail, {
         ...validatedFields.data,
       }), // Pass validated data
@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
       to: [email],
       replyTo: SUPPORT_EMAIL,
-      subject: "Alignment Interest Received - Taylored Instruction",
+      subject: "We received your alignment request",
       react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
     });
 

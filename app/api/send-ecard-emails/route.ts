@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
       replyTo: customerEmail,
-      subject: "New Multi-Item eCard Purchase",
+      subject: "New eCard order",
       react: React.createElement(EcardPurchaseAdminEmail, {
         itemName: "Multiple Products",
         quantity: cartItems
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
       replyTo: SUPPORT_EMAIL,
-      subject: "Your eCard Purchase Confirmation",
+      subject: "Your eCard order is confirmed",
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName: "Multiple Products",
         quantity: cartItems
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [adminEmail],
       replyTo: customerEmail,
-      subject: `New eCard Purchase: ${itemName}`,
+      subject: `New eCard order: ${itemName}`,
       react: React.createElement(EcardPurchaseAdminEmail, {
         itemName,
         quantity,
@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
       replyTo: SUPPORT_EMAIL,
-      subject: "Your eCard Purchase Confirmation",
+      subject: "Your eCard order is confirmed",
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName,
         quantity,

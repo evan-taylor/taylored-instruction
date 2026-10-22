@@ -35,10 +35,9 @@ export const ResendOTP = Email({
     const { error } = await resend.emails.send({
       from: emailFrom,
       to: [email],
-      subject: "Your Taylored Instruction Login Code",
+      subject: "Your Taylored Instruction sign-in code",
       replyTo: SUPPORT_EMAIL,
       ...brandedEmail({
-        eyebrow: "Account sign-in",
         title: "Your sign-in code",
         preview:
           "Use this code to finish signing in to Taylored Instruction. Expires in 10 minutes.",

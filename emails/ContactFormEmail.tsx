@@ -1,16 +1,12 @@
 import {
-  Body,
-  Column,
-  Container,
-  Head,
-  Heading,
-  Hr,
-  Html,
-  Preview,
-  Row,
-  Section,
-  Text,
-} from "@react-email/components";
+  type DetailRow,
+  Details,
+  Quote,
+  TextLink,
+  Title,
+} from "./components/blocks";
+import { smsConsent } from "./components/format";
+import { EmailLayout, FooterText } from "./components/layout";
 
 type ContactFormEmailProps = {
   firstName: string;
@@ -25,7 +21,7 @@ type ContactFormEmailProps = {
   contactMethods?: string[];
 };
 
-const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
+export default function ContactFormEmail({
   firstName,
   lastName,
   email,
@@ -36,149 +32,59 @@ const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
   smsOptIn,
   smsOptOut,
   contactMethods = [],
-}) => (
-  <Html>
-    <Head />
-    <Preview>
-      New Contact Form Submission from {firstName} {lastName}
-    </Preview>
-    <Body style={main}>
-      <Container style={container}>
-        <Heading style={heading}>New Contact Form Submission</Heading>
-        <Text style={paragraph}>
-          You have received a new message from your website contact form.
-        </Text>
-        <Hr style={hr} />
+}: ContactFormEmailProps) {
+  const rows: DetailRow[] = [
+    {
+      label: "Email",
+      value: <TextLink href={`mailto:${email}`}>{email}</TextLink>,
+    },
+  ];
+  if (phone) {
+    rows.push({
+      label: "Phone",
+      value: <TextLink href={`tel:${phone}`}>{phone}</TextLink>,
+    });
+  }
+  rows.push(
+    {
+      label: "Location",
+      value:
+        (location === "Other" && otherLocation ? otherLocation : location) ||
+        "Not provided",
+    },
+    {
+      label: "Preferred contact",
+      value: contactMethods.join(", ") || "Not specified",
+    },
+    { label: "Text messages", value: smsConsent(smsOptIn, smsOptOut) }
+  );
+  return (
+    <EmailLayout
+      footer={
+        <FooterText>
+          Sent from the contact form on tayloredinstruction.com. Reply to answer{" "}
+          {firstName} directly.
+        </FooterText>
+      }
+      preview={message.slice(0, 120)}
+    >
+      <Title>
+        New message from {firstName} {lastName}
+      </Title>
+      <Quote>{message}</Quote>
+      <Details rows={rows} />
+    </EmailLayout>
+  );
+}
 
-        <Section style={section}>
-          <Row>
-            <Column style={labelColumn}>First Name:</Column>
-            <Column style={valueColumn}>{firstName}</Column>
-          </Row>
-          <Row>
-            <Column style={labelColumn}>Last Name:</Column>
-            <Column style={valueColumn}>{lastName}</Column>
-          </Row>
-          <Row>
-            <Column style={labelColumn}>Email:</Column>
-            <Column style={valueColumn}>{email}</Column>
-          </Row>
-          {phone && (
-            <Row>
-              <Column style={labelColumn}>Phone:</Column>
-              <Column style={valueColumn}>{phone}</Column>
-            </Row>
-          )}
-          <Row>
-            <Column style={labelColumn}>Location:</Column>
-            <Column style={valueColumn}>
-              {location === "Other" && otherLocation ? otherLocation : location}
-            </Column>
-          </Row>
-          <Row>
-            <Column style={labelColumn}>Message:</Column>
-          </Row>
-          <Row>
-            <Column style={messageValueColumn}>{message}</Column>
-          </Row>
-          <Row>
-            <Column style={labelColumn}>SMS Opt-In:</Column>
-            <Column style={valueColumn}>
-              {(() => {
-                if (smsOptIn) {
-                  return "Yes";
-                }
-                if (smsOptOut) {
-                  return "No (opted out)";
-                }
-                return "No";
-              })()}
-            </Column>
-          </Row>
-          <Row>
-            <Column style={labelColumn}>Preferred Contact Method(s):</Column>
-            <Column style={valueColumn}>
-              {contactMethods.join(", ") || "Not specified"}
-            </Column>
-          </Row>
-        </Section>
-
-        <Hr style={hr} />
-        <Text style={footer}>
-          This email was sent from the contact form on tayloredinstruction.com
-        </Text>
-      </Container>
-    </Body>
-  </Html>
-);
-
-export default ContactFormEmail;
-
-// Styles
-const main = {
-  backgroundColor: "#f6f9fc",
-  fontFamily:
-    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-  backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
-  border: "1px solid #f0f0f0",
-  borderRadius: "4px",
-};
-
-const heading = {
-  fontSize: "24px",
-  lineHeight: "1.3",
-  fontWeight: "700",
-  color: "#484848",
-  padding: "0 20px",
-};
-
-const paragraph = {
-  fontSize: "16px",
-  lineHeight: "1.4",
-  color: "#484848",
-  padding: "0 20px",
-};
-
-const section = {
-  padding: "0 20px",
-};
-
-const labelColumn = {
-  width: "150px",
-  verticalAlign: "top",
-  paddingBottom: "8px",
-  fontWeight: "600",
-  color: "#555",
-};
-
-const valueColumn = {
-  verticalAlign: "top",
-  paddingBottom: "8px",
-  color: "#333",
-};
-
-const messageValueColumn = {
-  paddingBottom: "8px",
-  color: "#333",
-  paddingLeft: "10px",
-  borderLeft: "2px solid #eee",
-  marginTop: "5px",
-};
-
-const hr = {
-  borderColor: "#e6ebf1",
-  margin: "20px 0",
-};
-
-const footer = {
-  color: "#8898aa",
-  fontSize: "12px",
-  lineHeight: "16px",
-  padding: "0 20px",
-};
+ContactFormEmail.PreviewProps = {
+  firstName: "Jordan",
+  lastName: "Reyes",
+  email: "jordan@example.com",
+  phone: "(360) 555-0142",
+  location: "Vancouver, WA",
+  message:
+    "Hi! We’re a dental office of 12 and need BLS renewal for everyone before March. Could you come on-site on a Saturday?",
+  smsOptIn: true,
+  contactMethods: ["Email", "Phone"],
+} satisfies ContactFormEmailProps;

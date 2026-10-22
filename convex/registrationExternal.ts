@@ -247,7 +247,6 @@ export const requestPortal = action({
       subject: "Your secure registration access",
       replyTo: SUPPORT_EMAIL,
       ...brandedEmail({
-        eyebrow: "Secure registration access",
         title: "Access your registrations",
         preview:
           "Access your registrations, class details, materials, and payment records. Link expires in 30 minutes.",
