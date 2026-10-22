@@ -7,7 +7,7 @@ import {
   Mail,
   MapPin,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import {
@@ -519,7 +519,15 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
       setBusy(false);
     }
   }
-  async function load(nextView: PortalView, nextCursor: string | null = null) {
+  /**
+   * Loads a portal view. `silent` is used for the first automatic attempt:
+   * a visitor without access just sees the request form, not an error.
+   */
+  async function load(
+    nextView: PortalView,
+    nextCursor: string | null = null,
+    silent = false
+  ) {
     setLoading(true);
     try {
       const response = await fetch(
@@ -527,12 +535,14 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
       );
       const data = await response.json();
       if (!response.ok) {
-        setMessage({
-          text:
-            data.error ??
-            "We couldn’t load your registrations. Request a new secure link.",
-          tone: "danger",
-        });
+        if (!silent) {
+          setMessage({
+            text:
+              data.error ??
+              "We couldn’t load your registrations. Request a new secure link.",
+            tone: "danger",
+          });
+        }
         return;
       }
       setRows(nextCursor ? [...rows, ...data.page] : data.page);
@@ -541,14 +551,25 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
       setMore(!data.isDone);
       setLoaded(true);
     } catch {
-      setMessage({
-        text: "We couldn’t reach the portal. Check your connection and try again.",
-        tone: "danger",
-      });
+      if (!silent) {
+        setMessage({
+          text: "We couldn’t reach the portal. Check your connection and try again.",
+          tone: "danger",
+        });
+      }
     } finally {
       setLoading(false);
     }
   }
+  // Signed-in users and devices that already confirmed a link go straight in.
+  const [probing, setProbing] = useState(!access);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
+  useEffect(() => {
+    if (access) {
+      return;
+    }
+    load("registrations", null, true).finally(() => setProbing(false));
+  }, []);
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -570,42 +591,22 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
           />
         ) : null}
         {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
-        {loaded ? null : (
-          <div className="grid gap-6 md:grid-cols-2">
+        {probing ? (
+          <div aria-busy="true" className="space-y-4" role="status">
+            <span className="sr-only">Checking your access…</span>
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-40" />
+            <Skeleton className="h-40" />
+          </div>
+        ) : null}
+        {probing || loaded || access ? null : (
+          <div className="mx-auto max-w-xl">
             <RequestAccessCard
               busy={busy}
               email={email}
               onEmail={setEmail}
               onSubmit={() => post({ email })}
             />
-            <Card>
-              <CardHeader>
-                <div>
-                  <CardTitle>Already have access?</CardTitle>
-                  <CardDescription>
-                    If you confirmed a link on this device or are signed in,
-                    open your registrations directly.
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-3">
-                <Button
-                  disabled={loading}
-                  onClick={() => load("registrations")}
-                  type="button"
-                >
-                  {loading ? "Loading…" : "My registrations"}
-                </Button>
-                <Button
-                  disabled={loading}
-                  onClick={() => load("orders")}
-                  type="button"
-                  variant="secondary"
-                >
-                  Orders I placed
-                </Button>
-              </CardContent>
-            </Card>
           </div>
         )}
         {loaded ? (
