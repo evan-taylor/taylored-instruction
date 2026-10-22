@@ -73,14 +73,11 @@ export function Modal({
       <div className="flex max-h-[85dvh] flex-col">
         <div className="flex items-start justify-between gap-4 border-slate-100 border-b px-6 py-4">
           <div>
-            <h2
-              className="m-0 font-semibold text-lg leading-tight"
-              id={titleId}
-            >
+            <h2 className="font-semibold text-lg leading-tight" id={titleId}>
               {title}
             </h2>
             {description ? (
-              <p className="m-0 mt-1 text-slate-500 text-sm">{description}</p>
+              <p className="mt-1 text-slate-500 text-sm">{description}</p>
             ) : null}
           </div>
           <button

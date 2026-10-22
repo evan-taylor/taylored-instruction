@@ -174,7 +174,7 @@ export default function AdminSeoContentPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-10">
+    <div className="prose-site container mx-auto max-w-6xl px-4 py-10">
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs">
         <h1 className="font-bold text-3xl">SEO Content Generator</h1>
         <p className="mt-3 text-slate-700">

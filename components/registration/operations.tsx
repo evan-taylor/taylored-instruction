@@ -199,7 +199,7 @@ export function AdjustmentChoice({
 }) {
   const name = useId();
   return (
-    <fieldset className="m-0 min-w-0 border-0 p-0">
+    <fieldset className="min-w-0 border-0 p-0">
       <legend className="mb-1.5 block font-medium text-slate-700 text-sm">
         Price difference
       </legend>
@@ -465,7 +465,7 @@ export function ManualEnrollment() {
       </div>
       {config?.questions.length ? (
         <div className="space-y-4 rounded-lg border border-slate-200 p-4">
-          <p className="m-0 font-medium text-slate-700 text-sm">
+          <p className="font-medium text-slate-700 text-sm">
             Registration questions
           </p>
           {config.questions.map((q) => (
@@ -630,7 +630,7 @@ function SeatMaterials({ seat }: { seat: Seat }) {
   return (
     <section className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h4 className="m-0 font-semibold text-slate-900 text-sm">
+        <h4 className="font-semibold text-slate-900 text-sm">
           Delivered materials
         </h4>
         <Button
@@ -650,12 +650,12 @@ function SeatMaterials({ seat }: { seat: Seat }) {
       </div>
       {materials === undefined ? <Skeleton className="h-12" /> : null}
       {materials?.length === 0 ? (
-        <p className="m-0 text-slate-500 text-sm">
+        <p className="text-slate-500 text-sm">
           No materials are attached to this registration.
         </p>
       ) : null}
       {materials?.length ? (
-        <ul className="m-0 list-none divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white p-0">
+        <ul className="list-none divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white p-0">
           {materials.map((material) => (
             <MaterialRow key={material._id} material={material} />
           ))}
@@ -683,7 +683,7 @@ function SeatActions({ seat }: { seat: Seat }) {
   const cancelable = seat.state === "held" || seat.state === "active";
   return (
     <section className="space-y-3">
-      <h4 className="m-0 font-semibold text-slate-900 text-sm">Registration</h4>
+      <h4 className="font-semibold text-slate-900 text-sm">Registration</h4>
       <div className="flex flex-wrap gap-2">
         <Button
           onClick={() => setDialog("override")}
@@ -780,12 +780,12 @@ function TransferPreview({
   }
   const tone = preview.difference > 0 ? "text-amber-700" : "text-slate-900";
   return (
-    <dl className="m-0 grid grid-cols-3 gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-200 ring-inset">
+    <dl className="grid grid-cols-3 gap-3 rounded-lg bg-white p-3 ring-1 ring-slate-200 ring-inset">
       <div>
         <dt className="text-slate-500 text-xs uppercase tracking-wide">
           Original
         </dt>
-        <dd className="m-0 text-sm">
+        <dd className="text-sm">
           <Money cents={preview.original} />
         </dd>
       </div>
@@ -793,7 +793,7 @@ function TransferPreview({
         <dt className="text-slate-500 text-xs uppercase tracking-wide">
           Destination
         </dt>
-        <dd className="m-0 text-sm">
+        <dd className="text-sm">
           <Money cents={preview.destination} />
         </dd>
       </div>
@@ -801,7 +801,7 @@ function TransferPreview({
         <dt className="text-slate-500 text-xs uppercase tracking-wide">
           Difference
         </dt>
-        <dd className={cn("m-0 font-medium text-sm", tone)}>
+        <dd className={cn("font-medium text-sm", tone)}>
           {preview.difference > 0 ? "+" : ""}
           <Money cents={preview.difference} />
         </dd>
@@ -830,9 +830,9 @@ function TransferSeat({ seat }: { seat: Seat }) {
     : null;
   return (
     <section className="space-y-3">
-      <h4 className="m-0 font-semibold text-slate-900 text-sm">Transfer</h4>
+      <h4 className="font-semibold text-slate-900 text-sm">Transfer</h4>
       {eligible ? null : (
-        <p className="m-0 text-slate-500 text-sm">
+        <p className="text-slate-500 text-sm">
           Only paid, active registrations can be transferred.
         </p>
       )}
@@ -961,7 +961,7 @@ function RequestPayment({ order }: { order: Order }) {
       >
         {busy ? "Sending…" : "Request payment"}
       </Button>
-      <p className="m-0 text-slate-500 text-xs">
+      <p className="text-slate-500 text-xs">
         Emails {order.purchaser} a secure payment link for this entire order (
         {order.seats.length} attendee{order.seats.length === 1 ? "" : "s"}).
         They enter their billing address at checkout. No invoice is required.
@@ -1075,7 +1075,7 @@ function RefundForm({ order }: { order: Order }) {
         </Button>
       </div>
       {order.refundReserved > 0 ? (
-        <p className="m-0 text-slate-500 text-xs">
+        <p className="text-slate-500 text-xs">
           <Money cents={order.refundReserved} /> is reserved by refunds awaiting
           Stripe confirmation.
         </p>
@@ -1151,7 +1151,7 @@ export function OrderPayments({ order }: { order: Order }) {
   const coupon = Boolean(order.couponId) && order.status === "settled";
   if (!(unpaid || refundableCard || coupon)) {
     return (
-      <p className="m-0 text-slate-500 text-sm">
+      <p className="text-slate-500 text-sm">
         No payment actions are available while this order is{" "}
         <StatusBadge status={order.status} />.
       </p>
@@ -1232,7 +1232,7 @@ export function OrderInvoices({ order }: { order: Order }) {
           </TBody>
         </Table>
       ) : (
-        <p className="m-0 text-slate-500 text-sm">
+        <p className="text-slate-500 text-sm">
           No invoices have been issued for this order.
         </p>
       )}

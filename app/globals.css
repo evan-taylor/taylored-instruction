@@ -36,19 +36,24 @@
     text-wrap: pretty;
   }
 
-  h1 {
+  /*
+   * Editorial defaults for long-form marketing copy only. Product screens lay
+   * out with gap/space utilities and must not inherit margins; otherwise every
+   * paragraph needs an m-0, which also cancels space-y spacing in Tailwind v4.
+   */
+  .prose-site h1 {
     @apply text-3xl lg:text-4xl mb-6;
   }
 
-  h2 {
+  .prose-site h2 {
     @apply text-2xl lg:text-3xl mb-4;
   }
 
-  h3 {
+  .prose-site h3 {
     @apply text-xl lg:text-2xl mb-3;
   }
 
-  p {
+  .prose-site p {
     @apply mb-4;
   }
 }

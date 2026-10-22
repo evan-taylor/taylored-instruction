@@ -29,15 +29,15 @@ export function PageHeader({
     >
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="m-0 mb-1 font-medium text-primary text-xs uppercase tracking-wide">
+          <p className="mb-1 font-medium text-primary text-xs uppercase tracking-wide">
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="m-0 font-bold text-2xl text-slate-900 leading-tight lg:text-3xl">
+        <h1 className="font-bold text-2xl text-slate-900 leading-tight lg:text-3xl">
           {title}
         </h1>
         {description ? (
-          <p className="m-0 mt-1.5 max-w-2xl text-slate-500 text-sm">
+          <p className="mt-1.5 max-w-2xl text-slate-500 text-sm">
             {description}
           </p>
         ) : null}
@@ -70,11 +70,9 @@ export function EmptyState({
       )}
     >
       {icon ? <div className="mb-3 text-slate-400">{icon}</div> : null}
-      <p className="m-0 font-semibold text-slate-800">{title}</p>
+      <p className="font-semibold text-slate-800">{title}</p>
       {description ? (
-        <p className="m-0 mt-1 max-w-sm text-slate-500 text-sm">
-          {description}
-        </p>
+        <p className="mt-1 max-w-sm text-slate-500 text-sm">{description}</p>
       ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
@@ -161,7 +159,7 @@ export function DescriptionList({
           <dt className="text-slate-500 text-xs uppercase tracking-wide">
             {item.label}
           </dt>
-          <dd className="m-0 mt-0.5 text-slate-900 text-sm">{item.value}</dd>
+          <dd className="mt-0.5 text-slate-900 text-sm">{item.value}</dd>
         </div>
       ))}
     </dl>

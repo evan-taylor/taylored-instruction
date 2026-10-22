@@ -25,7 +25,7 @@ export function ConfirmDialog({
       open={isOpen}
       title="Reject and delete this user?"
     >
-      <p className="m-0 text-slate-700 text-sm">
+      <p className="text-slate-700 text-sm">
         <strong>{userEmail || userId}</strong> will lose access immediately.
       </p>
     </Confirm>

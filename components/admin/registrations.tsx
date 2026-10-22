@@ -110,7 +110,7 @@ function AttendeesTable({ order }: { order: Order }) {
   }
   if (seats.length === 0) {
     return (
-      <p className="m-0 text-slate-500 text-sm">
+      <p className="text-slate-500 text-sm">
         No seats have been created for this order yet.
       </p>
     );
@@ -191,9 +191,9 @@ function Section({
   return (
     <section className="space-y-3">
       <div>
-        <h3 className="m-0 font-semibold text-base text-slate-900">{title}</h3>
+        <h3 className="font-semibold text-base text-slate-900">{title}</h3>
         {description ? (
-          <p className="m-0 text-slate-500 text-sm">{description}</p>
+          <p className="text-slate-500 text-sm">{description}</p>
         ) : null}
       </div>
       {children}

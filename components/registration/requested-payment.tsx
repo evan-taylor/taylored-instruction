@@ -49,10 +49,10 @@ export function RequestedPayment() {
     <div className="bg-slate-50">
       <div className="mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-6 lg:py-16">
         <div>
-          <p className="m-0 font-medium text-primary text-xs uppercase tracking-wide">
+          <p className="font-medium text-primary text-xs uppercase tracking-wide">
             Taylored Instruction
           </p>
-          <h1 className="m-0 mt-2 font-bold text-3xl text-slate-900">
+          <h1 className="mt-2 font-bold text-3xl text-slate-900">
             Complete your training payment
           </h1>
         </div>
@@ -67,7 +67,7 @@ export function RequestedPayment() {
             <CardContent className="space-y-3">
               {quote.seats.map((seat) => (
                 <div className="text-sm" key={seat.email}>
-                  <p className="m-0 font-medium text-slate-900">{seat.name}</p>
+                  <p className="font-medium text-slate-900">{seat.name}</p>
                   {seat.lines.map((line) => (
                     <div
                       className="flex items-center justify-between gap-3 text-slate-600"
@@ -106,7 +106,7 @@ export function RequestedPayment() {
         ) : (
           <Card>
             <CardContent className="space-y-4">
-              <p className="m-0 text-slate-600">
+              <p className="text-slate-600">
                 Your seats are reserved for {CHECKOUT_HOLD_MINUTES} minutes once
                 you continue. Sales tax is calculated from your billing address
                 before you pay, and we’ll email your confirmation when payment
@@ -120,7 +120,7 @@ export function RequestedPayment() {
               >
                 {busy ? "Reserving seats…" : "Continue to payment"}
               </Button>
-              <p className="m-0 text-slate-500 text-sm">
+              <p className="text-slate-500 text-sm">
                 Already paid or need help? Reply to your payment request email
                 before paying again.
               </p>

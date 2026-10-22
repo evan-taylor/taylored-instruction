@@ -26,7 +26,7 @@ type QuickLink = { label: string; href: string };
 
 function LinkList({ links }: { links: QuickLink[] }) {
   return (
-    <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+    <ul className="list-none divide-y divide-slate-100 p-0">
       {links.map((link) => (
         <li key={link.href}>
           <a
@@ -143,7 +143,7 @@ export default function MyAccountPage() {
           </CardContent>
           {!isInstructor && profile ? (
             <CardFooter>
-              <p className="m-0 text-slate-600 text-sm">
+              <p className="text-slate-600 text-sm">
                 An administrator reviews new instructor accounts. You’ll get
                 access to instructor tools once approved.
               </p>

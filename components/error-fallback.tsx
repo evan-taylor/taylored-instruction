@@ -16,13 +16,13 @@ export function ErrorFallback({
   }, [error]);
   return (
     <div className="mx-auto max-w-lg px-4 py-20 text-center sm:px-6">
-      <p className="m-0 font-medium text-primary text-xs uppercase tracking-wide">
+      <p className="font-medium text-primary text-xs uppercase tracking-wide">
         Something went wrong
       </p>
-      <h1 className="m-0 mt-2 font-bold text-2xl text-slate-900 lg:text-3xl">
+      <h1 className="mt-2 font-bold text-2xl text-slate-900 lg:text-3xl">
         This page didn’t load
       </h1>
-      <p className="m-0 mt-3 text-slate-600">
+      <p className="mt-3 text-slate-600">
         The problem has been reported. Try again, or contact us if it keeps
         happening.
       </p>

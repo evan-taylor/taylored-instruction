@@ -57,8 +57,8 @@ function SectionHeading({
   return (
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
-        <h3 className="m-0 font-semibold text-base text-slate-900">{title}</h3>
-        <p className="m-0 mt-0.5 text-slate-500 text-sm">{description}</p>
+        <h3 className="font-semibold text-base text-slate-900">{title}</h3>
+        <p className="mt-0.5 text-slate-500 text-sm">{description}</p>
       </div>
       {action}
     </div>
@@ -604,7 +604,7 @@ function OutcomeCard({
         label="Required for completion"
         onChange={(required) => bump({ required })}
       />
-      <p className="m-0 text-slate-500 text-xs">
+      <p className="text-slate-500 text-xs">
         Rule version {outcome.version}. Grading changes start a new version.
       </p>
     </div>
@@ -849,8 +849,8 @@ function EmailsSection({ value, onChange }: SectionProps) {
         title="Email steps"
       />
       <Notice tone="info">
-        <p className="m-0 font-medium">Merge fields</p>
-        <ul className="m-0 mt-2 flex list-none flex-wrap gap-2 p-0">
+        <p className="font-medium">Merge fields</p>
+        <ul className="mt-2 flex list-none flex-wrap gap-2 p-0">
           {MERGE_FIELDS.map((f) => (
             <li key={f.key}>
               <Badge title={f.help} tone="info">

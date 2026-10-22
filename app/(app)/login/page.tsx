@@ -182,7 +182,7 @@ export default function LoginPage() {
         <Card className="w-full">
           <CardHeader>
             <div>
-              <h1 className="m-0 font-bold text-slate-900 text-xl leading-tight lg:text-2xl">
+              <h1 className="font-bold text-slate-900 text-xl leading-tight lg:text-2xl">
                 Sign in
               </h1>
               <CardDescription>
@@ -316,7 +316,7 @@ export default function LoginPage() {
                     {isLoading ? "Verifying…" : "Sign in"}
                   </Button>
                 </form>
-                <p className="m-0 text-center text-slate-600 text-sm">
+                <p className="text-center text-slate-600 text-sm">
                   Didn’t get it?{" "}
                   <button
                     className="font-medium text-primary underline-offset-2 hover:underline disabled:opacity-50"
@@ -329,7 +329,7 @@ export default function LoginPage() {
                 </p>
               </>
             )}
-            <p className="m-0 text-center text-slate-500 text-xs">
+            <p className="text-center text-slate-500 text-xs">
               New instructors need approval before instructor features unlock.
             </p>
           </CardContent>

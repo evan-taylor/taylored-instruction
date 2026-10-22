@@ -13,23 +13,23 @@ function HistoryTimeline({ rows }: { rows: HistoryRow[] | undefined }) {
   }
   if (rows.length === 0) {
     return (
-      <p className="m-0 text-slate-500 text-xs">No assignments recorded yet.</p>
+      <p className="text-slate-500 text-xs">No assignments recorded yet.</p>
     );
   }
   return (
-    <ol className="relative m-0 ml-1.5 list-none space-y-3 border-slate-200 border-l p-0 pl-4">
+    <ol className="relative ml-1.5 list-none space-y-3 border-slate-200 border-l p-0 pl-4">
       {rows.map((row) => (
         <li className="relative" key={`${row.at}:${row.url}`}>
           <span
             aria-hidden="true"
             className="absolute top-1.5 -left-[21px] h-2.5 w-2.5 rounded-full bg-primary ring-2 ring-white"
           />
-          <p className="m-0 text-slate-500 text-xs tabular-nums">
+          <p className="text-slate-500 text-xs tabular-nums">
             {formatDateTime(row.at)}
           </p>
-          <p className="m-0 text-slate-800 text-sm">{row.reason}</p>
+          <p className="text-slate-800 text-sm">{row.reason}</p>
           <p
-            className="m-0 max-w-xs truncate font-mono text-slate-500 text-xs"
+            className="max-w-xs truncate font-mono text-slate-500 text-xs"
             title={row.url}
           >
             {row.url}

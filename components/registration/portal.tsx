@@ -90,7 +90,7 @@ function MaterialList({
   return (
     <>
       {materials.length ? (
-        <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+        <ul className="list-none divide-y divide-slate-100 p-0">
           {materials.map((m) => (
             <MaterialRow
               key={m.id}
@@ -102,7 +102,7 @@ function MaterialList({
           ))}
         </ul>
       ) : (
-        <p className="m-0 text-slate-500 text-sm">
+        <p className="text-slate-500 text-sm">
           No materials are available for this registration yet.
         </p>
       )}
@@ -201,14 +201,14 @@ function MeetingRow({
     : `${formatTime(meeting.start, timeZone)}`;
   return (
     <li className="space-y-1 py-2 text-sm">
-      <p className="m-0 flex items-start gap-2 text-slate-900">
+      <p className="flex items-start gap-2 text-slate-900">
         <CalendarDays
           aria-hidden="true"
           className="mt-0.5 h-4 w-4 shrink-0 text-primary"
         />
         {when} {timeZone ? shortZone(timeZone, meeting.start) : ""}
       </p>
-      <p className="m-0 flex items-start gap-2 text-slate-600">
+      <p className="flex items-start gap-2 text-slate-600">
         <MapPin
           aria-hidden="true"
           className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
@@ -216,7 +216,7 @@ function MeetingRow({
         {meeting.location || "Online"}
       </p>
       {meeting.instructions ? (
-        <p className="m-0 whitespace-pre-line rounded-md bg-slate-50 px-3 py-2 text-slate-700 text-xs">
+        <p className="whitespace-pre-line rounded-md bg-slate-50 px-3 py-2 text-slate-700 text-xs">
           {meeting.instructions}
         </p>
       ) : null}
@@ -251,10 +251,10 @@ function RegistrationCard({
       <CardContent className="space-y-5">
         {row.meetings?.length ? (
           <section>
-            <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+            <h3 className="mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
               Schedule and joining info
             </h3>
-            <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+            <ul className="list-none divide-y divide-slate-100 p-0">
               {row.meetings.map((m) => (
                 <MeetingRow key={m.id} meeting={m} timeZone={row.timeZone} />
               ))}
@@ -269,7 +269,7 @@ function RegistrationCard({
           </section>
         ) : null}
         <section>
-          <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+          <h3 className="mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
             Materials
           </h3>
           <MaterialList onMessage={onMessage} row={row} />
@@ -287,12 +287,12 @@ function OrderCard({ row }: { row: PortalRow }) {
         {row.status ? <StatusBadge status={row.status} /> : null}
       </CardHeader>
       <CardContent className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
-        <dl className="m-0 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:block sm:space-y-2">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:block sm:space-y-2">
           <div>
             <dt className="text-slate-500 text-xs uppercase tracking-wide">
               Subtotal before tax
             </dt>
-            <dd className="m-0 font-semibold text-slate-900 tabular-nums">
+            <dd className="font-semibold text-slate-900 tabular-nums">
               {formatMoney(row.total ?? 0)}
             </dd>
           </div>
@@ -300,7 +300,7 @@ function OrderCard({ row }: { row: PortalRow }) {
             <dt className="text-slate-500 text-xs uppercase tracking-wide">
               Refunded
             </dt>
-            <dd className="m-0 text-slate-900 tabular-nums">
+            <dd className="text-slate-900 tabular-nums">
               {formatMoney(row.refunded ?? 0)}
             </dd>
           </div>
@@ -310,7 +310,7 @@ function OrderCard({ row }: { row: PortalRow }) {
                 <dt className="text-slate-500 text-xs uppercase tracking-wide">
                   Sales tax
                 </dt>
-                <dd className="m-0 text-slate-900 tabular-nums">
+                <dd className="text-slate-900 tabular-nums">
                   {formatMoney(row.tax)}
                 </dd>
               </div>
@@ -318,7 +318,7 @@ function OrderCard({ row }: { row: PortalRow }) {
                 <dt className="text-slate-500 text-xs uppercase tracking-wide">
                   Total charged
                 </dt>
-                <dd className="m-0 font-semibold text-slate-900 tabular-nums">
+                <dd className="font-semibold text-slate-900 tabular-nums">
                   {formatMoney((row.total ?? 0) + row.tax)}
                 </dd>
               </div>
@@ -326,10 +326,10 @@ function OrderCard({ row }: { row: PortalRow }) {
           )}
         </dl>
         <div>
-          <h3 className="m-0 mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+          <h3 className="mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
             Attendees
           </h3>
-          <ul className="m-0 list-none space-y-1 p-0 text-sm">
+          <ul className="list-none space-y-1 p-0 text-sm">
             {row.attendees?.map((a) => (
               <li className="text-slate-800" key={a.email}>
                 {a.name} <span className="text-slate-500">· {a.email}</span>
@@ -357,10 +357,10 @@ function AccessCard({
             <KeyRound aria-hidden="true" className="h-5 w-5" />
           </span>
           <div>
-            <p className="m-0 font-semibold text-slate-900">
+            <p className="font-semibold text-slate-900">
               Confirm access to your registrations
             </p>
-            <p className="m-0 mt-0.5 text-slate-600 text-sm">
+            <p className="mt-0.5 text-slate-600 text-sm">
               Opening this page does not consume your email link. Confirm below
               to unlock your registrations on this device for 24 hours.
             </p>
@@ -667,7 +667,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
             ) : null}
           </>
         ) : null}
-        <p className="m-0 text-center text-slate-500 text-sm">
+        <p className="text-center text-slate-500 text-sm">
           For cancellations or changes, please{" "}
           <a
             className="font-medium text-primary underline-offset-2 hover:underline"

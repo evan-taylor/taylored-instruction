@@ -159,7 +159,7 @@ function RetireDialog({
       title="Retire this code?"
     >
       {code ? (
-        <p className="m-0 mb-4 break-all font-mono text-slate-600 text-xs">
+        <p className="mb-4 break-all font-mono text-slate-600 text-xs">
           {code.url}
         </p>
       ) : null}
@@ -223,7 +223,7 @@ function AssignDialog({
     >
       <div className="space-y-4">
         {code ? (
-          <p className="m-0 break-all font-mono text-slate-600 text-xs">
+          <p className="break-all font-mono text-slate-600 text-xs">
             {code.url}
           </p>
         ) : null}
@@ -316,16 +316,16 @@ function AssignNextDialog({
     >
       <div className="space-y-4">
         {entitlement ? (
-          <p className="m-0 text-slate-600 text-sm">
+          <p className="text-slate-600 text-sm">
             {entitlement.title} · paid {formatDateTime(entitlement.paidAt)}
           </p>
         ) : null}
         {nextCode ? (
-          <p className="m-0 break-all font-mono text-slate-600 text-xs">
+          <p className="break-all font-mono text-slate-600 text-xs">
             {nextCode.url}
           </p>
         ) : (
-          <p className="m-0 text-rose-700 text-sm">
+          <p className="text-rose-700 text-sm">
             No available code is loaded. Restock this inventory or load more
             codes first.
           </p>
@@ -699,7 +699,7 @@ export function InventoryManager({
           status={missing.status}
         />
       </TabPanel>
-      <p className="m-0 px-5 pb-4 text-slate-500 text-xs">
+      <p className="px-5 pb-4 text-slate-500 text-xs">
         Showing {pluralize(loaded, "loaded code")}
         {exhausted ? "" : " · load more to search older codes"}
       </p>

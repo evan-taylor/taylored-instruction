@@ -74,7 +74,7 @@ function DayCell({
       >
         {day}
       </span>
-      <ul className="m-0 mt-1 list-none space-y-1 p-0">
+      <ul className="mt-1 list-none space-y-1 p-0">
         {sessions.map((s) => (
           <li key={s.code}>
             <Link
@@ -127,7 +127,7 @@ export function SessionCalendar({ sessions }: { sessions: CalendarSession[] }) {
         <NavButton label="Previous month" onClick={() => setOffset(offset - 1)}>
           <ChevronLeft aria-hidden="true" className="h-4 w-4" />
         </NavButton>
-        <h2 className="m-0 font-semibold text-base text-slate-900">
+        <h2 className="font-semibold text-base text-slate-900">
           {month.toLocaleString("en-US", { month: "long", year: "numeric" })}
         </h2>
         <NavButton label="Next month" onClick={() => setOffset(offset + 1)}>
@@ -137,7 +137,7 @@ export function SessionCalendar({ sessions }: { sessions: CalendarSession[] }) {
       <div className="grid grid-cols-7 border-slate-200 border-t bg-slate-50 text-center">
         {WEEKDAYS.map((day) => (
           <p
-            className="m-0 py-2 font-medium text-slate-500 text-xs uppercase tracking-wide"
+            className="py-2 font-medium text-slate-500 text-xs uppercase tracking-wide"
             key={day}
           >
             {day}
@@ -165,7 +165,7 @@ export function SessionCalendar({ sessions }: { sessions: CalendarSession[] }) {
           );
         })}
       </div>
-      <p className="m-0 px-4 py-3 text-slate-500 text-xs">
+      <p className="px-4 py-3 text-slate-500 text-xs">
         Dates use each class’s local time zone. Load more classes below to
         include additional results.
       </p>

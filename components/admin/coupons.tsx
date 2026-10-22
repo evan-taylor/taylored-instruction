@@ -96,7 +96,7 @@ function UsesCell({ coupon }: { coupon: Coupon }) {
         max={coupon.limit}
         value={used}
       />
-      <p className="m-0 text-slate-500 text-xs tabular-nums">
+      <p className="text-slate-500 text-xs tabular-nums">
         {coupon.consumed} used · {coupon.reserved} reserved · {coupon.limit} max
       </p>
     </div>
@@ -293,7 +293,7 @@ function RadioGroup({
   children: React.ReactNode;
 }) {
   return (
-    <fieldset className="m-0 min-w-0 border-0 p-0">
+    <fieldset className="min-w-0 border-0 p-0">
       <legend className="mb-2 block font-medium text-slate-700 text-sm">
         {legend}
       </legend>
@@ -318,17 +318,15 @@ function Checklist<T extends string>({
   footer?: React.ReactNode;
 }) {
   return (
-    <fieldset className="m-0 min-w-0 border-0 p-0">
+    <fieldset className="min-w-0 border-0 p-0">
       <legend className="mb-1 block font-medium text-slate-700 text-sm">
         {legend}
       </legend>
-      <p className="m-0 mb-2 text-slate-500 text-xs">{hint}</p>
+      <p className="mb-2 text-slate-500 text-xs">{hint}</p>
       <div className="max-h-48 space-y-2 overflow-y-auto rounded-md border border-slate-200 p-3">
         {items === undefined ? <Skeleton className="h-8 w-full" /> : null}
         {items?.length === 0 ? (
-          <p className="m-0 text-slate-500 text-xs">
-            Nothing to choose from yet.
-          </p>
+          <p className="text-slate-500 text-xs">Nothing to choose from yet.</p>
         ) : null}
         {items?.map((item) => (
           <Toggle

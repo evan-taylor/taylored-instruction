@@ -252,7 +252,7 @@ export function AdminDashboard() {
                 All clear. Nothing is waiting on you.
               </div>
             ) : (
-              <ul className="m-0 list-none space-y-0.5 p-0">
+              <ul className="list-none space-y-0.5 p-0">
                 <AttentionRow
                   count={summary.paymentExceptions}
                   href="/admin/registration-activity"
@@ -291,14 +291,14 @@ export function AdminDashboard() {
             )}
             {summary.lowStock.length ? (
               <div className="mt-2 border-slate-100 border-t px-3 pt-3">
-                <p className="m-0 mb-1 flex items-center gap-1.5 font-medium text-slate-600 text-xs">
+                <p className="mb-1 flex items-center gap-1.5 font-medium text-slate-600 text-xs">
                   <AlertTriangle
                     aria-hidden="true"
                     className="h-3.5 w-3.5 text-amber-600"
                   />
                   Low stock
                 </p>
-                <ul className="m-0 list-none space-y-1 p-0 text-sm">
+                <ul className="list-none space-y-1 p-0 text-sm">
                   {summary.lowStock.map((m) => (
                     <li className="flex justify-between gap-2" key={m.id}>
                       <span className="truncate text-slate-800">{m.title}</span>
@@ -396,7 +396,7 @@ export function AdminDashboard() {
             </Button>
           </CardHeader>
           <CardContent className="p-0">
-            <ul className="m-0 list-none divide-y divide-slate-100 p-0">
+            <ul className="list-none divide-y divide-slate-100 p-0">
               {summary.recentActivity.map((row) => (
                 <li className="px-5 py-3" key={row._id}>
                   <div className="flex items-center justify-between gap-2">
@@ -407,7 +407,7 @@ export function AdminDashboard() {
                       {formatRelative(row.at)}
                     </span>
                   </div>
-                  <p className="m-0 mt-0.5 truncate text-slate-500 text-xs">
+                  <p className="mt-0.5 truncate text-slate-500 text-xs">
                     {row.detail}
                   </p>
                 </li>

@@ -53,12 +53,12 @@ export function Field({
         "aria-invalid": error ? true : undefined,
       })}
       {hint ? (
-        <p className="m-0 text-slate-500 text-xs" id={hintId}>
+        <p className="text-slate-500 text-xs" id={hintId}>
           {hint}
         </p>
       ) : null}
       {error ? (
-        <p className="m-0 text-rose-700 text-xs" id={errorId} role="alert">
+        <p className="text-rose-700 text-xs" id={errorId} role="alert">
           {error}
         </p>
       ) : null}

@@ -205,19 +205,19 @@ function SessionCard({ session }: { session: DiscoveredSession }) {
       <CardContent className="flex grow gap-4 p-5">
         <DateBlock start={session.firstStart} timeZone={session.timeZone} />
         <div className="min-w-0 flex-1 space-y-1.5">
-          <h2 className="m-0 font-semibold text-lg text-slate-900 leading-snug">
+          <h2 className="font-semibold text-lg text-slate-900 leading-snug">
             <Link className="hover:text-primary" href={href}>
               {session.title}
             </Link>
           </h2>
-          <p className="m-0 flex items-start gap-1.5 text-slate-600 text-sm">
+          <p className="flex items-start gap-1.5 text-slate-600 text-sm">
             <CalendarDays
               aria-hidden="true"
               className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
             />
             {meetingsSummary(session)}
           </p>
-          <p className="m-0 flex items-start gap-1.5 text-slate-600 text-sm">
+          <p className="flex items-start gap-1.5 text-slate-600 text-sm">
             <MapPin
               aria-hidden="true"
               className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
@@ -228,7 +228,7 @@ function SessionCard({ session }: { session: DiscoveredSession }) {
       </CardContent>
       <CardFooter className="justify-between">
         <div className="space-y-1">
-          <p className="m-0 font-semibold text-slate-900">
+          <p className="font-semibold text-slate-900">
             {`${formatMoney(basePrice(session.config))} per attendee`}
           </p>
           <SeatsBadge available={session.available} />
@@ -343,10 +343,10 @@ function SelfPacedSection({
   return (
     <section className="space-y-4">
       <div>
-        <h2 className="m-0 font-bold text-2xl text-slate-900">
+        <h2 className="font-bold text-2xl text-slate-900">
           Self-paced courses
         </h2>
-        <p className="m-0 mt-1 text-slate-500 text-sm">
+        <p className="mt-1 text-slate-500 text-sm">
           Online coursework you can start today and finish on your schedule.
         </p>
       </div>
@@ -356,7 +356,7 @@ function SelfPacedSection({
             <CardContent className="flex grow gap-4 p-5">
               <DateBlock />
               <div className="min-w-0 flex-1 space-y-1.5">
-                <h3 className="m-0 font-semibold text-lg text-slate-900 leading-snug">
+                <h3 className="font-semibold text-lg text-slate-900 leading-snug">
                   <Link
                     className="hover:text-primary"
                     href={`/courses/${c.slug}`}
@@ -368,7 +368,7 @@ function SelfPacedSection({
               </div>
             </CardContent>
             <CardFooter className="justify-between">
-              <p className="m-0 font-semibold text-slate-900">
+              <p className="font-semibold text-slate-900">
                 {`${formatMoney(c.tuition)} per learner`}
               </p>
               <Button href={`/courses/${c.slug}`} size="sm" variant="secondary">
@@ -393,10 +393,10 @@ function TeamTrainingCard() {
     <Card>
       <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
-          <h2 className="m-0 font-bold text-slate-900 text-xl">
+          <h2 className="font-bold text-slate-900 text-xl">
             Training for your team?
           </h2>
-          <p className="m-0 max-w-xl text-slate-600 text-sm">
+          <p className="max-w-xl text-slate-600 text-sm">
             {TEAM_BENEFITS.join(". ")}.
           </p>
         </div>
@@ -501,13 +501,13 @@ export function ClassDiscovery() {
     <div className="bg-slate-50">
       <section className="bg-primary text-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
-          <p className="m-0 mb-2 font-medium text-white/80 text-xs uppercase tracking-wide">
+          <p className="mb-2 font-medium text-white/80 text-xs uppercase tracking-wide">
             Classes
           </p>
-          <h1 className="m-0 font-bold text-3xl leading-tight sm:text-4xl lg:text-5xl">
+          <h1 className="font-bold text-3xl leading-tight sm:text-4xl lg:text-5xl">
             Find your next class
           </h1>
-          <p className="m-0 mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
+          <p className="mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
             See every date, location, and the full price before you register. No
             account required.
           </p>
@@ -555,13 +555,13 @@ export function ClassDiscovery() {
           </div>
         ) : null}
         {status === "LoadingMore" ? (
-          <p className="m-0 text-center text-slate-500 text-sm" role="status">
+          <p className="text-center text-slate-500 text-sm" role="status">
             Loading more classes…
           </p>
         ) : null}
         <SelfPacedSection courses={selfPaced} />
         <TeamTrainingCard />
-        <p className="m-0 text-center text-slate-600 text-sm">
+        <p className="text-center text-slate-600 text-sm">
           Already registered?{" "}
           <Link
             className="font-medium text-primary underline-offset-2 hover:underline"
@@ -861,7 +861,7 @@ function QuestionField({
           onChange={answer}
           required={question.required}
         />
-        {hint ? <p className="m-0 pl-7 text-xs">{hint}</p> : null}
+        {hint ? <p className="pl-7 text-xs">{hint}</p> : null}
       </div>
     );
   }
@@ -965,7 +965,7 @@ function AttendeeCard({
 }) {
   return (
     <Card>
-      <fieldset className="m-0 min-w-0 border-0 p-0" disabled={disabled}>
+      <fieldset className="min-w-0 border-0 p-0" disabled={disabled}>
         <legend className="sr-only">Attendee {index + 1}</legend>
         <CardHeader className="sm:items-center">
           <CardTitle>Attendee {index + 1}</CardTitle>
@@ -1082,7 +1082,7 @@ function PurchaserCard({
   const disabled = form.busy || form.review !== null;
   return (
     <Card>
-      <fieldset className="m-0 min-w-0 border-0 p-0" disabled={disabled}>
+      <fieldset className="min-w-0 border-0 p-0" disabled={disabled}>
         <legend className="sr-only">
           {form.registeringSelf ? "Your details" : "Purchaser details"}
         </legend>
@@ -1249,7 +1249,7 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
       ) : null}
       {quoteResult?.seats.map((seat) => (
         <div className="space-y-1 text-sm" key={seat.email}>
-          <p className="m-0 font-medium text-slate-900">{seat.name}</p>
+          <p className="font-medium text-slate-900">{seat.name}</p>
           {seat.lines.map((line) => (
             <div
               className="flex items-center justify-between gap-3 text-slate-600"
@@ -1280,7 +1280,7 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
           {formatMoney(quoteResult?.total ?? review.total)}
         </span>
       </div>
-      <p className="m-0 text-slate-500 text-xs">
+      <p className="text-slate-500 text-xs">
         Sales tax is added once you enter a billing address.
       </p>
     </div>
@@ -1308,10 +1308,8 @@ function WaitlistAction({
   }
   return (
     <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
-      <p className="m-0 font-medium text-amber-900 text-sm">
-        This class is full
-      </p>
-      <p className="m-0 text-amber-900/80 text-xs">
+      <p className="font-medium text-amber-900 text-sm">This class is full</p>
+      <p className="text-amber-900/80 text-xs">
         Join the waitlist with your purchaser details and we’ll email you if a
         seat opens. No payment is required.
       </p>
@@ -1337,7 +1335,7 @@ function WaitlistAction({
         {busy ? "Joining…" : "Join the waitlist"}
       </Button>
       {ready ? null : (
-        <p className="m-0 text-amber-900/80 text-xs">
+        <p className="text-amber-900/80 text-xs">
           Enter your name and email above first.
         </p>
       )}
@@ -1375,7 +1373,7 @@ function OrderSummary({
         ) : (
           <>
             {form.attendees.length ? (
-              <ul className="m-0 list-none space-y-2 p-0 text-sm">
+              <ul className="list-none space-y-2 p-0 text-sm">
                 {form.attendees.map((a, index) => (
                   <li
                     className="flex items-center justify-between gap-3 text-slate-700"
@@ -1391,12 +1389,12 @@ function OrderSummary({
                 ))}
               </ul>
             ) : (
-              <p className="m-0 text-slate-500 text-sm">
+              <p className="text-slate-500 text-sm">
                 {`${formatMoney(basePrice(offering.config))} per attendee. Add at least one attendee to continue.`}
               </p>
             )}
             <div className="border-slate-200 border-t pt-4">
-              <p className="m-0 flex items-baseline justify-between gap-4">
+              <p className="flex items-baseline justify-between gap-4">
                 <span className="font-semibold text-slate-900">
                   Estimated total
                 </span>
@@ -1404,7 +1402,7 @@ function OrderSummary({
                   {formatMoney(form.estimate)}
                 </span>
               </p>
-              <p className="m-0 mt-1 text-slate-500 text-sm">
+              <p className="mt-1 text-slate-500 text-sm">
                 Before any coupon. {TAX_NOTE}
               </p>
             </div>
@@ -1423,7 +1421,7 @@ function OrderSummary({
             ) : null}
           </>
         )}
-        <p className="m-0 flex items-start gap-2 text-slate-500 text-sm leading-relaxed">
+        <p className="flex items-start gap-2 text-slate-500 text-sm leading-relaxed">
           <ShieldCheck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0" />
           Seats are held for {CHECKOUT_HOLD_MINUTES} minutes while you pay.
           Payments are processed securely by Stripe.
@@ -1438,7 +1436,7 @@ function MobileCheckoutBar({ form }: { form: RegistrationForm }) {
   return (
     <div className="sticky bottom-0 z-10 -mx-4 border-slate-200 border-t bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:-mx-6 sm:px-6 lg:hidden">
       <div className="flex items-center justify-between gap-4">
-        <p className="m-0 text-sm">
+        <p className="text-sm">
           <span className="block text-slate-500 text-xs">Estimated total</span>
           <span className="font-semibold text-slate-900 tabular-nums">
             {formatMoney(form.estimate)}
@@ -1481,22 +1479,22 @@ function OfferingDetails({ offering }: { offering: Offering }) {
               </Badge>
             )}
           </div>
-          <h1 className="m-0 font-bold text-3xl text-slate-900 leading-tight lg:text-4xl">
+          <h1 className="font-bold text-3xl text-slate-900 leading-tight lg:text-4xl">
             {offering.title}
           </h1>
           {offering.description ? (
-            <p className="m-0 whitespace-pre-line text-slate-700">
+            <p className="whitespace-pre-line text-slate-700">
               {offering.description}
             </p>
           ) : null}
         </div>
         <div className="grid gap-5 sm:grid-cols-2">
           <div>
-            <h2 className="m-0 mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+            <h2 className="mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
               Schedule
             </h2>
             {offering.meetings.length ? (
-              <ul className="m-0 list-none space-y-2 p-0">
+              <ul className="list-none space-y-2 p-0">
                 {offering.meetings.map((m) => (
                   <li className="flex items-start gap-2 text-sm" key={m.id}>
                     <CalendarDays
@@ -1515,7 +1513,7 @@ function OfferingDetails({ offering }: { offering: Offering }) {
                 ))}
               </ul>
             ) : (
-              <p className="m-0 flex items-start gap-2 text-slate-700 text-sm">
+              <p className="flex items-start gap-2 text-slate-700 text-sm">
                 <Clock
                   aria-hidden="true"
                   className="mt-0.5 h-4 w-4 shrink-0 text-primary"
@@ -1525,17 +1523,17 @@ function OfferingDetails({ offering }: { offering: Offering }) {
               </p>
             )}
             {cutoff ? (
-              <p className="m-0 mt-2 text-slate-500 text-xs">
+              <p className="mt-2 text-slate-500 text-xs">
                 Registration closes {formatDateTime(cutoff, zone)}{" "}
                 {abbreviation}.
               </p>
             ) : null}
           </div>
           <div>
-            <h2 className="m-0 mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+            <h2 className="mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
               What’s included
             </h2>
-            <ul className="m-0 list-none space-y-2 p-0">
+            <ul className="list-none space-y-2 p-0">
               <li className="flex items-center justify-between gap-3 text-sm">
                 <span className="text-slate-900">Tuition</span>
                 <span className="text-slate-700 tabular-nums">
@@ -1580,10 +1578,10 @@ function ClosedState({ state }: { state: string }) {
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
-        <p className="m-0 font-semibold text-slate-900" role="status">
+        <p className="font-semibold text-slate-900" role="status">
           {CLOSED_COPY[state] ?? "Registration for this class is closed."}
         </p>
-        <p className="m-0 text-slate-600 text-sm">
+        <p className="text-slate-600 text-sm">
           We can help you find another date or arrange training for your group.
         </p>
         <div className="flex flex-wrap gap-3">
@@ -1767,7 +1765,7 @@ export function RegistrationSuccess() {
               )}
             </div>
             <div className="space-y-2">
-              <h1 className="m-0 font-bold text-2xl text-slate-900 lg:text-3xl">
+              <h1 className="font-bold text-2xl text-slate-900 lg:text-3xl">
                 Registration status
               </h1>
               {status ? (
@@ -1776,17 +1774,17 @@ export function RegistrationSuccess() {
                 </Badge>
               ) : null}
               {checking ? (
-                <p className="m-0 text-slate-500 text-sm" role="status">
+                <p className="text-slate-500 text-sm" role="status">
                   Checking your order…
                 </p>
               ) : null}
-              <p className="m-0 text-slate-700">
+              <p className="text-slate-700">
                 {settled
                   ? "Your registration is confirmed. Check your email for access instructions."
                   : "Payment may still be processing. Confirmation follows verified payment."}
               </p>
               {status ? (
-                <p className="m-0 text-slate-500 text-sm">
+                <p className="text-slate-500 text-sm">
                   Total charged {formatMoney(status.total + (status.tax ?? 0))}
                   {status.tax
                     ? ` (includes ${formatMoney(status.tax)} sales tax)`
@@ -1808,10 +1806,10 @@ export function RegistrationSuccess() {
               </Notice>
             ) : null}
             <div className="rounded-lg bg-slate-50 p-4 text-left">
-              <p className="m-0 mb-2 font-semibold text-slate-900 text-sm">
+              <p className="mb-2 font-semibold text-slate-900 text-sm">
                 What happens next
               </p>
-              <ul className="m-0 list-none space-y-1.5 p-0 text-slate-600 text-sm">
+              <ul className="list-none space-y-1.5 p-0 text-slate-600 text-sm">
                 {[
                   "Each attendee receives a confirmation email with class details.",
                   "Course materials and access links appear in the secure portal.",
@@ -1865,19 +1863,19 @@ function ScheduledCourse({
           All classes
         </Link>
         <div>
-          <p className="m-0 mb-1 font-medium text-primary text-xs uppercase tracking-wide">
+          <p className="mb-1 font-medium text-primary text-xs uppercase tracking-wide">
             Course
           </p>
-          <h1 className="m-0 font-bold text-3xl text-slate-900 leading-tight lg:text-4xl">
+          <h1 className="font-bold text-3xl text-slate-900 leading-tight lg:text-4xl">
             {title}
           </h1>
           {description ? (
-            <p className="m-0 mt-2 max-w-3xl whitespace-pre-line text-slate-700">
+            <p className="mt-2 max-w-3xl whitespace-pre-line text-slate-700">
               {description}
             </p>
           ) : null}
         </div>
-        <h2 className="m-0 font-semibold text-slate-900 text-xl">
+        <h2 className="font-semibold text-slate-900 text-xl">
           Upcoming classes
         </h2>
         {sessions === undefined ? (
@@ -1909,7 +1907,7 @@ function ScheduledCourse({
                 <CardContent className="flex grow gap-4 p-5">
                   <DateBlock start={s.start} timeZone={s.timeZone} />
                   <div className="min-w-0 flex-1 space-y-1.5">
-                    <h3 className="m-0 font-semibold text-lg text-slate-900 leading-snug">
+                    <h3 className="font-semibold text-lg text-slate-900 leading-snug">
                       <Link
                         className="hover:text-primary"
                         href={`/s/${s.code}`}
@@ -1917,7 +1915,7 @@ function ScheduledCourse({
                         {s.title}
                       </Link>
                     </h3>
-                    <p className="m-0 text-slate-600 text-sm">
+                    <p className="text-slate-600 text-sm">
                       {formatWeekday(s.start, s.timeZone)} ·{" "}
                       {formatTime(s.start, s.timeZone)}{" "}
                       {shortZone(s.timeZone, s.start)}

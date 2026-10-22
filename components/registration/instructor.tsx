@@ -153,10 +153,10 @@ function completionLabel(completion: string | undefined) {
 
 function AnswerList({ seat }: { seat: Seat }) {
   if (!seat.snapshot.questions.length) {
-    return <p className="m-0 text-slate-500 text-sm">No questions asked.</p>;
+    return <p className="text-slate-500 text-sm">No questions asked.</p>;
   }
   return (
-    <dl className="m-0 grid gap-x-6 gap-y-2 sm:grid-cols-2">
+    <dl className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
       {seat.snapshot.questions.map((q) => {
         const value = seat.snapshot.attendee.answers.find(
           (a) => a.id === q.id
@@ -166,7 +166,7 @@ function AnswerList({ seat }: { seat: Seat }) {
             <dt className="text-slate-500 text-xs uppercase tracking-wide">
               {q.title}
             </dt>
-            <dd className="m-0 mt-0.5 text-slate-900 text-sm">
+            <dd className="mt-0.5 text-slate-900 text-sm">
               {value === undefined ? "Not answered" : String(value)}
             </dd>
           </div>
@@ -191,7 +191,7 @@ function AttendanceControls({
 }) {
   const record = useMutation(api.registrationOperations.attendance);
   if (!meetings.length) {
-    return <p className="m-0 text-slate-500 text-sm">No meetings scheduled.</p>;
+    return <p className="text-slate-500 text-sm">No meetings scheduled.</p>;
   }
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -329,11 +329,11 @@ function SeatDetails({
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-2">
-        <h3 className="m-0 font-semibold text-slate-900 text-sm">Answers</h3>
+        <h3 className="font-semibold text-slate-900 text-sm">Answers</h3>
         <AnswerList seat={seat} />
       </section>
       <section className="space-y-2">
-        <h3 className="m-0 font-semibold text-slate-900 text-sm">Attendance</h3>
+        <h3 className="font-semibold text-slate-900 text-sm">Attendance</h3>
         <AttendanceControls
           attendance={data?.attendance}
           meetings={meetings}
@@ -343,7 +343,7 @@ function SeatDetails({
         />
       </section>
       <section className="space-y-3 lg:col-span-2">
-        <h3 className="m-0 font-semibold text-slate-900 text-sm">Outcomes</h3>
+        <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
         {seat.outcomeDefinitions.length ? (
           seat.outcomeDefinitions.map((d) => (
             <OutcomeForm
@@ -359,11 +359,11 @@ function SeatDetails({
             />
           ))
         ) : (
-          <p className="m-0 text-slate-500 text-sm">
+          <p className="text-slate-500 text-sm">
             This course has no outcome fields.
           </p>
         )}
-        <p className="m-0 text-slate-500 text-xs">
+        <p className="text-slate-500 text-xs">
           Completion overrides are handled by administrators.
         </p>
       </section>
@@ -705,7 +705,7 @@ export function InstructorRoster({
                 </div>
               )}
             </Field>
-            <p className="m-0 text-slate-500 text-sm">
+            <p className="text-slate-500 text-sm">
               {pluralize(visible.length, "attendee")} shown ·{" "}
               {pluralize(selected.length, "selected", "selected")}
             </p>

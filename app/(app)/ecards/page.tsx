@@ -507,7 +507,7 @@ export default function ECardsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="prose-site container mx-auto px-4 py-8">
       {/* Shopping Cart Button */}
       <div className="mb-4 flex justify-end">
         <button

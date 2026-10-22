@@ -91,7 +91,7 @@ function stepClass(position: number, current: number) {
 function Stepper({ current }: { current: Step }) {
   const index = STEPS.findIndex((s) => s.id === current);
   return (
-    <ol aria-label="Steps" className="m-0 flex list-none flex-wrap gap-2 p-0">
+    <ol aria-label="Steps" className="flex list-none flex-wrap gap-2 p-0">
       {STEPS.map((step, i) => (
         <li
           aria-current={step.id === current ? "step" : undefined}
@@ -154,7 +154,7 @@ function OfferingStep({
     .sort((a, b) => a.firstStart - b.firstStart);
   return (
     <div className="space-y-5">
-      <fieldset className="m-0 grid gap-3 border-0 p-0 sm:grid-cols-2">
+      <fieldset className="grid gap-3 border-0 p-0 sm:grid-cols-2">
         <legend className="sr-only">What are you enrolling into?</legend>
         {(["session", "course"] as const).map((option) => (
           <label
@@ -780,7 +780,7 @@ function BillingStep({
           <CardTitle>Payment</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <fieldset className="m-0 grid gap-3 border-0 p-0 sm:grid-cols-2">
+          <fieldset className="grid gap-3 border-0 p-0 sm:grid-cols-2">
             <legend className="sr-only">Payment method</legend>
             {options.map((option) => (
               <label

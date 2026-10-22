@@ -16,7 +16,7 @@ export default function MarketingLayout({
         <ConvexClientProvider>
           <div className="flex min-h-screen flex-col">
             <MarketingHeader />
-            <main className="grow">{children}</main>
+            <main className="prose-site grow">{children}</main>
             <Footer />
           </div>
           <MarketingTrackerScripts />

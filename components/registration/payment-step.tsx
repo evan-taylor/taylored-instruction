@@ -67,7 +67,7 @@ export function HoldTimer({
     <p
       aria-live={urgent ? "polite" : "off"}
       className={cn(
-        "m-0 inline-flex items-center gap-2 rounded-md px-3 py-1.5 font-medium text-sm",
+        "inline-flex items-center gap-2 rounded-md px-3 py-1.5 font-medium text-sm",
         urgent ? "bg-amber-50 text-amber-900" : "bg-slate-100 text-slate-700",
         className
       )}
@@ -123,41 +123,39 @@ function PaymentForm({ expired }: { expired: boolean }) {
         confirm();
       }}
     >
-      <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0" disabled={busy}>
+      <fieldset className="min-w-0 space-y-2 border-0 p-0" disabled={busy}>
         <legend className="mb-2 font-semibold text-slate-900">
           Billing address
         </legend>
-        <p className="m-0 text-slate-500 text-sm">
+        <p className="text-slate-500 text-sm">
           Sales tax is calculated from this address.
         </p>
         <BillingAddressElement />
       </fieldset>
-      <fieldset className="m-0 min-w-0 space-y-2 border-0 p-0" disabled={busy}>
+      <fieldset className="min-w-0 space-y-2 border-0 p-0" disabled={busy}>
         <legend className="mb-2 font-semibold text-slate-900">Payment</legend>
         <PaymentElement />
       </fieldset>
-      <dl className="m-0 space-y-1.5 border-slate-200 border-t pt-4 text-sm">
+      <dl className="space-y-1.5 border-slate-200 border-t pt-4 text-sm">
         <div className="flex items-center justify-between gap-3 text-slate-600">
           <dt>Subtotal</dt>
-          <dd className="m-0 tabular-nums">{checkout.total.subtotal.amount}</dd>
+          <dd className="tabular-nums">{checkout.total.subtotal.amount}</dd>
         </div>
         {checkout.total.discount.minorUnitsAmount > 0 ? (
           <div className="flex items-center justify-between gap-3 text-emerald-700">
             <dt>Discount</dt>
-            <dd className="m-0 tabular-nums">
-              − {checkout.total.discount.amount}
-            </dd>
+            <dd className="tabular-nums">− {checkout.total.discount.amount}</dd>
           </div>
         ) : null}
         <div className="flex items-center justify-between gap-3 text-slate-600">
           <dt>Sales tax</dt>
-          <dd className="m-0 tabular-nums">
+          <dd className="tabular-nums">
             {tax > 0 ? checkout.total.taxExclusive.amount : "Enter address"}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3 pt-1">
           <dt className="font-semibold text-slate-900">Total due today</dt>
-          <dd className="m-0 font-bold text-slate-900 text-xl tabular-nums">
+          <dd className="font-bold text-slate-900 text-xl tabular-nums">
             {checkout.total.total.amount}
           </dd>
         </div>
@@ -170,7 +168,7 @@ function PaymentForm({ expired }: { expired: boolean }) {
       >
         {busy ? "Processing…" : `Pay ${checkout.total.total.amount}`}
       </Button>
-      <p className="m-0 flex items-start gap-1.5 text-slate-500 text-xs">
+      <p className="flex items-start gap-1.5 text-slate-500 text-xs">
         <Lock aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
         Card details go directly to Stripe and never touch our servers.
       </p>
@@ -237,8 +235,8 @@ export function PaymentStep({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="m-0 font-semibold text-slate-900 text-xl">Payment</h2>
-          <p className="m-0 mt-0.5 text-slate-500 text-sm">
+          <h2 className="font-semibold text-slate-900 text-xl">Payment</h2>
+          <p className="mt-0.5 text-slate-500 text-sm">
             Your seats are reserved while you enter payment details.
           </p>
         </div>
@@ -246,8 +244,8 @@ export function PaymentStep({
       </div>
       {expired ? (
         <Notice tone="warning">
-          <p className="m-0 font-medium">Your reservation has expired.</p>
-          <p className="m-0 mt-1">
+          <p className="font-medium">Your reservation has expired.</p>
+          <p className="mt-1">
             Nothing was charged. Start again to reserve seats for another{" "}
             {CHECKOUT_HOLD_MINUTES} minutes.
           </p>

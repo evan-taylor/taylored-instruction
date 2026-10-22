@@ -32,9 +32,7 @@ export function TestSignIn() {
         }
       }}
     >
-      <p className="m-0 font-semibold text-amber-900">
-        Test deployment sign-in
-      </p>
+      <p className="font-semibold text-amber-900">Test deployment sign-in</p>
       <label className="block">
         Test email
         <input
@@ -62,7 +60,7 @@ export function TestSignIn() {
       >
         Sign in to test deployment
       </button>
-      {message ? <p className="m-0 text-rose-700">{message}</p> : null}
+      {message ? <p className="text-rose-700">{message}</p> : null}
     </form>
   );
 }

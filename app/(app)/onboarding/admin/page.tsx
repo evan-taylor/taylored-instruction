@@ -70,7 +70,7 @@ function StepList({
     );
   }
   return (
-    <ul className="m-0 list-none space-y-3 p-0">
+    <ul className="list-none space-y-3 p-0">
       {steps.map((step) => (
         <li key={step._id}>
           <Card className="flex items-center justify-between gap-4 px-5 py-4">
@@ -79,10 +79,10 @@ function StepList({
                 {step.order}
               </span>
               <div className="min-w-0">
-                <p className="m-0 truncate font-medium text-slate-900">
+                <p className="truncate font-medium text-slate-900">
                   {step.title}
                 </p>
-                <p className="m-0 text-slate-500 text-xs">
+                <p className="text-slate-500 text-xs">
                   Updated {new Date(step.updatedAt).toLocaleDateString("en-US")}
                 </p>
               </div>
@@ -153,8 +153,8 @@ export default function OnboardingAdminPage() {
   if (!session) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <h1 className="m-0 font-bold text-2xl">Staff sign-in required</h1>
-        <p className="m-0 mt-2 text-slate-600">
+        <h1 className="font-bold text-2xl">Staff sign-in required</h1>
+        <p className="mt-2 text-slate-600">
           Sign in with an administrator account to edit onboarding.
         </p>
         <div className="mt-6">
@@ -167,8 +167,8 @@ export default function OnboardingAdminPage() {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <h1 className="m-0 font-bold text-2xl">Access restricted</h1>
-        <p className="m-0 mt-2 text-slate-600">
+        <h1 className="font-bold text-2xl">Access restricted</h1>
+        <p className="mt-2 text-slate-600">
           Only administrators can edit onboarding steps.
         </p>
       </div>
@@ -276,7 +276,7 @@ export default function OnboardingAdminPage() {
               }}
             >
               <fieldset
-                className="m-0 min-w-0 space-y-4 border-0 p-0"
+                className="min-w-0 space-y-4 border-0 p-0"
                 disabled={busy}
               >
                 <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_8rem]">

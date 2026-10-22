@@ -500,7 +500,7 @@ export default function OnboardingPage() {
   const currentStep = steps[activeStep];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="prose-site container mx-auto px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-8 font-bold text-3xl">Instructor Onboarding</h1>
 

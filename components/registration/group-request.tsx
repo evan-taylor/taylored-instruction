@@ -72,13 +72,13 @@ function Intro() {
   return (
     <section className="bg-primary text-white">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
-        <p className="m-0 mb-2 font-medium text-white/80 text-xs uppercase tracking-wide">
+        <p className="mb-2 font-medium text-white/80 text-xs uppercase tracking-wide">
           Group training
         </p>
-        <h1 className="m-0 max-w-3xl font-bold text-3xl leading-tight sm:text-4xl lg:text-5xl">
+        <h1 className="max-w-3xl font-bold text-3xl leading-tight sm:text-4xl lg:text-5xl">
           Train your whole team, on your schedule
         </h1>
-        <p className="m-0 mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
+        <p className="mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
           Tell us about your group and we’ll reply within one business day with
           dates, pricing, and a plan that fits your workplace.
         </p>
@@ -90,18 +90,16 @@ function Intro() {
 function Expectations() {
   return (
     <aside className="space-y-6 lg:pt-2">
-      <h2 className="m-0 font-semibold text-slate-900 text-xl">
-        What to expect
-      </h2>
-      <dl className="m-0 space-y-5">
+      <h2 className="font-semibold text-slate-900 text-xl">What to expect</h2>
+      <dl className="space-y-5">
         {BENEFITS.map(({ title, text }) => (
           <div key={title}>
             <dt className="font-semibold text-slate-900">{title}</dt>
-            <dd className="m-0 mt-1 text-slate-600 text-sm">{text}</dd>
+            <dd className="mt-1 text-slate-600 text-sm">{text}</dd>
           </div>
         ))}
       </dl>
-      <p className="m-0 text-slate-600 text-sm">
+      <p className="text-slate-600 text-sm">
         Prefer to talk it through?{" "}
         <a
           className="font-medium text-primary underline-offset-2 hover:underline"
@@ -122,10 +120,10 @@ function SuccessCard({ onReset }: { onReset: () => void }) {
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-700">
           <CheckCircle2 aria-hidden="true" className="h-7 w-7" />
         </div>
-        <h2 className="m-0 font-bold text-2xl text-slate-900">
+        <h2 className="font-bold text-2xl text-slate-900">
           Thanks, we’ll reply within one business day
         </h2>
-        <p className="m-0 text-slate-600">
+        <p className="text-slate-600">
           A coordinator will follow up by email with available dates and a
           quote. In the meantime, you’re welcome to browse our scheduled
           classes.
@@ -350,26 +348,26 @@ export function GroupTrainingRequest() {
                   }}
                 >
                   <fieldset
-                    className="m-0 min-w-0 space-y-4 border-0 p-0"
+                    className="min-w-0 space-y-4 border-0 p-0"
                     disabled={busy}
                   >
-                    <h3 className="m-0 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">
                       Your contact details
                     </h3>
                     <ContactFields form={form} update={update} />
                   </fieldset>
                   <fieldset
-                    className="m-0 min-w-0 space-y-4 border-0 p-0"
+                    className="min-w-0 space-y-4 border-0 p-0"
                     disabled={busy}
                   >
-                    <h3 className="m-0 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                    <h3 className="font-semibold text-slate-900 text-sm uppercase tracking-wide">
                       About the training
                     </h3>
                     <TrainingFields form={form} update={update} />
                   </fieldset>
                   <ResultNotice message={error} />
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="m-0 text-slate-500 text-xs">
+                    <p className="text-slate-500 text-xs">
                       We only use your details to respond to this request.
                     </p>
                     <Button disabled={busy} type="submit">

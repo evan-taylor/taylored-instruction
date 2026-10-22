@@ -726,7 +726,7 @@ export function InvoicesPanel({
             )}
           </Field>
           {rows ? (
-            <p className="m-0 pb-2 text-slate-500 text-sm">
+            <p className="pb-2 text-slate-500 text-sm">
               {pluralize(open.length, "open invoice")} ·{" "}
               <Money cents={outstanding} /> outstanding in the loaded invoices
             </p>

@@ -71,16 +71,16 @@ export function EmailPreview({
       </summary>
       <div className="space-y-4 border-slate-200 border-t px-4 py-4">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
-          <p className="m-0 text-slate-500 text-xs uppercase tracking-wide">
+          <p className="text-slate-500 text-xs uppercase tracking-wide">
             Subject
           </p>
-          <p className="m-0 mt-0.5 font-semibold text-slate-900 text-sm">
+          <p className="mt-0.5 font-semibold text-slate-900 text-sm">
             {previewMerge(subject) || "(no subject)"}
           </p>
-          <p className="m-0 mt-3 whitespace-pre-wrap text-slate-700 text-sm">
+          <p className="mt-3 whitespace-pre-wrap text-slate-700 text-sm">
             {previewMerge(body)}
           </p>
-          <p className="m-0 mt-3 text-slate-500 text-xs">
+          <p className="mt-3 text-slate-500 text-xs">
             Meeting details, secure portal access, and the recipient's entitled
             materials are appended on delivery.
           </p>

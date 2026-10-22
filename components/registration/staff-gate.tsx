@@ -28,10 +28,10 @@ export function StaffGate({ children }: { children: ReactNode }) {
   if (!session) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <h1 className="m-0 font-bold text-2xl text-slate-900">
+        <h1 className="font-bold text-2xl text-slate-900">
           Instructor sign-in required
         </h1>
-        <p className="m-0 mt-2 text-slate-600">
+        <p className="mt-2 text-slate-600">
           Sign in with your instructor account to open rosters and record
           outcomes.
         </p>
@@ -44,10 +44,10 @@ export function StaffGate({ children }: { children: ReactNode }) {
   if (!(isInstructor || isAdminEmail(email))) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <h1 className="m-0 font-bold text-2xl text-slate-900">
+        <h1 className="font-bold text-2xl text-slate-900">
           Instructor approval pending
         </h1>
-        <p className="m-0 mt-2 text-slate-600">
+        <p className="mt-2 text-slate-600">
           Your account isn’t approved to teach yet. An administrator reviews new
           instructor accounts; you’ll get access once approved.
         </p>

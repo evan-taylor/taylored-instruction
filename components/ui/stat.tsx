@@ -31,20 +31,18 @@ export function StatTile({
       )}
     >
       <div className="min-w-0">
-        <p className="m-0 font-medium text-slate-500 text-xs uppercase tracking-wide">
+        <p className="font-medium text-slate-500 text-xs uppercase tracking-wide">
           {label}
         </p>
         <p
           className={cn(
-            "m-0 mt-1 font-semibold text-2xl tabular-nums leading-tight",
+            "mt-1 font-semibold text-2xl tabular-nums leading-tight",
             accents[tone]
           )}
         >
           {value}
         </p>
-        {hint ? (
-          <p className="m-0 mt-1 text-slate-500 text-xs">{hint}</p>
-        ) : null}
+        {hint ? <p className="mt-1 text-slate-500 text-xs">{hint}</p> : null}
       </div>
       {icon ? (
         <div className="shrink-0 rounded-lg bg-slate-50 p-2 text-slate-500">

@@ -44,11 +44,11 @@ export function BulkResults({
   return (
     <section className="space-y-2">
       <div className="flex items-center gap-2">
-        <h4 className="m-0 font-semibold text-slate-900 text-sm">{title}</h4>
+        <h4 className="font-semibold text-slate-900 text-sm">{title}</h4>
         <Badge tone="success">{results.length - failed} succeeded</Badge>
         {failed ? <Badge tone="danger">{failed} failed</Badge> : null}
       </div>
-      <ul className="m-0 list-none divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white p-0 text-sm">
+      <ul className="list-none divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white p-0 text-sm">
         {results.map((result) => (
           <li
             className="flex flex-wrap items-start justify-between gap-2 px-3 py-2"
@@ -208,7 +208,7 @@ export function BulkTransfer({
     : [];
   return (
     <div className="space-y-5">
-      <p className="m-0 text-slate-600 text-sm">
+      <p className="text-slate-600 text-sm">
         Transfers every active, paid seat in the {orders.length} selected{" "}
         {orders.length === 1 ? "order" : "orders"}. Held, unpaid, or canceled
         seats are skipped.

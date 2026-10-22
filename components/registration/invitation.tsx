@@ -32,10 +32,10 @@ export function InvitationActions() {
           <Ticket aria-hidden="true" className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <p className="m-0 font-semibold text-slate-900">
+          <p className="font-semibold text-slate-900">
             You have a reserved opening
           </p>
-          <p className="m-0 mt-0.5 text-slate-600 text-sm">
+          <p className="mt-0.5 text-slate-600 text-sm">
             Register using the invited attendee’s email before the expiry shown
             in your email. If you no longer need the seat, decline it so the
             next person can be offered the opening.

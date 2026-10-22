@@ -142,10 +142,10 @@ function NavGroups({
     <div className="space-y-6">
       {NAV.map((section) => (
         <div key={section.group}>
-          <p className="m-0 mb-1.5 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
+          <p className="mb-1.5 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
             {section.group}
           </p>
-          <ul className="m-0 list-none space-y-0.5 p-0">
+          <ul className="list-none space-y-0.5 p-0">
             {section.items.map((item) => (
               <li key={item.href}>
                 <NavLink
@@ -196,7 +196,7 @@ function AccountRow({ email }: { email: string | null }) {
         {initial}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="m-0 truncate font-medium text-slate-900 text-sm">
+        <p className="truncate font-medium text-slate-900 text-sm">
           {email ?? "Signed in"}
         </p>
         <Link
@@ -237,7 +237,7 @@ function SidebarContent({
         <NavGroups attentionCount={attentionCount} pathname={pathname} />
       </nav>
       <div className="border-slate-200 border-t px-3 py-3">
-        <ul className="m-0 mb-2 list-none space-y-0.5 p-0">
+        <ul className="mb-2 list-none space-y-0.5 p-0">
           {SECONDARY.map((item) => (
             <li key={item.href}>
               <NavLink active={false} item={item} />
@@ -328,8 +328,8 @@ function GateMessage({
         <Brand />
       </header>
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
-        <h1 className="m-0 font-bold text-2xl text-slate-900">{title}</h1>
-        <p className="m-0 mt-2 text-slate-600">{children}</p>
+        <h1 className="font-bold text-2xl text-slate-900">{title}</h1>
+        <p className="mt-2 text-slate-600">{children}</p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           {actions}
         </div>
@@ -456,7 +456,7 @@ function Workspace({
             <Menu aria-hidden="true" className="h-5 w-5" />
           </button>
         </header>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8 [&_h1]:mb-0 [&_h2]:mb-0 [&_h3]:mb-0 [&_h4]:mb-0 [&_p]:mb-0">
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
           <div className="mx-auto max-w-[1400px]">{children}</div>
         </main>
       </div>

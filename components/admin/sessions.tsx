@@ -468,7 +468,7 @@ function MeetingCard({
   return (
     <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
       <div className="flex items-center justify-between gap-3">
-        <h4 className="m-0 font-semibold text-slate-900 text-sm">
+        <h4 className="font-semibold text-slate-900 text-sm">
           Meeting {index + 1}
         </h4>
         <Button
@@ -611,10 +611,8 @@ function MeetingsList({
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="m-0 font-semibold text-base text-slate-900">
-            Meetings
-          </h3>
-          <p className="m-0 text-slate-500 text-sm">
+          <h3 className="font-semibold text-base text-slate-900">Meetings</h3>
+          <p className="text-slate-500 text-sm">
             Times are entered in {zoneLabel(draft.timeZone)}.
           </p>
         </div>
@@ -837,7 +835,7 @@ function AccessSection({
           )}
         </Field>
       </div>
-      <ul className="m-0 list-none space-y-1 p-0 text-slate-600 text-sm">
+      <ul className="list-none space-y-1 p-0 text-slate-600 text-sm">
         {Object.entries(VISIBILITY_HELP).map(([key, text]) => (
           <li className="flex items-center gap-2" key={key}>
             <StatusBadge status={key} />
@@ -847,8 +845,8 @@ function AccessSection({
       </ul>
       {draft.code ? (
         <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <p className="m-0 font-medium text-slate-800 text-sm">Share link</p>
-          <p className="m-0 mt-0.5 text-slate-500 text-xs">
+          <p className="font-medium text-slate-800 text-sm">Share link</p>
+          <p className="mt-0.5 text-slate-500 text-xs">
             Stable for the life of the session, even after edits.
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -889,7 +887,7 @@ function InstructorsSection({
   }
   return (
     <div className="space-y-3">
-      <p className="m-0 text-slate-500 text-sm">
+      <p className="text-slate-500 text-sm">
         Assigned instructors can open the roster and record outcomes for this
         session.
       </p>
@@ -918,7 +916,7 @@ function InstructorsSection({
 function InheritedSummary({ settings }: { settings: Settings }) {
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-      <p className="m-0 mb-3 font-medium text-slate-800 text-sm">
+      <p className="mb-3 font-medium text-slate-800 text-sm">
         Inherited from the course template
       </p>
       <DescriptionList
@@ -1133,7 +1131,7 @@ function WeekdayChips({
   onChange: (value: number[]) => void;
 }) {
   return (
-    <fieldset className="m-0 border-0 p-0">
+    <fieldset className="border-0 p-0">
       <legend className="mb-1.5 font-medium text-slate-700 text-sm">
         Weekdays
       </legend>
@@ -1310,7 +1308,7 @@ function RecurrenceModal({
         </div>
         <ResultNotice message={error || message} />
         {preview.length ? (
-          <ul className="m-0 max-h-56 list-none space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-3 text-sm">
+          <ul className="max-h-56 list-none space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-3 text-sm">
             {preview.map((occurrence) => {
               const [first] = occurrence;
               return first ? (
