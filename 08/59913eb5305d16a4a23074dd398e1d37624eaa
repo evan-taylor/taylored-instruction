@@ -1,0 +1,21 @@
+app/(app)/admin/instructors/invitations.tsx
+  s_9e9754b0b6cc19::t_6a1ad00ee9d55d 110-112,116,123-133
+components/admin/agent-access.tsx
+  s_9e9754b0b6cc19::t_d4ee1eb35fb75d 146-163
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0859913eb5305d16a4a23074dd398e1d37624eaa",
+  "prompts": {},
+  "sessions": {
+    "s_9e9754b0b6cc19": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a164af-7b92-7df3-b001-e977d3e8ba4b",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
