@@ -1,0 +1,21 @@
+lib/course-catalog.ts
+  s_fda7a6981cbc39::t_7e895abf5b5e82 4-5,9-10,14,19,24,35-36,43-44,49,53
+tests/registration/catalog.test.ts
+  s_fda7a6981cbc39::t_22e2dbe8d729f2 8,165-191
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71a4b7ce005bc911a14a0a7d3d8c346b9785c01e",
+  "prompts": {},
+  "sessions": {
+    "s_fda7a6981cbc39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161b0-9825-7360-b274-415e50e0d181",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
