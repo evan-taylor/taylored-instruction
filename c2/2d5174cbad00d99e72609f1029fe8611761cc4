@@ -1,0 +1,21 @@
+.env.example
+  s_d0a82c0dd5b547::t_77397acfab970b 11-12
+docs/registration-deployment.md
+  s_d0a82c0dd5b547::t_e861347f8fcfbb 15,26-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c22d5174cbad00d99e72609f1029fe8611761cc4",
+  "prompts": {},
+  "sessions": {
+    "s_d0a82c0dd5b547": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16043-1146-7772-8683-a1d93b7e2244",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
