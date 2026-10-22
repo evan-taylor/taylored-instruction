@@ -889,7 +889,12 @@ export const reschedule = internalMutation({
         return;
       }
       if (session.state === "open") {
-        await ctx.db.patch(seat._id, { outcomeDefinitions: config.outcomes });
+        // Grades recorded against a past session stay on their original rules.
+        if (session.firstStart > Date.now()) {
+          await ctx.db.patch(seat._id, {
+            outcomeDefinitions: config.outcomes,
+          });
+        }
         await scheduleEmails(ctx, seat, session, config);
       }
       if (args.notify) {
@@ -1147,10 +1152,12 @@ export const staffDirectory = query({
   returns: v.array(v.object({ id: v.id("users"), email: v.string() })),
   handler: async (ctx) => {
     await staff(ctx);
+    // Approved instructors are a short list; read all of them so newly
+    // approved teachers can always be assigned.
     const profiles = await ctx.db
       .query("profiles")
       .withIndex("by_instructor_status", (q) => q.eq("isInstructor", true))
-      .take(BATCH);
+      .collect();
     const users = await Promise.all(
       profiles.filter((p) => !p.deactivatedAt).map((p) => ctx.db.get(p.userId))
     );
@@ -1187,7 +1194,7 @@ export const locations = query({
   returns: v.array(doc(schema, "registrationLocations")),
   handler: async (ctx) => {
     await staff(ctx);
-    return await ctx.db.query("registrationLocations").take(BATCH);
+    return await ctx.db.query("registrationLocations").collect();
   },
 });
 export const order = query({

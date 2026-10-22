@@ -212,7 +212,7 @@ async function stepAlreadyHandled(
   job: Doc<"registrationJobs">
 ) {
   if (!(job.seatId && job.stepId)) {
-    return false;
+    return null;
   }
   const stepJobs = await ctx.db
     .query("registrationJobs")
@@ -220,12 +220,18 @@ async function stepAlreadyHandled(
       q.eq("seatId", job.seatId).eq("stepId", job.stepId)
     )
     .take(BATCH);
-  return stepJobs.some(
-    (other) =>
-      other._id !== job._id &&
-      (other.state === "sent" ||
-        (other.state === "sending" && other.due > Date.now() - 300_000))
-  );
+  const others = stepJobs.filter((other) => other._id !== job._id);
+  if (others.some((other) => other.state === "sent")) {
+    return "sent";
+  }
+  if (
+    others.some(
+      (other) => other.state === "sending" && other.due > Date.now() - 300_000
+    )
+  ) {
+    return "sending";
+  }
+  return null;
 }
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
@@ -279,8 +285,15 @@ export const claim = internalMutation({
       await ctx.db.patch(job._id, { state: "canceled" });
       return null;
     }
-    if (await stepAlreadyHandled(ctx, job)) {
+    const handled = await stepAlreadyHandled(ctx, job);
+    if (handled === "sent") {
       await ctx.db.patch(job._id, { state: "canceled" });
+      return null;
+    }
+    if (handled === "sending") {
+      // Let the in-flight send finish; this job is retried afterwards and
+      // canceled only if that send succeeded.
+      await ctx.db.patch(job._id, { due: Date.now() + 60_000 });
       return null;
     }
     await ctx.db.patch(job._id, {

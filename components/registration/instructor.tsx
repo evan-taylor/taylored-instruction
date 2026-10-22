@@ -35,6 +35,7 @@ import {
 } from "./format";
 
 type Seat = Doc<"registrationSeats"> & { completion: string };
+const EMAIL_BATCH = 50;
 type Meeting = Doc<"registrationSessions">["meetings"][number];
 type AttendanceStatus = "present" | "absent" | "not-recorded";
 
@@ -468,13 +469,19 @@ function EmailDialog({
   async function submit() {
     setBusy(true);
     try {
-      await send({
-        sessionId,
-        seats,
-        subject,
-        body,
-        requestKey: crypto.randomUUID(),
-      });
+      // The backend accepts up to EMAIL_BATCH recipients per call; each batch
+      // keeps its own key so a retry never double-sends.
+      const requestKey = crypto.randomUUID();
+      for (let start = 0; start < seats.length; start += EMAIL_BATCH) {
+        // biome-ignore lint/performance/noAwaitInLoops: batches must be sequential to preserve ordering and bound load
+        await send({
+          sessionId,
+          seats: seats.slice(start, start + EMAIL_BATCH),
+          subject,
+          body,
+          requestKey: `${requestKey}:${start / EMAIL_BATCH}`,
+        });
+      }
       onResult("Selected-attendee message queued");
       setSubject("");
       setBody("");

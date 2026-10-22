@@ -85,13 +85,7 @@ export function EmailPreview({
             materials are appended on delivery.
           </p>
         </div>
-        <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendTest();
-          }}
-        >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
           <Field
             className="flex-1"
             hint="Only the configured safe test recipient is accepted."
@@ -101,17 +95,29 @@ export function EmailPreview({
               <TextInput
                 {...props}
                 onChange={(e) => setRecipient(e.target.value)}
+                onKeyDown={(e) => {
+                  // Enter sends the test without submitting the editor form.
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    sendTest();
+                  }
+                }}
                 placeholder="you@example.com"
-                required
                 type="email"
                 value={recipient}
               />
             )}
           </Field>
-          <Button disabled={busy} size="sm" type="submit" variant="secondary">
+          <Button
+            disabled={busy || !recipient.trim()}
+            onClick={sendTest}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
             {busy ? "Working…" : "Send test email"}
           </Button>
-        </form>
+        </div>
         <ResultNotice message={message} />
       </div>
     </details>

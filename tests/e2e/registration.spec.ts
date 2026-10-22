@@ -68,9 +68,6 @@ test("free checkout completes without a card and the success page reads backend 
     })
     .click();
   await expect(page).toHaveURL(SUCCESS_URL);
-  await page
-    .getByRole("button", { name: "Check this order", exact: true })
-    .click();
   await expect(
     page.getByText(
       "Your registration is confirmed. Check your email for access instructions."
@@ -106,11 +103,11 @@ test("existing login and contact routes still render without sending email", asy
 }) => {
   await page.goto("/login");
   await expect(
-    page.getByRole("button", { name: "Send Code", exact: true })
+    page.getByRole("button", { name: "Email me a sign-in code", exact: true })
   ).toBeVisible();
   await page.goto("/contact");
   await expect(
-    page.getByRole("heading", { name: "Contact Us", exact: true })
+    page.getByRole("heading", { name: "Contact us", exact: true })
   ).toBeVisible();
   await page.goto("/ecards");
   await expect(page).toHaveURL(LOGIN_URL);
