@@ -1,33 +1,27 @@
 import type { CourseMatch } from "@/shared/registration/catalog";
 
 /**
- * Marketing page → registration course templates. Slugs follow the Hovn
- * catalog the templates were imported from; keywords cover renamed templates.
+ * Marketing page → native registration course templates. Exact slugs match
+ * the live catalog; keywords cover later title and slug edits.
  */
 const catalog = {
   bls: {
-    slugs: ["aha-bls-provider-2025", "aha-basic-life-support", "aha-bls"],
-    keywords: ["bls provider", "aha bls", "basic life support"],
+    slugs: ["bls-provider", "heartcode-bls-online-provider"],
+    keywords: ["bls provider", "heartcode", "aha bls", "basic life support"],
     exclude: ["instructor", "red cross"],
   },
   "basic-life-support": {
-    slugs: ["arc-basic-life-support", "arc-bls"],
+    slugs: [],
     keywords: ["red cross basic life support", "red cross bls"],
     exclude: ["instructor"],
   },
   heartsaver: {
-    slugs: [
-      "aha-heartsaver-first-aid-cpr-aed-2025",
-      "aha-heartsaver-first-aid-cpr-aed",
-    ],
+    slugs: [],
     keywords: ["heartsaver"],
     exclude: ["instructor"],
   },
   "first-aid-cpr-aed": {
-    slugs: [
-      "arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25",
-      "arc-adult-and-pediatric-first-aid-cpr-aed",
-    ],
+    slugs: ["adult-pediatric-first-aid-cpr-aed-blended"],
     keywords: [
       "first aid/cpr/aed",
       "first aid cpr aed",
@@ -38,35 +32,25 @@ const catalog = {
   },
   lifeguarding: {
     slugs: [
-      "arc-lifeguarding-blended",
-      "arc-lifeguarding",
-      "arc-lifeguarding-recertification-blended",
-      "arc-lifeguarding-recertification",
+      "lifeguarding-blended",
+      "shallow-water-lifeguarding-to-lifeguarding",
     ],
     keywords: ["lifeguarding", "lifeguard"],
     exclude: ["instructor", "trainer"],
   },
   "lifeguarding-instructor": {
     slugs: [
-      "arc-lifeguarding-instructor-blended",
-      "arc-lifeguarding-instructor",
+      "lifeguarding-instructor",
+      "lifeguarding-instructor-instructor-trainer-recertification",
     ],
     keywords: ["lifeguarding instructor", "lifeguard instructor"],
-    exclude: ["trainer"],
   },
   "aha-instructor-training": {
-    slugs: [
-      "aha-bls-instructor-2025",
-      "aha-bls-instructor",
-      "aha-heartsaver-instructor",
-    ],
+    slugs: ["bls-instructor-essentials-online-core"],
     keywords: ["bls instructor", "heartsaver instructor", "aha instructor"],
   },
   "fa-cpr-aed-instructor": {
-    slugs: [
-      "arc-first-aid-cpr-aed-instructor-r25",
-      "arc-first-aid-cpr-aed-instructor",
-    ],
+    slugs: ["first-aid-cpr-aed-instructor"],
     keywords: [
       "first aid/cpr/aed instructor",
       "first aid cpr aed instructor",

@@ -5,9 +5,7 @@ import { matchesCourse, parsePlace } from "../../shared/registration/catalog";
 
 it("matches a course by slug, then by title keyword, never through an exclusion", () => {
   const { bls } = COURSE_CATALOG;
-  expect(
-    matchesCourse({ slug: "aha-bls-provider-2025", title: "x" }, bls)
-  ).toBe(true);
+  expect(matchesCourse({ slug: "bls-provider", title: "x" }, bls)).toBe(true);
   expect(matchesCourse({ slug: "other", title: "AHA BLS Provider" }, bls)).toBe(
     true
   );
@@ -163,4 +161,31 @@ it("emits event, course, and breadcrumb markup for a scheduled class", async () 
   expect(onlineCourse?.hasCourseInstance).toMatchObject([
     { courseMode: "Online" },
   ]);
+});
+
+it("includes HeartCode and instructor recertification after staff change their slugs", () => {
+  expect(
+    matchesCourse(
+      { slug: "renamed-heartcode", title: "HeartCode® BLS Online - Provider" },
+      COURSE_CATALOG.bls
+    )
+  ).toBe(true);
+  expect(
+    matchesCourse(
+      {
+        slug: "renamed-recert",
+        title: "Lifeguarding Instructor/Instructor Trainer Recertification",
+      },
+      COURSE_CATALOG["lifeguarding-instructor"]
+    )
+  ).toBe(true);
+  expect(
+    matchesCourse(
+      {
+        slug: "renamed-recert",
+        title: "Lifeguarding Instructor/Instructor Trainer Recertification",
+      },
+      COURSE_CATALOG.lifeguarding
+    )
+  ).toBe(false);
 });
