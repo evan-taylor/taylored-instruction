@@ -62,7 +62,7 @@ export async function POST(request: Request) {
 
   return Response.json({
     revalidated: true,
-    type: payload._type,
     slug,
+    type: payload._type,
   });
 }

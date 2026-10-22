@@ -20,9 +20,12 @@ const pageDescription =
 
 // --- Page Metadata ---
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/about",
+  image: {
+    description:
+      "About Taylored Instruction and founder Evan Taylor, serving Vancouver WA and San Luis Obispo CA",
+    title: "About Taylored Instruction",
+  },
   keywords: [
     "about Taylored Instruction",
     "Evan Taylor CPR instructor",
@@ -33,19 +36,16 @@ export const metadata = buildPageMetadata({
     "CPR instructors Clark County WA",
     "CPR and lifeguard training San Luis Obispo",
   ],
-  image: {
-    description:
-      "About Taylored Instruction and founder Evan Taylor, serving Vancouver WA and San Luis Obispo CA",
-    title: "About Taylored Instruction",
-  },
+  path: "/about",
+  title: pageTitle,
 });
 
 // --- Page Component ---
 export default async function AboutPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/about",
   });
   const breadcrumbSchema = getBreadcrumbSchema([

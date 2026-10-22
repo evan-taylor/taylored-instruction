@@ -102,10 +102,10 @@ export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
 }
 
 type CalComButtonProps = {
-  username: string;
+  buttonText?: string;
   eventType: string;
   namespace: string;
-  buttonText?: string;
+  username: string;
 };
 
 export function CalComButton({
@@ -136,8 +136,8 @@ export function CalComButton({
 }
 
 export const mdxComponents = {
+  CalComButton,
   CapEmbed,
   LoomEmbed,
   TypeformEmbed,
-  CalComButton,
 };

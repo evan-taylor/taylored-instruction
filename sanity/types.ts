@@ -11,16 +11,16 @@ export type BlogImage = SanityImageSource & {
 export type BlogPostSummary = {
   _id: string;
   _updatedAt: string;
-  title: string;
-  slug: string;
-  excerpt: string;
-  publishedAt: string;
   author?: string;
   categories?: string[];
+  excerpt: string;
   mainImage?: BlogImage;
-  seoTitle?: string;
+  publishedAt: string;
   seoDescription?: string;
   seoKeywords?: string[];
+  seoTitle?: string;
+  slug: string;
+  title: string;
 };
 
 export type LinkMark = PortableTextMarkDefinition & {

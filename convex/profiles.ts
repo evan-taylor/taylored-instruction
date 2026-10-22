@@ -30,12 +30,12 @@ export const getProfile = query({
       const user = await ctx.db.get(userId);
 
       return {
-        id: existingProfile._id,
-        userId: existingProfile.userId,
         email: user?.email ?? null,
+        id: existingProfile._id,
         is_instructor: existingProfile.isInstructor,
-        updated_at: existingProfile.updatedAt,
         last_login: existingProfile.lastLogin,
+        updated_at: existingProfile.updatedAt,
+        userId: existingProfile.userId,
       };
     }
 
@@ -74,17 +74,17 @@ export const updateLastLogin = mutation({
       // No admin notification email is sent for staged users
       if (stagingProfile && stagingProfile.processedAt === undefined) {
         await ctx.db.insert("profiles", {
-          userId,
           isInstructor: stagingProfile.isInstructor,
-          updatedAt: stagingProfile.updatedAt ?? now,
           lastLogin: now,
           notifiedAt: now, // Set to prevent duplicate notifications (important-comment)
+          updatedAt: stagingProfile.updatedAt ?? now,
+          userId,
         });
 
         // Mark staging profile as processed
         await ctx.db.patch(stagingProfile._id, {
-          processedAt: Date.now(),
           convexUserId: userId,
+          processedAt: Date.now(),
         });
 
         return;
@@ -92,10 +92,10 @@ export const updateLastLogin = mutation({
 
       // No staging profile or already processed - create new profile and notify admin
       await ctx.db.insert("profiles", {
-        userId,
         isInstructor: false,
-        updatedAt: now,
         lastLogin: now,
+        updatedAt: now,
+        userId,
       });
 
       try {
@@ -103,8 +103,8 @@ export const updateLastLogin = mutation({
           0,
           internal.notifications.sendNewUserAdminNotification,
           {
-            userId,
             userEmail: user?.email,
+            userId,
           }
         );
       } catch (error) {
@@ -149,10 +149,10 @@ export const getProfileByUserId = query({
 
     return {
       id: profile._id,
-      userId: profile.userId,
       is_instructor: profile.isInstructor,
-      updated_at: profile.updatedAt,
       last_login: profile.lastLogin,
+      updated_at: profile.updatedAt,
+      userId: profile.userId,
     };
   },
 });
@@ -175,8 +175,8 @@ const assertAdmin = async (ctx: MutationCtx) => {
 
 export const approveInstructor = mutation({
   args: {
-    userId: v.id("users"),
     approve: v.boolean(),
+    userId: v.id("users"),
   },
   handler: async (ctx, args) => {
     await assertAdmin(ctx);

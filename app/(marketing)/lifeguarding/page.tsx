@@ -15,10 +15,13 @@ const pageDescription =
   "Become a certified lifeguard with American Red Cross Lifeguarding training in Vancouver WA, Clark County, and San Luis Obispo CA.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/lifeguarding",
-  ogType: "article",
+  image: {
+    description:
+      "Professional lifeguard training in Vancouver WA and San Luis Obispo CA",
+    title: "Red Cross Lifeguarding Certification",
+    type: "lifeguarding",
+  },
   keywords: [
     "lifeguard certification Vancouver WA",
     "Red Cross lifeguarding class Clark County",
@@ -29,18 +32,15 @@ export const metadata = buildPageMetadata({
     "lifeguard course San Luis Obispo CA",
     "lifeguard training Portland metro",
   ],
-  image: {
-    title: "Red Cross Lifeguarding Certification",
-    description:
-      "Professional lifeguard training in Vancouver WA and San Luis Obispo CA",
-    type: "lifeguarding",
-  },
+  ogType: "article",
+  path: "/lifeguarding",
+  title: pageTitle,
 });
 
 const LifeguardingPage = async () => {
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/lifeguarding",
   });
 

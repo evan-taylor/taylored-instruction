@@ -6,8 +6,8 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 type OgImageParams = {
-  title: string;
   description?: string;
+  title: string;
   type?: "default" | "bls" | "heartsaver" | "aha" | "lifeguarding" | "swimming";
 };
 

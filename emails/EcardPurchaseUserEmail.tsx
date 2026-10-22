@@ -18,10 +18,10 @@ type CartItem = {
 };
 
 type EcardPurchaseUserEmailProps = {
-  itemName?: string; // For single item purchases
-  quantity?: string; // For single item purchases
-  price?: string; // Total price
   cartItems?: CartItem[]; // For multi-item purchases
+  itemName?: string; // For single item purchases
+  price?: string; // Total price
+  quantity?: string; // For single item purchases
 };
 
 const EcardPurchaseUserEmail: React.FC<
@@ -96,27 +96,27 @@ const main = {
 
 const container = {
   backgroundColor: "#ffffff",
-  margin: "0 auto",
-  padding: "20px 0 48px",
-  marginBottom: "64px",
   border: "1px solid #f0f0f0",
   borderRadius: "4px",
-  width: "100%",
+  margin: "0 auto",
+  marginBottom: "64px",
   maxWidth: "600px",
+  padding: "20px 0 48px",
+  width: "100%",
 };
 
 const heading = {
-  fontSize: "24px",
-  lineHeight: "1.3",
-  fontWeight: "700",
   color: "#484848",
+  fontSize: "24px",
+  fontWeight: "700",
+  lineHeight: "1.3",
   padding: "0 20px",
 };
 
 const paragraph = {
+  color: "#484848",
   fontSize: "16px",
   lineHeight: "1.4",
-  color: "#484848",
   padding: "0 30px",
 };
 
@@ -129,31 +129,31 @@ const itemRow = {
 };
 
 const itemNameColumn = {
-  fontSize: "16px",
   color: "#484848",
+  fontSize: "16px",
 };
 
 const itemQuantityColumn = {
-  fontSize: "16px",
   color: "#484848",
+  fontSize: "16px",
   textAlign: "right" as const,
 };
 
 const totalRow = {
-  marginTop: "15px",
   fontWeight: "bold",
+  marginTop: "15px",
 };
 
 const totalLabelColumn = {
-  fontSize: "16px",
   color: "#484848",
+  fontSize: "16px",
 };
 
 const totalValueColumn = {
-  fontSize: "18px",
   color: "#484848",
-  textAlign: "right" as const,
+  fontSize: "18px",
   fontWeight: "700",
+  textAlign: "right" as const,
 };
 
 const hr = {

@@ -63,9 +63,9 @@ export async function GET(req: NextRequest) {
       const err = error as { message?: string; code?: string };
       return NextResponse.json(
         {
-          error: "Failed to retrieve page or blocks",
-          details: err.message,
           code: err.code,
+          details: err.message,
+          error: "Failed to retrieve page or blocks",
         },
         { status: 500 }
       );
@@ -162,8 +162,8 @@ export async function GET(req: NextRequest) {
       if (block.type === "child_page" && !pageIdFilter) {
         return {
           id: block.id,
-          type: "child_page",
           title: block.child_page?.title || "Untitled",
+          type: "child_page",
         };
       }
 
@@ -203,9 +203,9 @@ export async function GET(req: NextRequest) {
     const extractedTitle = extractPageTitle(page);
 
     return NextResponse.json({
-      page,
       content: processedContent,
       isChildPage: !!requestedPageId,
+      page,
       title: extractedTitle,
     });
   } catch (error: unknown) {

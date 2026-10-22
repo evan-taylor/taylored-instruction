@@ -32,9 +32,9 @@ const LIST_ITEM_PREFIX_LENGTH = 2;
 const RADIX_DECIMAL = 10;
 
 type MatchInfo = {
-  type: string;
-  match: RegExpMatchArray;
   index: number;
+  match: RegExpMatchArray;
+  type: string;
 };
 
 function findFirstMatch(text: string): MatchInfo | null {
@@ -42,26 +42,26 @@ function findFirstMatch(text: string): MatchInfo | null {
 
   const boldMatch = text.match(BOLD_REGEX);
   if (boldMatch?.index !== undefined) {
-    candidates.push({ type: "bold", match: boldMatch, index: boldMatch.index });
+    candidates.push({ index: boldMatch.index, match: boldMatch, type: "bold" });
   }
 
   const italicMatch = text.match(ITALIC_REGEX);
   if (italicMatch?.index !== undefined) {
     candidates.push({
-      type: "italic",
-      match: italicMatch,
       index: italicMatch.index,
+      match: italicMatch,
+      type: "italic",
     });
   }
 
   const linkMatch = text.match(LINK_REGEX);
   if (linkMatch?.index !== undefined) {
-    candidates.push({ type: "link", match: linkMatch, index: linkMatch.index });
+    candidates.push({ index: linkMatch.index, match: linkMatch, type: "link" });
   }
 
   const codeMatch = text.match(CODE_INLINE_REGEX);
   if (codeMatch?.index !== undefined) {
-    candidates.push({ type: "code", match: codeMatch, index: codeMatch.index });
+    candidates.push({ index: codeMatch.index, match: codeMatch, type: "code" });
   }
 
   const urlMatch = text.match(URL_REGEX);
@@ -75,7 +75,7 @@ function findFirstMatch(text: string): MatchInfo | null {
       (beforeUrl.includes("](") &&
         !beforeUrl.slice(beforeUrl.lastIndexOf("](")).includes(")"));
     if (!(isInsideMarkdownLink || isAfterMarkdownLinkText)) {
-      candidates.push({ type: "url", match: urlMatch, index: urlMatch.index });
+      candidates.push({ index: urlMatch.index, match: urlMatch, type: "url" });
     }
   }
 
@@ -234,8 +234,8 @@ function tryRenderHeading(
 }
 
 type ListItemInfo = {
-  type: "ul" | "ol";
   content: React.ReactNode;
+  type: "ul" | "ol";
 };
 
 function tryParseListItem(
@@ -244,12 +244,12 @@ function tryParseListItem(
 ): ListItemInfo | null {
   if (line.startsWith("- ") || line.startsWith("* ")) {
     return {
-      type: "ul",
       content: (
         <li className="mb-1 text-slate-700" key={elementKey}>
           {renderInlineElements(line.slice(LIST_ITEM_PREFIX_LENGTH))}
         </li>
       ),
+      type: "ul",
     };
   }
 
@@ -257,12 +257,12 @@ function tryParseListItem(
   if (orderedMatch) {
     const listNumber = Number.parseInt(orderedMatch[1], RADIX_DECIMAL);
     return {
-      type: "ol",
       content: (
         <li className="mb-1 text-slate-700" key={elementKey} value={listNumber}>
           {renderInlineElements(orderedMatch[2])}
         </li>
       ),
+      type: "ol",
     };
   }
 
@@ -270,12 +270,12 @@ function tryParseListItem(
 }
 
 type ParserState = {
-  elements: React.ReactNode[];
-  currentParagraph: string[];
-  inCodeBlock: boolean;
   codeBlockContent: string[];
   currentList: React.ReactNode[];
   currentListType: "ul" | "ol" | null;
+  currentParagraph: string[];
+  elements: React.ReactNode[];
+  inCodeBlock: boolean;
 };
 
 function flushList(state: ParserState): void {
@@ -394,12 +394,12 @@ function processLine(line: string, state: ParserState): void {
 function parseAndRenderMDX(content: string): React.ReactNode[] {
   const lines = content.split("\n");
   const state: ParserState = {
-    elements: [],
-    currentParagraph: [],
-    inCodeBlock: false,
     codeBlockContent: [],
     currentList: [],
     currentListType: null,
+    currentParagraph: [],
+    elements: [],
+    inCodeBlock: false,
   };
 
   for (const line of lines) {
@@ -414,9 +414,9 @@ function parseAndRenderMDX(content: string): React.ReactNode[] {
 
 type OnboardingStep = {
   _id: string;
-  title: string;
   content: string;
   order: number;
+  title: string;
 };
 
 export default function OnboardingPage() {

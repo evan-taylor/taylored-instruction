@@ -14,10 +14,12 @@ const pageDescription =
   "Become an American Heart Association BLS or Heartsaver instructor through Taylored Instruction in Vancouver WA and San Luis Obispo CA.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/aha-instructor-training",
-  ogType: "article",
+  image: {
+    description: "Become a certified AHA BLS or Heartsaver instructor",
+    title: "AHA Instructor Training",
+    type: "aha",
+  },
   keywords: [
     "AHA instructor training Vancouver WA",
     "BLS instructor course Clark County",
@@ -28,25 +30,18 @@ export const metadata = buildPageMetadata({
     "teach BLS and Heartsaver classes",
     "CPR instructor mentorship program",
   ],
-  image: {
-    title: "AHA Instructor Training",
-    description: "Become a certified AHA BLS or Heartsaver instructor",
-    type: "aha",
-  },
+  ogType: "article",
+  path: "/aha-instructor-training",
+  title: pageTitle,
 });
 
 const AhaInstructorTrainingPage = async () => {
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/aha-instructor-training",
   });
   const serviceSchema = getServiceSchema({
-    name: "AHA Instructor Training",
-    description:
-      "Instructor development and certification preparation for AHA BLS and Heartsaver instructors.",
-    path: "/aha-instructor-training",
-    serviceType: "Instructor Certification Training",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
@@ -54,6 +49,11 @@ const AhaInstructorTrainingPage = async () => {
     ],
     audienceType:
       "Current provider-level cardholders pursuing instructor certification",
+    description:
+      "Instructor development and certification preparation for AHA BLS and Heartsaver instructors.",
+    name: "AHA Instructor Training",
+    path: "/aha-instructor-training",
+    serviceType: "Instructor Certification Training",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

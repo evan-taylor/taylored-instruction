@@ -8,17 +8,17 @@ import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
 
 type GenerationResult = {
-  totalTemplates: number;
   inserted: number;
-  updated: number;
   skipped: number;
+  totalTemplates: number;
+  updated: number;
 };
 
 const formatDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "short",
     day: "numeric",
+    month: "short",
+    year: "numeric",
   });
 
 export default function AdminSeoContentPage() {

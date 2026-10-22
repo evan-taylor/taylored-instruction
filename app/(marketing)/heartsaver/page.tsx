@@ -16,10 +16,13 @@ const pageDescription =
   "American Heart Association Heartsaver First Aid CPR AED certification in Vancouver WA, Clark County, and San Luis Obispo CA for workplace teams and community learners.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/heartsaver",
-  ogType: "article",
+  image: {
+    description:
+      "Workplace and community Heartsaver certification in Vancouver WA and San Luis Obispo CA",
+    title: "AHA Heartsaver First Aid CPR AED",
+    type: "heartsaver",
+  },
   keywords: [
     "AHA Heartsaver class Vancouver WA",
     "Heartsaver first aid CPR AED certification",
@@ -30,19 +33,16 @@ export const metadata = buildPageMetadata({
     "Heartsaver class San Luis Obispo CA",
     "community CPR class Clark County WA",
   ],
-  image: {
-    title: "AHA Heartsaver First Aid CPR AED",
-    description:
-      "Workplace and community Heartsaver certification in Vancouver WA and San Luis Obispo CA",
-    type: "heartsaver",
-  },
+  ogType: "article",
+  path: "/heartsaver",
+  title: pageTitle,
 });
 
 export default async function HeartsaverPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/heartsaver",
   });
 

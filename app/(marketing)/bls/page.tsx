@@ -16,14 +16,11 @@ const pageDescription =
   "American Heart Association BLS certification for healthcare professionals in Vancouver WA, Clark County, and San Luis Obispo CA with in-person and blended options.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/bls",
-  ogType: "article",
   image: {
-    title: "AHA BLS Certification Course",
     description:
       "Healthcare provider BLS certification in Vancouver WA and San Luis Obispo CA",
+    title: "AHA BLS Certification Course",
     type: "bls",
   },
   keywords: [
@@ -36,13 +33,16 @@ export const metadata = buildPageMetadata({
     "BLS course for nurses EMTs",
     "same-day AHA BLS eCard",
   ],
+  ogType: "article",
+  path: "/bls",
+  title: pageTitle,
 });
 
 export default async function BlsPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/bls",
   });
 

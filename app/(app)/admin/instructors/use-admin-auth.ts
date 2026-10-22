@@ -35,8 +35,8 @@ export function useAdminAuth(
   }, [profileLoading, session, forceAdmin]);
 
   return {
+    adminAccessCheckInProgress,
     isAdmin,
     userEmailForDisplay,
-    adminAccessCheckInProgress,
   };
 }

@@ -27,9 +27,9 @@ function EcardSuccessContent() {
 
     // Call API to send eCard purchase emails
     fetch("/api/send-ecard-emails", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sessionId }),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
     })
       .then((res) => res.json())
       .then((data) => {

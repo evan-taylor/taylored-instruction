@@ -8,7 +8,7 @@ import type { LastLoginDisplay } from "./types";
 
 export function formatLastLogin(lastLogin: string | null): LastLoginDisplay {
   if (!lastLogin) {
-    return { text: "Never", className: "text-gray-400" };
+    return { className: "text-gray-400", text: "Never" };
   }
 
   const loginDate = new Date(lastLogin);
@@ -31,18 +31,18 @@ export function formatLastLogin(lastLogin: string | null): LastLoginDisplay {
   }
 
   if (diffInDays === 0) {
-    return { text: "Today", className: "text-green-600 font-medium" };
+    return { className: "text-green-600 font-medium", text: "Today" };
   }
   if (diffInDays === 1) {
-    return { text: "Yesterday", className: "text-green-500" };
+    return { className: "text-green-500", text: "Yesterday" };
   }
   if (diffInDays < DAYS_IN_WEEK) {
-    return { text: `${diffInDays} days ago`, className: "text-yellow-600" };
+    return { className: "text-yellow-600", text: `${diffInDays} days ago` };
   }
   if (diffInDays < DAYS_IN_MONTH) {
-    return { text: `${diffInDays} days ago`, className: "text-orange-600" };
+    return { className: "text-orange-600", text: `${diffInDays} days ago` };
   }
-  return { text: loginDate.toLocaleDateString(), className: "text-red-600" };
+  return { className: "text-red-600", text: loginDate.toLocaleDateString() };
 }
 
 export function isAdminEmail(

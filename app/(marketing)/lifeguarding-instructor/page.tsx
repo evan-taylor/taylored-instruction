@@ -16,10 +16,12 @@ const pageDescription =
   "Become a certified American Red Cross Lifeguarding Instructor in Vancouver WA, Clark County, and San Luis Obispo CA with blended and in-person training.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/lifeguarding-instructor",
-  ogType: "article",
+  image: {
+    description: "Become a certified Red Cross lifeguarding instructor",
+    title: "Lifeguarding Instructor Course",
+    type: "lifeguarding",
+  },
   keywords: [
     "Red Cross lifeguarding instructor course",
     "LGI course Vancouver WA",
@@ -30,32 +32,30 @@ export const metadata = buildPageMetadata({
     "teach lifeguarding classes",
     "become lifeguard instructor",
   ],
-  image: {
-    title: "Lifeguarding Instructor Course",
-    description: "Become a certified Red Cross lifeguarding instructor",
-    type: "lifeguarding",
-  },
+  ogType: "article",
+  path: "/lifeguarding-instructor",
+  title: pageTitle,
 });
 
 export default async function Page() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/lifeguarding-instructor",
   });
   const serviceSchema = getServiceSchema({
-    name: "Red Cross Lifeguarding Instructor Training",
-    description:
-      "Instructor development course for candidates pursuing Red Cross Lifeguarding Instructor certification.",
-    path: "/lifeguarding-instructor",
-    serviceType: "Aquatic Instructor Certification Training",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
       "San Luis Obispo County, CA",
     ],
     audienceType: "Current lifeguards pursuing instructor credentials",
+    description:
+      "Instructor development course for candidates pursuing Red Cross Lifeguarding Instructor certification.",
+    name: "Red Cross Lifeguarding Instructor Training",
+    path: "/lifeguarding-instructor",
+    serviceType: "Aquatic Instructor Certification Training",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

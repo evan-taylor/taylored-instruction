@@ -15,10 +15,11 @@ const pageDescription =
   "Become a certified American Red Cross First Aid/CPR/AED Instructor in Vancouver WA, Clark County, and San Luis Obispo CA.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/fa-cpr-aed-instructor",
-  ogType: "article",
+  image: {
+    description: "Become a certified Red Cross First Aid CPR AED instructor",
+    title: "First Aid/CPR/AED Instructor Course",
+  },
   keywords: [
     "Red Cross first aid CPR AED instructor course",
     "FA CPR AED instructor training Vancouver WA",
@@ -29,24 +30,18 @@ export const metadata = buildPageMetadata({
     "teach Red Cross classes",
     "instructor bridge and alignment support",
   ],
-  image: {
-    title: "First Aid/CPR/AED Instructor Course",
-    description: "Become a certified Red Cross First Aid CPR AED instructor",
-  },
+  ogType: "article",
+  path: "/fa-cpr-aed-instructor",
+  title: pageTitle,
 });
 
 const FaCprAedInstructorPage = async () => {
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/fa-cpr-aed-instructor",
   });
   const serviceSchema = getServiceSchema({
-    name: "Red Cross First Aid/CPR/AED Instructor Training",
-    description:
-      "Instructor training program for professionals pursuing Red Cross First Aid/CPR/AED instructor credentials.",
-    path: "/fa-cpr-aed-instructor",
-    serviceType: "Instructor Certification Training",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
@@ -54,6 +49,11 @@ const FaCprAedInstructorPage = async () => {
     ],
     audienceType:
       "Current provider-level cardholders pursuing instructor certification",
+    description:
+      "Instructor training program for professionals pursuing Red Cross First Aid/CPR/AED instructor credentials.",
+    name: "Red Cross First Aid/CPR/AED Instructor Training",
+    path: "/fa-cpr-aed-instructor",
+    serviceType: "Instructor Certification Training",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

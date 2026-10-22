@@ -7,24 +7,24 @@ const DEFAULT_ANALYTICS_LIMIT = 100;
 
 export const trackEvent = mutation({
   args: {
-    url: v.optional(v.string()),
-    referrer: v.optional(v.string()),
-    ipAddress: v.optional(v.string()),
     city: v.optional(v.string()),
-    region: v.optional(v.string()),
     country: v.optional(v.string()),
+    ipAddress: v.optional(v.string()),
+    referrer: v.optional(v.string()),
+    region: v.optional(v.string()),
+    url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
 
     await ctx.db.insert("analytics", {
-      url: args.url,
-      referrer: args.referrer,
-      userId: userId || undefined,
-      ipAddress: args.ipAddress,
       city: args.city,
-      region: args.region,
       country: args.country,
+      ipAddress: args.ipAddress,
+      referrer: args.referrer,
+      region: args.region,
+      url: args.url,
+      userId: userId || undefined,
     });
 
     return { success: true };
@@ -56,15 +56,15 @@ export const getAnalytics = query({
       .take(args.limit ?? DEFAULT_ANALYTICS_LIMIT);
 
     return analytics.map((event) => ({
-      id: event._id,
-      url: event.url,
-      referrer: event.referrer,
-      userId: event.userId,
-      ipAddress: event.ipAddress,
       city: event.city,
-      region: event.region,
       country: event.country,
       createdAt: event._creationTime,
+      id: event._id,
+      ipAddress: event.ipAddress,
+      referrer: event.referrer,
+      region: event.region,
+      url: event.url,
+      userId: event.userId,
     }));
   },
 });

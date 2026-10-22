@@ -6,9 +6,6 @@ const seoTitleMaxLength = 70;
 const textAreaRows = 3;
 
 export const postType = defineType({
-  name: "post",
-  title: "Post",
-  type: "document",
   fields: [
     defineField({
       name: "title",
@@ -17,27 +14,27 @@ export const postType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      hidden: true,
       name: "sightAiId",
+      readOnly: true,
       title: "Sight AI ID",
       type: "string",
-      hidden: true,
-      readOnly: true,
     }),
     defineField({
       name: "slug",
-      title: "Slug",
-      type: "slug",
       options: {
         maxLength: 96,
         source: "title",
       },
+      title: "Slug",
+      type: "slug",
       validation: (rule) => rule.required(),
     }),
     defineField({
       name: "excerpt",
+      rows: textAreaRows,
       title: "Excerpt",
       type: "text",
-      rows: textAreaRows,
       validation: (rule) => rule.required(),
     }),
     defineField({
@@ -47,24 +44,21 @@ export const postType = defineType({
       validation: (rule) => rule.required(),
     }),
     defineField({
+      initialValue: "Taylored Instruction",
       name: "author",
       title: "Author",
       type: "string",
-      initialValue: "Taylored Instruction",
     }),
     defineField({
       name: "categories",
-      title: "Categories",
-      type: "array",
       of: [{ type: "string" }],
       options: {
         layout: "tags",
       },
+      title: "Categories",
+      type: "array",
     }),
     defineField({
-      name: "mainImage",
-      title: "Main image",
-      type: "image",
       fields: [
         defineField({
           name: "alt",
@@ -73,23 +67,20 @@ export const postType = defineType({
           validation: (rule) => rule.required(),
         }),
       ],
+      name: "mainImage",
       options: {
         hotspot: true,
       },
+      title: "Main image",
+      type: "image",
     }),
     defineField({
       name: "body",
-      title: "Body",
-      type: "array",
       of: [
         {
-          type: "block",
           marks: {
             annotations: [
               {
-                name: "link",
-                title: "Link",
-                type: "object",
                 fields: [
                   defineField({
                     name: "href",
@@ -102,11 +93,17 @@ export const postType = defineType({
                       }),
                   }),
                 ],
+                name: "link",
+                title: "Link",
+                type: "object",
               },
             ],
           },
+          type: "block",
         },
       ],
+      title: "Body",
+      type: "array",
       validation: (rule) => rule.required(),
     }),
     defineField({
@@ -117,15 +114,13 @@ export const postType = defineType({
     }),
     defineField({
       name: "seoDescription",
+      rows: textAreaRows,
       title: "SEO description",
       type: "text",
-      rows: textAreaRows,
       validation: (rule) => rule.max(seoDescriptionMaxLength),
     }),
     defineField({
       name: "seoKeywords",
-      title: "SEO keywords",
-      type: "array",
       of: [
         {
           type: "string",
@@ -135,8 +130,11 @@ export const postType = defineType({
       options: {
         layout: "tags",
       },
+      title: "SEO keywords",
+      type: "array",
     }),
   ],
+  name: "post",
   preview: {
     select: {
       media: "mainImage",
@@ -144,4 +142,6 @@ export const postType = defineType({
       title: "title",
     },
   },
+  title: "Post",
+  type: "document",
 });

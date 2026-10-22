@@ -15,9 +15,11 @@ const pageDescription =
   "Align with Taylored Instruction as an independent CPR, First Aid, BLS, or Lifeguard instructor and receive support from a Red Cross LTP and AHA-aligned training site.";
 
 export const metadata = buildPageMetadata({
-  title: pageTitle,
   description: pageDescription,
-  path: "/alignment",
+  image: {
+    description: "Partner with Taylored Instruction for instructor support",
+    title: "Instructor Alignment",
+  },
   keywords: [
     "instructor alignment Vancouver WA",
     "CPR instructor affiliation program",
@@ -28,30 +30,28 @@ export const metadata = buildPageMetadata({
     "instructor alignment Clark County WA",
     "instructor alignment San Luis Obispo CA",
   ],
-  image: {
-    title: "Instructor Alignment",
-    description: "Partner with Taylored Instruction for instructor support",
-  },
+  path: "/alignment",
+  title: pageTitle,
 });
 
 const AlignmentPage = async () => {
   const webPageSchema = getWebPageSchema({
-    name: pageTitle,
     description: pageDescription,
+    name: pageTitle,
     path: "/alignment",
   });
   const alignmentServiceSchema = getServiceSchema({
-    name: "Instructor Alignment and Administrative Support",
-    description:
-      "Instructor alignment services for CPR, First Aid, BLS, and Lifeguard instructors, including operational guidance and certification processing support.",
-    path: "/alignment",
-    serviceType: "Instructor Alignment Program",
     areaServed: [
       "Clark County, WA",
       "Portland Metro, OR",
       "San Luis Obispo County, CA",
     ],
     audienceType: "Independent and organizational instructors",
+    description:
+      "Instructor alignment services for CPR, First Aid, BLS, and Lifeguard instructors, including operational guidance and certification processing support.",
+    name: "Instructor Alignment and Administrative Support",
+    path: "/alignment",
+    serviceType: "Instructor Alignment Program",
   });
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },

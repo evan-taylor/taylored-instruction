@@ -15,13 +15,13 @@ import { trackVisitorsEvent } from "@/lib/analytics";
 const AlignmentInterestForm: React.FC = () => {
   const posthog = usePostHog();
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    hasCertification: "", // 'Yes' or 'No'
     agencies: [] as string[],
+    email: "",
+    firstName: "",
+    hasCertification: "", // 'Yes' or 'No'
+    lastName: "",
     message: "",
+    phone: "",
     smsOptIn: false,
     smsOptOut: false,
   });
@@ -104,19 +104,19 @@ const AlignmentInterestForm: React.FC = () => {
 
     // Track form submission attempt
     posthog.capture("alignment_interest_submitted", {
-      hasCertification: formData.hasCertification,
       agencies: formData.agencies,
+      hasCertification: formData.hasCertification,
       smsOptIn: formData.smsOptIn,
       smsOptOut: formData.smsOptOut,
     });
 
     try {
       const response = await fetch("/api/alignment-interest", {
-        method: "POST",
+        body: JSON.stringify(formData), // Send the component's state
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData), // Send the component's state
+        method: "POST",
       });
 
       const result = await response.json();
@@ -126,8 +126,8 @@ const AlignmentInterestForm: React.FC = () => {
 
         // Track successful submission
         posthog.capture("alignment_interest_success", {
-          hasCertification: formData.hasCertification,
           agencies: formData.agencies,
+          hasCertification: formData.hasCertification,
           smsOptIn: formData.smsOptIn,
           smsOptOut: formData.smsOptOut,
         });
@@ -138,14 +138,14 @@ const AlignmentInterestForm: React.FC = () => {
         });
 
         setFormData({
+          agencies: [],
+          email: "",
           // Reset form on success
           firstName: "",
-          lastName: "",
-          email: "",
-          phone: "",
           hasCertification: "",
-          agencies: [],
+          lastName: "",
           message: "",
+          phone: "",
           smsOptIn: false,
           smsOptOut: false,
         });
