@@ -2,6 +2,7 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function LifeguardingPageContent() {
   return (
@@ -12,20 +13,24 @@ export default function LifeguardingPageContent() {
         position: "center 42%",
         src: "/lifeguard-training.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
+      )}
       resources={[
-        { href: "/contact", label: "Request Course Fact Sheet" },
-        { href: "/contact", label: "Request eBook Access Instructions" },
+        { href: "/contact", label: "Request course fact sheet" },
+        { href: "/contact", label: "Request eBook access instructions" },
       ]}
       secondaryActions={[
         {
-          href: "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended",
-          label: "View Recertification Courses",
+          href: registrationBookingUrl(
+            "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended"
+          ),
+          label: "View recertification courses",
         },
       ]}
       title="American Red Cross Lifeguarding"
     >
-      <ClassPageSection title="Course Purpose">
+      <ClassPageSection title="Course purpose">
         <p>
           The primary purpose of the American Red Cross Lifeguarding program is
           to provide participants with the knowledge and skills needed to
@@ -38,7 +43,7 @@ export default function LifeguardingPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Prerequisites">
+      <ClassPageSection title="Course prerequisites">
         <p>
           To participate in the Lifeguarding Including Deep Water course,
           participants must be at least 15 years old on or before the final
@@ -47,8 +52,8 @@ export default function LifeguardingPageContent() {
         </p>
         <div className="grid gap-6 md:grid-cols-2">
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
-              Swim-Tread-Swim Sequence
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
+              Swim-tread-swim sequence
             </h3>
             <p className="mb-2 text-sm">
               Complete this sequence within 1 minute, 40 seconds:
@@ -69,8 +74,8 @@ export default function LifeguardingPageContent() {
             </ol>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
-              Timed Brick Event
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
+              Timed brick event
             </h3>
             <ol className="list-decimal space-y-2 pl-5 text-sm">
               <li>Starting in the water, swim 20 yards.</li>
@@ -87,13 +92,13 @@ export default function LifeguardingPageContent() {
         </div>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Length">
+      <ClassPageSection title="Course length">
         <p>
           Approximately 7 hours online, 25 hours in-person, including breaks.
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Preparation">
+      <ClassPageSection title="Course preparation">
         <p>
           Make sure you are confident with the prerequisites before class. These
           evaluations are conducted as soon as the course begins, and

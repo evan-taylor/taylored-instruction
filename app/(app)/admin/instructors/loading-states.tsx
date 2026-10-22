@@ -10,10 +10,10 @@ export function LoadingVerification({
       <div className="text-center">
         <p className="text-lg">Verifying admin access...</p>
         {profileLoading && (
-          <p className="mt-1 text-gray-500 text-sm">Loading user profile...</p>
+          <p className="mt-1 text-slate-500 text-sm">Loading user profile...</p>
         )}
         {adminAccessCheckInProgress && !profileLoading && (
-          <p className="mt-1 text-gray-500 text-sm">
+          <p className="mt-1 text-slate-500 text-sm">
             Checking admin privileges...
           </p>
         )}

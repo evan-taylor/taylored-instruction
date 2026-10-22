@@ -2,25 +2,28 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function FaCprAedInstructorPageContent() {
   return (
     <ClassPageLayout
-      badgeLabel="Instructor Training"
+      badgeLabel="Instructor training"
       courseName="First Aid/CPR/AED Instructor"
       image={{
         alt: "CPR instructor training session",
         src: "/Cpr-Instructor-Image.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/arc-first-aid-cpr-aed-instructor-r25/"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/certifications/arc-first-aid-cpr-aed-instructor-r25/"
+      )}
       resources={[
-        { href: "/contact", label: "Request Course Fact Sheet" },
-        { href: "/contact", label: "Request Instructor Manual" },
-        { href: "/contact", label: "Request Practice Teaching Workbook" },
+        { href: "/contact", label: "Request course fact sheet" },
+        { href: "/contact", label: "Request instructor manual" },
+        { href: "/contact", label: "Request practice teaching workbook" },
       ]}
       title="American Red Cross First Aid/CPR/AED Instructor Course"
     >
-      <ClassPageSection title="Course Purpose">
+      <ClassPageSection title="Course purpose">
         <p>
           The purpose of the American Red Cross FA/CPR/AED Instructor course is
           to train instructor candidates to teach the basic-level American Red
@@ -28,14 +31,14 @@ export default function FaCprAedInstructorPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Prerequisites">
+      <ClassPageSection title="Course prerequisites">
         <p>
           FA/CPR/AED Instructor candidates must possess a current basic-level
           certification in FA/CPR/AED or equivalent.
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Length">
+      <ClassPageSection title="Course length">
         <p>
           The FA/CPR/AED Instructor Course is offered in a blended learning
           format that includes:
@@ -52,7 +55,7 @@ export default function FaCprAedInstructorPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Preparation">
+      <ClassPageSection title="Course preparation">
         <p>
           To prepare for the American Red Cross First Aid/CPR/AED Instructor
           course, make sure you have strong familiarity with the base skills

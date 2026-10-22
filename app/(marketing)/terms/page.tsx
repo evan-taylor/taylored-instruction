@@ -54,7 +54,7 @@ export default async function TermsPage() {
       <section className="relative py-16 md:py-24">
         <div className="container relative mx-auto px-4 text-center">
           <h1 className="mb-4 font-bold text-3xl text-text md:text-4xl">
-            Taylored Instruction – Terms and Conditions for Course Bookings
+            Terms and conditions for course bookings
           </h1>
           <p className="mx-auto max-w-3xl text-lg text-text md:text-xl">
             By booking a course with Taylored Instruction LLC, you agree to the
@@ -71,10 +71,10 @@ export default async function TermsPage() {
       <section className="bg-background py-16">
         <div className="container mx-auto max-w-4xl px-4">
           <h2 className="mb-6 font-semibold text-2xl text-text">
-            Cancellation and Refund Policy
+            Cancellation and refund policy
           </h2>
           <h3 className="mb-3 font-semibold text-text text-xl">
-            Reschedule and Refund Policy
+            Reschedule and refund policy
           </h3>
           <p>
             At Taylored Instruction, we do not offer refunds for course
@@ -83,7 +83,7 @@ export default async function TermsPage() {
           </p>
 
           <h4 className="mb-2 font-semibold text-lg text-text">
-            Rescheduling Policy
+            Rescheduling policy
           </h4>
           <ul className="mb-4 list-inside list-disc text-text-light">
             <li>
@@ -98,7 +98,7 @@ export default async function TermsPage() {
           </ul>
 
           <h4 className="mb-2 font-semibold text-lg text-text">
-            Refund Exceptions
+            Refund exceptions
           </h4>
           <p>
             Refunds are only provided if no courses of the type you registered
@@ -107,7 +107,7 @@ export default async function TermsPage() {
           </p>
 
           <h3 className="mt-8 mb-3 font-semibold text-text text-xl">
-            eLearning Policy
+            eLearning policy
           </h3>
           <p>
             Blended learning courses require completion of eLearning modules
@@ -135,7 +135,7 @@ export default async function TermsPage() {
             .
           </p>
           <h3 className="mt-8 mb-3 font-semibold text-text text-xl">
-            Late Arrivals
+            Late arrivals
           </h3>
           <p>
             All of our courses begin on time and promptly. If you arrive more
@@ -150,10 +150,10 @@ export default async function TermsPage() {
           </p>
 
           <h2 className="mt-12 mb-6 font-semibold text-2xl text-text">
-            Return and Refund Policy for Online Shop
+            Return and refund policy for the online shop
           </h2>
           <h3 className="mb-3 font-semibold text-text text-xl">
-            Digital Goods
+            Digital goods
           </h3>
           <p>
             All digital goods, including eBooks, course access codes, and
@@ -162,7 +162,7 @@ export default async function TermsPage() {
           </p>
 
           <h3 className="mb-3 font-semibold text-text text-xl">
-            Physical Goods
+            Physical goods
           </h3>
           <p>
             Physical goods are eligible for a refund within 30 days of purchase,
@@ -180,7 +180,7 @@ export default async function TermsPage() {
           </p>
 
           <h2 className="mt-12 mb-6 font-semibold text-2xl text-text">
-            Messaging Terms and Conditions
+            Messaging terms and conditions
           </h2>
 
           <p>
@@ -197,7 +197,7 @@ export default async function TermsPage() {
           </p>
 
           <h2 className="mt-12 mb-6 font-semibold text-2xl text-text">
-            Agreement, Waiver, and Release of Liability
+            Agreement, waiver, and release of liability
           </h2>
           <p>
             By enrolling in a course or program with Taylored Instruction LLC,
@@ -237,7 +237,7 @@ export default async function TermsPage() {
           </p>
 
           <h2 className="mt-12 mb-6 font-semibold text-2xl text-text">
-            Media Consent
+            Media consent
           </h2>
           <p>
             By booking a course with Taylored Instruction LLC, you grant us

@@ -1,21 +1,24 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function AhaInstructorTrainingPageContent() {
   return (
     <ClassPageLayout
-      badgeLabel="Instructor Training"
+      badgeLabel="Instructor training"
       courseName="AHA Instructor Training"
       image={{
         alt: "CPR instructor training session",
         src: "/Cpr-Instructor-Image.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/tayloredinstruction/certifications/aha-bls-instructor-2025/"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/tayloredinstruction/certifications/aha-bls-instructor-2025/"
+      )}
       subtitle="Build the skills to teach AHA BLS or Heartsaver courses in your community, workplace, or organization."
       title="American Heart Association Instructor Training"
     >
-      <ClassPageSection title="Course Overview">
+      <ClassPageSection title="Course overview">
         <p>
           The AHA Instructor Course trains individuals to effectively teach BLS
           or Heartsaver courses. Through online and in-person training, you will
@@ -24,14 +27,14 @@ export default function AhaInstructorTrainingPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Duration and Audience">
+      <ClassPageSection title="Duration and audience">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Blended Learning:</strong> 2 hours online, 8 hours
+            <strong>Blended learning:</strong> 2 hours online, 8 hours
             in-person, excluding monitoring.
           </li>
           <li>
-            <strong>Total Commitment:</strong> Approximately 12 hours, including
+            <strong>Total commitment:</strong> Approximately 12 hours, including
             teaching your first course.
           </li>
           <li>
@@ -42,7 +45,7 @@ export default function AhaInstructorTrainingPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Steps to Become an AHA Instructor">
+      <ClassPageSection title="Steps to become an AHA instructor">
         <ol className="list-decimal space-y-4 pl-5">
           <li>
             <strong>Complete the prerequisites.</strong> Hold a current AHA
@@ -78,22 +81,22 @@ export default function AhaInstructorTrainingPageContent() {
         </ol>
       </ClassPageSection>
 
-      <ClassPageSection title="Certification Details">
+      <ClassPageSection title="Certification details">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Instructor Certification Validity:</strong> 2 years.
+            <strong>Instructor certification validity:</strong> 2 years.
           </li>
           <li>
-            <strong>Renewal Requirements:</strong> Teach at least four courses
+            <strong>Renewal requirements:</strong> Teach at least four courses
             and complete an Instructor Renewal session every two years.
           </li>
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Frequently Asked Questions">
+      <ClassPageSection title="Frequently asked questions">
         <div className="space-y-5">
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               Who can become an AHA Instructor?
             </h3>
             <p>
@@ -102,7 +105,7 @@ export default function AhaInstructorTrainingPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               What disciplines can I teach?
             </h3>
             <p>
@@ -111,7 +114,7 @@ export default function AhaInstructorTrainingPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               Can I teach independently?
             </h3>
             <p>

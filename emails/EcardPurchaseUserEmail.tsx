@@ -24,7 +24,7 @@ interface EcardPurchaseUserEmailProps {
   quantity?: string; // For single item purchases
 }
 
-export const EcardPurchaseUserEmail: React.FC<
+const EcardPurchaseUserEmail: React.FC<
   Readonly<EcardPurchaseUserEmailProps>
 > = ({ itemName, quantity, price, cartItems }) => (
   <Html>

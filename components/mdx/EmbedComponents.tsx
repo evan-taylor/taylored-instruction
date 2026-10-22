@@ -124,7 +124,7 @@ export function CalComButton({
 
   return (
     <button
-      className="my-4 inline-flex items-center justify-center rounded bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      className="my-4 inline-flex items-center justify-center rounded-sm bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2"
       data-cal-config='{"layout":"month_view"}'
       data-cal-link={`${username}/${eventType}`}
       data-cal-namespace={namespace}

@@ -1,6 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
+import { nativeRegistrationEnabled } from "@/lib/registration-launch";
 import { sanityFetch } from "@/sanity/lib/client";
 import { POSTS_SITEMAP_QUERY } from "@/sanity/lib/queries";
 import type { BlogPostSitemapEntry } from "@/sanity/types";
@@ -151,8 +152,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If Sanity is unavailable, still return a valid sitemap.
   }
 
+  const registrationRoutes: string[] = [];
+  if (nativeRegistrationEnabled()) {
+    registrationRoutes.push("/classes", "/group-training");
+    try {
+      const courses = await fetchQuery(api.registration.selfPaced, {});
+      for (const course of courses) {
+        registrationRoutes.push(`/courses/${course.slug}`);
+      }
+    } catch {
+      // Still return the static routes when Convex is unavailable.
+    }
+  }
+
   const entries = [
     ...staticRoutePaths.map((path) => buildEntry({ path })),
+    ...registrationRoutes.map((path) => buildEntry({ path })),
     ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
       buildEntry({
         lastModified: resourceRoute.lastModified,

@@ -9,7 +9,7 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2026-08-26.dahlia",
+    apiVersion: "2026-09-30.endive",
   });
 }
 
@@ -38,13 +38,13 @@ async function getPriceCached(id: string) {
   }
 
   return {
-    currency: price.currency,
     id: price.id,
-    product_description: productDescription,
-    product_id: price.product,
-    product_images: productImages,
-    product_name: productName,
     unit_amount: price.unit_amount,
+    currency: price.currency,
+    product_id: price.product,
+    product_name: productName,
+    product_description: productDescription,
+    product_images: productImages,
   };
 }
 
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       try {
         return await getPriceCached(id);
       } catch {
-        return { error: "Failed to retrieve price details.", id };
+        return { id, error: "Failed to retrieve price details." };
       }
     });
 

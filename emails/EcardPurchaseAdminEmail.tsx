@@ -26,7 +26,7 @@ interface EcardPurchaseAdminEmailProps {
   sessionId?: string;
 }
 
-export const EcardPurchaseAdminEmail: React.FC<
+const EcardPurchaseAdminEmail: React.FC<
   Readonly<EcardPurchaseAdminEmailProps>
 > = ({ itemName, quantity, price, customerEmail, sessionId, cartItems }) => (
   <Html>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
+import { Button } from "@/components/ui/Button";
+import { PageHeader } from "@/components/ui/page-header";
 import { useProfile } from "@/hooks/useProfile";
 import { AlertMessages } from "./alert-messages";
 import { ConfirmDialog } from "./confirm-dialog";
@@ -16,14 +17,10 @@ import { useAdminProfiles } from "./use-admin-profiles";
 import { useInstructorActions } from "./use-instructor-actions";
 
 function AdminInstructorsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const { loading: profileLoading, session } = useProfile();
 
-  const forceAdmin = searchParams?.get("admin") === "true";
-
   const { isAdmin, userEmailForDisplay, adminAccessCheckInProgress } =
-    useAdminAuth(profileLoading, session, forceAdmin);
+    useAdminAuth(profileLoading, session, false);
 
   const {
     profiles,
@@ -53,11 +50,7 @@ function AdminInstructorsContent() {
     );
   }
 
-  if (!(isAdmin || forceAdmin)) {
-    if (typeof window !== "undefined") {
-      router.push(session ? "/my-account" : "/");
-      return null;
-    }
+  if (!isAdmin) {
     return <AccessDenied userEmailForDisplay={userEmailForDisplay} />;
   }
 
@@ -66,7 +59,7 @@ function AdminInstructorsContent() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="space-y-6">
       <ConfirmDialog
         isOpen={confirmDialogState.isOpen}
         onCancel={cancelRejectUser}
@@ -75,21 +68,16 @@ function AdminInstructorsContent() {
         userId={confirmDialogState.userId}
       />
 
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-bold text-3xl md:text-4xl">Manage Instructors</h1>
-          {forceAdmin && (
-            <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs text-yellow-800">
-              Testing Mode Active
-            </span>
-          )}
-        </div>
-
-        {userEmailForDisplay && (
-          <p className="mb-4 text-gray-600 text-sm">
-            Logged in as Admin: {userEmailForDisplay}
-          </p>
-        )}
+      <div className="space-y-6">
+        <PageHeader
+          actions={
+            <Button href="/admin/sessions" variant="secondary">
+              Sessions & assignments
+            </Button>
+          }
+          description="Approve instructor access to eCard purchasing and teaching resources. Assign approved instructors to classes from Sessions."
+          title="Instructors"
+        />
 
         <AlertMessages actionMessage={actionMessage} error={error} />
 
