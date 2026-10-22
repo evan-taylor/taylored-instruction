@@ -113,9 +113,8 @@ staff all sign in through Convex Auth: a six-digit code emailed to the address t
 registered with, or Google. `/registrations` shows that form inline and then lists
 whatever the signed-in account's verified email holds. Consequences for operators:
 
-- Sign-in code emails now follow `REGISTRATION_MODE`: outside live mode they go to
-  `REGISTRATION_TEST_RECIPIENT`, so that variable must be set on every non-production
-  Convex deployment or email sign-in fails there with a configuration error.
+- Sign-in codes always go to the address that requested them, on every deployment.
+  Only registration notifications and instructor invitations use the test mailbox.
 - Every student who signs in gets a `users` row. Accounts carry no privileges; admin
   and instructor access still come from the allowlist and `profiles.isInstructor`.
 - After deploying, run the internal mutation `registrationMigration:purgeLegacyPortalGrants`

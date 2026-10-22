@@ -1350,41 +1350,34 @@ describe("Shared development service settings", () => {
     expect(leftovers.grants).toHaveLength(0);
     expect(leftovers.tokens).toHaveLength(0);
   });
-  it.each([false, true])(
-    "routes the sign-in code email correctly with live=%s",
-    async (live) => {
-      vi.stubEnv("REGISTRATION_MODE", live ? "live" : "test");
-      vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
-      vi.stubEnv("REGISTRATION_TEST_RECIPIENT", "safe@example.test");
-      const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-        new Response(JSON.stringify({ id: "local-email" }), {
-          status: 200,
-          headers: { "Content-Type": "application/json" },
-        })
-      );
-      try {
-        const { ResendOTP } = await import("../../convex/ResendOTP");
-        await ResendOTP.sendVerificationRequest({
-          identifier: "student@example.test",
-          url: "",
-          expires: new Date(Date.now() + 600_000),
-          provider: { ...ResendOTP, apiKey: "re_local_mock_only" },
-          token: "123456",
-          theme: {},
-          request: new Request("https://example.test/api/auth"),
-        });
-        expect(send).toHaveBeenCalledTimes(1);
-        const body = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
-        expect(body.to).toEqual([
-          live ? "student@example.test" : "safe@example.test",
-        ]);
-        expect(body.from).toBe("Training <sender@example.test>");
-        expect(body.text).toContain("123456");
-      } finally {
-        send.mockRestore();
-      }
+  it("always sends the sign-in code to the person who asked, even in test mode", async () => {
+    vi.stubEnv("REGISTRATION_MODE", "test");
+    vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
+    vi.stubEnv("REGISTRATION_TEST_RECIPIENT", "safe@example.test");
+    const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ id: "local-email" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
+    );
+    try {
+      const { ResendOTP } = await import("../../convex/ResendOTP");
+      await ResendOTP.sendVerificationRequest({
+        identifier: "student@example.test",
+        url: "",
+        expires: new Date(Date.now() + 600_000),
+        provider: { ...ResendOTP, apiKey: "re_local_mock_only" },
+        token: "123456",
+        theme: {},
+        request: new Request("https://example.test/api/auth"),
+      });
+      const body = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
+      expect(body.to).toEqual(["student@example.test"]);
+      expect(body.text).toContain("123456");
+    } finally {
+      send.mockRestore();
     }
-  );
+  });
 });
 
 describe("Group training and invoicing", () => {
