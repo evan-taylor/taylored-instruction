@@ -7,7 +7,7 @@ import {
 } from "convex/react";
 import { ChevronDown, ChevronUp, Download, Mail, Search } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -466,22 +466,30 @@ function EmailDialog({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
+  // One attempt per message: the key and progress survive a failed batch so
+  // retrying resumes where it stopped instead of re-queueing earlier batches.
+  const attempt = useRef({ signature: "", key: "", sent: 0 });
   async function submit() {
     setBusy(true);
     try {
-      // The backend accepts up to EMAIL_BATCH recipients per call; each batch
-      // keeps its own key so a retry never double-sends.
-      const requestKey = crypto.randomUUID();
-      for (let start = 0; start < seats.length; start += EMAIL_BATCH) {
-        // biome-ignore lint/performance/noAwaitInLoops: batches must be sequential to preserve ordering and bound load
+      const signature = JSON.stringify({ seats, subject, body });
+      if (attempt.current.signature !== signature) {
+        attempt.current = { signature, key: crypto.randomUUID(), sent: 0 };
+      }
+      // The backend accepts up to EMAIL_BATCH recipients per call.
+      while (attempt.current.sent < seats.length) {
+        const start = attempt.current.sent;
+        // biome-ignore lint/performance/noAwaitInLoops: batches must be sequential so progress is tracked
         await send({
           sessionId,
           seats: seats.slice(start, start + EMAIL_BATCH),
           subject,
           body,
-          requestKey: `${requestKey}:${start / EMAIL_BATCH}`,
+          requestKey: `${attempt.current.key}:${start / EMAIL_BATCH}`,
         });
+        attempt.current.sent = start + EMAIL_BATCH;
       }
+      attempt.current = { signature: "", key: "", sent: 0 };
       onResult("Selected-attendee message queued");
       setSubject("");
       setBody("");

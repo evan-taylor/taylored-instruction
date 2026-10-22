@@ -562,14 +562,16 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
     }
   }
   // Signed-in users and devices that already confirmed a link go straight in.
-  const [probing, setProbing] = useState(!access);
+  // Reading with the cookie never consumes an emailed token, so the probe is
+  // safe on the access route too.
+  const [probing, setProbing] = useState(true);
+  const [token, setToken] = useState("");
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
   useEffect(() => {
-    if (access) {
-      return;
-    }
+    setToken(access ? window.location.hash.slice(1) : "");
     load("registrations", null, true).finally(() => setProbing(false));
   }, []);
+  const confirming = access && token !== "" && !loaded;
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -578,13 +580,13 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
           eyebrow="Secure portal"
           title="Your registrations"
         />
-        {access ? (
+        {confirming && !probing ? (
           <AccessCard
             busy={busy}
             onConfirm={async () => {
-              const token = window.location.hash.slice(1);
               if (await post({ token })) {
-                window.history.replaceState(null, "", "/registrations/access");
+                setToken("");
+                window.history.replaceState(null, "", "/registrations");
                 await load("registrations");
               }
             }}
@@ -599,7 +601,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
             <Skeleton className="h-40" />
           </div>
         ) : null}
-        {probing || loaded || access ? null : (
+        {probing || loaded || confirming ? null : (
           <div className="mx-auto max-w-xl">
             <RequestAccessCard
               busy={busy}

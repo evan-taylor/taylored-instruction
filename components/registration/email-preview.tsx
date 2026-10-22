@@ -94,6 +94,8 @@ export function EmailPreview({
             {(props) => (
               <TextInput
                 {...props}
+                autoComplete="email"
+                inputMode="email"
                 onChange={(e) => setRecipient(e.target.value)}
                 onKeyDown={(e) => {
                   // Enter sends the test without submitting the editor form.
@@ -103,7 +105,7 @@ export function EmailPreview({
                   }
                 }}
                 placeholder="you@example.com"
-                type="email"
+                type="text"
                 value={recipient}
               />
             )}
