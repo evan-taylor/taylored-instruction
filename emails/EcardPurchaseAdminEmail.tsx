@@ -12,21 +12,21 @@ import {
   Text,
 } from "@react-email/components";
 
-interface CartItem {
+type CartItem = {
   name: string;
   quantity: string;
-}
+};
 
-interface EcardPurchaseAdminEmailProps {
+type EcardPurchaseAdminEmailProps = {
   cartItems?: CartItem[];
   customerEmail?: string;
   itemName?: string;
   price?: string;
   quantity?: string;
   sessionId?: string;
-}
+};
 
-export const EcardPurchaseAdminEmail: React.FC<
+const EcardPurchaseAdminEmail: React.FC<
   Readonly<EcardPurchaseAdminEmailProps>
 > = ({ itemName, quantity, price, customerEmail, sessionId, cartItems }) => (
   <Html>

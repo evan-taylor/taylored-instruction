@@ -5,7 +5,7 @@ import type React from "react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
-interface CourseRegistrationButtonProps {
+type CourseRegistrationButtonProps = {
   buttonClassName?: string;
   buttonText?: string;
   className?: string;
@@ -13,7 +13,7 @@ interface CourseRegistrationButtonProps {
   registrationUrl: string;
   size?: "sm" | "md" | "lg";
   variant?: "primary" | "secondary" | "outline";
-}
+};
 
 const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
   courseName,
@@ -45,7 +45,6 @@ const CourseRegistrationButton: React.FC<CourseRegistrationButtonProps> = ({
         )}
         href={registrationUrl}
         onClick={handleClick}
-        rel="noopener noreferrer"
         size={size}
         target="_blank"
         variant={variant}

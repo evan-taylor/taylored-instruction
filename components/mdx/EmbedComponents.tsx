@@ -4,9 +4,9 @@ import { getCalApi } from "@calcom/embed-react";
 import Script from "next/script";
 import { useEffect } from "react";
 
-interface CapEmbedProps {
+type CapEmbedProps = {
   url: string;
-}
+};
 
 function extractCapVideoId(url: string): string | undefined {
   if (url.includes("cap.so/embed/")) {
@@ -41,9 +41,9 @@ export function CapEmbed({ url }: CapEmbedProps) {
   );
 }
 
-interface LoomEmbedProps {
+type LoomEmbedProps = {
   url: string;
-}
+};
 
 export function LoomEmbed({ url }: LoomEmbedProps) {
   const videoId = url.includes("loom.com/share/")
@@ -70,10 +70,10 @@ export function LoomEmbed({ url }: LoomEmbedProps) {
   );
 }
 
-interface TypeformEmbedProps {
+type TypeformEmbedProps = {
   formId: string;
   height?: number;
-}
+};
 
 export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
   if (!formId) {
@@ -101,12 +101,12 @@ export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
   );
 }
 
-interface CalComButtonProps {
+type CalComButtonProps = {
   buttonText?: string;
   eventType: string;
   namespace: string;
   username: string;
-}
+};
 
 export function CalComButton({
   username,
@@ -124,7 +124,7 @@ export function CalComButton({
 
   return (
     <button
-      className="my-4 inline-flex items-center justify-center rounded bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+      className="my-4 inline-flex items-center justify-center rounded-sm bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark focus:outline-hidden focus:ring-2 focus:ring-primary focus:ring-offset-2"
       data-cal-config='{"layout":"month_view"}'
       data-cal-link={`${username}/${eventType}`}
       data-cal-namespace={namespace}

@@ -1,72 +1,74 @@
-import { Heart, LifeBuoy, UserCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
-interface ServiceCardProps {
-  description: string;
-  icon: ReactNode;
-  link: string;
-  rel?: ComponentProps<typeof Link>["rel"];
-  target?: ComponentProps<typeof Link>["target"];
+type Service = {
   title: string;
-}
+  description: string;
+  link: string;
+  cta: string;
+};
 
-const ServiceCard = ({
-  icon,
-  title,
-  description,
-  link,
-  rel,
-  target,
-}: ServiceCardProps) => (
-  <Link className="group block h-full" href={link} rel={rel} target={target}>
-    <div
-      className={
-        "h-full rounded-lg bg-white p-8 shadow-md transition-all duration-300 ease-in-out hover:scale-[1.02] hover:shadow-lg group-focus-within:ring-2 group-focus-within:ring-primary group-focus-within:ring-offset-2"
-      }
-    >
-      <div className="mb-4 text-5xl text-primary">{icon}</div>
-      <h3 className="mb-3 font-bold text-2xl text-text">{title}</h3>
-      <p className="text-text-light">{description}</p>
-    </div>
-  </Link>
-);
+const SERVICES: Service[] = [
+  {
+    title: "CPR training",
+    description:
+      "American Heart Association and American Red Cross CPR for laypersons and professional rescuers. Need to train your staff? We come to you.",
+    link: registrationBookingUrl("https://www.hovn.app/tayloredinstruction/"),
+    cta: "Find a class",
+  },
+  {
+    title: "Lifeguard training",
+    description:
+      "American Red Cross Lifeguarding, taught at your facility or in a class we host.",
+    link: "/lifeguarding",
+    cta: "About lifeguarding",
+  },
+  {
+    title: "Instructor training",
+    description:
+      "Become an AHA or Red Cross instructor, or align with our training site.",
+    link: "/aha-instructor-training",
+    cta: "Instructor courses",
+  },
+];
 
 export const ServicesSection = () => (
-  <section className="bg-gray-50 py-16">
+  <section className="border-slate-200 border-y bg-slate-50 py-16">
     <div className="container mx-auto px-4">
-      <div className="mb-12 text-center">
+      <div className="mb-10 max-w-2xl">
         <h2 className="mb-2 text-primary text-sm uppercase tracking-wider">
-          Services We Provide
+          What we teach
         </h2>
         <h3 className="font-bold text-3xl text-text md:text-4xl">
-          Empowering You with Lifesaving Skills
+          Lifesaving skills for every setting
         </h3>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        <ServiceCard
-          description="We offer American Heart Association or American Red Cross CPR training for both laypersons and professional rescuers. Need to train your staff? We would love to work with you."
-          icon={<Heart />}
-          link="https://www.hovn.app/tayloredinstruction/"
-          rel="noopener noreferrer"
-          target="_blank"
-          title="CPR Training"
-        />
-
-        <ServiceCard
-          description="We utilize the American Red Cross Lifeguarding curriculum to train Lifeguards. We are always happy to travel to your facility to train your staff, or you can take a class we host!"
-          icon={<LifeBuoy />}
-          link="/lifeguarding"
-          title="Lifeguard Training"
-        />
-
-        <ServiceCard
-          description="Want to become a CPR Instructor? We can help! We offer both American Heart Association and American Red Cross Instructor Training, as well as Alignment with our Training Site."
-          icon={<UserCheck />}
-          link="/aha-instructor-training"
-          title="Instructor Training"
-        />
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {SERVICES.map((service) => {
+          const external = service.link.startsWith("http");
+          return (
+            <article
+              className="flex h-full flex-col rounded-lg border border-slate-200 bg-white p-6"
+              key={service.title}
+            >
+              <h4 className="mb-2 font-bold text-text text-xl">
+                {service.title}
+              </h4>
+              <p className="mb-6 grow text-text-light">{service.description}</p>
+              <Link
+                className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-2 hover:underline"
+                href={service.link}
+                rel={external ? "noopener noreferrer" : undefined}
+                target={external ? "_blank" : undefined}
+              >
+                {service.cta}
+                <ArrowRight aria-hidden="true" className="h-4 w-4" />
+              </Link>
+            </article>
+          );
+        })}
       </div>
     </div>
   </section>

@@ -12,7 +12,7 @@ import {
   Text,
 } from "@react-email/components";
 
-interface ContactFormEmailProps {
+type ContactFormEmailProps = {
   contactMethods?: string[];
   email: string;
   firstName: string;
@@ -23,9 +23,9 @@ interface ContactFormEmailProps {
   phone?: string;
   smsOptIn?: boolean;
   smsOptOut?: boolean;
-}
+};
 
-export const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
+const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
   firstName,
   lastName,
   email,

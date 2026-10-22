@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -7,16 +7,16 @@ import { mutation, query } from "./_generated/server";
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
-    throw new Error("Not authenticated");
+    throw new ConvexError("Not authenticated");
   }
 
   const user = await ctx.db.get(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError("User not found");
   }
 
   if (!isAdminEmail(user.email)) {
-    throw new Error("Admin access required");
+    throw new ConvexError("Admin access required");
   }
 
   return { email: user.email, userId };
@@ -25,7 +25,7 @@ async function requireAdmin(ctx: QueryCtx | MutationCtx) {
 async function requireInstructor(ctx: QueryCtx | MutationCtx) {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
-    throw new Error("Not authenticated");
+    throw new ConvexError("Not authenticated");
   }
 
   const profile = await ctx.db
@@ -34,7 +34,7 @@ async function requireInstructor(ctx: QueryCtx | MutationCtx) {
     .first();
 
   if (!profile?.isInstructor) {
-    throw new Error("Instructor access required");
+    throw new ConvexError("Instructor access required");
   }
 
   return { profile, userId };
@@ -102,7 +102,7 @@ export const updateStep = mutation({
     const step = await ctx.db.get(id);
 
     if (!step) {
-      throw new Error("Step not found");
+      throw new ConvexError("Step not found");
     }
 
     await ctx.db.patch(id, {
@@ -121,7 +121,7 @@ export const deleteStep = mutation({
 
     const step = await ctx.db.get(args.id);
     if (!step) {
-      throw new Error("Step not found");
+      throw new ConvexError("Step not found");
     }
 
     await ctx.db.delete(args.id);
@@ -141,12 +141,13 @@ export const reorderSteps = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
 
-    for (const update of args.updates) {
+    await args.updates.reduce(async (previous, update) => {
+      await previous;
       await ctx.db.patch(update.id, {
         order: update.order,
         updatedAt: new Date().toISOString(),
       });
-    }
+    }, Promise.resolve());
 
     return true;
   },

@@ -4,6 +4,7 @@ import { z } from "zod"; // Assuming zod is needed for the schema
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend domain
@@ -11,15 +12,15 @@ const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend do
 // Define schema for form validation - RESTORED
 const AlignmentInterestSchema = z
   .object({
-    agencies: z.array(z.string()).optional(), // Optional array of strings
-    email: z.string().email("Invalid email address"),
     firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(1, "Phone number is required"), // Assuming phone is required based on form UI
     hasCertification: z.enum(["Yes", "No"], {
       error: "Certification status is required",
     }),
-    lastName: z.string().min(1, "Last name is required"),
+    agencies: z.array(z.string()).optional(), // Optional array of strings
     message: z.string().optional(),
-    phone: z.string().min(1, "Phone number is required"), // Assuming phone is required based on form UI
     smsOptIn: z.boolean().optional(),
     smsOptOut: z.boolean().optional(),
   })
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
         .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
         .join("; ");
       return NextResponse.json(
-        { error: `Invalid form data. ${errors}`, success: false },
+        { success: false, error: `Invalid form data. ${errors}` },
         { status: 400 }
       );
     }
@@ -61,17 +62,17 @@ export async function POST(req: NextRequest) {
     // Send email to admin
     const adminEmailData = await getResendClient().emails.send({
       from: `Alignment Form <${fromEmail}>`, // Updated sender name
+      to: [adminEmail],
+      replyTo: email,
+      subject: `New Alignment Interest Submission from ${firstName} ${lastName}`,
       react: React.createElement(AlignmentInterestEmail, {
         ...validatedFields.data,
       }), // Pass validated data
-      replyTo: email,
-      subject: `New Alignment Interest Submission from ${firstName} ${lastName}`,
-      to: [adminEmail],
     });
 
     if (adminEmailData.error) {
       return NextResponse.json(
-        { error: "Failed to send notification email.", success: false },
+        { success: false, error: "Failed to send notification email." },
         { status: 500 }
       );
     }
@@ -79,9 +80,10 @@ export async function POST(req: NextRequest) {
     // Send confirmation email to user
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
-      react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
-      subject: "Alignment Interest Received - Taylored Instruction",
       to: [email],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Alignment Interest Received - Taylored Instruction",
+      react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
     });
 
     if (userEmailData.error) {
@@ -92,12 +94,12 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     if (error instanceof Error) {
       return NextResponse.json(
-        { error: error.message, success: false },
+        { success: false, error: error.message },
         { status: 500 }
       );
     }
     return NextResponse.json(
-      { error: "An unexpected error occurred.", success: false },
+      { success: false, error: "An unexpected error occurred." },
       { status: 500 }
     );
   }

@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
@@ -10,16 +10,16 @@ const SHORT_ID_SUFFIX_LENGTH = 4;
 async function requireAdmin(ctx: { db: any; auth: any }) {
   const userId = await auth.getUserId(ctx);
   if (!userId) {
-    throw new Error("Unauthorized");
+    throw new ConvexError("Unauthorized");
   }
 
   const user = await ctx.db.get(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError("User not found");
   }
 
   if (!isAdminEmail(user.email)) {
-    throw new Error("Forbidden: Admin access required");
+    throw new ConvexError("Forbidden: Admin access required");
   }
 
   return { user, userId };
@@ -69,7 +69,7 @@ export const updateInstructorStatus = mutation({
 
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
-      throw new Error("Profile not found");
+      throw new ConvexError("Profile not found");
     }
 
     const now = new Date().toISOString();
@@ -106,7 +106,7 @@ export const deleteUserAndProfile = mutation({
 
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
-      throw new Error("Profile not found");
+      throw new ConvexError("Profile not found");
     }
 
     await ctx.db.delete(args.profileId);

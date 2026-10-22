@@ -3,7 +3,7 @@ import { useState } from "react";
 import { api } from "@/convex/_generated/api";
 import type { ProfileWithUser } from "./types";
 
-interface ConvexProfile {
+type ConvexProfile = {
   id: string;
   is_instructor: boolean;
   last_login: string | null | undefined;
@@ -11,7 +11,7 @@ interface ConvexProfile {
   updated_at: string | null | undefined;
   user_email: string | null;
   userId: string;
-}
+};
 
 function mapConvexProfileToLocal(
   convexProfile: ConvexProfile
