@@ -465,7 +465,7 @@ function Workspace({
           </button>
         </header>
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
-          <div className="mx-auto max-w-[1400px]">{children}</div>
+          <div className="mx-auto min-w-0 max-w-[1400px]">{children}</div>
         </main>
       </div>
       <MobileDrawer

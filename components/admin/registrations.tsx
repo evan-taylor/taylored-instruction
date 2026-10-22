@@ -1,4 +1,5 @@
 "use client";
+import { useClientMediaQuery } from "@silk-hq/components";
 import {
   useAction,
   useConvex,
@@ -21,6 +22,7 @@ import {
   pluralize,
 } from "@/components/registration/format";
 import {
+  CancelSeatButton,
   charged,
   ManualEnrollment,
   OrderInvoices,
@@ -105,6 +107,7 @@ function AttendeesTable({ order }: { order: Order }) {
   const [expanded, setExpanded] = useState<Id<"registrationSeats"> | null>(
     null
   );
+  const wide = useClientMediaQuery("(min-width: 640px)");
   if (!seats) {
     return <Skeleton className="h-24" />;
   }
@@ -113,6 +116,76 @@ function AttendeesTable({ order }: { order: Order }) {
       <p className="text-slate-500 text-sm">
         No seats have been created for this order yet.
       </p>
+    );
+  }
+  const toggle = (seat: (typeof seats)[number]) =>
+    setExpanded(expanded === seat._id ? null : seat._id);
+  // One layout at a time, so an expanded attendee's editing state is not
+  // duplicated into a hidden copy that would surface on rotation.
+  if (!wide) {
+    return (
+      <ul className="list-none space-y-3 p-0">
+        {seats.map((seat) => {
+          const open = expanded === seat._id;
+          return (
+            <li
+              className="rounded-lg border border-slate-200 bg-white p-4"
+              key={seat._id}
+            >
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="break-words font-medium text-slate-900">
+                    {seat.name}
+                  </p>
+                  <p className="break-all text-slate-500 text-xs">
+                    {seat.email}
+                    {seat.snapshot.attendee.phone
+                      ? ` · ${seat.snapshot.attendee.phone}`
+                      : ""}
+                  </p>
+                </div>
+                <StatusBadge status={seat.state} />
+              </div>
+              <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-slate-500 text-xs uppercase tracking-wide">
+                    Materials
+                  </dt>
+                  <dd className="tabular-nums">
+                    {seat.snapshot.materials.length}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-500 text-xs uppercase tracking-wide">
+                    Seat total
+                  </dt>
+                  <dd>
+                    <Money cents={seat.snapshot.total} />
+                    <TaxCodes lines={seat.snapshot.lines} />
+                  </dd>
+                </div>
+              </dl>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  aria-expanded={open}
+                  onClick={() => toggle(seat)}
+                  size="sm"
+                  type="button"
+                  variant={open ? "secondary" : "outline"}
+                >
+                  {open ? "Hide" : "Manage"}
+                </Button>
+                <CancelSeatButton seat={seat} size="sm" variant="secondary" />
+              </div>
+              {open ? (
+                <div className="mt-3 rounded-md bg-slate-50 p-3">
+                  <SeatOperations seat={seat} />
+                </div>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
     );
   }
   return (
@@ -152,16 +225,19 @@ function AttendeesTable({ order }: { order: Order }) {
                   <TaxCodes lines={seat.snapshot.lines} />
                 </TD>
                 <TD className="text-right">
-                  <Button
-                    aria-expanded={open}
-                    aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
-                    onClick={() => setExpanded(open ? null : seat._id)}
-                    size="xs"
-                    type="button"
-                    variant={open ? "secondary" : "ghost"}
-                  >
-                    {open ? "Hide" : "Manage"}
-                  </Button>
+                  <div className="inline-flex items-center gap-1">
+                    <Button
+                      aria-expanded={open}
+                      aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
+                      onClick={() => toggle(seat)}
+                      size="xs"
+                      type="button"
+                      variant={open ? "secondary" : "ghost"}
+                    >
+                      {open ? "Hide" : "Manage"}
+                    </Button>
+                    <CancelSeatButton seat={seat} variant="ghost" />
+                  </div>
                 </TD>
               </TR>
               {open ? (

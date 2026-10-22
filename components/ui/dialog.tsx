@@ -116,7 +116,10 @@ export function Modal({
               {children === undefined || children === null ? null : (
                 <Scroll.Root asChild>
                   <Scroll.View className="app-sheet-scroll min-h-0 flex-1">
-                    <Scroll.Content className="px-6 py-5">
+                    {/* Silk sizes the content to its widest child; cap it so
+                        a wide table scrolls inside its wrapper instead of
+                        being clipped by the panel. */}
+                    <Scroll.Content className="w-full min-w-0 max-w-full px-6 py-5">
                       {children}
                     </Scroll.Content>
                   </Scroll.View>

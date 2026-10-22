@@ -11,7 +11,7 @@ export function Table({
   return (
     <div
       className={cn(
-        "w-full overflow-x-auto rounded-xl border border-slate-200 bg-white",
+        "w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white",
         wrapperClassName
       )}
     >
