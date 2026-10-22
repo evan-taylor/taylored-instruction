@@ -1,5 +1,6 @@
 "use client";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Sheet, VisuallyHidden } from "@silk-hq/components";
 import { useQuery } from "convex/react";
 import {
   Bell,
@@ -22,7 +23,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
@@ -263,58 +264,51 @@ function MobileDrawer({
   attentionCount: number;
   email: string | null;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const pressedBackdrop = useRef(false);
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) {
-      return;
-    }
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
   return (
-    <dialog
-      aria-label="Admin navigation"
-      className="open:slide-in-from-left m-0 h-dvh max-h-none w-72 max-w-[85vw] flex-col border-slate-200 border-r bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 open:flex open:animate-in motion-reduce:open:animate-none"
-      onClick={(e) => {
-        if (e.target === ref.current && pressedBackdrop.current) {
-          onClose();
-        }
-        pressedBackdrop.current = false;
-      }}
-      onClose={onClose}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
+    <Sheet.Root
+      license="commercial"
+      onPresentedChange={(presented) => {
+        if (!presented) {
           onClose();
         }
       }}
-      onPointerDown={(e) => {
-        pressedBackdrop.current = e.target === ref.current;
-      }}
-      ref={ref}
+      presented={open}
+      sheetRole="dialog"
     >
-      <div className="flex h-14 shrink-0 items-center justify-between border-slate-200 border-b px-4">
-        <Brand />
-        <button
-          aria-label="Close navigation"
-          className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
-          onClick={onClose}
-          type="button"
+      <Sheet.Portal>
+        <Sheet.View
+          className="app-drawer-view"
+          contentPlacement="left"
+          nativeEdgeSwipePrevention
+          swipeOvershoot={false}
         >
-          <X aria-hidden="true" className="h-5 w-5" />
-        </button>
-      </div>
-      <SidebarContent
-        attentionCount={attentionCount}
-        email={email}
-        pathname={pathname}
-      />
-    </dialog>
+          <Sheet.Backdrop className="app-sheet-backdrop" />
+          <Sheet.Content className="app-drawer-content flex flex-col border-slate-200 border-r bg-white text-slate-900 shadow-2xl">
+            <VisuallyHidden.Root>
+              <Sheet.Title>Admin navigation</Sheet.Title>
+              <Sheet.Description>
+                Pages of the admin workspace
+              </Sheet.Description>
+            </VisuallyHidden.Root>
+            <div className="flex h-14 shrink-0 items-center justify-between border-slate-200 border-b px-4">
+              <Brand />
+              <Sheet.Trigger
+                action="dismiss"
+                aria-label="Close navigation"
+                className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+              >
+                <X aria-hidden="true" className="h-5 w-5" />
+              </Sheet.Trigger>
+            </div>
+            <SidebarContent
+              attentionCount={attentionCount}
+              email={email}
+              pathname={pathname}
+            />
+          </Sheet.Content>
+        </Sheet.View>
+      </Sheet.Portal>
+    </Sheet.Root>
   );
 }
 

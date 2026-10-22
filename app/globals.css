@@ -1,3 +1,5 @@
+/* Silk sheets: declare its layer before Tailwind so utilities can override defaults. */
+@import "@silk-hq/components/unlayered-styles.css" layer(silk);
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
@@ -152,4 +154,55 @@
   .animate-bounce {
     animation: none !important;
   }
+}
+
+/* Silk sheet surfaces used by components/ui/dialog.tsx and the admin drawer. */
+.app-sheet-view {
+  z-index: 60;
+  height: var(--silk-100-lvh-dvh-pct);
+}
+.app-sheet-view-center {
+  height: 100vh;
+}
+.app-sheet-content {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  padding-inline: 0;
+  /* The view spans the large viewport; this lifts the panel above a
+     collapsed-but-present browser bar (large minus dynamic viewport). */
+  padding-bottom: calc(var(--silk-100-lvh-dvh-pct) - 100dvh);
+  background-color: transparent;
+}
+.app-sheet-view-center .app-sheet-content {
+  padding-inline: 1rem;
+  padding-bottom: 0;
+}
+.app-sheet-panel {
+  min-height: 0;
+  max-height: calc(100dvh - 2.5rem - env(safe-area-inset-top, 0px));
+}
+.app-sheet-view-center .app-sheet-panel {
+  max-height: 85vh;
+}
+.app-sheet-handle {
+  --silk-defaults: silk-reset;
+  align-self: center;
+  width: 44px;
+  height: 5px;
+  margin-top: 0.625rem;
+  margin-bottom: 0.25rem;
+  cursor: pointer;
+  background-color: rgb(203 213 225);
+  border: 0;
+  border-radius: 9999px;
+}
+.app-drawer-view {
+  z-index: 60;
+  height: var(--silk-100-lvh-dvh-pct);
+}
+.app-drawer-content {
+  box-sizing: border-box;
+  width: min(85vw, 18rem);
+  height: 100%;
 }

@@ -1,15 +1,36 @@
 "use client";
+import {
+  Scroll,
+  Sheet,
+  type SheetViewProps,
+  useClientMediaQuery,
+  VisuallyHidden,
+} from "@silk-hq/components";
 import { X } from "lucide-react";
 import type * as React from "react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 
 /**
- * Accessible modal built on the native dialog element: focus trapping, Escape
- * to close, and backdrop dismissal come from the browser.
+ * Silk requires a commercial license for commercial use; see silkhq.com/access.
+ * Every sheet in the app declares it here so there is one place to change.
+ */
+const SILK_LICENSE = "commercial" as const;
+
+const WIDTHS = {
+  sm: "sm:max-w-md",
+  md: "sm:max-w-xl",
+  lg: "sm:max-w-3xl",
+  xl: "sm:max-w-5xl",
+};
+
+/**
+ * Modal built on Silk's Sheet: a centered dialog on larger screens and a
+ * swipeable bottom sheet on phones. Focus, inert background, Escape, and
+ * backdrop dismissal come from Silk.
  */
 export function Modal({
   open,
@@ -24,87 +45,83 @@ export function Modal({
   onClose: () => void;
   title: React.ReactNode;
   description?: React.ReactNode;
-  children: React.ReactNode;
+  children?: React.ReactNode;
   footer?: React.ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }) {
-  const titleId = useId();
-  const ref = useRef<HTMLDialogElement>(null);
-  // A text selection that starts inside the panel and ends over the backdrop
-  // still fires `click` on the dialog; only a press that began on the
-  // backdrop counts as a dismissal.
-  const pressedBackdrop = useRef(false);
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) {
-      return;
-    }
-    if (open && !dialog.open) {
-      dialog.showModal();
-    } else if (!open && dialog.open) {
-      dialog.close();
-    }
-  }, [open]);
-  const widths = {
-    sm: "max-w-md",
-    md: "max-w-xl",
-    lg: "max-w-3xl",
-    xl: "max-w-5xl",
-  };
+  const wide = useClientMediaQuery("(min-width: 640px)");
+  const contentPlacement = wide ? "center" : "bottom";
+  const tracks: SheetViewProps["tracks"] = wide ? ["top", "bottom"] : "bottom";
   return (
-    <dialog
-      aria-labelledby={titleId}
-      className={cn(
-        "open:fade-in-0 open:zoom-in-95 m-auto w-[calc(100%-2rem)] rounded-xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-[2px] open:animate-in motion-reduce:open:animate-none",
-        widths[size]
-      )}
-      onClick={(e) => {
-        e.stopPropagation();
-        if (e.target === ref.current && pressedBackdrop.current) {
-          onClose();
-        }
-        pressedBackdrop.current = false;
-      }}
-      onClose={onClose}
-      onKeyDown={(e) => {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
+    <Sheet.Root
+      license={SILK_LICENSE}
+      onPresentedChange={(presented) => {
+        if (!presented) {
           onClose();
         }
       }}
-      onPointerDown={(e) => {
-        pressedBackdrop.current = e.target === ref.current;
-      }}
-      ref={ref}
+      presented={open}
+      sheetRole="dialog"
     >
-      <div className="flex max-h-[85dvh] flex-col">
-        <div className="flex items-start justify-between gap-4 border-slate-100 border-b px-6 py-4">
-          <div>
-            <h2 className="font-semibold text-lg leading-tight" id={titleId}>
-              {title}
-            </h2>
-            {description ? (
-              <p className="mt-1 text-slate-500 text-sm">{description}</p>
-            ) : null}
-          </div>
-          <button
-            aria-label="Close dialog"
-            className="-m-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
-            onClick={onClose}
-            type="button"
-          >
-            <X aria-hidden="true" className="h-5 w-5" />
-          </button>
-        </div>
-        <div className="overflow-y-auto px-6 py-5">{children}</div>
-        {footer ? (
-          <div className="flex flex-wrap items-center justify-end gap-3 border-slate-100 border-t bg-slate-50/70 px-6 py-4">
-            {footer}
-          </div>
-        ) : null}
-      </div>
-    </dialog>
+      <Sheet.Portal>
+        <Sheet.View
+          className={cn("app-sheet-view", wide && "app-sheet-view-center")}
+          contentPlacement={contentPlacement}
+          nativeEdgeSwipePrevention
+          tracks={tracks}
+        >
+          <Sheet.Backdrop className="app-sheet-backdrop" />
+          <Sheet.Content className={cn("app-sheet-content", WIDTHS[size])}>
+            <div className="app-sheet-panel flex flex-col rounded-t-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl sm:rounded-xl">
+              {wide ? null : (
+                <Sheet.Handle
+                  action="dismiss"
+                  aria-label="Close dialog"
+                  className="app-sheet-handle"
+                />
+              )}
+              <div className="flex items-start justify-between gap-4 border-slate-100 border-b px-6 py-4">
+                <div className="min-w-0">
+                  <Sheet.Title className="font-semibold text-lg leading-tight">
+                    {title}
+                  </Sheet.Title>
+                  {description ? (
+                    <Sheet.Description className="mt-1 text-slate-500 text-sm">
+                      {description}
+                    </Sheet.Description>
+                  ) : (
+                    <VisuallyHidden.Root>
+                      <Sheet.Description>{title}</Sheet.Description>
+                    </VisuallyHidden.Root>
+                  )}
+                </div>
+                <Sheet.Trigger
+                  action="dismiss"
+                  aria-label="Close dialog"
+                  className="-m-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+                >
+                  <X aria-hidden="true" className="h-5 w-5" />
+                </Sheet.Trigger>
+              </div>
+              {children === undefined || children === null ? null : (
+                <Scroll.Root asChild>
+                  <Scroll.View className="app-sheet-scroll min-h-0 flex-1">
+                    <Scroll.Content className="px-6 py-5">
+                      {children}
+                    </Scroll.Content>
+                  </Scroll.View>
+                </Scroll.Root>
+              )}
+              {footer ? (
+                <div className="app-sheet-footer flex flex-wrap items-center justify-end gap-3 border-slate-100 border-t bg-slate-50/70 px-6 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+                  {footer}
+                </div>
+              ) : null}
+            </div>
+          </Sheet.Content>
+        </Sheet.View>
+      </Sheet.Portal>
+    </Sheet.Root>
   );
 }
 
@@ -172,12 +189,16 @@ export function ConfirmDialog({
       size="sm"
       title={title}
     >
-      {children}
-      {failure ? (
-        <Notice className="mt-4" tone="danger">
-          {failure}
-        </Notice>
-      ) : null}
+      {children || failure ? (
+        <>
+          {children}
+          {failure ? (
+            <Notice className={cn(children && "mt-4")} tone="danger">
+              {failure}
+            </Notice>
+          ) : null}
+        </>
+      ) : undefined}
     </Modal>
   );
 }
