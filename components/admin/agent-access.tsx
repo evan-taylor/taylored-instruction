@@ -123,7 +123,6 @@ function CreateForm({
   const [busy, setBusy] = useState(false);
   return (
     <form
-      className="flex flex-col gap-3 sm:flex-row sm:items-end"
       onSubmit={async (event) => {
         event.preventDefault();
         setBusy(true);
@@ -139,24 +138,31 @@ function CreateForm({
       }}
     >
       <Field
-        className="flex-1"
         hint="Name the agent or device, for example “Evan’s Claude Code”."
         label="New token label"
         required
       >
         {(props) => (
-          <TextInput
-            {...props}
-            maxLength={80}
-            onChange={(event) => setLabel(event.target.value)}
-            required
-            value={label}
-          />
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <TextInput
+              {...props}
+              className="min-w-0 sm:flex-1"
+              maxLength={80}
+              onChange={(event) => setLabel(event.target.value)}
+              required
+              value={label}
+            />
+            <Button
+              className="min-h-10 shrink-0"
+              disabled={busy || !label.trim()}
+              size="sm"
+              type="submit"
+            >
+              {busy ? "Creating…" : "Create token"}
+            </Button>
+          </div>
         )}
       </Field>
-      <Button disabled={busy || !label.trim()} type="submit">
-        {busy ? "Creating…" : "Create token"}
-      </Button>
     </form>
   );
 }

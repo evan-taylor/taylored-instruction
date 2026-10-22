@@ -102,30 +102,35 @@ export function Invitations() {
       <CardContent className="space-y-5">
         {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
         <form
-          className="flex flex-col gap-3 sm:flex-row sm:items-end"
           onSubmit={(e) => {
             e.preventDefault();
             send(email);
           }}
         >
-          <div className="flex-1">
-            <Field label="Email address">
-              {(props) => (
+          <Field label="Email address">
+            {(props) => (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
                 <TextInput
                   {...props}
                   autoComplete="off"
+                  className="min-w-0 sm:flex-1"
                   disabled={busy}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   type="email"
                   value={email}
                 />
-              )}
-            </Field>
-          </div>
-          <Button disabled={busy} type="submit">
-            {busy ? "Sending…" : "Send invitation"}
-          </Button>
+                <Button
+                  className="min-h-10 shrink-0"
+                  disabled={busy}
+                  size="sm"
+                  type="submit"
+                >
+                  {busy ? "Sending…" : "Send invitation"}
+                </Button>
+              </div>
+            )}
+          </Field>
         </form>
         {invitations?.length ? (
           <Table>
