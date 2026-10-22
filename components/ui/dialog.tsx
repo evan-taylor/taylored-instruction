@@ -108,7 +108,7 @@ export function Modal({
                 <Sheet.Trigger
                   action="dismiss"
                   aria-label="Close dialog"
-                  className="-m-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+                  className="-m-2.5 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
                 >
                   <X aria-hidden="true" className="h-5 w-5" />
                 </Sheet.Trigger>

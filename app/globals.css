@@ -9,6 +9,41 @@
     text-size-adjust: 100%;
   }
 
+  /* Controls fire click on the first tap instead of waiting for a double-tap. */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+
+  /*
+   * iOS zooms into any field under 16px and never zooms back out. A base
+   * floor that utilities may still raise (text-2xl on a code field) or,
+   * on fine-pointer screens only, lower (md:pointer-fine:text-sm).
+   */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: 1rem;
+    }
+  }
+
+  /* A long press on a control must not select its label or open the callout. */
+  button,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;
@@ -169,9 +204,11 @@
   width: 100%;
   height: auto;
   padding-inline: 0;
+  padding-right: env(safe-area-inset-right, 0px);
   /* The view spans the large viewport; this lifts the panel above a
      collapsed-but-present browser bar (large minus dynamic viewport). */
   padding-bottom: calc(var(--silk-100-lvh-dvh-pct) - 100dvh);
+  padding-left: env(safe-area-inset-left, 0px);
   background-color: transparent;
 }
 .app-sheet-view-center .app-sheet-content {
@@ -205,4 +242,16 @@
   box-sizing: border-box;
   width: min(85vw, 18rem);
   height: 100%;
+}
+
+/*
+ * viewport-fit=cover removes Safari's side gutters, so the page and the
+ * edge-anchored Silk surfaces pad themselves away from a landscape notch.
+ */
+body {
+  padding-right: env(safe-area-inset-right, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.app-drawer-content {
+  padding-left: env(safe-area-inset-left, 0px);
 }

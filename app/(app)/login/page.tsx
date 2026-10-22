@@ -178,7 +178,7 @@ export default function LoginPage() {
 
   return (
     <div className="bg-slate-50">
-      <div className="mx-auto flex min-h-[60vh] max-w-md items-center px-4 py-12 sm:px-6 lg:py-16">
+      <div className="mx-auto flex min-h-[60svh] max-w-md items-center px-4 py-12 sm:px-6 lg:py-16">
         <Card className="w-full">
           <CardHeader>
             <div>

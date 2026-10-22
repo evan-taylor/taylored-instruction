@@ -40,7 +40,7 @@ function NavButton({
   return (
     <button
       aria-label={label}
-      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+      className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
       onClick={onClick}
       title={label}
       type="button"
@@ -84,7 +84,7 @@ function DayCell({
               title={s.title}
             >
               {s.firstStart ? (
-                <span className="mr-1 text-primary/70 tabular-nums">
+                <span className="mr-1 hidden text-primary/70 tabular-nums sm:inline">
                   {formatTime(s.firstStart, s.timeZone)}
                 </span>
               ) : null}

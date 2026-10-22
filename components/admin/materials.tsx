@@ -762,7 +762,7 @@ export function MaterialAdmin() {
                 {inventoryMaterial.retiredCount ?? 0} retired
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 onClick={() => setRestocking(inventoryMaterial)}
                 size="xs"

@@ -21,6 +21,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { coarsePointer } from "@/lib/pointer";
 import { errorText } from "./errors";
 
 type Code = Doc<"registrationCodes">;
@@ -106,7 +107,8 @@ function ReasonField({
       {(props) => (
         <TextInput
           {...props}
-          autoFocus
+          // A phone would pop the keyboard before the dialog is readable.
+          autoFocus={!coarsePointer()}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Why this code is being changed"
           value={value}

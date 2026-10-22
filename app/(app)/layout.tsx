@@ -23,7 +23,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   noStore();
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <Suspense fallback={<div className="min-h-dvh bg-background" />}>
       <ConvexAuthNextjsServerProvider>
         <ConvexClientProvider>
           <AuthEffects />
