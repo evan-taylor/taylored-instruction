@@ -224,6 +224,10 @@
 }
 .app-sheet-handle {
   --silk-defaults: silk-reset;
+  /* Silk gives the handle an invisible ::before hit area with inset: 0.
+     It must be contained by the handle itself; left static, it stretches
+     over the whole panel and every tap in the sheet becomes a dismiss. */
+  position: relative;
   align-self: center;
   width: 44px;
   height: 5px;
@@ -233,6 +237,10 @@
   background-color: rgb(203 213 225);
   border: 0;
   border-radius: 9999px;
+}
+/* A comfortable thumb target around the 5px bar, and nothing more. */
+.app-sheet-handle::before {
+  inset: -20px -24px;
 }
 .app-drawer-view {
   z-index: 60;
