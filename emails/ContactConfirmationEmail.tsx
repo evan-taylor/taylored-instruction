@@ -10,11 +10,11 @@ import {
   Text,
 } from "@react-email/components";
 
-interface ContactConfirmationEmailProps {
+type ContactConfirmationEmailProps = {
   firstName: string;
-}
+};
 
-export const ContactConfirmationEmail: React.FC<
+const ContactConfirmationEmail: React.FC<
   Readonly<ContactConfirmationEmailProps>
 > = ({ firstName }) => (
   <Html>

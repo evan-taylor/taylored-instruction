@@ -48,7 +48,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-interface ResourceCard {
+type ResourceCard = {
   excerpt: string;
   locationCity: string;
   locationLabel: string;
@@ -59,7 +59,7 @@ interface ResourceCard {
   slug: string;
   title: string;
   updatedAt: string;
-}
+};
 
 const formatUpdatedDate = (date: string) =>
   new Date(date).toLocaleDateString("en-US", {
@@ -120,10 +120,10 @@ export default async function ResourcesPage() {
     if (hasResourceQueryError) {
       return (
         <div className="mx-auto max-w-3xl rounded-xl border border-amber-200 bg-amber-50 p-8 text-center">
-          <h2 className="font-semibold text-2xl text-gray-900">
+          <h2 className="font-semibold text-2xl text-slate-900">
             Resource library is temporarily unavailable
           </h2>
-          <p className="mt-3 text-gray-700 leading-relaxed">
+          <p className="mt-3 text-slate-700 leading-relaxed">
             We couldn&apos;t load the resource library right now. Please try
             again shortly or contact us directly and we&apos;ll help you find
             what you need.
@@ -142,11 +142,11 @@ export default async function ResourcesPage() {
 
     if (resourceList.length === 0) {
       return (
-        <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
-          <h2 className="font-semibold text-2xl text-gray-900">
+        <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+          <h2 className="font-semibold text-2xl text-slate-900">
             New resources are being prepared
           </h2>
-          <p className="mt-3 text-gray-700 leading-relaxed">
+          <p className="mt-3 text-slate-700 leading-relaxed">
             We are updating this library with published guides. In the meantime,
             you can reach us directly for course-specific questions.
           </p>
@@ -166,7 +166,7 @@ export default async function ResourcesPage() {
       <div className="mx-auto grid max-w-6xl gap-5 md:grid-cols-2">
         {resourceList.map((resource) => (
           <article
-            className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+            className="rounded-xl border border-slate-200 bg-white p-6 shadow-xs transition-shadow hover:shadow-md"
             key={resource.slug}
           >
             <div className="flex flex-wrap gap-2">
@@ -176,11 +176,11 @@ export default async function ResourcesPage() {
               <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-700 text-xs">
                 {resource.serviceLine}
               </span>
-              <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">
+              <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 text-xs">
                 {resource.readingTimeMinutes} min read
               </span>
             </div>
-            <h2 className="mt-4 font-semibold text-2xl text-gray-900 leading-tight">
+            <h2 className="mt-4 font-semibold text-2xl text-slate-900 leading-tight">
               <Link
                 className="hover:text-primary"
                 href={`/resources/${resource.slug}`}
@@ -188,11 +188,11 @@ export default async function ResourcesPage() {
                 {resource.title}
               </Link>
             </h2>
-            <p className="mt-3 text-gray-700 leading-relaxed">
+            <p className="mt-3 text-slate-700 leading-relaxed">
               {resource.excerpt}
             </p>
             <div className="mt-4 flex items-center justify-between">
-              <span className="text-gray-500 text-sm">
+              <span className="text-slate-500 text-sm">
                 Updated {formatUpdatedDate(resource.updatedAt)}
               </span>
               <Link
@@ -225,45 +225,43 @@ export default async function ResourcesPage() {
         />
       ) : null}
 
-      <section className="border-gray-100 border-b bg-gray-50">
+      <section className="border-slate-100 border-b bg-slate-50">
         <div className="container mx-auto px-4 py-14">
           <div className="mx-auto max-w-4xl text-center">
-            <h1 className="font-bold text-4xl text-gray-900 tracking-tight md:text-5xl">
-              CPR, BLS & Workplace Safety Resource Library
+            <h1 className="font-bold text-4xl text-slate-900 tracking-tight md:text-5xl">
+              CPR, BLS, and workplace safety resource library
             </h1>
-            <p className="mt-5 text-gray-700 text-lg leading-relaxed">
+            <p className="mt-5 text-lg text-slate-700 leading-relaxed">
               Practical, location-specific guidance built to support better
               emergency readiness in Vancouver, WA, Clark County, and nearby
               communities—with additional San Luis Obispo resources.
             </p>
           </div>
-          <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-              <BookOpen className="mx-auto h-5 w-5 text-primary" />
-              <p className="mt-2 font-semibold text-gray-900">
-                {hasResourceQueryError ? "—" : resourceList.length} resources
-              </p>
-              <p className="text-gray-600 text-sm">Published pages</p>
+          {resourceList.length > 0 ? (
+            <div className="mx-auto mt-10 grid max-w-4xl gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-xs">
+                <BookOpen className="mx-auto h-5 w-5 text-primary" />
+                <p className="mt-2 font-semibold text-slate-900">
+                  {resourceList.length} resources
+                </p>
+                <p className="text-slate-600 text-sm">Published pages</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-xs">
+                <MapPin className="mx-auto h-5 w-5 text-primary" />
+                <p className="mt-2 font-semibold text-slate-900">
+                  {getCityCount(resourceList)} locations
+                </p>
+                <p className="text-slate-600 text-sm">City-specific coverage</p>
+              </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4 text-center shadow-xs">
+                <Stethoscope className="mx-auto h-5 w-5 text-primary" />
+                <p className="mt-2 font-semibold text-slate-900">
+                  {getServiceLineCount(resourceList)} service lines
+                </p>
+                <p className="text-slate-600 text-sm">Training categories</p>
+              </div>
             </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-              <MapPin className="mx-auto h-5 w-5 text-primary" />
-              <p className="mt-2 font-semibold text-gray-900">
-                {hasResourceQueryError ? "—" : getCityCount(resourceList)}{" "}
-                locations
-              </p>
-              <p className="text-gray-600 text-sm">City-specific coverage</p>
-            </div>
-            <div className="rounded-xl border border-gray-200 bg-white p-4 text-center shadow-sm">
-              <Stethoscope className="mx-auto h-5 w-5 text-primary" />
-              <p className="mt-2 font-semibold text-gray-900">
-                {hasResourceQueryError
-                  ? "—"
-                  : getServiceLineCount(resourceList)}{" "}
-                service lines
-              </p>
-              <p className="text-gray-600 text-sm">Training categories</p>
-            </div>
-          </div>
+          ) : null}
         </div>
       </section>
 

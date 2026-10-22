@@ -1,4 +1,4 @@
-export interface ProfileWithUser {
+export type ProfileWithUser = {
   id: string;
   isInstructor: boolean;
   lastLogin: string | null;
@@ -6,9 +6,9 @@ export interface ProfileWithUser {
   updatedAt: string | null;
   userEmail: string | null;
   userId: string;
-}
+};
 
-export interface LastLoginDisplay {
+export type LastLoginDisplay = {
   className: string;
   text: string;
-}
+};

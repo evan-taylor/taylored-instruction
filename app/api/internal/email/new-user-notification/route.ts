@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const adminEmail =
@@ -10,8 +11,8 @@ const adminEmail =
 const internalSecret = process.env.INTERNAL_EMAIL_WEBHOOK_SECRET;
 
 const NewUserNotificationSchema = z.object({
-  userEmail: z.string().optional(),
   userId: z.string().min(1, "User ID is required"),
+  userEmail: z.string().optional(),
 });
 
 const escapeHtml = (value: string): string =>
@@ -83,9 +84,10 @@ export async function POST(req: NextRequest) {
 
       const emailData = await getResendClient().emails.send({
         from: `Taylored Instruction <${fromEmail}>`,
-        html: htmlBody,
-        subject,
         to: [adminEmail],
+        replyTo: SUPPORT_EMAIL,
+        subject,
+        html: htmlBody,
       });
 
       if (emailData.error) {

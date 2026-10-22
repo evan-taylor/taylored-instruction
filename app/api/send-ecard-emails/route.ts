@@ -5,6 +5,7 @@ import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -13,18 +14,18 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
-    apiVersion: "2026-08-26.dahlia",
+    apiVersion: "2026-09-30.endive",
   });
 }
 
 const fromEmail = process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const adminEmail = process.env.ADMIN_EMAIL || "info@tayloredinstruction.com";
 
-interface CartItem {
+type CartItem = {
   productId: string;
   productName: string;
   quantity: number;
-}
+};
 
 const validateSessionId = (sessionId: unknown): string | null => {
   if (!sessionId || typeof sessionId !== "string") {
@@ -63,41 +64,42 @@ export async function POST(req: NextRequest) {
   ) => {
     const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
+      to: [adminEmail],
+      replyTo: customerEmail,
+      subject: "New Multi-Item eCard Purchase",
       react: React.createElement(EcardPurchaseAdminEmail, {
+        itemName: "Multiple Products",
+        quantity: cartItems
+          .reduce((sum, item) => sum + item.quantity, 0)
+          .toString(),
+        price: totalPrice,
+        customerEmail,
+        sessionId,
         cartItems: cartItems.map((item) => ({
           name: item.productName,
           quantity: item.quantity.toString(),
         })),
-        customerEmail,
-        itemName: "Multiple Products",
-        price: totalPrice,
-        quantity: cartItems
-          .reduce((sum, item) => sum + item.quantity, 0)
-          .toString(),
-        sessionId,
       }),
-      replyTo: customerEmail,
-      subject: "New Multi-Item eCard Purchase",
-      to: [adminEmail],
     });
     if (adminEmailData.error) {
       // Intentionally not failing request on email notification issues
     }
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
+      to: [customerEmail],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Your eCard Purchase Confirmation",
       react: React.createElement(EcardPurchaseUserEmail, {
+        itemName: "Multiple Products",
+        quantity: cartItems
+          .reduce((sum, item) => sum + item.quantity, 0)
+          .toString(),
+        price: totalPrice,
         cartItems: cartItems.map((item) => ({
           name: item.productName,
           quantity: item.quantity.toString(),
         })),
-        itemName: "Multiple Products",
-        price: totalPrice,
-        quantity: cartItems
-          .reduce((sum, item) => sum + item.quantity, 0)
-          .toString(),
       }),
-      subject: "Your eCard Purchase Confirmation",
-      to: [customerEmail],
     });
     if (userEmailData.error) {
       // Intentionally not failing request on email notification issues
@@ -112,29 +114,30 @@ export async function POST(req: NextRequest) {
   ) => {
     const adminEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      react: React.createElement(EcardPurchaseAdminEmail, {
-        customerEmail,
-        itemName,
-        price: totalPrice,
-        quantity,
-        sessionId,
-      }),
+      to: [adminEmail],
       replyTo: customerEmail,
       subject: `New eCard Purchase: ${itemName}`,
-      to: [adminEmail],
+      react: React.createElement(EcardPurchaseAdminEmail, {
+        itemName,
+        quantity,
+        price: totalPrice,
+        customerEmail,
+        sessionId,
+      }),
     });
     if (adminEmailData.error) {
       // Intentionally not failing request on email notification issues
     }
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
+      to: [customerEmail],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Your eCard Purchase Confirmation",
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName,
-        price: totalPrice,
         quantity,
+        price: totalPrice,
       }),
-      subject: "Your eCard Purchase Confirmation",
-      to: [customerEmail],
     });
     if (userEmailData.error) {
       // Intentionally not failing request on email notification issues
@@ -175,16 +178,16 @@ export async function POST(req: NextRequest) {
       }
       await sendCartEmails(cartItems, totalPrice, customerEmail);
 
-      const userId = session.metadata.userId;
+      const { userId } = session.metadata;
       if (userId) {
         const posthog = PostHogClient();
         await posthog?.capture({
           distinctId: userId,
           event: "ecard_purchase_completed",
           properties: {
-            fulfillment_type: "cart",
             item_count: cartItems.reduce((sum, item) => sum + item.quantity, 0),
             order_total: Number(totalPrice),
+            fulfillment_type: "cart",
           },
         });
         await posthog?.shutdown();

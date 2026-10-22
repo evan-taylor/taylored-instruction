@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm"; // Placeholder for the form component
+import { registrationBookingUrl } from "@/lib/registration-launch";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -92,11 +93,11 @@ export default async function ContactPage() {
             style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
-        <div className="absolute inset-0 z-10 bg-gradient-to-r from-black/70 to-black/50" />
+        <div className="absolute inset-0 z-10 bg-linear-to-r from-black/70 to-black/50" />
         <div className="container relative z-20 mx-auto px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-sm md:p-10">
+          <div className="mx-auto max-w-4xl">
             <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
-              Contact Us
+              Contact us
             </h1>
             <p className="mx-auto max-w-3xl text-lg text-white/90 leading-relaxed md:text-xl">
               Have a question, or want to learn more? We&apos;re here to help!
@@ -112,7 +113,7 @@ export default async function ContactPage() {
             {/* Form Column (2/3 width on desktop) */}
             <div className="md:col-span-2">
               <h2 className="mb-6 font-semibold text-3xl text-text">
-                Send Us a Message
+                Send us a message
               </h2>
               {/* Contact Form Component will go here */}
               <ContactForm />
@@ -121,10 +122,10 @@ export default async function ContactPage() {
             {/* Contact Info Column (1/3 width on desktop) */}
             <div className="md:col-span-1">
               <h2 className="mb-6 text-center font-semibold text-3xl text-text">
-                Contact Information
+                Contact information
               </h2>
-              <div className="rounded-lg bg-gray-50 p-6 text-center shadow-sm">
-                <div className="relative mx-auto mb-4 h-36 w-36 overflow-hidden rounded-full border-4 border-primary shadow-lg">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 text-center">
+                <div className="relative mx-auto mb-4 h-36 w-36 overflow-hidden rounded-full border-4 border-primary">
                   <Image
                     alt="Headshot of Evan Taylor, owner" // Assuming same headshot as About page
                     layout="fill"
@@ -162,11 +163,13 @@ export default async function ContactPage() {
                 </p>
                 <Link
                   className="mt-2 inline-block font-medium text-primary hover:underline"
-                  href="https://www.hovn.app/tayloredinstruction"
+                  href={registrationBookingUrl(
+                    "https://www.hovn.app/tayloredinstruction"
+                  )}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  Register for Classes
+                  Register for classes
                 </Link>
               </div>
             </div>

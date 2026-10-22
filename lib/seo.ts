@@ -9,14 +9,14 @@ type OgImageType =
   | "lifeguarding"
   | "swimming";
 
-interface PageImageOptions {
+type PageImageOptions = {
   description?: string;
   title: string;
   type?: OgImageType;
   url?: string;
-}
+};
 
-export interface BuildPageMetadataInput {
+export type BuildPageMetadataInput = {
   description: string;
   image?: PageImageOptions;
   keywords?: string[];
@@ -24,7 +24,7 @@ export interface BuildPageMetadataInput {
   ogType?: "website" | "article";
   path: string;
   title: string;
-}
+};
 
 export const SITE_URL = "https://tayloredinstruction.com";
 export const SITE_NAME = "Taylored Instruction";

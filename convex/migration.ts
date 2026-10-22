@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 
@@ -8,7 +8,7 @@ export const attachUserDataOnLogin = mutation({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     const user = await ctx.db.get(userId);
@@ -50,8 +50,8 @@ export const attachUserDataOnLogin = mutation({
       });
 
       await ctx.db.patch(stagingProfile._id, {
-        convexUserId: userId,
         processedAt: Date.now(),
+        convexUserId: userId,
       });
 
       return {
@@ -105,7 +105,7 @@ export const getMigrationStats = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     const user = await ctx.db.get(userId);
@@ -113,7 +113,7 @@ export const getMigrationStats = query({
     const email = user?.email ?? identity?.email ?? "";
 
     if (!isAdminEmail(email)) {
-      throw new Error("Admin access required");
+      throw new ConvexError("Admin access required");
     }
 
     const allStaging = await ctx.db.query("staging_profiles").collect();
@@ -121,7 +121,9 @@ export const getMigrationStats = query({
     const unprocessed = allStaging.filter((p) => p.processedAt === undefined);
 
     return {
+      total: allStaging.length,
       processed: processed.length,
+      unprocessed: unprocessed.length,
       processedRate:
         allStaging.length > 0
           ? (
@@ -129,8 +131,6 @@ export const getMigrationStats = query({
               PERCENTAGE_MULTIPLIER
             ).toFixed(1)
           : "0",
-      total: allStaging.length,
-      unprocessed: unprocessed.length,
     };
   },
 });
@@ -138,10 +138,10 @@ export const getMigrationStats = query({
 export const importStagingProfile = mutation({
   args: {
     email: v.string(),
-    isInstructor: v.boolean(),
-    lastLogin: v.optional(v.string()),
     supabaseUserId: v.string(),
+    isInstructor: v.boolean(),
     updatedAt: v.optional(v.string()),
+    lastLogin: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -150,18 +150,18 @@ export const importStagingProfile = mutation({
       .first();
 
     if (existing) {
-      return { id: existing._id, imported: false, reason: "Already exists" };
+      return { imported: false, reason: "Already exists", id: existing._id };
     }
 
     const id = await ctx.db.insert("staging_profiles", {
       email: args.email.toLowerCase(),
-      isInstructor: args.isInstructor,
-      lastLogin: args.lastLogin,
       supabaseUserId: args.supabaseUserId,
+      isInstructor: args.isInstructor,
       updatedAt: args.updatedAt,
+      lastLogin: args.lastLogin,
     });
 
-    return { id, imported: true };
+    return { imported: true, id };
   },
 });
 
@@ -169,15 +169,15 @@ export const importProducts = mutation({
   args: {
     products: v.array(
       v.object({
-        categories: v.optional(v.array(v.string())),
+        originalCsvId: v.optional(v.number()),
+        sku: v.optional(v.string()),
+        name: v.string(),
         description: v.optional(v.string()),
         imageUrls: v.optional(v.string()),
-        name: v.string(),
-        originalCsvId: v.optional(v.number()),
-        requiresInstructor: v.boolean(),
-        sku: v.optional(v.string()),
-        stripePriceId: v.optional(v.string()),
+        categories: v.optional(v.array(v.string())),
         type: v.string(),
+        requiresInstructor: v.boolean(),
+        stripePriceId: v.optional(v.string()),
       })
     ),
   },
@@ -189,7 +189,8 @@ export const importProducts = mutation({
       id?: unknown;
     }> = [];
 
-    for (const product of args.products) {
+    await args.products.reduce(async (previous, product) => {
+      await previous;
       const existing = await ctx.db
         .query("products")
         .filter((q) => q.eq(q.field("name"), product.name))
@@ -197,16 +198,16 @@ export const importProducts = mutation({
 
       if (existing) {
         results.push({
-          imported: false,
           name: product.name,
+          imported: false,
           reason: "Already exists",
         });
-        continue;
+        return;
       }
 
       const id = await ctx.db.insert("products", product);
-      results.push({ id, imported: true, name: product.name });
-    }
+      results.push({ name: product.name, imported: true, id });
+    }, Promise.resolve());
 
     return results;
   },

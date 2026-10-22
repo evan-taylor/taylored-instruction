@@ -2,9 +2,9 @@
 
 import { useEffect } from "react";
 
-interface ChamberBadgeWidget {
+type ChamberBadgeWidget = {
   create: () => void;
-}
+};
 
 type ChamberWindow = typeof globalThis.window & {
   MNI?: {

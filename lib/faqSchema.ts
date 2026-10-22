@@ -3,12 +3,12 @@
  * Use this to add FAQ structured data to pages
  */
 
-export interface FAQItem {
+export type FAQItem = {
   answer: string;
   question: string;
-}
+};
 
-interface FaqSchema {
+type FaqSchema = {
   "@context": string;
   "@type": string;
   mainEntity: Array<{
@@ -19,7 +19,7 @@ interface FaqSchema {
       text: string;
     };
   }>;
-}
+};
 
 /**
  * Generate FAQ Schema for structured data

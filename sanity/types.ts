@@ -8,7 +8,7 @@ export type BlogImage = SanityImageSource & {
   alt?: string;
 };
 
-export interface BlogPostSummary {
+export type BlogPostSummary = {
   _id: string;
   _updatedAt: string;
   author?: string;
@@ -21,7 +21,7 @@ export interface BlogPostSummary {
   seoTitle?: string;
   slug: string;
   title: string;
-}
+};
 
 export type LinkMark = PortableTextMarkDefinition & {
   _type: "link";
@@ -34,9 +34,9 @@ export type BlogPost = BlogPostSummary & {
   body?: BlogPortableTextBlock[];
 };
 
-export interface BlogPostSlug {
+export type BlogPostSlug = {
   slug: string;
-}
+};
 
 export type BlogPostSitemapEntry = BlogPostSlug & {
   _updatedAt: string;

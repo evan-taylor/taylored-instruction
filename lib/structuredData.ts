@@ -6,7 +6,7 @@
 import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 import { SITE_URL } from "@/lib/seo";
 
-interface LocalBusinessSchema {
+type LocalBusinessSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -44,9 +44,9 @@ interface LocalBusinessSchema {
   sameAs: string[];
   telephone: string;
   url: string;
-}
+};
 
-interface OrganizationSchema {
+type OrganizationSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -70,9 +70,9 @@ interface OrganizationSchema {
   sameAs: string[];
   telephone: string;
   url: string;
-}
+};
 
-interface CourseSchema {
+type CourseSchema = {
   "@context": string;
   "@type": string;
   courseCode?: string;
@@ -95,17 +95,17 @@ interface CourseSchema {
     name: string;
     url: string;
   };
-}
+};
 
-interface WebSiteSchema {
+type WebSiteSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
   name: string;
   url: string;
-}
+};
 
-interface WebPageSchema {
+type WebPageSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -123,9 +123,9 @@ interface WebPageSchema {
     url: string;
   };
   url: string;
-}
+};
 
-interface ServiceSchema {
+type ServiceSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -148,9 +148,9 @@ interface ServiceSchema {
   };
   serviceType: string;
   url: string;
-}
+};
 
-interface ContactPageSchema {
+type ContactPageSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -164,9 +164,9 @@ interface ContactPageSchema {
   };
   name: string;
   url: string;
-}
+};
 
-interface PersonSchema {
+type PersonSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -178,9 +178,9 @@ interface PersonSchema {
   worksFor: {
     "@id": string;
   };
-}
+};
 
-interface ProductSchema {
+type ProductSchema = {
   "@context": string;
   "@id": string;
   "@type": string;
@@ -199,9 +199,9 @@ interface ProductSchema {
     "@id": string;
   };
   url: string;
-}
+};
 
-interface BreadcrumbSchema {
+type BreadcrumbSchema = {
   "@context": string;
   "@type": string;
   itemListElement: Array<{
@@ -210,7 +210,7 @@ interface BreadcrumbSchema {
     name: string;
     item?: string;
   }>;
-}
+};
 
 const BASE_URL = SITE_URL;
 const WEBSITE_ID = `${BASE_URL}/#website`;
