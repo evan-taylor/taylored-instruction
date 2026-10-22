@@ -1297,13 +1297,13 @@ function OrderSummary({
           </CardDescription>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-5 p-5">
         {form.review ? (
           <ReviewSummary form={form} />
         ) : (
           <>
             {form.attendees.length ? (
-              <ul className="m-0 list-none space-y-1.5 p-0 text-sm">
+              <ul className="m-0 list-none space-y-2 p-0 text-sm">
                 {form.attendees.map((a, index) => (
                   <li
                     className="flex items-center justify-between gap-3 text-slate-700"
@@ -1323,15 +1323,23 @@ function OrderSummary({
                 {`${formatMoney(basePrice(offering.config))} per attendee. Add at least one attendee to continue.`}
               </p>
             )}
-            <p className="m-0 flex items-baseline justify-between gap-3 border-slate-200 border-t pt-3 font-semibold text-slate-900">
-              <span>Estimated total before coupon:</span>
-              <span className="tabular-nums">{formatMoney(form.estimate)}</span>
-            </p>
-            <p className="m-0 text-slate-500 text-xs">{TAX_NOTE}</p>
+            <div className="border-slate-200 border-t pt-4">
+              <p className="m-0 flex items-baseline justify-between gap-4">
+                <span className="font-semibold text-slate-900">
+                  Estimated total
+                </span>
+                <span className="font-bold text-slate-900 text-xl tabular-nums">
+                  {formatMoney(form.estimate)}
+                </span>
+              </p>
+              <p className="m-0 mt-1 text-slate-500 text-sm">
+                Before any coupon. {TAX_NOTE}
+              </p>
+            </div>
             <ResultNotice message={form.error} tone="danger" />
             {open ? (
               <Button
-                className="w-full"
+                className="mt-2 w-full"
                 disabled={form.busy || !form.attendees.length}
                 type="submit"
               >
@@ -1343,11 +1351,8 @@ function OrderSummary({
             ) : null}
           </>
         )}
-        <p className="m-0 flex items-start gap-1.5 text-slate-500 text-xs">
-          <ShieldCheck
-            aria-hidden="true"
-            className="mt-0.5 h-3.5 w-3.5 shrink-0"
-          />
+        <p className="m-0 flex items-start gap-2 text-slate-500 text-sm leading-relaxed">
+          <ShieldCheck aria-hidden="true" className="mt-1 h-4 w-4 shrink-0" />
           Seats are held for {CHECKOUT_HOLD_MINUTES} minutes while you pay.
           Payments are processed securely by Stripe.
         </p>

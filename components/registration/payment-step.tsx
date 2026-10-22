@@ -17,15 +17,31 @@ import { cn } from "@/lib/utils";
 import { CHECKOUT_HOLD_MINUTES } from "@/shared/registration/domain";
 import { errorText } from "./errors";
 
+/** Elements render inside Stripe iframes, so the site font is loaded by URL. */
+const ELEMENT_FONTS = [
+  {
+    cssSrc:
+      "https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&display=swap",
+  },
+];
 const APPEARANCE = {
   theme: "stripe" as const,
   variables: {
     colorPrimary: "#21538a",
     colorText: "#0f172a",
+    colorTextSecondary: "#475569",
     colorDanger: "#be123c",
-    fontFamily:
-      "var(--font-readex), ui-sans-serif, system-ui, -apple-system, sans-serif",
+    fontFamily: '"Readex Pro", ui-sans-serif, system-ui, sans-serif',
+    fontSizeBase: "16px",
     borderRadius: "6px",
+  },
+  rules: {
+    ".Input": { borderColor: "#cbd5e1", boxShadow: "none" },
+    ".Input:focus": {
+      borderColor: "#21538a",
+      boxShadow: "0 0 0 2px rgba(33, 83, 138, 0.3)",
+    },
+    ".Label": { fontWeight: "500", color: "#334155" },
   },
 };
 const WARNING_MS = 2 * 60_000;
@@ -261,7 +277,7 @@ export function PaymentStep({
         <CheckoutElementsProvider
           options={{
             clientSecret: secret,
-            elementsOptions: { appearance: APPEARANCE },
+            elementsOptions: { appearance: APPEARANCE, fonts: ELEMENT_FONTS },
           }}
           stripe={getStripe()}
         >
