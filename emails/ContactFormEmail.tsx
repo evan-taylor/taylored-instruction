@@ -25,7 +25,7 @@ interface ContactFormEmailProps {
   smsOptOut?: boolean;
 }
 
-export const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
+const ContactFormEmail: React.FC<Readonly<ContactFormEmailProps>> = ({
   firstName,
   lastName,
   email,

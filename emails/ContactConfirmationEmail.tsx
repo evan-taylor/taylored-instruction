@@ -14,7 +14,7 @@ interface ContactConfirmationEmailProps {
   firstName: string;
 }
 
-export const ContactConfirmationEmail: React.FC<
+const ContactConfirmationEmail: React.FC<
   Readonly<ContactConfirmationEmailProps>
 > = ({ firstName }) => (
   <Html>

@@ -88,7 +88,7 @@ function findFirstMatch(text: string): MatchInfo | null {
 }
 
 function renderMatchElement(info: MatchInfo, key: number): React.ReactNode {
-  const content = info.match[1];
+  const [, content] = info.match;
   switch (info.type) {
     case "bold":
       return <strong key={key}>{content}</strong>;
@@ -109,7 +109,7 @@ function renderMatchElement(info: MatchInfo, key: number): React.ReactNode {
     case "code":
       return (
         <code
-          className="rounded bg-gray-100 px-1 py-0.5 font-mono text-sm"
+          className="rounded-sm bg-slate-100 px-1 py-0.5 font-mono text-sm"
           key={key}
         >
           {content}
@@ -149,7 +149,8 @@ function renderInlineElements(text: string): React.ReactNode {
       parts.push(remaining.slice(0, firstMatch.index));
     }
 
-    parts.push(renderMatchElement(firstMatch, key++));
+    parts.push(renderMatchElement(firstMatch, key));
+    key += 1;
     remaining = remaining.slice(firstMatch.index + firstMatch.match[0].length);
   }
 
@@ -244,7 +245,7 @@ function tryParseListItem(
   if (line.startsWith("- ") || line.startsWith("* ")) {
     return {
       content: (
-        <li className="mb-1 text-gray-700" key={elementKey}>
+        <li className="mb-1 text-slate-700" key={elementKey}>
           {renderInlineElements(line.slice(LIST_ITEM_PREFIX_LENGTH))}
         </li>
       ),
@@ -257,7 +258,7 @@ function tryParseListItem(
     const listNumber = Number.parseInt(orderedMatch[1], RADIX_DECIMAL);
     return {
       content: (
-        <li className="mb-1 text-gray-700" key={elementKey} value={listNumber}>
+        <li className="mb-1 text-slate-700" key={elementKey} value={listNumber}>
           {renderInlineElements(orderedMatch[2])}
         </li>
       ),
@@ -303,7 +304,7 @@ function flushParagraph(state: ParserState): void {
     const text = state.currentParagraph.join(" ");
     if (text.trim()) {
       state.elements.push(
-        <p className="mb-4 text-gray-700" key={state.elements.length}>
+        <p className="mb-4 text-slate-700" key={state.elements.length}>
           {renderInlineElements(text)}
         </p>
       );
@@ -317,10 +318,10 @@ function processCodeBlockLine(line: string, state: ParserState): boolean {
     if (state.inCodeBlock) {
       state.elements.push(
         <pre
-          className="mb-4 overflow-x-auto rounded-lg bg-gray-900 p-4"
+          className="mb-4 overflow-x-auto rounded-lg bg-slate-900 p-4"
           key={state.elements.length}
         >
-          <code className="text-gray-100 text-sm">
+          <code className="text-slate-100 text-sm">
             {state.codeBlockContent.join("\n")}
           </code>
         </pre>
@@ -364,7 +365,7 @@ function processLine(line: string, state: ParserState): void {
   if (line.trim() === "---") {
     flushParagraph(state);
     state.elements.push(
-      <hr className="my-6 border-gray-300" key={state.elements.length} />
+      <hr className="my-6 border-slate-300" key={state.elements.length} />
     );
     return;
   }
@@ -447,11 +448,11 @@ export default function OnboardingPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="mb-4 font-bold text-3xl">Instructor Onboarding</h1>
-          <p className="mb-6 text-gray-600">
+          <p className="mb-6 text-slate-600">
             Please log in to access the instructor onboarding materials.
           </p>
           <a
-            className="inline-flex items-center justify-center rounded bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
+            className="inline-flex items-center justify-center rounded-sm bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark"
             href="/login"
           >
             Log In
@@ -466,7 +467,7 @@ export default function OnboardingPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="mb-4 font-bold text-3xl">Access Restricted</h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             This content is only available to approved instructors. If you
             believe you should have access, please contact support.
           </p>
@@ -488,7 +489,7 @@ export default function OnboardingPage() {
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="mb-4 font-bold text-3xl">Instructor Onboarding</h1>
-          <p className="text-gray-600">
+          <p className="text-slate-600">
             No onboarding steps have been created yet. Please check back later.
           </p>
         </div>
@@ -499,7 +500,7 @@ export default function OnboardingPage() {
   const currentStep = steps[activeStep];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="prose-site container mx-auto px-4 py-8">
       <div className="mx-auto max-w-4xl">
         <h1 className="mb-8 font-bold text-3xl">Instructor Onboarding</h1>
 
@@ -509,7 +510,7 @@ export default function OnboardingPage() {
               className={`rounded-lg px-4 py-2 font-medium transition-colors ${
                 index === activeStep
                   ? "bg-primary text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
               key={step._id}
               onClick={() => setActiveStep(index)}
@@ -520,7 +521,7 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs">
           <h2 className="mb-6 font-bold text-2xl">{currentStep.title}</h2>
           <div className="prose max-w-none">
             {parseAndRenderMDX(currentStep.content)}
@@ -529,7 +530,7 @@ export default function OnboardingPage() {
 
         <div className="mt-6 flex justify-between">
           <button
-            className="rounded-lg bg-gray-100 px-6 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg bg-slate-100 px-6 py-2 font-medium text-slate-700 transition-colors hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={activeStep === 0}
             onClick={() => setActiveStep((prev) => prev - 1)}
             type="button"

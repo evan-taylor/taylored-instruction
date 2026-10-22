@@ -92,27 +92,35 @@ const portableTextComponents: PortableTextComponents<BlogPortableTextBlock> = {
       </blockquote>
     ),
     h2: ({ children }) => (
-      <h2 className="mt-10 font-semibold text-3xl text-gray-900 leading-tight">
+      <h2 className="mt-10 font-semibold text-3xl text-slate-900 leading-tight">
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className="mt-8 font-semibold text-2xl text-gray-900 leading-tight">
+      <h3 className="mt-8 font-semibold text-2xl text-slate-900 leading-tight">
         {children}
       </h3>
     ),
     normal: ({ children }) => (
-      <p className="mt-5 text-gray-700 leading-relaxed">{children}</p>
+      <p className="mt-5 text-slate-700 leading-relaxed">{children}</p>
     ),
+<<<<<<< HEAD
+=======
+    blockquote: ({ children }) => (
+      <blockquote className="mt-6 border-primary border-l-4 pl-5 text-slate-700 italic leading-relaxed">
+        {children}
+      </blockquote>
+    ),
+>>>>>>> origin/master
   },
   list: {
     bullet: ({ children }) => (
-      <ul className="mt-5 list-disc space-y-2 pl-6 text-gray-700">
+      <ul className="mt-5 list-disc space-y-2 pl-6 text-slate-700">
         {children}
       </ul>
     ),
     number: ({ children }) => (
-      <ol className="mt-5 list-decimal space-y-2 pl-6 text-gray-700">
+      <ol className="mt-5 list-decimal space-y-2 pl-6 text-slate-700">
         {children}
       </ol>
     ),
@@ -277,7 +285,7 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
         type="application/ld+json"
       />
 
-      <section className="border-gray-100 border-b bg-gray-50">
+      <section className="border-slate-100 border-b bg-slate-50">
         <div className="container mx-auto max-w-4xl px-4 py-14">
           <Link
             className="font-medium text-primary text-sm hover:underline"
@@ -285,13 +293,13 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
           >
             Back to blog
           </Link>
-          <h1 className="mt-4 font-bold text-4xl text-gray-900 leading-tight md:text-5xl">
+          <h1 className="mt-4 font-bold text-4xl text-slate-900 leading-tight md:text-5xl">
             {post.title}
           </h1>
-          <p className="mt-5 text-gray-700 text-lg leading-relaxed">
+          <p className="mt-5 text-lg text-slate-700 leading-relaxed">
             {post.excerpt}
           </p>
-          <p className="mt-4 text-gray-500 text-sm">
+          <p className="mt-4 text-slate-500 text-sm">
             Published{" "}
             <time dateTime={post.publishedAt}>
               {formatPublishedDate(post.publishedAt)}
@@ -321,7 +329,7 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
               value={normalizePortableTextSpacing(post.body)}
             />
           ) : (
-            <p className="text-gray-700">
+            <p className="text-slate-700">
               This post is being prepared. Please check back soon.
             </p>
           )}

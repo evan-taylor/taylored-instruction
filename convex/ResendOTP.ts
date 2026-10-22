@@ -1,5 +1,7 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
+import { SUPPORT_EMAIL } from "../shared/email";
+import { brandedEmail } from "../shared/registration/email";
 
 const OTP_CODE_LENGTH = 6;
 const DIGIT_ALPHABET = "0123456789";
@@ -32,6 +34,7 @@ export const ResendOTP = Email({
 
     const { error } = await resend.emails.send({
       from: emailFrom,
+<<<<<<< HEAD
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #333;">Your Login Code</h2>
@@ -48,6 +51,22 @@ export const ResendOTP = Email({
       subject: "Your Taylored Instruction Login Code",
       text: `Your Taylored Instruction login code is: ${token}\n\nThis code will expire in ${OTP_EXPIRY_MINUTES} minutes.\n\nIf you didn't request this code, you can safely ignore this email.`,
       to: [email],
+=======
+      to: [email],
+      subject: "Your Taylored Instruction Login Code",
+      replyTo: SUPPORT_EMAIL,
+      ...brandedEmail({
+        eyebrow: "Account sign-in",
+        title: "Your sign-in code",
+        preview:
+          "Use this code to finish signing in to Taylored Instruction. Expires in 10 minutes.",
+        paragraphs: [
+          "Enter this six-digit code on the sign-in page to securely access your account.",
+        ],
+        code: token,
+        note: "This code expires in 10 minutes and can only be used once. Don’t share it with anyone. If you didn’t request this code, you can safely ignore this email.",
+      }),
+>>>>>>> origin/master
     });
 
     if (error) {

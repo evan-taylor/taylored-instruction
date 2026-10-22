@@ -7,6 +7,10 @@
   xmlns:svgjs="http://svgjs.dev/svgjs"
   xmlns:xlink="http://www.w3.org/1999/xlink"
 >
+<<<<<<< HEAD
+=======
+  <title>Taylored Instruction</title>
+>>>>>>> origin/master
   <image
     height="512"
     width="512"

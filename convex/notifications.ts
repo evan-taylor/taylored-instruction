@@ -1,9 +1,10 @@
 import { v } from "convex/values";
 import { Resend } from "resend";
+import { SUPPORT_EMAIL } from "../shared/email";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const { RESEND_API_KEY } = process.env;
 const FROM_EMAIL =
   process.env.FROM_EMAIL || "info@mail.tayloredinstruction.com";
 const ADMIN_NOTIF_EMAIL =
@@ -12,7 +13,7 @@ const ADMIN_NOTIF_EMAIL =
   process.env.ADMIN_EMAIL_RECIPIENT ||
   "info@tayloredinstruction.com";
 const WEBSITE_NAME = process.env.WEBSITE_NAME || "Taylored Instruction";
-const RESEND_AUDIENCE_ID = process.env.RESEND_AUDIENCE_ID;
+const { RESEND_AUDIENCE_ID } = process.env;
 
 const escapeHtml = (value: string): string =>
   value
@@ -54,6 +55,12 @@ export const sendNewUserAdminNotification = internalAction({
 
       const result = await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,
+<<<<<<< HEAD
+=======
+        to: [ADMIN_NOTIF_EMAIL],
+        replyTo: SUPPORT_EMAIL,
+        subject,
+>>>>>>> origin/master
         html: htmlBody,
         subject,
         to: [ADMIN_NOTIF_EMAIL],
@@ -92,6 +99,11 @@ export const sendInstructorApprovalEmail = internalAction({
 
       await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,
+<<<<<<< HEAD
+=======
+        to: [args.email],
+        replyTo: SUPPORT_EMAIL,
+>>>>>>> origin/master
         subject,
         text: textBody,
         to: [args.email],

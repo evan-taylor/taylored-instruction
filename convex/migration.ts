@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 
@@ -8,7 +8,7 @@ export const attachUserDataOnLogin = mutation({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     const user = await ctx.db.get(userId);
@@ -105,7 +105,7 @@ export const getMigrationStats = query({
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error("Not authenticated");
+      throw new ConvexError("Not authenticated");
     }
 
     const user = await ctx.db.get(userId);
@@ -113,7 +113,7 @@ export const getMigrationStats = query({
     const email = user?.email ?? identity?.email ?? "";
 
     if (!isAdminEmail(email)) {
-      throw new Error("Admin access required");
+      throw new ConvexError("Admin access required");
     }
 
     const allStaging = await ctx.db.query("staging_profiles").collect();
@@ -189,7 +189,8 @@ export const importProducts = mutation({
       id?: unknown;
     }> = [];
 
-    for (const product of args.products) {
+    await args.products.reduce(async (previous, product) => {
+      await previous;
       const existing = await ctx.db
         .query("products")
         .filter((q) => q.eq(q.field("name"), product.name))
@@ -201,12 +202,17 @@ export const importProducts = mutation({
           name: product.name,
           reason: "Already exists",
         });
-        continue;
+        return;
       }
 
       const id = await ctx.db.insert("products", product);
+<<<<<<< HEAD
       results.push({ id, imported: true, name: product.name });
     }
+=======
+      results.push({ name: product.name, imported: true, id });
+    }, Promise.resolve());
+>>>>>>> origin/master
 
     return results;
   },

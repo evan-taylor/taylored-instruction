@@ -4,6 +4,7 @@ import { z } from "zod"; // Assuming zod is needed for the schema
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend domain
@@ -11,6 +12,16 @@ const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend do
 // Define schema for form validation - RESTORED
 const AlignmentInterestSchema = z
   .object({
+<<<<<<< HEAD
+=======
+    firstName: z.string().min(1, "First name is required"),
+    lastName: z.string().min(1, "Last name is required"),
+    email: z.string().email("Invalid email address"),
+    phone: z.string().min(1, "Phone number is required"), // Assuming phone is required based on form UI
+    hasCertification: z.enum(["Yes", "No"], {
+      error: "Certification status is required",
+    }),
+>>>>>>> origin/master
     agencies: z.array(z.string()).optional(), // Optional array of strings
     email: z.string().email("Invalid email address"),
     firstName: z.string().min(1, "First name is required"),
@@ -79,6 +90,12 @@ export async function POST(req: NextRequest) {
     // Send confirmation email to user
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
+<<<<<<< HEAD
+=======
+      to: [email],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Alignment Interest Received - Taylored Instruction",
+>>>>>>> origin/master
       react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
       subject: "Alignment Interest Received - Taylored Instruction",
       to: [email],

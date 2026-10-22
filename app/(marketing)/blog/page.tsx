@@ -1,6 +1,6 @@
 "use cache";
 
-import { BookOpen, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
@@ -98,13 +98,13 @@ export default async function BlogPage() {
         />
       ) : null}
 
-      <section className="border-gray-100 border-b bg-gray-50">
+      <section className="border-slate-100 border-b bg-slate-50">
         <div className="container mx-auto px-4 py-14">
           <div className="mx-auto max-w-4xl text-center">
-            <h1 className="font-bold text-4xl text-gray-900 tracking-tight md:text-5xl">
-              CPR, BLS & Safety Training Blog
+            <h1 className="font-bold text-4xl text-slate-900 tracking-tight md:text-5xl">
+              CPR, BLS, and safety training blog
             </h1>
-            <p className="mt-5 text-gray-700 text-lg leading-relaxed">
+            <p className="mt-5 text-lg text-slate-700 leading-relaxed">
               Practical articles from Taylored Instruction on emergency
               readiness, instructor development, safety training, and course
               planning.
@@ -115,12 +115,11 @@ export default async function BlogPage() {
 
       <section className="container mx-auto px-4 py-12">
         {postList.length === 0 ? (
-          <div className="mx-auto max-w-3xl rounded-xl border border-gray-200 bg-gray-50 p-8 text-center">
-            <BookOpen className="mx-auto h-6 w-6 text-primary" />
-            <h2 className="mt-3 font-semibold text-2xl text-gray-900">
+          <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+            <h2 className="mt-3 font-semibold text-2xl text-slate-900">
               New blog posts are being prepared
             </h2>
-            <p className="mt-3 text-gray-700 leading-relaxed">
+            <p className="mt-3 text-slate-700 leading-relaxed">
               We are setting up the blog library. In the meantime, you can
               browse the resource library or contact us for course-specific
               guidance.
@@ -133,7 +132,7 @@ export default async function BlogPage() {
                 Browse resources
               </Link>
               <Link
-                className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+                className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
                 href="/contact"
               >
                 Contact us
@@ -152,7 +151,7 @@ export default async function BlogPage() {
 
               return (
                 <article
-                  className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-shadow hover:shadow-md"
                   key={post._id}
                 >
                   {imageUrl ? (
@@ -165,13 +164,13 @@ export default async function BlogPage() {
                     />
                   ) : null}
                   <div className="p-6">
-                    <div className="flex items-center gap-2 text-gray-500 text-sm">
+                    <div className="flex items-center gap-2 text-slate-500 text-sm">
                       <CalendarDays className="h-4 w-4" />
                       <time dateTime={post.publishedAt}>
                         {formatPublishedDate(post.publishedAt)}
                       </time>
                     </div>
-                    <h2 className="mt-3 font-semibold text-2xl text-gray-900 leading-tight">
+                    <h2 className="mt-3 font-semibold text-2xl text-slate-900 leading-tight">
                       <Link
                         className="hover:text-primary"
                         href={`/blog/${post.slug}`}
@@ -179,7 +178,7 @@ export default async function BlogPage() {
                         {post.title}
                       </Link>
                     </h2>
-                    <p className="mt-3 text-gray-700 leading-relaxed">
+                    <p className="mt-3 text-slate-700 leading-relaxed">
                       {post.excerpt}
                     </p>
                     <Link

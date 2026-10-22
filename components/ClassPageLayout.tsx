@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import CourseRegistrationButton from "@/components/CourseRegistrationButton";
 import { Button } from "@/components/ui/Button";
+import { nativeRegistrationEnabled } from "@/lib/registration-launch";
 
 interface HeroImage {
   alt: string;
@@ -41,15 +42,15 @@ interface ClassPageSectionProps {
 
 export function ClassPageSection({ children, title }: ClassPageSectionProps) {
   return (
-    <section className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm md:p-8">
-      <h2 className="mb-4 font-bold text-2xl text-gray-950">{title}</h2>
-      <div className="space-y-4 text-gray-700 leading-relaxed">{children}</div>
+    <section className="rounded-lg border border-slate-200 bg-white p-6 shadow-xs md:p-8">
+      <h2 className="mb-4 font-bold text-2xl text-slate-950">{title}</h2>
+      <div className="space-y-4 text-slate-700 leading-relaxed">{children}</div>
     </section>
   );
 }
 
 export default function ClassPageLayout({
-  badgeLabel = "Certification Course",
+  badgeLabel = "Certification course",
   children,
   courseName,
   image,
@@ -74,7 +75,7 @@ export default function ClassPageLayout({
             objectPosition: image.position ?? "center",
           }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/20" />
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/45 to-black/20" />
         <div className="container relative z-10 mx-auto max-w-6xl px-4 pt-20 pb-24 sm:px-6 lg:px-8">
           <div className="max-w-4xl">
             <p className="mb-4 font-semibold text-sm text-white/80 uppercase tracking-[0.18em]">
@@ -93,20 +94,26 @@ export default function ClassPageLayout({
       </section>
 
       <section className="relative z-20 mx-auto -mt-14 max-w-5xl px-4 sm:px-6 lg:px-8">
+<<<<<<< HEAD
         <div className="rounded-lg border border-gray-200 bg-white p-5 shadow-xl md:p-6">
+=======
+        <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-md md:p-6">
+>>>>>>> origin/master
           <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
-              <h2 className="mb-2 font-bold text-gray-950 text-xl">
+              <h2 className="mb-2 font-bold text-slate-950 text-xl">
                 Find an upcoming class
               </h2>
-              <p className="mb-0 text-gray-600">
-                View current dates, locations, and registration details on Hovn.
+              <p className="mb-0 text-slate-600">
+                {nativeRegistrationEnabled()
+                  ? "See every date, location, and the full price before you register."
+                  : "View current dates, locations, and registration details on Hovn."}
               </p>
             </div>
             <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center lg:justify-end">
               <CourseRegistrationButton
                 buttonClassName="h-12 px-5 py-0 text-base"
-                buttonText="View Current Offerings"
+                buttonText="See upcoming classes"
                 className="mb-0"
                 courseName={courseName}
                 registrationUrl={registrationUrl}
@@ -136,10 +143,10 @@ export default function ClassPageLayout({
           </div>
 
           {resources.length > 0 ? (
-            <div className="mt-5 flex flex-col gap-3 border-gray-200 border-t pt-5 sm:flex-row sm:flex-wrap">
+            <div className="mt-5 flex flex-col gap-3 border-slate-200 border-t pt-5 sm:flex-row sm:flex-wrap">
               {resources.map((resource) => (
                 <Link
-                  className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 font-medium text-gray-700 text-sm transition-colors hover:bg-gray-50"
+                  className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 font-medium text-slate-700 text-sm transition-colors hover:bg-slate-50"
                   href={resource.href}
                   key={resource.label}
                 >

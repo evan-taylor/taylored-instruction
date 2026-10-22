@@ -1,7 +1,7 @@
 (() => {
   const RADIX_36 = 36;
   const SKIP_PREFIX_LENGTH = 7;
-  const n = Math.random().toString(RADIX_36).substring(SKIP_PREFIX_LENGTH);
+  const n = Math.random().toString(RADIX_36).slice(SKIP_PREFIX_LENGTH);
   const o = document.createElement("script");
   o.src =
     "https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache=" +

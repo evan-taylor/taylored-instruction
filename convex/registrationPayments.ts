@@ -1,0 +1,517 @@
+import { ConvexError, v } from "convex/values";
+import { doc } from "convex-helpers/validators";
+import {
+  BATCH,
+  CHECKOUT_HOLD_MINUTES,
+  CHECKOUT_HOLD_MS,
+  cents,
+  formatMoney,
+} from "../shared/registration/domain";
+import { assertRegistrationPaymentMode } from "../shared/registration/environment";
+import { internal } from "./_generated/api";
+import type { Doc } from "./_generated/dataModel";
+import type { MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation } from "./_generated/server";
+import {
+  audit,
+  enqueue,
+  offering,
+  release,
+  settle,
+  staff,
+} from "./registrationHelpers";
+import { allocateRefund } from "./registrationRefundAllocation";
+import schema from "./schema";
+
+export const checkoutOrder = internalQuery({
+  args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
+  returns: doc(schema, "registrationOrders"),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.requestKey !== args.requestKey) {
+      throw new ConvexError("Order not found");
+    }
+    if (order.status !== "hold" || order.expires <= Date.now()) {
+      throw new ConvexError("Checkout has expired or is already complete");
+    }
+    const { course, session, config } = await offering(
+      ctx,
+      order.courseId,
+      order.sessionId
+    );
+    const coupon = order.couponId ? await ctx.db.get(order.couponId) : null;
+    if (
+      !course.enrollmentOpen ||
+      course.publication !== "published" ||
+      coupon?.disabled ||
+      (session &&
+        (session.state !== "open" ||
+          Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
+    ) {
+      throw new ConvexError(
+        "This checkout is no longer eligible; contact us for help"
+      );
+    }
+    return order;
+  },
+});
+export const attachCheckout = internalMutation({
+  args: {
+    orderId: v.id("registrationOrders"),
+    session: v.string(),
+    /** Client secret for the on-page Payment Element. */
+    secret: v.string(),
+  },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (
+      !order ||
+      (order.stripeSession && order.stripeSession !== args.session)
+    ) {
+      throw new ConvexError("Checkout mismatch");
+    }
+    if (order.status !== "hold" || order.expires <= Date.now()) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationExternal.expireCheckout,
+        { session: args.session, attempt: 0 }
+      );
+      return false;
+    }
+    await ctx.db.patch(order._id, {
+      stripeSession: args.session,
+      checkoutSecret: args.secret,
+    });
+    return true;
+  },
+});
+export const checkoutFailed = internalMutation({
+  args: { orderId: v.id("registrationOrders") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (order) {
+      await release(ctx, order, "Checkout creation failed");
+    }
+    return null;
+  },
+});
+export const paymentEvent = internalMutation({
+  args: {
+    eventId: v.string(),
+    orderId: v.id("registrationOrders"),
+    session: v.string(),
+    amount: v.number(),
+    currency: v.string(),
+    paid: v.boolean(),
+    live: v.boolean(),
+    type: v.string(),
+    paymentIntent: v.optional(v.string()),
+    paidAt: v.optional(v.number()),
+    /** Sales tax Stripe collected on top of the quoted total. */
+    tax: v.optional(v.number()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    assertRegistrationPaymentMode(args.live);
+    const event = await ctx.db
+      .query("registrationEvents")
+      .withIndex("by_eventId", (q) => q.eq("eventId", args.eventId))
+      .unique();
+    if (event) {
+      return null;
+    }
+    const tax = args.tax ?? 0;
+    const stored = await ctx.db.get(args.orderId);
+    if (
+      !stored ||
+      (stored.stripeSession && stored.stripeSession !== args.session) ||
+      stored.currency !== args.currency ||
+      tax < 0 ||
+      stored.total + tax !== args.amount
+    ) {
+      throw new ConvexError("Payment does not match the authoritative quote");
+    }
+    if (args.paid && tax !== (stored.tax ?? 0)) {
+      await ctx.db.patch(stored._id, { tax });
+    }
+    const order = { ...stored, tax: args.paid ? tax : stored.tax };
+    if (!order.stripeSession) {
+      throw new Error("Checkout attachment pending; retry event");
+    }
+    if (
+      args.type === "checkout.session.expired" ||
+      args.type === "checkout.session.async_payment_failed"
+    ) {
+      await release(ctx, order, args.type);
+    } else if (args.paid) {
+      await settle(
+        ctx,
+        order,
+        args.live ? "stripe-live" : "stripe-test",
+        args.paymentIntent,
+        args.paidAt
+      );
+    } else {
+      return null;
+    }
+    await ctx.db.insert("registrationEvents", {
+      eventId: args.eventId,
+      orderId: order._id,
+      type: args.type,
+      at: Date.now(),
+    });
+    return null;
+  },
+});
+export const expire = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const orders = await ctx.db
+      .query("registrationOrders")
+      .withIndex("by_status_and_expires", (q) =>
+        q.eq("status", "hold").lte("expires", Date.now())
+      )
+      .take(BATCH);
+    await orders.reduce(async (prior, order) => {
+      await prior;
+      await release(
+        ctx,
+        order,
+        "Reservation expired; late payments require reconciliation"
+      );
+    }, Promise.resolve());
+    return null;
+  },
+});
+export const requestRefund = mutation({
+  args: {
+    orderId: v.id("registrationOrders"),
+    cents: v.number(),
+    key: v.string(),
+    reason: v.string(),
+  },
+  returns: v.id("registrationRefunds"),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    cents(args.cents);
+    if (!args.reason.trim() || args.cents <= 0 || args.key.length < 24) {
+      throw new ConvexError(
+        "Refund amount, reason, and operation key required"
+      );
+    }
+    const previous = await ctx.db
+      .query("registrationRefunds")
+      .withIndex("by_key", (q) => q.eq("key", args.key))
+      .unique();
+    if (previous) {
+      return previous._id;
+    }
+    const order = await ctx.db.get(args.orderId);
+    if (
+      !order?.paymentIntent ||
+      (order.status !== "settled" && order.status !== "exception") ||
+      args.cents >
+        order.total + (order.tax ?? 0) - order.refunded - order.refundReserved
+    ) {
+      throw new ConvexError("Refund exceeds remaining Stripe payment");
+    }
+    await ctx.db.patch(order._id, {
+      refundReserved: order.refundReserved + args.cents,
+    });
+    const id = await ctx.db.insert("registrationRefunds", {
+      ...args,
+      allocations: await allocateRefund(ctx, order, args.cents),
+      actor: actor.userId,
+      state: "pending",
+    });
+    await audit(
+      ctx,
+      actor.userId,
+      "refund-requested",
+      order._id,
+      `${args.cents}: ${args.reason}`
+    );
+    return id;
+  },
+});
+export const refundData = internalQuery({
+  args: { id: v.id("registrationRefunds") },
+  returns: v.object({
+    refund: doc(schema, "registrationRefunds"),
+    order: doc(schema, "registrationOrders"),
+  }),
+  handler: async (ctx, args) => {
+    const refund = await ctx.db.get(args.id);
+    const order = refund ? await ctx.db.get(refund.orderId) : null;
+    if (!(refund && order)) {
+      throw new ConvexError("Refund not found");
+    }
+    return { refund, order };
+  },
+});
+export const finishRefund = internalMutation({
+  args: { id: v.id("registrationRefunds"), stripeId: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const refund = await ctx.db.get(args.id);
+    if (refund?.state !== "pending") {
+      return null;
+    }
+    const order = await ctx.db.get(refund.orderId);
+    if (!order) {
+      throw new ConvexError("Order not found");
+    }
+    await ctx.db.patch(refund._id, {
+      state: "succeeded",
+      stripeId: args.stripeId,
+    });
+    await ctx.db.patch(order._id, {
+      ...(order.source === "invoice-extra-payment" &&
+      order.refunded + refund.cents >= order.total + (order.tax ?? 0)
+        ? { status: "settled" as const, error: undefined }
+        : {}),
+      refunded: order.refunded + refund.cents,
+      refundReserved: order.refundReserved - refund.cents,
+    });
+    await audit(
+      ctx,
+      refund.actor,
+      "refund-completed",
+      order._id,
+      `${refund.cents}`
+    );
+    return null;
+  },
+});
+async function validatePayment(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">
+) {
+  const { course, session, config } = await offering(
+    ctx,
+    order.courseId,
+    order.sessionId
+  );
+  if (
+    !course.enrollmentOpen ||
+    course.publication !== "published" ||
+    (session &&
+      (session.state !== "open" ||
+        Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
+  ) {
+    throw new ConvexError(
+      "Card checkout is closed for this offering. Use an invoice or record offline payment; the enrollment is unchanged."
+    );
+  }
+  const liveInvoice = await ctx.db
+    .query("registrationInvoices")
+    .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+    .filter((q) =>
+      q.or(q.eq(q.field("status"), "draft"), q.eq(q.field("status"), "open"))
+    )
+    .first();
+  if (liveInvoice) {
+    throw new ConvexError(
+      "Void the open invoice before creating a card payment link"
+    );
+  }
+}
+async function preparePayment(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">,
+  requestKey: string
+) {
+  await validatePayment(ctx, order);
+  await ctx.db.patch(order._id, {
+    status: "hold",
+    requestKey,
+    expires: Date.now() + CHECKOUT_HOLD_MS,
+  });
+}
+
+export const requestPayment = mutation({
+  args: { orderId: v.id("registrationOrders"), requestId: v.string() },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    const order = await ctx.db.get(args.orderId);
+    if (!(order && ["unpaid", "hold"].includes(order.status))) {
+      throw new ConvexError("An unpaid registration is required");
+    }
+    if (order.status === "hold" && order.expires <= Date.now()) {
+      throw new ConvexError(
+        "This reservation has expired. Enroll the student again before requesting payment."
+      );
+    }
+    await validatePayment(ctx, order);
+    const site = process.env.SITE_URL;
+    if (!site) {
+      throw new Error("Configure SITE_URL");
+    }
+    const url = new URL("/registration/payment", site);
+    url.searchParams.set("order", order._id);
+    url.searchParams.set("key", order.requestKey);
+    await enqueue(ctx, {
+      key: `payment-request:${order._id}:${args.requestId}`,
+      kind: "email",
+      recipient: order.purchaser,
+      subject: `Payment requested: ${order.title}`,
+      body: `Hello ${order.purchaserName}, please complete payment for your training registration.\nTraining subtotal: ${formatMoney(order.total)}. Any applicable sales tax is calculated at checkout.\nAttendees: ${order.seats.map((s) => s.attendee.name).join(", ")}.\nEnter your billing address and card details securely on our payment page. Once you begin, complete payment within ${CHECKOUT_HOLD_MINUTES} minutes. Your registration is confirmed after payment.\nIf you have already arranged payment another way, reply to this email before paying.`,
+      due: Date.now(),
+      link: { label: "Review and pay", url: url.toString() },
+    });
+    await audit(
+      ctx,
+      actor.userId,
+      "payment-request-emailed",
+      order._id,
+      order.purchaser
+    );
+    return url.toString();
+  },
+});
+
+export const beginRequestedPayment = mutation({
+  args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
+  returns: v.object({ expires: v.number() }),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (!order || order.requestKey !== args.requestKey) {
+      throw new ConvexError("Payment request not found");
+    }
+    if (order.status === "hold" && order.expires > Date.now()) {
+      return { expires: order.expires };
+    }
+    if (order.status !== "unpaid") {
+      throw new ConvexError(
+        "This payment request is already paid, canceled, or expired. Contact us if you need help."
+      );
+    }
+    await preparePayment(ctx, order, args.requestKey);
+    return { expires: Date.now() + CHECKOUT_HOLD_MS };
+  },
+});
+
+export const createPaymentLink = mutation({
+  args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    const order = await ctx.db.get(args.orderId);
+    if (order?.status !== "unpaid" || args.requestKey.length < 24) {
+      throw new ConvexError("Unpaid order required");
+    }
+    await preparePayment(ctx, order, args.requestKey);
+    await audit(
+      ctx,
+      actor.userId,
+      "payment-link-requested",
+      order._id,
+      `${CHECKOUT_HOLD_MINUTES}-minute payment reservation`
+    );
+    return null;
+  },
+});
+export const pendingRefunds = internalQuery({
+  args: {},
+  returns: v.array(v.id("registrationRefunds")),
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("registrationRefunds")
+      .withIndex("by_state", (q) => q.eq("state", "pending"))
+      .take(BATCH);
+    return rows.filter((r) => r.state === "pending").map((r) => r._id);
+  },
+});
+export const refundFailure = internalMutation({
+  args: {
+    id: v.id("registrationRefunds"),
+    error: v.string(),
+    terminal: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const refund = await ctx.db.get(args.id);
+    if (refund?.state === "pending") {
+      await ctx.db.patch(refund._id, {
+        error: args.error,
+        ...(args.terminal ? { state: "failed" as const } : {}),
+      });
+      if (args.terminal) {
+        const order = await ctx.db.get(refund.orderId);
+        if (order) {
+          await ctx.db.patch(order._id, {
+            refundReserved: order.refundReserved - refund.cents,
+          });
+        }
+        await audit(
+          ctx,
+          refund.actor,
+          "refund-failed",
+          refund.orderId,
+          args.error
+        );
+      }
+    }
+    return null;
+  },
+});
+export const refundEvent = internalMutation({
+  args: {
+    id: v.id("registrationRefunds"),
+    stripeId: v.string(),
+    amount: v.number(),
+    paymentIntent: v.string(),
+    succeeded: v.boolean(),
+    failed: v.optional(v.boolean()),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const refund = await ctx.db.get(args.id);
+    const order = refund ? await ctx.db.get(refund.orderId) : null;
+    if (
+      !(refund && order) ||
+      refund.cents !== args.amount ||
+      order.paymentIntent !== args.paymentIntent
+    ) {
+      throw new ConvexError("Refund event mismatch");
+    }
+    if ((args.failed || args.succeeded) && refund.state === "pending") {
+      await audit(
+        ctx,
+        refund.actor,
+        args.succeeded ? "refund-completed" : "refund-failed",
+        order._id,
+        `${refund.cents}`
+      );
+    }
+    if (args.failed && refund.state === "pending") {
+      await ctx.db.patch(refund._id, {
+        state: "failed",
+        stripeId: args.stripeId,
+        error: "Stripe refund failed or was canceled",
+      });
+      await ctx.db.patch(order._id, {
+        refundReserved: order.refundReserved - refund.cents,
+      });
+    }
+    if (args.succeeded && refund.state === "pending") {
+      await ctx.db.patch(refund._id, {
+        state: "succeeded",
+        stripeId: args.stripeId,
+      });
+      await ctx.db.patch(order._id, {
+        ...(order.source === "invoice-extra-payment" &&
+        order.refunded + refund.cents >= order.total + (order.tax ?? 0)
+          ? { status: "settled" as const, error: undefined }
+          : {}),
+        refunded: order.refunded + refund.cents,
+        refundReserved: order.refundReserved - refund.cents,
+      });
+    }
+    return null;
+  },
+});

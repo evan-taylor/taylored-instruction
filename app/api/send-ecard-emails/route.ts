@@ -5,6 +5,7 @@ import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -13,7 +14,11 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
+<<<<<<< HEAD
     apiVersion: "2026-08-26.dahlia",
+=======
+    apiVersion: "2026-09-30.endive",
+>>>>>>> origin/master
   });
 }
 
@@ -85,6 +90,12 @@ export async function POST(req: NextRequest) {
     }
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
+<<<<<<< HEAD
+=======
+      to: [customerEmail],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Your eCard Purchase Confirmation",
+>>>>>>> origin/master
       react: React.createElement(EcardPurchaseUserEmail, {
         cartItems: cartItems.map((item) => ({
           name: item.productName,
@@ -128,6 +139,12 @@ export async function POST(req: NextRequest) {
     }
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
+<<<<<<< HEAD
+=======
+      to: [customerEmail],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Your eCard Purchase Confirmation",
+>>>>>>> origin/master
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName,
         price: totalPrice,
@@ -175,7 +192,7 @@ export async function POST(req: NextRequest) {
       }
       await sendCartEmails(cartItems, totalPrice, customerEmail);
 
-      const userId = session.metadata.userId;
+      const { userId } = session.metadata;
       if (userId) {
         const posthog = PostHogClient();
         await posthog?.capture({

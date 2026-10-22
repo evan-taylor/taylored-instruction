@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
@@ -38,16 +38,16 @@ export const getAnalytics = query({
   handler: async (ctx, args) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new ConvexError("Unauthorized");
     }
 
     const user = await ctx.db.get(userId);
     if (!user) {
-      throw new Error("User not found");
+      throw new ConvexError("User not found");
     }
 
     if (!isAdminEmail(user.email)) {
-      throw new Error("Forbidden: Admin access required");
+      throw new ConvexError("Forbidden: Admin access required");
     }
 
     const analytics = await ctx.db

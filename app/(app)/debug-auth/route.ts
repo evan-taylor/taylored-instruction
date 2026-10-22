@@ -1,6 +1,6 @@
-import { convexAuthNextjsToken } from "@convex-dev/auth/nextjs/server";
-import { type NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
+<<<<<<< HEAD
 const TRUNCATE_LENGTH = 20;
 
 export async function GET(request: NextRequest) {
@@ -52,4 +52,11 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
+=======
+export function GET() {
+  return NextResponse.json(
+    { message: "Authentication diagnostics are unavailable." },
+    { status: 404, headers: { "Cache-Control": "no-store" } }
+  );
+>>>>>>> origin/master
 }

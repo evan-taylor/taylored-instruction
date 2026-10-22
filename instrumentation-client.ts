@@ -9,6 +9,10 @@ import {
 } from "@sentry/nextjs";
 import posthog from "posthog-js";
 import { getMissingPostHogEnvVariable, getPostHogEnv } from "@/lib/posthog-env";
+<<<<<<< HEAD
+=======
+import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
+>>>>>>> origin/master
 
 const { host: posthogHost, projectToken: posthogProjectToken } =
   getPostHogEnv();
@@ -16,6 +20,14 @@ const { host: posthogHost, projectToken: posthogProjectToken } =
 if (posthogProjectToken && posthogHost) {
   posthog.init(posthogProjectToken, {
     api_host: posthogHost,
+<<<<<<< HEAD
+=======
+    person_profiles: "identified_only",
+    capture_pageview: false,
+    before_send: (event) =>
+      isPrivateRegistrationPath(window.location.pathname) ? null : event,
+    capture_pageleave: true,
+>>>>>>> origin/master
     capture_exceptions: true,
     capture_pageleave: true,
     capture_pageview: false,
@@ -39,20 +51,54 @@ init({
   enableLogs: true,
 
   // Add optional integrations for additional features
-  integrations: [replayIntegration()],
+  integrations: [
+    replayIntegration({
+      beforeAddRecordingEvent: (event) =>
+        isPrivateRegistrationPath(window.location.pathname) ? null : event,
+    }),
+  ],
+  beforeSend: (event) =>
+    isPrivateRegistrationPath(window.location.pathname) ? null : event,
+  beforeSendTransaction: (event) =>
+    isPrivateRegistrationPath(window.location.pathname) ? null : event,
 
+<<<<<<< HEAD
   // Define how likely Replay events are sampled when an error occurs.
   replaysOnErrorSampleRate: 1.0,
+=======
+  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  tracesSampleRate: 1,
+  traceLifecycle: "static",
+>>>>>>> origin/master
 
   // Define how likely Replay events are sampled.
   // This sets the sample rate to be 10%. You may want this to be 100% while
   // in development and sample at a lower rate in production
   replaysSessionSampleRate: 0.1,
 
+<<<<<<< HEAD
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
 
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: 1,
+=======
+  // Define how likely Replay events are sampled when an error occurs.
+  replaysOnErrorSampleRate: 1.0,
+
+  // Preserve user context without enabling v11's new payload collection defaults.
+  dataCollection: {
+    userInfo: true,
+    cookies: true,
+    httpHeaders: { request: true, response: false },
+    urlQueryParams: true,
+    httpBodies: ["incomingRequest"],
+    databaseQueryData: false,
+    queues: false,
+    stackFrameVariables: false,
+    graphQL: { document: true, variables: false },
+    genAI: { inputs: false, outputs: false },
+  },
+>>>>>>> origin/master
 });

@@ -9,7 +9,11 @@ function getStripeClient(): Stripe {
     throw new Error("Missing STRIPE_SECRET_KEY environment variable");
   }
   return new Stripe(StripeSecretKey, {
+<<<<<<< HEAD
     apiVersion: "2026-08-26.dahlia",
+=======
+    apiVersion: "2026-09-30.endive",
+>>>>>>> origin/master
   });
 }
 
@@ -72,7 +76,11 @@ export async function POST(req: NextRequest) {
       try {
         return await getPriceCached(id);
       } catch {
+<<<<<<< HEAD
         return { error: "Failed to retrieve price details.", id };
+=======
+        return { id, error: "Failed to retrieve price details." };
+>>>>>>> origin/master
       }
     });
 
