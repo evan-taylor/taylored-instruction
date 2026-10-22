@@ -64,7 +64,7 @@ import { InvitationActions } from "./invitation";
 import { PaymentStep } from "./payment-step";
 
 type Offering = NonNullable<FunctionReturnType<typeof api.registration.detail>>;
-type Material = Settings["materials"][number];
+type Material = Offering["config"]["materials"][number];
 type Question = Settings["questions"][number];
 type AttendeeRow = Attendee & { key: string };
 type Review = {
@@ -126,20 +126,22 @@ function dayKey(ms: number, timeZone?: string) {
     day: "2-digit",
   }).format(new Date(ms));
 }
-function policyLabel(policy: Material["policy"]) {
-  if (policy === "included") {
-    return "Included";
-  }
-  if (policy === "optional") {
-    return "Optional add-on";
-  }
-  return "Required, waivable if you already have it";
+const KIND_HINT: Record<NonNullable<Material["kind"]>, string> = {
+  physical: "Physical item",
+  pdf: "Digital download",
+  link: "Online access",
+  keycode: "Online access",
+};
+/** The one-line blurb under a material: its catalog summary, else what form it takes. */
+function materialBlurb(material: Material) {
+  return material.summary ?? (material.kind ? KIND_HINT[material.kind] : "");
 }
-function policyTone(policy: Material["policy"]) {
-  if (policy === "included") {
-    return "success" as const;
-  }
-  return policy === "optional" ? ("info" as const) : ("warning" as const);
+/** Everything a default attendee gets, then what they can add. */
+function groupMaterials(materials: Material[]) {
+  return {
+    base: materials.filter((m) => m.policy !== "optional"),
+    optional: materials.filter((m) => m.policy === "optional"),
+  };
 }
 
 function SeatsBadge({ available }: { available?: number }) {
@@ -778,7 +780,78 @@ function CheckRow({
   );
 }
 
-function MaterialChoice({
+/** Title, blurb, and price for one line of the per-attendee breakdown. */
+function LineItem({
+  title,
+  blurb,
+  trailing,
+  leading,
+  titleId,
+  blurbId,
+  muted,
+}: {
+  title: string;
+  blurb?: string;
+  trailing: ReactNode;
+  leading?: ReactNode;
+  titleId?: string;
+  blurbId?: string;
+  muted?: boolean;
+}) {
+  return (
+    <span className="flex min-w-0 flex-1 items-start gap-3">
+      {leading}
+      <span className="min-w-0 flex-1">
+        <span
+          className={cn(
+            "block text-sm",
+            muted ? "text-slate-500" : "font-medium text-slate-900"
+          )}
+          id={titleId}
+        >
+          {title}
+        </span>
+        {blurb ? (
+          <span
+            className="mt-0.5 block text-slate-500 text-xs leading-relaxed"
+            id={blurbId}
+          >
+            {blurb}
+          </span>
+        ) : null}
+      </span>
+      <span
+        className={cn(
+          "shrink-0 whitespace-nowrap text-sm tabular-nums",
+          muted ? "text-slate-400" : "text-slate-700"
+        )}
+      >
+        {trailing}
+      </span>
+    </span>
+  );
+}
+
+function IncludedItem({ material }: { material: Material }) {
+  return (
+    <li className="flex px-3 py-3 sm:px-4">
+      <LineItem
+        blurb={materialBlurb(material)}
+        leading={
+          <CheckCircle2
+            aria-hidden="true"
+            className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+          />
+        }
+        title={material.title}
+        trailing={material.cents ? formatMoney(material.cents) : "Included"}
+      />
+    </li>
+  );
+}
+
+/** A required material the attendee can drop if they already own it. */
+function WaivableItem({
   material,
   attendee,
   onChange,
@@ -787,40 +860,125 @@ function MaterialChoice({
   attendee: AttendeeRow;
   onChange: (patch: Partial<Attendee>) => void;
 }) {
-  if (material.policy === "included") {
-    return (
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="text-slate-700">{material.title}</span>
-        <span className="text-slate-500">
-          {material.cents ? formatMoney(material.cents) : "Included"}
-        </span>
-      </div>
-    );
-  }
-  const optional = material.policy === "optional";
-  const field = optional ? "selected" : "waived";
-  const checked = attendee[field].includes(material.id);
+  const id = useId();
+  const waived = attendee.waived.includes(material.id);
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="text-slate-700">{material.title}</span>
-        <span className="text-slate-500">
-          {optional ? "Optional" : formatMoney(material.cents)}
-        </span>
-      </div>
-      <CheckRow
-        checked={checked}
-        label={optional ? "Add this material" : WAIVER}
-        onChange={(next) =>
-          onChange({
-            [field]: next
-              ? [...attendee[field], material.id]
-              : attendee[field].filter((id) => id !== material.id),
-          })
+    <li className="space-y-2.5 px-3 py-3 sm:px-4">
+      <LineItem
+        blurb={materialBlurb(material)}
+        leading={
+          <CheckCircle2
+            aria-hidden="true"
+            className={cn(
+              "mt-0.5 h-4 w-4 shrink-0",
+              waived ? "text-slate-300" : "text-primary"
+            )}
+          />
         }
-        trailing={`${optional ? "+" : "−"} ${formatMoney(material.cents)}`}
+        muted={waived}
+        title={material.title}
+        titleId={`${id}-title`}
+        trailing={
+          waived ? (
+            <s>{formatMoney(material.cents)}</s>
+          ) : (
+            formatMoney(material.cents)
+          )
+        }
       />
-    </div>
+      <label
+        className="flex cursor-pointer items-center gap-2.5 pl-7 text-slate-700 text-sm"
+        htmlFor={id}
+      >
+        <input
+          aria-describedby={`${id}-title`}
+          checked={waived}
+          className="h-4 w-4 shrink-0 rounded-sm border-slate-300 text-primary accent-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+          id={id}
+          onChange={(e) =>
+            onChange({
+              waived: e.target.checked
+                ? [...attendee.waived, material.id]
+                : attendee.waived.filter((v) => v !== material.id),
+            })
+          }
+          type="checkbox"
+        />
+        <span className="flex-1">{WAIVER}</span>
+        <span className="whitespace-nowrap text-slate-500 tabular-nums">
+          − {formatMoney(material.cents)}
+        </span>
+      </label>
+    </li>
+  );
+}
+
+/** A whole-row toggle: tap anywhere on the card to add the material. */
+function OptionalItem({
+  material,
+  attendee,
+  onChange,
+}: {
+  material: Material;
+  attendee: AttendeeRow;
+  onChange: (patch: Partial<Attendee>) => void;
+}) {
+  const id = useId();
+  const blurb = materialBlurb(material);
+  const checked = attendee.selected.includes(material.id);
+  return (
+    <li>
+      <label
+        className={cn(
+          "flex cursor-pointer items-start gap-3 rounded-lg border bg-white p-3 transition-colors duration-150",
+          "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary/30 has-[:focus-visible]:ring-offset-1",
+          checked
+            ? "border-primary/60 bg-primary/5"
+            : "border-slate-200 hover:border-slate-300"
+        )}
+        htmlFor={id}
+      >
+        <input
+          aria-describedby={blurb ? `${id}-blurb` : undefined}
+          aria-labelledby={`${id}-title`}
+          checked={checked}
+          className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-slate-300 text-primary accent-primary focus-visible:outline-hidden"
+          id={id}
+          onChange={(e) =>
+            onChange({
+              selected: e.target.checked
+                ? [...attendee.selected, material.id]
+                : attendee.selected.filter((v) => v !== material.id),
+            })
+          }
+          type="checkbox"
+        />
+        <LineItem
+          blurb={blurb}
+          blurbId={`${id}-blurb`}
+          title={material.title}
+          titleId={`${id}-title`}
+          trailing={
+            <span
+              className={cn(
+                "font-medium",
+                checked ? "text-slate-900" : "text-slate-700"
+              )}
+            >
+              + {formatMoney(material.cents)}
+            </span>
+          }
+        />
+      </label>
+    </li>
+  );
+}
+
+function GroupLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="font-semibold text-slate-500 text-xs uppercase tracking-wider">
+      {children}
+    </p>
   );
 }
 
@@ -904,27 +1062,51 @@ function AttendeeOptions({
   onChange,
 }: {
   attendee: AttendeeRow;
-  config: Settings;
+  config: Offering["config"];
   onChange: (patch: Partial<Attendee>) => void;
 }) {
+  const { base, optional } = groupMaterials(config.materials);
   return (
     <>
-      {" "}
-      <div className="space-y-3 rounded-lg bg-slate-50 p-4">
-        <div className="flex items-center justify-between gap-3 text-sm">
-          <span className="font-medium text-slate-800">Tuition</span>
-          <span className="text-slate-700 tabular-nums">
-            {formatMoney(config.tuition)}
-          </span>
+      <div className="space-y-4 rounded-lg bg-slate-50 p-3 sm:p-4">
+        <div className="space-y-2">
+          <GroupLabel>Your registration</GroupLabel>
+          <ul className="list-none divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white p-0">
+            <li className="flex px-3 py-3 sm:px-4">
+              <LineItem
+                title="Tuition"
+                trailing={formatMoney(config.tuition)}
+              />
+            </li>
+            {base.map((m) =>
+              m.policy === "included" ? (
+                <IncludedItem key={m.id} material={m} />
+              ) : (
+                <WaivableItem
+                  attendee={attendee}
+                  key={m.id}
+                  material={m}
+                  onChange={onChange}
+                />
+              )
+            )}
+          </ul>
         </div>
-        {config.materials.map((m) => (
-          <MaterialChoice
-            attendee={attendee}
-            key={m.id}
-            material={m}
-            onChange={onChange}
-          />
-        ))}
+        {optional.length ? (
+          <div className="space-y-2">
+            <GroupLabel>Optional add-ons</GroupLabel>
+            <ul className="list-none space-y-2 p-0">
+              {optional.map((m) => (
+                <OptionalItem
+                  attendee={attendee}
+                  key={m.id}
+                  material={m}
+                  onChange={onChange}
+                />
+              ))}
+            </ul>
+          </div>
+        ) : null}
         <div className="flex items-center justify-between gap-3 border-slate-200 border-t pt-3 text-sm">
           <span className="font-semibold text-slate-900">Subtotal</span>
           <span className="font-semibold text-slate-900 tabular-nums">
@@ -958,7 +1140,7 @@ function AttendeeCard({
 }: {
   attendee: AttendeeRow;
   index: number;
-  config: Settings;
+  config: Offering["config"];
   disabled: boolean;
   onChange: (patch: Partial<Attendee>) => void;
   onRemove: () => void;
@@ -1077,7 +1259,7 @@ function PurchaserCard({
   config,
 }: {
   form: RegistrationForm;
-  config: Settings;
+  config: Offering["config"];
 }) {
   const disabled = form.busy || form.review !== null;
   return (
@@ -1167,7 +1349,7 @@ function AttendeesSection({
   config,
 }: {
   form: RegistrationForm;
-  config: Settings;
+  config: Offering["config"];
 }) {
   const disabled = form.busy || form.review !== null;
   const atMax = form.attendees.length >= MAX_SEATS;
@@ -1529,32 +1711,7 @@ function OfferingDetails({ offering }: { offering: Offering }) {
               </p>
             ) : null}
           </div>
-          <div>
-            <h2 className="mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
-              What’s included
-            </h2>
-            <ul className="list-none space-y-2 p-0">
-              <li className="flex items-center justify-between gap-3 text-sm">
-                <span className="text-slate-900">Tuition</span>
-                <span className="text-slate-700 tabular-nums">
-                  {formatMoney(offering.config.tuition)}
-                </span>
-              </li>
-              {offering.config.materials.map((m) => (
-                <li className="text-sm" key={m.id}>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-slate-900">{m.title}</span>
-                    <span className="text-slate-700 tabular-nums">
-                      {formatMoney(m.cents)}
-                    </span>
-                  </div>
-                  <Badge className="mt-1" tone={policyTone(m.policy)}>
-                    {policyLabel(m.policy)}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </div>
+          <IncludedSummary config={offering.config} />
         </div>
         {offering.delivery === "self-paced" ? (
           <Notice tone="info">
@@ -1564,6 +1721,75 @@ function OfferingDetails({ offering }: { offering: Offering }) {
         ) : null}
       </CardContent>
     </Card>
+  );
+}
+
+/** The class-page price breakdown: what every seat gets, then what can be added. */
+function IncludedSummary({ config }: { config: Offering["config"] }) {
+  const { base, optional } = groupMaterials(config.materials);
+  const waivable = base.some((m) => m.policy === "waivable");
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+          What’s included
+        </h2>
+        <ul className="list-none divide-y divide-slate-100 p-0">
+          <li className="flex py-2">
+            <LineItem title="Tuition" trailing={formatMoney(config.tuition)} />
+          </li>
+          {base.map((m) => (
+            <li className="flex py-2" key={m.id}>
+              <LineItem
+                blurb={materialBlurb(m)}
+                leading={
+                  <CheckCircle2
+                    aria-hidden="true"
+                    className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                  />
+                }
+                title={m.title}
+                trailing={m.cents ? formatMoney(m.cents) : "Included"}
+              />
+            </li>
+          ))}
+        </ul>
+        <p className="mt-2 font-semibold text-slate-900 text-sm">
+          <span className="flex items-baseline justify-between gap-3">
+            <span>Per attendee</span>
+            <span className="tabular-nums">
+              {formatMoney(basePrice(config))}
+            </span>
+          </span>
+        </p>
+        {waivable ? (
+          <p className="mt-2 text-slate-500 text-xs">
+            Already own one of these? Skip it at checkout and pay less.
+          </p>
+        ) : null}
+      </div>
+      {optional.length ? (
+        <div>
+          <h2 className="mb-2 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+            Optional add-ons
+          </h2>
+          <ul className="list-none divide-y divide-slate-100 p-0">
+            {optional.map((m) => (
+              <li className="flex py-2" key={m.id}>
+                <LineItem
+                  blurb={materialBlurb(m)}
+                  title={m.title}
+                  trailing={`+ ${formatMoney(m.cents)}`}
+                />
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-slate-500 text-xs">
+            Add any of these for each attendee at checkout.
+          </p>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -1626,6 +1852,7 @@ function OfferingPage({
                     expires={form.review.expires}
                     onStartOver={form.reset}
                     orderId={form.review.orderId}
+                    releaseOnLeave
                     requestKey={form.review.requestKey}
                   />
                 </CardContent>

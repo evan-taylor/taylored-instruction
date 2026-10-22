@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 const LOGIN_URL = /\/login/u;
 const SUCCESS_URL = /\/registration\/success/u;
+const PORTAL_URL = /\/registrations$/u;
 
 test("public discovery excludes private sessions and shows the default material price", async ({
   page,
@@ -49,7 +50,7 @@ test("per-attendee waivers and optional selections update the itemized estimate"
       .locator("p", { hasText: "Estimated total" })
       .getByText("$110.00", { exact: true })
   ).toBeVisible();
-  await page.getByLabel("Add this material").check();
+  await page.getByRole("checkbox", { name: "Practice guide" }).check();
   await expect(
     page
       .locator("p", { hasText: "Estimated total" })
@@ -82,7 +83,7 @@ test("free checkout completes without a card and the success page reads backend 
     )
   ).toBeVisible();
 });
-test("guest access is explicit and a scanned link does not exchange its token", async ({
+test("an emailed link signs in on arrival and a bad token falls back to the request form", async ({
   page,
 }) => {
   const requests: string[] = [];
@@ -96,14 +97,14 @@ test("guest access is explicit and a scanned link does not exchange its token", 
   });
   await page.goto("/registrations/access#invalid-test-token");
   await expect(
-    page.getByRole("button", { name: "Confirm secure access" })
-  ).toBeVisible();
-  expect(requests).toHaveLength(0);
-  await page.getByRole("button", { name: "Confirm secure access" }).click();
-  await expect(
     page.getByText(
       "Unable to complete access. Request another link or try again later."
     )
+  ).toBeVisible();
+  expect(requests).toHaveLength(1);
+  await expect(page).toHaveURL(PORTAL_URL);
+  await expect(
+    page.getByRole("button", { name: "Email me a secure link" })
   ).toBeVisible();
 });
 test("existing login and contact routes still render without sending email", async ({

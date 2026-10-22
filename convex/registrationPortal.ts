@@ -24,6 +24,25 @@ export const issue = internalMutation({
     return null;
   },
 });
+/**
+ * A sign-in link for a transactional email. Unlike `issue` it is not rate
+ * limited and lives longer, since the student did not ask for it and may open
+ * the email days later.
+ */
+export const issueLink = internalMutation({
+  args: { email: v.string(), tokenHash: v.string(), expires: v.number() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.insert("registrationGrants", {
+      email: email(args.email),
+      hash: args.tokenHash,
+      purpose: "challenge",
+      expires: args.expires,
+      consumed: false,
+    });
+    return null;
+  },
+});
 export const exchange = mutation({
   args: { token: v.string(), grantHash: v.string() },
   returns: v.boolean(),

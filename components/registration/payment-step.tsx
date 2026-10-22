@@ -5,9 +5,9 @@ import {
   PaymentElement,
   useCheckoutElements,
 } from "@stripe/react-stripe-js/checkout";
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { Clock, Lock } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Notice, Skeleton } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
@@ -81,7 +81,14 @@ export function HoldTimer({
   );
 }
 
-function PaymentForm({ expired }: { expired: boolean }) {
+function PaymentForm({
+  expired,
+  onPaying,
+}: {
+  expired: boolean;
+  /** Fires before Stripe takes over so leaving the page is not read as abandoning. */
+  onPaying: (paying: boolean) => void;
+}) {
   const state = useCheckoutElements();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -107,12 +114,14 @@ function PaymentForm({ expired }: { expired: boolean }) {
   const confirm = async () => {
     setBusy(true);
     setMessage("");
+    onPaying(true);
     const result = await checkout.confirm();
     // On success Stripe sends the customer to the return URL; only an
     // immediate failure lands here.
     if (result.type === "error") {
       setMessage(result.error.message);
       setBusy(false);
+      onPaying(false);
     }
   };
   return (
@@ -186,21 +195,64 @@ export function PaymentStep({
   requestKey,
   expires,
   onStartOver,
+  releaseOnLeave = false,
 }: {
   orderId: Id<"registrationOrders">;
   requestKey: string;
   expires: number;
   onStartOver: () => void;
+  /**
+   * Give the seats back as soon as the purchaser leaves without paying,
+   * instead of holding them for the full window. Only for self-serve
+   * checkouts: a staff payment request must survive the student closing the tab.
+   */
+  releaseOnLeave?: boolean;
 }) {
   const checkout = useAction(api.registrationExternal.checkout);
+  const abandon = useMutation(api.registration.abandon);
   const [secret, setSecret] = useState<string | null>(null);
   const [failure, setFailure] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const paying = useRef(false);
+  const released = useRef(false);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, []);
+  useEffect(() => {
+    if (!releaseOnLeave) {
+      return;
+    }
+    // A beacon survives the tab closing; the mutation is a no-op once the
+    // order is anything other than a live hold, so a late or duplicate
+    // release can never undo a payment.
+    const leave = () => {
+      if (paying.current || released.current) {
+        return;
+      }
+      released.current = true;
+      navigator.sendBeacon(
+        "/api/registration/abandon",
+        JSON.stringify({ orderId, requestKey })
+      );
+    };
+    window.addEventListener("pagehide", leave);
+    return () => {
+      window.removeEventListener("pagehide", leave);
+      // Client-side navigation and "start again" unmount the step instead.
+      leave();
+    };
+  }, [releaseOnLeave, orderId, requestKey]);
+  const cancel = async () => {
+    released.current = true;
+    try {
+      await abandon({ orderId, requestKey });
+    } catch {
+      // The hold still lapses on its own; the purchaser is leaving either way.
+    }
+    onStartOver();
+  };
   // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` re-runs the request on retry
   useEffect(() => {
     let cancelled = false;
@@ -285,8 +337,25 @@ export function PaymentStep({
           }}
           stripe={getStripe()}
         >
-          <PaymentForm expired={expired} />
+          <PaymentForm
+            expired={expired}
+            onPaying={(value) => {
+              paying.current = value;
+            }}
+          />
         </CheckoutElementsProvider>
+      ) : null}
+      {releaseOnLeave && !expired ? (
+        <p className="text-center text-slate-500 text-sm">
+          Changed your mind?{" "}
+          <button
+            className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+            onClick={cancel}
+            type="button"
+          >
+            Cancel and release my seats
+          </button>
+        </p>
       ) : null}
       {expired || failure || secret ? null : (
         <div aria-busy="true" className="space-y-4" role="status">

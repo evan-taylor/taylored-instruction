@@ -333,6 +333,7 @@ function MaterialEditor({
   const upload = useMutation(api.registrationOperations.uploadUrl);
   const [title, setTitle] = useState(material?.title ?? "");
   const [kind, setKind] = useState<Kind>(material?.kind ?? "link");
+  const [summary, setSummary] = useState(material?.summary ?? "");
   const [instructions, setInstructions] = useState(
     material?.instructions ?? ""
   );
@@ -372,6 +373,7 @@ function MaterialEditor({
       await save({
         id: material?._id,
         title,
+        summary,
         instructions,
         kind,
         url: kind === "link" ? url : undefined,
@@ -435,6 +437,21 @@ function MaterialEditor({
               placeholder="BLS Provider eBook"
               required
               value={title}
+            />
+          )}
+        </Field>
+        <Field
+          hint="One or two sentences shown to students on the class page and at checkout, so they know what they are choosing."
+          label="Summary"
+        >
+          {(props) => (
+            <TextArea
+              {...props}
+              className="min-h-16"
+              maxLength={240}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="Printed manual mailed before class; covers every skill taught in the course."
+              value={summary}
             />
           )}
         </Field>

@@ -2,6 +2,7 @@ import { expect, it } from "vitest";
 import {
   brandedEmail,
   registrationEmail,
+  usesPortalAction,
 } from "../../shared/registration/email";
 
 it("escapes all customer content and rejects executable action URLs", () => {
@@ -37,6 +38,31 @@ it("keeps the access token and expiry in both HTML and plain text", () => {
   expect(result.html).toContain(url);
   expect(result.text).toContain(url);
   expect(result.text).toContain("30 minutes");
+});
+
+it("uses the sign-in link as the portal button and explains how long it lasts", () => {
+  const magic = "https://example.com/registrations/access#signed-token";
+  const job = {
+    category: "Registration confirmed",
+    subject: "You’re registered",
+    body: "Hi {{attendeeName}}, see {{portalLink}}",
+    name: "Sam",
+    title: "BLS",
+    schedule: "",
+    materials: [],
+    details: [],
+  };
+  expect(usesPortalAction(job)).toBe(true);
+  expect(
+    usesPortalAction({ ...job, link: { label: "Pay", url: "https://x.test" } })
+  ).toBe(false);
+  const result = registrationEmail(job, "https://example.com", magic);
+  expect(result.html).toContain(`href="${magic}"`);
+  expect(result.html).toContain("signs you in without a password");
+  expect(result.text).toContain(`see ${magic}`);
+  const plain = registrationEmail(job, "https://example.com");
+  expect(plain.html).toContain('href="https://example.com/registrations"');
+  expect(plain.html).not.toContain("signs you in");
 });
 
 it("renders billing details and preserves the invoice destination", () => {

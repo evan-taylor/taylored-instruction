@@ -225,6 +225,50 @@ describe("Registration transactions", () => {
       await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
     ).toBe(0);
   });
+  it("lets the purchaser abandon a hold early, but never a paid or foreign order", async () => {
+    const f = await fixture(1);
+    const args = attempt(f.course, f.session);
+    const held = await f.t.mutation(api.registration.reserve, args);
+    await f.t.mutation(api.registration.abandon, {
+      orderId: held.orderId,
+      requestKey: "wrong-key",
+    });
+    expect(
+      await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
+    ).toBe(1);
+    await f.t.mutation(api.registration.abandon, {
+      orderId: held.orderId,
+      requestKey: args.requestKey,
+    });
+    const session = await f.t.run((ctx) => ctx.db.get(f.session));
+    const order = await f.t.run((ctx) => ctx.db.get(held.orderId));
+    expect(session?.reserved).toBe(0);
+    expect(order?.status).toBe("expired");
+    // The seat is free again for the next purchaser.
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "next@example.test")
+    );
+    await f.t.run(async (ctx) => {
+      const latest = await ctx.db
+        .query("registrationOrders")
+        .order("desc")
+        .first();
+      if (latest) {
+        await ctx.db.patch(latest._id, { status: "settled" });
+      }
+    });
+    const latest = await f.t.run((ctx) =>
+      ctx.db.query("registrationOrders").order("desc").first()
+    );
+    await f.t.mutation(api.registration.abandon, {
+      orderId: latest?._id as Awaited<typeof held>["orderId"],
+      requestKey: latest?.requestKey ?? "",
+    });
+    expect(
+      await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
+    ).toBe(1);
+  });
   it("rejects normalized duplicate attendee emails, including simultaneous attempts", async () => {
     const f = await fixture();
     await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
