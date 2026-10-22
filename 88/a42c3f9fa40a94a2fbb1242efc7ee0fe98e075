@@ -1,0 +1,19 @@
+components/ui/dialog.tsx
+  s_7a2dc08a23e606::t_7b141311b8e904 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88a42c3f9fa40a94a2fbb1242efc7ee0fe98e075",
+  "prompts": {},
+  "sessions": {
+    "s_7a2dc08a23e606": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a16540-7699-7eb3-8485-d0a8485e7335",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
