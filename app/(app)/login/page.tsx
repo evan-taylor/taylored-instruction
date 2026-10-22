@@ -11,7 +11,6 @@ import {
   CardContent,
   CardDescription,
   CardHeader,
-  CardTitle,
 } from "@/components/ui/card";
 import { Field, TextInput } from "@/components/ui/field";
 import { Notice } from "@/components/ui/page-header";
@@ -183,9 +182,9 @@ export default function LoginPage() {
         <Card className="w-full">
           <CardHeader>
             <div>
-              <CardTitle className="text-xl lg:text-2xl">
-                <h1 className="m-0 font-bold text-inherit">Sign in</h1>
-              </CardTitle>
+              <h1 className="m-0 font-bold text-slate-900 text-xl leading-tight lg:text-2xl">
+                Sign in
+              </h1>
               <CardDescription>
                 For instructors and staff. Registered students can open their
                 classes from the{" "}

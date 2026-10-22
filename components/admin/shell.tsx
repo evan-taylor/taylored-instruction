@@ -1,4 +1,5 @@
 "use client";
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import {
   Bell,
@@ -10,12 +11,18 @@ import {
   GraduationCap,
   KeyRound,
   LayoutDashboard,
+  LogOut,
+  Menu,
+  Newspaper,
   Ticket,
   Users,
+  X,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Skeleton } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
@@ -70,14 +77,14 @@ const NAV: { group: string; items: NavItem[] }[] = [
       },
       { label: "Instructors", href: "/admin/instructors", icon: GraduationCap },
       { label: "SEO content", href: "/admin/seo-content", icon: Globe },
-      { label: "Content studio", href: "/admin/studio", icon: Globe },
-      {
-        label: "Instructor workspace",
-        href: "/instructor/sessions",
-        icon: ExternalLink,
-      },
+      { label: "Content studio", href: "/admin/studio", icon: Newspaper },
     ],
   },
+];
+/** Links out of the admin workspace, kept apart from the page navigation. */
+const SECONDARY: NavItem[] = [
+  { label: "Instructor workspace", href: "/instructor/sessions", icon: Users },
+  { label: "View site", href: "/", icon: ExternalLink },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -86,62 +93,248 @@ function isActive(pathname: string, href: string) {
     : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavLinks({
+function NavLink({
+  item,
+  active,
+  count,
+}: {
+  item: NavItem;
+  active: boolean;
+  count?: number;
+}) {
+  const Icon = item.icon;
+  return (
+    <Link
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "group flex min-h-10 items-center gap-3 rounded-md px-3 py-2 font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40",
+        active
+          ? "bg-primary/10 text-primary"
+          : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+      )}
+      href={item.href}
+    >
+      <Icon
+        aria-hidden={true}
+        className={cn(
+          "h-4 w-4 shrink-0",
+          active ? "text-primary" : "text-slate-400 group-hover:text-slate-600"
+        )}
+      />
+      <span className="truncate">{item.label}</span>
+      {count ? (
+        <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 font-semibold text-white text-xs tabular-nums leading-none">
+          {count}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function NavGroups({
   pathname,
   attentionCount,
-  compact,
 }: {
   pathname: string;
   attentionCount: number;
-  compact?: boolean;
 }) {
   return (
-    <>
+    <div className="space-y-6">
       {NAV.map((section) => (
         <div key={section.group}>
-          {compact ? null : (
-            <p className="m-0 mb-1 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
-              {section.group}
-            </p>
-          )}
-          <ul
-            className={cn(
-              "m-0 list-none p-0",
-              compact ? "flex gap-1" : "space-y-0.5"
-            )}
-          >
-            {section.items.map((item) => {
-              const active = isActive(pathname, item.href);
-              const Icon = item.icon;
-              const count = item.badge === "attention" ? attentionCount : 0;
-              return (
-                <li key={item.href}>
-                  <Link
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex items-center gap-2.5 rounded-md px-3 py-2 font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
-                      compact && "whitespace-nowrap"
-                    )}
-                    href={item.href}
-                  >
-                    <Icon aria-hidden={true} className="h-4 w-4 shrink-0" />
-                    <span className="truncate">{item.label}</span>
-                    {count > 0 ? (
-                      <span className="ml-auto rounded-full bg-rose-600 px-1.5 py-0.5 font-semibold text-white text-xs tabular-nums leading-none">
-                        {count}
-                      </span>
-                    ) : null}
-                  </Link>
-                </li>
-              );
-            })}
+          <p className="m-0 mb-1.5 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
+            {section.group}
+          </p>
+          <ul className="m-0 list-none space-y-0.5 p-0">
+            {section.items.map((item) => (
+              <li key={item.href}>
+                <NavLink
+                  active={isActive(pathname, item.href)}
+                  count={item.badge === "attention" ? attentionCount : 0}
+                  item={item}
+                />
+              </li>
+            ))}
           </ul>
         </div>
       ))}
+    </div>
+  );
+}
+
+function Brand() {
+  return (
+    <Link
+      className="flex items-center gap-3 rounded-md focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+      href="/admin"
+    >
+      <Image
+        alt="Taylored Instruction"
+        className="h-7 w-auto"
+        height={28}
+        priority
+        src="/horizontal-logo-black.png"
+        width={96}
+      />
+      <span className="rounded-md bg-slate-100 px-1.5 py-0.5 font-semibold text-slate-600 text-xs uppercase tracking-wide">
+        Admin
+      </span>
+    </Link>
+  );
+}
+
+function AccountRow({ email }: { email: string | null }) {
+  const { signOut } = useAuthActions();
+  const router = useRouter();
+  const initial = (email ?? "?").charAt(0).toUpperCase();
+  return (
+    <div className="flex items-center gap-3 px-3 py-2">
+      <span
+        aria-hidden="true"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary text-sm"
+      >
+        {initial}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="m-0 truncate font-medium text-slate-900 text-sm">
+          {email ?? "Signed in"}
+        </p>
+        <Link
+          className="text-slate-500 text-xs underline-offset-2 hover:text-slate-900 hover:underline"
+          href="/my-account"
+        >
+          My account
+        </Link>
+      </div>
+      <button
+        aria-label="Sign out"
+        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+        onClick={async () => {
+          await signOut();
+          router.push("/");
+        }}
+        title="Sign out"
+        type="button"
+      >
+        <LogOut aria-hidden="true" className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
+function SidebarContent({
+  pathname,
+  attentionCount,
+  email,
+}: {
+  pathname: string;
+  attentionCount: number;
+  email: string | null;
+}) {
+  return (
+    <>
+      <nav aria-label="Admin" className="flex-1 overflow-y-auto px-3 py-5">
+        <NavGroups attentionCount={attentionCount} pathname={pathname} />
+      </nav>
+      <div className="border-slate-200 border-t px-3 py-3">
+        <ul className="m-0 mb-2 list-none space-y-0.5 p-0">
+          {SECONDARY.map((item) => (
+            <li key={item.href}>
+              <NavLink active={false} item={item} />
+            </li>
+          ))}
+        </ul>
+        <AccountRow email={email} />
+      </div>
     </>
+  );
+}
+
+function MobileDrawer({
+  open,
+  onClose,
+  pathname,
+  attentionCount,
+  email,
+}: {
+  open: boolean;
+  onClose: () => void;
+  pathname: string;
+  attentionCount: number;
+  email: string | null;
+}) {
+  const ref = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) {
+      return;
+    }
+    if (open && !dialog.open) {
+      dialog.showModal();
+    } else if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+  return (
+    <dialog
+      aria-label="Admin navigation"
+      className="open:slide-in-from-left m-0 h-dvh max-h-none w-72 max-w-[85vw] flex-col border-slate-200 border-r bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 open:flex open:animate-in motion-reduce:open:animate-none"
+      onClick={(e) => {
+        if (e.target === ref.current) {
+          onClose();
+        }
+      }}
+      onClose={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          onClose();
+        }
+      }}
+      ref={ref}
+    >
+      <div className="flex h-14 shrink-0 items-center justify-between border-slate-200 border-b px-4">
+        <Brand />
+        <button
+          aria-label="Close navigation"
+          className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+          onClick={onClose}
+          type="button"
+        >
+          <X aria-hidden="true" className="h-5 w-5" />
+        </button>
+      </div>
+      <SidebarContent
+        attentionCount={attentionCount}
+        email={email}
+        pathname={pathname}
+      />
+    </dialog>
+  );
+}
+
+function GateMessage({
+  title,
+  children,
+  actions,
+}: {
+  title: string;
+  children: React.ReactNode;
+  actions: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-dvh flex-col bg-slate-50">
+      <header className="flex h-14 items-center border-slate-200 border-b bg-white px-4 sm:px-6">
+        <Brand />
+      </header>
+      <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
+        <h1 className="m-0 font-bold text-2xl text-slate-900">{title}</h1>
+        <p className="m-0 mt-2 text-slate-600">{children}</p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          {actions}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -149,48 +342,60 @@ function Gate({ children }: { children: React.ReactNode }): React.ReactNode {
   const { loading, session, email } = useProfile();
   if (loading) {
     return (
-      <div className="mx-auto max-w-5xl space-y-4 p-8">
-        <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-4 w-96" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
-          <Skeleton className="h-24" />
+      <div
+        aria-busy="true"
+        className="flex min-h-dvh bg-slate-50"
+        role="status"
+      >
+        <span className="sr-only">Checking your sign-in…</span>
+        <div className="hidden h-dvh w-64 shrink-0 space-y-3 border-slate-200 border-r bg-white p-5 lg:block">
+          <Skeleton className="h-7 w-32" />
+          <Skeleton className="mt-6 h-4 w-20" />
+          <Skeleton className="h-9" />
+          <Skeleton className="h-9" />
+          <Skeleton className="h-9" />
         </div>
-        <Skeleton className="h-64" />
+        <div className="mx-auto w-full max-w-5xl space-y-4 p-8">
+          <Skeleton className="h-8 w-56" />
+          <Skeleton className="h-4 w-96" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+          </div>
+          <Skeleton className="h-64" />
+        </div>
       </div>
     );
   }
   if (!session) {
     return (
-      <div className="mx-auto max-w-lg p-10 text-center">
-        <h1 className="m-0 font-bold text-2xl">Staff sign-in required</h1>
-        <p className="m-0 mt-2 text-slate-600">
-          Sign in with an administrator account to manage classes,
-          registrations, instructors, and content.
-        </p>
-        <div className="mt-6">
-          <Button href="/login">Sign in</Button>
-        </div>
-      </div>
+      <GateMessage
+        actions={<Button href="/login">Sign in</Button>}
+        title="Staff sign-in required"
+      >
+        Sign in with an administrator account to manage classes, registrations,
+        instructors, and content.
+      </GateMessage>
     );
   }
   if (!isAdminEmail(email)) {
     return (
-      <div className="mx-auto max-w-lg p-10 text-center">
-        <h1 className="m-0 font-bold text-2xl">Access restricted</h1>
-        <p className="m-0 mt-2 text-slate-600">
-          {email} is not an administrator. Instructors can open their assigned
-          sessions instead.
-        </p>
-        <div className="mt-6 flex justify-center gap-3">
-          <Button href="/instructor/sessions" variant="secondary">
-            My sessions
-          </Button>
-          <Button href="/my-account">My account</Button>
-        </div>
-      </div>
+      <GateMessage
+        actions={
+          <>
+            <Button href="/instructor/sessions" variant="secondary">
+              My sessions
+            </Button>
+            <Button href="/my-account">My account</Button>
+          </>
+        }
+        title="Access restricted"
+      >
+        {email} is not an administrator. Instructors can open their assigned
+        sessions instead.
+      </GateMessage>
     );
   }
   return children;
@@ -212,49 +417,68 @@ function AttentionAware({
   return children(count);
 }
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+function Workspace({
+  children,
+  attentionCount,
+}: {
+  children: React.ReactNode;
+  attentionCount: number;
+}) {
   const pathname = usePathname() ?? "/admin";
+  const { email } = useProfile();
+  const [drawer, setDrawer] = useState(false);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: close the drawer whenever the route changes
+  useEffect(() => {
+    setDrawer(false);
+  }, [pathname]);
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Gate>
-        <AttentionAware>
-          {(attentionCount) => (
-            <div className="mx-auto flex w-full max-w-[1500px]">
-              <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-5 overflow-y-auto border-slate-200 border-r bg-white px-3 py-6 lg:flex">
-                <div className="px-3">
-                  <p className="m-0 font-semibold text-slate-900">Admin</p>
-                  <p className="m-0 text-slate-500 text-xs">
-                    Taylored Instruction
-                  </p>
-                </div>
-                <nav aria-label="Admin" className="space-y-5">
-                  <NavLinks
-                    attentionCount={attentionCount}
-                    pathname={pathname}
-                  />
-                </nav>
-              </aside>
-              <div className="min-w-0 flex-1">
-                <nav
-                  aria-label="Admin"
-                  className="sticky top-0 z-10 overflow-x-auto border-slate-200 border-b bg-white px-3 py-2 [mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)] lg:hidden"
-                >
-                  <div className="flex gap-1">
-                    <NavLinks
-                      attentionCount={attentionCount}
-                      compact
-                      pathname={pathname}
-                    />
-                  </div>
-                </nav>
-                <main className="px-4 py-6 sm:px-6 lg:px-8 lg:py-8 [&_h1]:mb-0 [&_h2]:mb-0 [&_h3]:mb-0 [&_h4]:mb-0 [&_p]:mb-0">
-                  {children}
-                </main>
-              </div>
-            </div>
-          )}
-        </AttentionAware>
-      </Gate>
+    <div className="flex min-h-dvh bg-slate-50">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-slate-200 border-r bg-white lg:flex">
+        <div className="flex h-14 shrink-0 items-center border-slate-200 border-b px-5">
+          <Brand />
+        </div>
+        <SidebarContent
+          attentionCount={attentionCount}
+          email={email}
+          pathname={pathname}
+        />
+      </aside>
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-slate-200 border-b bg-white px-4 lg:hidden">
+          <Brand />
+          <button
+            aria-expanded={drawer}
+            aria-label="Open navigation"
+            className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+            onClick={() => setDrawer(true)}
+            type="button"
+          >
+            <Menu aria-hidden="true" className="h-5 w-5" />
+          </button>
+        </header>
+        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8 [&_h1]:mb-0 [&_h2]:mb-0 [&_h3]:mb-0 [&_h4]:mb-0 [&_p]:mb-0">
+          <div className="mx-auto max-w-[1400px]">{children}</div>
+        </main>
+      </div>
+      <MobileDrawer
+        attentionCount={attentionCount}
+        email={email}
+        onClose={() => setDrawer(false)}
+        open={drawer}
+        pathname={pathname}
+      />
     </div>
+  );
+}
+
+export function AdminShell({ children }: { children: React.ReactNode }) {
+  return (
+    <Gate>
+      <AttentionAware>
+        {(attentionCount) => (
+          <Workspace attentionCount={attentionCount}>{children}</Workspace>
+        )}
+      </AttentionAware>
+    </Gate>
   );
 }
