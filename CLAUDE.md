@@ -31,6 +31,7 @@ ownership. Never assume Next.js `.env.local` variables also exist in Convex.
 - `shared/registration` — pricing, scheduling, validation, and environment policy
 - `proxy.ts` — route protection
 - `app/actions` and `app/api` — Next.js email, existing eCard commerce, and CMS hooks
+- `app/api/mcp`, `lib/mcp`, `convex/mcp.ts` — agent access (MCP server); see `docs/mcp.md`
 - `sanity` — content schemas and CMS helpers
 
 Supabase is legacy; do not add new Supabase tables or auth flows. Preserve Convex

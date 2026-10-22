@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import {
   Bell,
   BookOpen,
+  Bot,
   Building2,
   CalendarDays,
   ExternalLink,
@@ -81,6 +82,7 @@ const NAV: { group: string; items: NavItem[] }[] = [
       { label: "Instructors", href: "/admin/instructors", icon: GraduationCap },
       { label: "SEO content", href: "/admin/seo-content", icon: Globe },
       { label: "Content studio", href: "/admin/studio", icon: Newspaper },
+      { label: "Agent access", href: "/admin/agent-access", icon: Bot },
     ],
   },
 ];

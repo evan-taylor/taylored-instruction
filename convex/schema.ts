@@ -66,9 +66,25 @@ const seoPages = defineTable({
   .index("by_location_city", ["locationCity"])
   .index("by_service_line", ["serviceLine"]);
 
+/** Long-lived bearer tokens that let an MCP client act as a signed-in administrator. */
+const mcpTokens = defineTable({
+  hash: v.string(),
+  prefix: v.string(),
+  label: v.string(),
+  userId: v.id("users"),
+  createdAt: v.number(),
+  lastUsedAt: v.optional(v.number()),
+  revokedAt: v.optional(v.number()),
+  sessionId: v.optional(v.id("authSessions")),
+})
+  .index("by_hash", ["hash"])
+  .index("by_userId", ["userId"]);
+
 const schema = defineSchema({
   ...authTables,
   ...registrationTables,
+
+  mcpTokens,
 
   onboarding_steps: onboardingSteps,
   seo_pages: seoPages,
