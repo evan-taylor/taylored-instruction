@@ -75,6 +75,7 @@ export function Modal({
             // Only a press that started on the backdrop dismisses.
             event.changeDefault({ dismiss: !pressedInside.current });
           }}
+          swipe={!wide}
           tracks={tracks}
         >
           <Sheet.Backdrop className="app-sheet-backdrop" />
