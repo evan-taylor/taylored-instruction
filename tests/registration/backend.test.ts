@@ -120,6 +120,90 @@ function attempt(
 }
 
 describe("Registration transactions", () => {
+  it("allows only staff to delete unused templates and preserves materials with an audit record", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) => ctx.db.delete(f.session));
+    await expect(
+      f.t.mutation(api.registration.deleteCourse, { id: f.course })
+    ).rejects.toThrow();
+    await expect(
+      f.instructorClient.mutation(api.registration.deleteCourse, {
+        id: f.course,
+      })
+    ).rejects.toThrow();
+    await f.adminClient.mutation(api.registration.deleteCourse, {
+      id: f.course,
+    });
+    expect(await f.t.run((ctx) => ctx.db.get(f.course))).toBeNull();
+    expect(await f.t.run((ctx) => ctx.db.get(f.material))).not.toBeNull();
+    const activity = await f.t.run((ctx) =>
+      ctx.db.query("registrationActivity").collect()
+    );
+    expect(activity).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "course-deleted",
+          entity: f.course,
+          actor: f.admin,
+        }),
+      ])
+    );
+    await expect(
+      f.adminClient.mutation(api.registration.deleteCourse, { id: f.course })
+    ).rejects.toThrow("no longer exists");
+  });
+  it("blocks deletion for sessions, orders, and seats independently", async () => {
+    const f = await fixture();
+    await expect(
+      f.adminClient.mutation(api.registration.deleteCourse, { id: f.course })
+    ).rejects.toThrow("Archive it instead");
+    await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+    await f.t.run(async (ctx) => {
+      await ctx.db.delete(f.session);
+      const seats = await ctx.db.query("registrationSeats").collect();
+      await Promise.all(seats.map((item) => ctx.db.delete(item._id)));
+    });
+    await expect(
+      f.adminClient.mutation(api.registration.deleteCourse, { id: f.course })
+    ).rejects.toThrow("Archive it instead");
+    expect(await f.t.run((ctx) => ctx.db.get(f.course))).not.toBeNull();
+  });
+  it("blocks deletion when a coupon targets the template", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.delete(f.session);
+      await ctx.db.insert("registrationCoupons", {
+        code: "LEGACY",
+        type: "percent",
+        amount: 10,
+        materialIds: [],
+        allMaterials: false,
+        courseIds: [f.course],
+        expires: 0,
+        limit: 0,
+        reserved: 0,
+        consumed: 0,
+        disabled: true,
+      });
+    });
+    await expect(
+      f.adminClient.mutation(api.registration.deleteCourse, { id: f.course })
+    ).rejects.toThrow("coupons");
+    expect(await f.t.run((ctx) => ctx.db.get(f.course))).not.toBeNull();
+  });
+  it("preserves a template with seats even if its session and order are missing", async () => {
+    const f = await fixture();
+    await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+    await f.t.run(async (ctx) => {
+      await ctx.db.delete(f.session);
+      const orders = await ctx.db.query("registrationOrders").collect();
+      await Promise.all(orders.map((item) => ctx.db.delete(item._id)));
+    });
+    await expect(
+      f.adminClient.mutation(api.registration.deleteCourse, { id: f.course })
+    ).rejects.toThrow("Archive it instead");
+    expect(await f.t.run((ctx) => ctx.db.get(f.course))).not.toBeNull();
+  });
   it("allows only one concurrent last-seat reservation and expires it without leaks", async () => {
     const f = await fixture(1);
     const results = await Promise.allSettled([

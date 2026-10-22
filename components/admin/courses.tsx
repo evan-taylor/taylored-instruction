@@ -7,7 +7,7 @@ import { pluralize } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Modal } from "@/components/ui/dialog";
+import { ConfirmDialog, Modal } from "@/components/ui/dialog";
 import {
   Field,
   Money,
@@ -294,10 +294,12 @@ function CourseRow({
   course,
   onEdit,
   onDuplicate,
+  onDelete,
 }: {
   course: Course;
   onEdit: () => void;
   onDuplicate: () => void;
+  onDelete: () => void;
 }) {
   return (
     <TR>
@@ -350,6 +352,15 @@ function CourseRow({
             Duplicate
           </Button>
           <Button
+            aria-label={`Delete ${course.title}`}
+            onClick={onDelete}
+            size="xs"
+            type="button"
+            variant="danger"
+          >
+            Delete
+          </Button>
+          <Button
             href={`/courses/${course.slug}`}
             rel="noopener noreferrer"
             size="xs"
@@ -368,10 +379,12 @@ function CourseTable({
   courses,
   onEdit,
   onDuplicate,
+  onDelete,
 }: {
   courses: Course[];
   onEdit: (course: Course) => void;
   onDuplicate: (course: Course) => void;
+  onDelete: (course: Course) => void;
 }) {
   return (
     <Table wrapperClassName="rounded-none border-0">
@@ -393,6 +406,7 @@ function CourseTable({
           <CourseRow
             course={c}
             key={c._id}
+            onDelete={() => onDelete(c)}
             onDuplicate={() => onDuplicate(c)}
             onEdit={() => onEdit(c)}
           />
@@ -406,11 +420,13 @@ function CourseList({
   courses,
   onEdit,
   onDuplicate,
+  onDelete,
   onCreate,
 }: {
   courses: Course[] | undefined;
   onEdit: (course: Course) => void;
   onDuplicate: (course: Course) => void;
+  onDelete: (course: Course) => void;
   onCreate: () => void;
 }) {
   if (courses === undefined) {
@@ -438,13 +454,20 @@ function CourseList({
     );
   }
   return (
-    <CourseTable courses={courses} onDuplicate={onDuplicate} onEdit={onEdit} />
+    <CourseTable
+      courses={courses}
+      onDelete={onDelete}
+      onDuplicate={onDuplicate}
+      onEdit={onEdit}
+    />
   );
 }
 
 export function CourseAdmin() {
   const courses = useCourses();
   const save = useMutation(api.registration.saveCourse);
+  const remove = useMutation(api.registration.deleteCourse);
+  const [deleting, setDeleting] = useState<Course | null>(null);
   const params = useSearchParams();
   const [draft, setDraft] = useState<CourseDraft | null>(null);
   const [busy, setBusy] = useState(false);
@@ -517,11 +540,27 @@ export function CourseAdmin() {
           <CourseList
             courses={courses}
             onCreate={() => open(blankDraft())}
+            onDelete={setDeleting}
             onDuplicate={(c) => open(draftFrom(c, true))}
             onEdit={(c) => open(draftFrom(c, false))}
           />
         </CardContent>
       </Card>
+      {deleting ? (
+        <ConfirmDialog
+          confirmLabel="Delete template"
+          danger
+          description={`Permanently delete “${deleting.title}”? This cannot be undone. Materials stay in your library. Templates with sessions, registrations, or coupon references cannot be deleted.`}
+          onClose={() => setDeleting(null)}
+          onConfirm={async () => {
+            await remove({ id: deleting._id });
+            setNotice(`Deleted ${deleting.title}.`);
+            setDeleting(null);
+          }}
+          open
+          title="Delete course template?"
+        />
+      ) : null}
       {draft ? (
         <CourseEditorModal
           busy={busy}

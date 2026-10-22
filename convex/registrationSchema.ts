@@ -132,6 +132,7 @@ export const registrationTables = {
     tax: v.optional(v.number()),
   })
     .index("by_requestKey", ["requestKey"])
+    .index("by_courseId", ["courseId"])
     .index("by_purchaser", ["purchaser"])
     .index("by_status_and_expires", ["status", "expires"])
     .index("by_sessionId", ["sessionId"])

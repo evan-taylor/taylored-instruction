@@ -235,6 +235,48 @@ export const sessions = query({
           .paginate(args.paginationOpts);
   },
 });
+export const deleteCourse = mutation({
+  args: { id: v.id("registrationCourses") },
+  returns: v.null(),
+  handler: async (ctx, { id }) => {
+    const actor = await staff(ctx);
+    const course = await ctx.db.get(id);
+    if (!course) {
+      throw new ConvexError("Course template no longer exists");
+    }
+    const [session, order, seat, coupon] = await Promise.all([
+      ctx.db
+        .query("registrationSessions")
+        .withIndex("by_courseId", (q) => q.eq("courseId", id))
+        .first(),
+      ctx.db
+        .query("registrationOrders")
+        .withIndex("by_courseId", (q) => q.eq("courseId", id))
+        .first(),
+      ctx.db
+        .query("registrationSeats")
+        .withIndex("by_courseId", (q) => q.eq("courseId", id))
+        .first(),
+      filter(ctx.db.query("registrationCoupons"), (item) =>
+        item.courseIds.includes(id)
+      ).first(),
+    ]);
+    if (session || order || seat) {
+      throw new ConvexError(
+        "This template has sessions or registrations. Archive it instead to preserve their history."
+      );
+    }
+    if (coupon) {
+      throw new ConvexError(
+        "Remove this template from its coupons before deleting it, or archive it instead."
+      );
+    }
+    await ctx.db.delete(id);
+    await audit(ctx, actor.userId, "course-deleted", id, course.title);
+    return null;
+  },
+});
+
 export const saveCourse = mutation({
   args: { id: v.optional(v.id("registrationCourses")), ...courseFields },
   returns: v.id("registrationCourses"),
