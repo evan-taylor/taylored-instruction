@@ -9,16 +9,20 @@ import { hash } from "./registrationHelpers";
 
 /**
  * The sign-in token behind the email's portal button. Minted on the first
- * delivery attempt and stored on the job, so a retried send carries the same
- * link under the same idempotency key. A staff retry days later gets a fresh
- * token once the stored one has expired or been used, so the button in the
- * email it sends still works for the promised window.
+ * delivery attempt and stored on the job, so an automatic retry always
+ * carries the same link under the same idempotency key, even if the student
+ * already used it because the provider accepted a send whose result was
+ * lost. Only a staff retry, which resets attempts to zero, replaces a token
+ * that has expired or been used, so the email it sends has a working button.
  */
 async function portalToken(ctx: MutationCtx, job: Doc<"registrationJobs">) {
   if (job.kind !== "email" || !usesPortalAction(job)) {
     return;
   }
-  if (job.portalToken && (await tokenUsable(ctx, job.portalToken))) {
+  if (
+    job.portalToken &&
+    (job.attempts > 0 || (await tokenUsable(ctx, job.portalToken)))
+  ) {
     return job.portalToken;
   }
   const token = crypto.randomUUID() + crypto.randomUUID();

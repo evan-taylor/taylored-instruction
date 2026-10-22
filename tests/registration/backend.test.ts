@@ -1157,9 +1157,22 @@ describe("Operational regression coverage", () => {
         grantHash: "a".repeat(64),
       })
     ).toBe(true);
-    // A staff retry after the link has lapsed must not resend a dead button.
+    // An automatic retry after the student already used the link (a send
+    // whose result was lost) must reuse it, or the student gets a duplicate.
     await f.t.run(async (ctx) => {
       await ctx.db.patch(job, { state: "pending", due: Date.now() - 1 });
+    });
+    const automatic = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(automatic?.portalToken).toBe(first?.portalToken);
+    // A staff retry after the link has lapsed must not resend a dead button.
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(job, {
+        state: "pending",
+        due: Date.now() - 1,
+        attempts: 0,
+      });
       await ctx.db.patch(grants[0]._id, { expires: Date.now() - 1 });
     });
     const late = await f.t.mutation(internal.registrationMail.claim, {
