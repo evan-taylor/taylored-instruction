@@ -8,7 +8,10 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xs",
+        // min-w-0 lets a card in a grid or flex row shrink below the
+        // natural width of a table inside it, so the table scrolls instead
+        // of pushing the whole page wider than a phone.
+        "min-w-0 rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xs",
         className
       )}
       {...props}
