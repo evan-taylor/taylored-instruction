@@ -51,6 +51,12 @@ const key = convexEnv("get", "STRIPE_SECRET_KEY");
 if (!(key.startsWith(`sk_${mode}_`) || key.startsWith(`rk_${mode}_`))) {
   throw new Error(`Convex STRIPE_SECRET_KEY must use ${mode} mode`);
 }
+// The on-page payment form loads Stripe.js with this key; when set it must match
+// the mode. When missing, the payment step explains that card payment is off.
+const publishable = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+if (publishable && !publishable.startsWith(`pk_${mode}_`)) {
+  throw new Error(`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY must be a ${mode} key`);
+}
 for (const name of [
   "RESEND_API_KEY",
   "AUTH_EMAIL_FROM",

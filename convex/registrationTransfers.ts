@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import {
   type Attendee,
   BATCH,
+  CHECKOUT_HOLD_MS,
   quote,
   type Settings,
 } from "../shared/registration/domain";
@@ -197,7 +198,7 @@ export const transfer = mutation({
       ],
       total,
       currency: "usd",
-      expires: Date.now() + 1_800_000,
+      expires: Date.now() + CHECKOUT_HOLD_MS,
       couponUses: 0,
       restoredUses: 0,
       refunded: 0,

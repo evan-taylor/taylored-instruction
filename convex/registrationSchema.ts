@@ -98,7 +98,9 @@ export const registrationTables = {
     source: v.optional(v.string()),
     refunded: v.number(),
     refundReserved: v.number(),
+    /** Hosted Checkout URL from before the on-page payment flow; no longer set. */
     checkoutUrl: v.optional(v.string()),
+    checkoutSecret: v.optional(v.string()),
     error: v.optional(v.string()),
     organizationId: v.optional(v.id("registrationOrganizations")),
     pricingNote: v.optional(v.string()),

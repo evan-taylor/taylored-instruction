@@ -24,6 +24,11 @@ function baseUrl() {
   }
   return new URL(url).origin;
 }
+/**
+ * Creates (or reuses) the Checkout Session behind the on-page Payment Element
+ * and returns its client secret. Stripe still owns line items, tax, and the
+ * settlement webhook; only the card form moved onto our page.
+ */
 export const checkout = action({
   args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
   returns: v.string(),
@@ -32,23 +37,25 @@ export const checkout = action({
       internal.registrationPayments.checkoutOrder,
       args
     );
-    if (order.checkoutUrl) {
-      return order.checkoutUrl;
+    if (order.checkoutSecret) {
+      return order.checkoutSecret;
     }
     const client = stripe();
     const session = await client.checkout.sessions.create(
       {
         mode: "payment",
-        // Stripe Tax computes sales tax from the billing address collected at
-        // checkout and each line's tax code; local totals stay pre-tax.
+        ui_mode: "elements",
+        // Stripe Tax computes sales tax from the billing address collected on
+        // our page and each line's tax code; local totals stay pre-tax.
         automatic_tax: { enabled: true },
         billing_address_collection: "required",
         allowed_payment_method_types: ["card"],
         customer_email: order.purchaser,
         client_reference_id: order._id,
         metadata: { registrationOrder: order._id },
-        // Stripe requires at least 30 minutes from session creation. This stable
-        // timestamp also preserves identical parameters across idempotent retries.
+        // Stripe requires at least 30 minutes from session creation; the local
+        // hold is shorter and the expiry worker closes the session when it ends.
+        // This stable timestamp keeps parameters identical across idempotent retries.
         expires_at: Math.ceil(order.expires / 1000) + 1800,
         line_items: order.seats.flatMap((seat) =>
           seat.lines
@@ -66,15 +73,14 @@ export const checkout = action({
               quantity: 1,
             }))
         ),
-        success_url: `${baseUrl()}/registration/success`,
-        cancel_url: `${baseUrl()}/classes`,
+        return_url: `${baseUrl()}/registration/success?session_id={CHECKOUT_SESSION_ID}`,
       },
       { idempotencyKey: `registration:${order._id}` }
     );
     assertRegistrationPaymentMode(session.livemode);
-    if (!session.url) {
+    if (!session.client_secret) {
       throw new ConvexError(
-        "Checkout could not be opened. Please try again in a moment."
+        "The payment form could not be opened. Please try again in a moment."
       );
     }
     const attached = await ctx.runMutation(
@@ -82,15 +88,15 @@ export const checkout = action({
       {
         orderId: order._id,
         session: session.id,
-        url: session.url,
+        secret: session.client_secret,
       }
     );
     if (!attached) {
       throw new ConvexError(
-        "Reservation ended before checkout was ready. No payment link was issued."
+        "Reservation ended before the payment form was ready. Nothing was charged."
       );
     }
-    return session.url;
+    return session.client_secret;
   },
 });
 export const refund = action({

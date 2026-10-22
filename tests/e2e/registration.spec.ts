@@ -63,7 +63,7 @@ test("free checkout completes without a card and the success page reads backend 
   await expect(page.getByLabel("Full name", { exact: true })).toHaveCount(0);
   await page
     .getByRole("button", {
-      name: "Continue to checkout",
+      name: "Continue to payment",
       exact: true,
     })
     .click();

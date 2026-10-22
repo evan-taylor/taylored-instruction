@@ -9,10 +9,10 @@ import type { Quote, Settings } from "../shared/registration/domain";
 import {
   ADMIN_MAX_SEATS,
   BATCH,
+  CHECKOUT_HOLD_MS,
   cents,
   effective,
   email,
-  HOLD_MS,
   MAX_SEATS,
   quote,
   safeUrl,
@@ -546,7 +546,7 @@ export const reserve = mutation({
       });
     }
     const total = seats.reduce((sum, seat) => sum + seat.total, 0);
-    const expires = now + HOLD_MS;
+    const expires = now + CHECKOUT_HOLD_MS;
     const id = await ctx.db.insert("registrationOrders", {
       requestKey: args.requestKey,
       purchaser,

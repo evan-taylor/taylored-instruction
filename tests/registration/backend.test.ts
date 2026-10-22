@@ -187,7 +187,7 @@ describe("Registration transactions", () => {
     await f.t.mutation(internal.registrationPayments.attachCheckout, {
       orderId: order.orderId,
       session: "cs_test",
-      url: "https://checkout.stripe.com/test",
+      secret: "cs_local_secret",
     });
     const event = {
       orderId: order.orderId,
@@ -419,7 +419,7 @@ describe("Operational acceptance", () => {
     await f.t.mutation(internal.registrationPayments.attachCheckout, {
       orderId: first.orderId,
       session: "cs_late",
-      url: "https://checkout.stripe.com/test",
+      secret: "cs_local_secret",
     });
     await f.t.run(async (ctx) => {
       await ctx.db.patch(first.orderId, { expires: Date.now() - 1 });
@@ -676,7 +676,7 @@ describe("Payment and material policies", () => {
       await f.t.mutation(internal.registrationPayments.attachCheckout, {
         orderId: order.orderId,
         session: "cs_signed",
-        url: "https://checkout.stripe.com/test",
+        secret: "cs_local_secret",
       });
       const payload = JSON.stringify({
         id: "evt_signed",
@@ -1501,7 +1501,7 @@ describe("Stripe Tax", () => {
     await f.t.mutation(internal.registrationPayments.attachCheckout, {
       orderId: order.orderId,
       session: "cs_tax",
-      url: "https://checkout.stripe.com/tax",
+      secret: "cs_local_secret",
     });
     const event = {
       orderId: order.orderId,
@@ -2348,11 +2348,11 @@ it("rejects late checkout attachment without exposing a payable URL", async () =
     await f.t.mutation(internal.registrationPayments.attachCheckout, {
       orderId: order.orderId,
       session: "cs_race",
-      url: "https://checkout.stripe.com/race",
+      secret: "cs_race_secret_local",
     })
   ).toBe(false);
   expect(
-    (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.checkoutUrl
+    (await f.t.run((ctx) => ctx.db.get(order.orderId)))?.checkoutSecret
   ).toBeUndefined();
 });
 
@@ -2809,7 +2809,7 @@ it("honors payment completed before cutoff when its signed event arrives afterwa
   await f.t.mutation(internal.registrationPayments.attachCheckout, {
     orderId: order.orderId,
     session: "cs_delayed",
-    url: "https://checkout.stripe.com/test",
+    secret: "cs_local_secret",
   });
   const cutoff = Date.now() - 1000;
   await f.t.run((ctx) => ctx.db.patch(f.session, { firstStart: cutoff }));

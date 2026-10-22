@@ -1,78 +1,133 @@
 "use client";
 
-import { useAction, useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Notice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import {
+  CHECKOUT_HOLD_MINUTES,
+  formatMoney,
+} from "@/shared/registration/domain";
 import { errorText } from "./errors";
+import { PaymentStep } from "./payment-step";
 
+/** Emailed payment request: review the order, then pay on this page. */
 export function RequestedPayment() {
   const params = useSearchParams();
-  const orderId = params.get("order");
+  const orderId = params.get("order") as Id<"registrationOrders"> | null;
   const requestKey = params.get("key");
   const begin = useMutation(api.registrationPayments.beginRequestedPayment);
-  const checkout = useAction(api.registrationExternal.checkout);
-  const lock = useRef(false);
+  const quote = useQuery(
+    api.registrationPortal.review,
+    orderId && requestKey ? { orderId, requestKey } : "skip"
+  );
   const [busy, setBusy] = useState(false);
+  const [expires, setExpires] = useState<number | null>(null);
   const [error, setError] = useState("");
-  const pay = async () => {
-    if (lock.current || !orderId || !requestKey) {
+  const start = async () => {
+    if (!(orderId && requestKey)) {
       return;
     }
-    lock.current = true;
     setBusy(true);
     setError("");
     try {
-      const args = { orderId: orderId as Id<"registrationOrders">, requestKey };
-      await begin(args);
-      const url = await checkout(args);
+      const args = { orderId, requestKey };
+      const result = await begin(args);
       sessionStorage.setItem("registration-order", JSON.stringify(args));
-      window.location.assign(url);
+      setExpires(result.expires);
     } catch (cause) {
-      setError(errorText(cause, "Unable to open checkout. Please try again."));
-      lock.current = false;
+      setError(errorText(cause, "Unable to open payment. Please try again."));
+    } finally {
       setBusy(false);
     }
   };
   return (
-    <section className="mx-auto max-w-xl px-4 py-16 sm:px-6 lg:py-20">
-      <p className="m-0 font-medium text-primary text-xs uppercase tracking-wide">
-        Taylored Instruction
-      </p>
-      <h1 className="mt-2 font-bold text-3xl text-slate-900">
-        Complete your training payment
-      </h1>
-      <p className="mt-4 text-slate-600">
-        Review your attendees and charges in secure checkout, then enter your
-        billing address and payment details. Any applicable sales tax is
-        calculated before you pay.
-      </p>
-      <p className="mt-3 text-slate-600">
-        Once you continue, you have 30 minutes to complete payment. We’ll email
-        your confirmation when payment is complete.
-      </p>
-      {error ? (
-        <Notice className="my-4" tone="danger">
-          {error}
-        </Notice>
-      ) : null}
-      {orderId && requestKey ? (
-        <Button className="mt-6" disabled={busy} onClick={pay} type="button">
-          {busy ? "Opening checkout…" : "Continue to secure checkout"}
-        </Button>
-      ) : (
-        <Notice className="mt-6" tone="danger">
-          This payment link is incomplete. Please open the full link from your
-          email.
-        </Notice>
-      )}
-      <p className="mt-6 text-slate-500 text-sm">
-        Already paid or need help? Reply to your payment request email before
-        paying again.
-      </p>
-    </section>
+    <div className="bg-slate-50">
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-6 lg:py-16">
+        <div>
+          <p className="m-0 font-medium text-primary text-xs uppercase tracking-wide">
+            Taylored Instruction
+          </p>
+          <h1 className="m-0 mt-2 font-bold text-3xl text-slate-900">
+            Complete your training payment
+          </h1>
+        </div>
+        {orderId && requestKey ? null : (
+          <Notice tone="danger">
+            This payment link is incomplete. Please open the full link from your
+            email.
+          </Notice>
+        )}
+        {quote ? (
+          <Card>
+            <CardContent className="space-y-3">
+              {quote.seats.map((seat) => (
+                <div className="text-sm" key={seat.email}>
+                  <p className="m-0 font-medium text-slate-900">{seat.name}</p>
+                  {seat.lines.map((line) => (
+                    <div
+                      className="flex items-center justify-between gap-3 text-slate-600"
+                      key={line.id}
+                    >
+                      <span>{line.title}</span>
+                      <span className="tabular-nums">
+                        {formatMoney(line.cents - line.discount)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+              <div className="flex items-baseline justify-between gap-3 border-slate-200 border-t pt-3">
+                <span className="font-semibold text-slate-900">
+                  Subtotal before tax
+                </span>
+                <span className="font-bold text-slate-900 text-xl tabular-nums">
+                  {formatMoney(quote.total)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+        {expires && orderId && requestKey ? (
+          <Card>
+            <CardContent className="p-6">
+              <PaymentStep
+                expires={expires}
+                onStartOver={() => setExpires(null)}
+                orderId={orderId}
+                requestKey={requestKey}
+              />
+            </CardContent>
+          </Card>
+        ) : (
+          <Card>
+            <CardContent className="space-y-4">
+              <p className="m-0 text-slate-600">
+                Your seats are reserved for {CHECKOUT_HOLD_MINUTES} minutes once
+                you continue. Sales tax is calculated from your billing address
+                before you pay, and we’ll email your confirmation when payment
+                completes.
+              </p>
+              {error ? <Notice tone="danger">{error}</Notice> : null}
+              <Button
+                disabled={busy || !(orderId && requestKey)}
+                onClick={start}
+                type="button"
+              >
+                {busy ? "Reserving seats…" : "Continue to payment"}
+              </Button>
+              <p className="m-0 text-slate-500 text-sm">
+                Already paid or need help? Reply to your payment request email
+                before paying again.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </div>
   );
 }

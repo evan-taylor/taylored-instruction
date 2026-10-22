@@ -41,6 +41,14 @@ test mailbox, sender, Resend, auth signing keys, and internal email secret). The
 fills in their unique site URL and webhook secret. Never put a live key in preview
 defaults. Fixture password auth is forbidden on hosted builds.
 
+Card payment uses a Checkout Session in `ui_mode: "elements"`: Stripe still owns line
+items, Stripe Tax, and settlement, but the Payment and Billing Address Elements render
+on `/s/<code>` and `/registration/payment`, so seats are held for 15 minutes with a
+visible timer instead of the 30-minute hosted-page minimum. The expiry worker closes
+the Stripe session when the hold ends. Set `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` on
+Vercel for each environment; the build rejects a key whose mode differs from the
+Convex secret key.
+
 Stripe endpoints subscribe to Checkout completion/expiration/async success/failure,
 refund created/updated, and invoice paid/voided/marked-uncollectible events. Both
 Checkout and invoices validate the configured payment mode before settlement.

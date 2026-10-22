@@ -4,18 +4,18 @@ import { RequestedPayment } from "../../components/registration/requested-paymen
 
 const mocks = vi.hoisted(() => ({
   begin: vi.fn(),
-  checkout: vi.fn(),
   click: null as (() => Promise<void>) | null,
+  paymentProps: null as Record<string, unknown> | null,
 }));
 vi.mock("@/convex/_generated/api", () => ({
   api: {
     registrationPayments: { beginRequestedPayment: {} },
-    registrationExternal: { checkout: {} },
+    registrationPortal: { review: {} },
   },
 }));
 vi.mock("convex/react", () => ({
   useMutation: () => mocks.begin,
-  useAction: () => mocks.checkout,
+  useQuery: () => undefined,
 }));
 vi.mock("next/navigation", () => ({
   useSearchParams: () =>
@@ -27,34 +27,40 @@ vi.mock("@/components/ui/Button", () => ({
     return null;
   },
 }));
+vi.mock("../../components/registration/payment-step", () => ({
+  PaymentStep: (props: Record<string, unknown>) => {
+    mocks.paymentProps = props;
+    return null;
+  },
+}));
 afterEach(() => {
   vi.unstubAllGlobals();
   vi.resetAllMocks();
+  mocks.paymentProps = null;
 });
 
-it("replaces a stale checkout order before redirecting an emailed payment to Stripe", async () => {
+it("replaces a stale checkout order before opening the emailed payment form", async () => {
   let saved = JSON.stringify({ orderId: "old-order", requestKey: "old-key" });
   const setItem = vi.fn((_key: string, value: string) => {
     saved = value;
   });
-  const assign = vi.fn(() => {
-    expect(JSON.parse(saved)).toEqual({
-      orderId: "current-order",
-      requestKey: "current-key",
-    });
-  });
   vi.stubGlobal("sessionStorage", { setItem });
-  vi.stubGlobal("window", { location: { assign } });
-  mocks.begin.mockResolvedValue(null);
-  mocks.checkout.mockResolvedValue("https://checkout.stripe.com/test");
+  mocks.begin.mockResolvedValue({ expires: Date.now() + 900_000 });
   renderToStaticMarkup(<RequestedPayment />);
   if (!mocks.click) {
-    throw new Error("Missing checkout button");
+    throw new Error("Missing continue button");
   }
   await mocks.click();
+  expect(mocks.begin).toHaveBeenCalledWith({
+    orderId: "current-order",
+    requestKey: "current-key",
+  });
   expect(setItem).toHaveBeenCalledWith(
     "registration-order",
     expect.any(String)
   );
-  expect(assign).toHaveBeenCalledWith("https://checkout.stripe.com/test");
+  expect(JSON.parse(saved)).toEqual({
+    orderId: "current-order",
+    requestKey: "current-key",
+  });
 });

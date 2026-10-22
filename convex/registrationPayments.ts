@@ -1,6 +1,12 @@
 import { ConvexError, v } from "convex/values";
 import { doc } from "convex-helpers/validators";
-import { BATCH, cents, formatMoney } from "../shared/registration/domain";
+import {
+  BATCH,
+  CHECKOUT_HOLD_MINUTES,
+  CHECKOUT_HOLD_MS,
+  cents,
+  formatMoney,
+} from "../shared/registration/domain";
 import { assertRegistrationPaymentMode } from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
@@ -53,7 +59,8 @@ export const attachCheckout = internalMutation({
   args: {
     orderId: v.id("registrationOrders"),
     session: v.string(),
-    url: v.string(),
+    /** Client secret for the on-page Payment Element. */
+    secret: v.string(),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -74,7 +81,7 @@ export const attachCheckout = internalMutation({
     }
     await ctx.db.patch(order._id, {
       stripeSession: args.session,
-      checkoutUrl: args.url,
+      checkoutSecret: args.secret,
     });
     return true;
   },
@@ -321,7 +328,7 @@ async function preparePayment(
   await ctx.db.patch(order._id, {
     status: "hold",
     requestKey,
-    expires: Date.now() + 1_800_000,
+    expires: Date.now() + CHECKOUT_HOLD_MS,
   });
 }
 
@@ -352,7 +359,7 @@ export const requestPayment = mutation({
       kind: "email",
       recipient: order.purchaser,
       subject: `Payment requested: ${order.title}`,
-      body: `Hello ${order.purchaserName}, please complete payment for your training registration.\nTraining subtotal: ${formatMoney(order.total)}. Any applicable sales tax is calculated at checkout.\nAttendees: ${order.seats.map((s) => s.attendee.name).join(", ")}.\nEnter your billing address and card details securely at checkout. Once you begin checkout, complete payment within 30 minutes. Your registration is confirmed after payment.\nIf you have already arranged payment another way, reply to this email before paying.`,
+      body: `Hello ${order.purchaserName}, please complete payment for your training registration.\nTraining subtotal: ${formatMoney(order.total)}. Any applicable sales tax is calculated at checkout.\nAttendees: ${order.seats.map((s) => s.attendee.name).join(", ")}.\nEnter your billing address and card details securely on our payment page. Once you begin, complete payment within ${CHECKOUT_HOLD_MINUTES} minutes. Your registration is confirmed after payment.\nIf you have already arranged payment another way, reply to this email before paying.`,
       due: Date.now(),
       link: { label: "Review and pay", url: url.toString() },
     });
@@ -369,14 +376,14 @@ export const requestPayment = mutation({
 
 export const beginRequestedPayment = mutation({
   args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
-  returns: v.null(),
+  returns: v.object({ expires: v.number() }),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order || order.requestKey !== args.requestKey) {
       throw new ConvexError("Payment request not found");
     }
     if (order.status === "hold" && order.expires > Date.now()) {
-      return null;
+      return { expires: order.expires };
     }
     if (order.status !== "unpaid") {
       throw new ConvexError(
@@ -384,7 +391,7 @@ export const beginRequestedPayment = mutation({
       );
     }
     await preparePayment(ctx, order, args.requestKey);
-    return null;
+    return { expires: Date.now() + CHECKOUT_HOLD_MS };
   },
 });
 
@@ -403,7 +410,7 @@ export const createPaymentLink = mutation({
       actor.userId,
       "payment-link-requested",
       order._id,
-      "30-minute payment reservation"
+      `${CHECKOUT_HOLD_MINUTES}-minute payment reservation`
     );
     return null;
   },

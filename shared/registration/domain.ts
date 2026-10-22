@@ -14,6 +14,9 @@ export type Coupon = {
   [K in keyof typeof couponFields]: Infer<(typeof couponFields)[K]>;
 };
 export const HOLD_MS = 30 * 60 * 1000;
+/** Seats and coupon uses stay reserved this long while a card payment is entered. */
+export const CHECKOUT_HOLD_MS = 15 * 60 * 1000;
+export const CHECKOUT_HOLD_MINUTES = CHECKOUT_HOLD_MS / 60_000;
 export const BATCH = 50;
 export const MAX_SEATS = 20;
 /** Staff-created group orders may carry larger rosters than public checkout. */

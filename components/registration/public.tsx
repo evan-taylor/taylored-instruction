@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useAction,
-  useMutation,
-  usePaginatedQuery,
-  useQuery,
-} from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeft,
@@ -49,6 +44,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import {
   type Attendee,
+  CHECKOUT_HOLD_MINUTES,
   formatMoney,
   MAX_SEATS,
   type Settings,
@@ -59,13 +55,13 @@ import { errorText } from "./errors";
 import {
   formatDateTime,
   formatMeeting,
-  formatRelative,
   formatTime,
   formatWeekday,
   pluralize,
   shortZone,
 } from "./format";
 import { InvitationActions } from "./invitation";
+import { PaymentStep } from "./payment-step";
 
 type Offering = NonNullable<FunctionReturnType<typeof api.registration.detail>>;
 type Material = Settings["materials"][number];
@@ -580,7 +576,6 @@ function useRegistrationForm(
   sessionId: Id<"registrationSessions"> | undefined
 ) {
   const reserve = useMutation(api.registration.reserve);
-  const checkout = useAction(api.registrationExternal.checkout);
   const [registeringSelf, setRegisteringSelf] = useState(true);
   const [self, setSelf] = useState<AttendeeRow>(newAttendee);
   const [otherAttendees, setAttendees] = useState<AttendeeRow[]>(() => [
@@ -621,27 +616,14 @@ function useRegistrationForm(
       rows.length >= MAX_SEATS ? rows : [...rows, newAttendee()]
     );
   }, []);
-  async function continueToPayment(order: Review) {
-    if (order.status === "settled") {
-      window.location.assign("/registration/success");
-      return;
-    }
-    window.location.assign(
-      await checkout({ orderId: order.orderId, requestKey: order.requestKey })
-    );
-  }
   async function submit() {
-    if (submitting.current) {
+    if (submitting.current || review) {
       return;
     }
     submitting.current = true;
     setBusy(true);
     setError("");
     try {
-      if (review) {
-        await continueToPayment(review);
-        return;
-      }
       const signature = JSON.stringify({ purchaser, name, attendees, coupon });
       if (attempt.current.signature !== signature) {
         attempt.current = { signature, key: crypto.randomUUID() };
@@ -665,14 +647,24 @@ function useRegistrationForm(
         JSON.stringify({ ...result, requestKey })
       );
       const order = { ...result, requestKey };
+      if (order.status === "settled") {
+        // Nothing to pay: the browser is navigating away, so busy stays on.
+        window.location.assign("/registration/success");
+        return;
+      }
       setReview(order);
-      await continueToPayment(order);
     } catch (e) {
-      // On success the browser is navigating away; leave busy on.
-      setError(errorText(e, "Unable to start checkout. Please try again."));
+      setError(errorText(e, "Unable to reserve seats. Please try again."));
+    } finally {
       submitting.current = false;
       setBusy(false);
     }
+  }
+  /** Drops an expired reservation so the next submit reserves fresh seats. */
+  function reset() {
+    attempt.current = { signature: "", key: "" };
+    setReview(null);
+    setError("");
   }
   const estimate = attendees.reduce(
     (sum, a) => sum + attendeeSubtotal(offering.config, a),
@@ -697,7 +689,7 @@ function useRegistrationForm(
     review,
     authoritativeReview,
     submit,
-    pay: submit,
+    reset,
     estimate,
   };
 }
@@ -1169,34 +1161,11 @@ function CouponCard({ form }: { form: RegistrationForm }) {
   );
 }
 
-function HoldCountdown({ expires, now }: { expires: number; now: number }) {
-  const expired = expires <= now;
-  return (
-    <p
-      className={cn(
-        "m-0 flex items-center gap-1.5 text-xs",
-        expired ? "text-rose-700" : "text-slate-500"
-      )}
-    >
-      <Clock aria-hidden="true" className="h-3.5 w-3.5" />
-      {expired
-        ? "Your reservation has expired. Reload to start again."
-        : `Seats held until ${formatTime(expires)} (${formatRelative(expires, now)}).`}
-    </p>
-  );
-}
-
 function ReviewSummary({ form }: { form: RegistrationForm }) {
   const { review, authoritativeReview: quoteResult } = form;
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(timer);
-  }, []);
   if (!review) {
     return null;
   }
-  const expired = review.expires <= now;
   return (
     <div className="space-y-4">
       {quoteResult === undefined ? <Skeleton className="h-20" /> : null}
@@ -1239,28 +1208,9 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
           {formatMoney(quoteResult?.total ?? review.total)}
         </span>
       </div>
-      <p className="m-0 text-slate-500 text-xs">{TAX_NOTE}</p>
-      <HoldCountdown expires={review.expires} now={now} />
-      <ResultNotice message={form.error} tone="danger" />
-      {expired ? (
-        <Button
-          className="w-full"
-          onClick={() => window.location.reload()}
-          type="button"
-          variant="secondary"
-        >
-          Start again
-        </Button>
-      ) : (
-        <Button
-          className="w-full"
-          disabled={form.busy}
-          onClick={form.pay}
-          type="button"
-        >
-          {form.busy ? "Opening checkout…" : "Continue to payment"}
-        </Button>
-      )}
+      <p className="m-0 text-slate-500 text-xs">
+        Sales tax is added once you enter a billing address.
+      </p>
     </div>
   );
 }
@@ -1385,7 +1335,7 @@ function OrderSummary({
                 disabled={form.busy || !form.attendees.length}
                 type="submit"
               >
-                {form.busy ? "Opening checkout…" : "Continue to checkout"}
+                {form.busy ? "Reserving seats…" : "Continue to payment"}
               </Button>
             ) : null}
             {open && offering.available === 0 && sessionId ? (
@@ -1398,8 +1348,8 @@ function OrderSummary({
             aria-hidden="true"
             className="mt-0.5 h-3.5 w-3.5 shrink-0"
           />
-          Seats are held for a short time while you pay. Payments are processed
-          securely by Stripe.
+          Seats are held for {CHECKOUT_HOLD_MINUTES} minutes while you pay.
+          Payments are processed securely by Stripe.
         </p>
       </CardContent>
     </Card>
@@ -1422,7 +1372,7 @@ function MobileCheckoutBar({ form }: { form: RegistrationForm }) {
           size="sm"
           type="submit"
         >
-          {form.busy ? "Opening checkout…" : "Continue to checkout"}
+          {form.busy ? "Reserving seats…" : "Continue to payment"}
         </Button>
       </div>
     </div>
@@ -1592,37 +1542,62 @@ function OfferingPage({
           All classes
         </Link>
         <InvitationActions />
-        <form
-          className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]"
-          onSubmit={(e) => {
-            e.preventDefault();
-            form.submit();
-          }}
-        >
-          <div className="min-w-0 space-y-6">
-            <OfferingDetails offering={offering} />
-            {open ? (
-              <>
-                <RegistrationMode form={form} />
-                <PurchaserCard config={offering.config} form={form} />
-                {form.registeringSelf ? null : (
-                  <AttendeesSection config={offering.config} form={form} />
-                )}
-                {form.review ? null : <CouponCard form={form} />}
-              </>
-            ) : (
-              <ClosedState state={offering.state} />
-            )}
+        {form.review ? (
+          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
+            <div className="min-w-0 space-y-6">
+              <Card>
+                <CardContent className="p-6">
+                  <PaymentStep
+                    expires={form.review.expires}
+                    onStartOver={form.reset}
+                    orderId={form.review.orderId}
+                    requestKey={form.review.requestKey}
+                  />
+                </CardContent>
+              </Card>
+              <OfferingDetails offering={offering} />
+            </div>
+            <aside className="min-w-0 lg:sticky lg:top-24">
+              <OrderSummary
+                form={form}
+                offering={offering}
+                sessionId={sessionId}
+              />
+            </aside>
           </div>
-          <aside className="min-w-0 lg:sticky lg:top-24">
-            <OrderSummary
-              form={form}
-              offering={offering}
-              sessionId={sessionId}
-            />
-          </aside>
-          {open && !form.review ? <MobileCheckoutBar form={form} /> : null}
-        </form>
+        ) : (
+          <form
+            className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]"
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.submit();
+            }}
+          >
+            <div className="min-w-0 space-y-6">
+              <OfferingDetails offering={offering} />
+              {open ? (
+                <>
+                  <RegistrationMode form={form} />
+                  <PurchaserCard config={offering.config} form={form} />
+                  {form.registeringSelf ? null : (
+                    <AttendeesSection config={offering.config} form={form} />
+                  )}
+                  {form.review ? null : <CouponCard form={form} />}
+                </>
+              ) : (
+                <ClosedState state={offering.state} />
+              )}
+            </div>
+            <aside className="min-w-0 lg:sticky lg:top-24">
+              <OrderSummary
+                form={form}
+                offering={offering}
+                sessionId={sessionId}
+              />
+            </aside>
+            {open ? <MobileCheckoutBar form={form} /> : null}
+          </form>
+        )}
       </div>
     </div>
   );

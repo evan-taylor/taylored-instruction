@@ -64,7 +64,7 @@ Settings:
 
 Subscribe the development Stripe endpoint `https://<development-site>/registration/stripe` to `checkout.session.completed`, `checkout.session.expired`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `refund.created`, and `refund.updated`. Forward those events to localhost:3211 when using Stripe CLI locally. Use only Stripe test cards and test refunds.
 
-Local capacity/coupon holds last 30 minutes. Stripe's minimum session-lifetime constraint requires a later provider expiry; the local expiry worker explicitly closes the Stripe session with retries. A payment racing expiry is a visible reconciliation exception and cannot take an already-released seat. Do not treat the Checkout redirect as settlement.
+Local capacity/coupon holds last 15 minutes (October 22, 2026: payment moved from the hosted Checkout page to Stripe's Payment Element on our own page). Stripe's minimum session lifetime is still 30 minutes, so the local expiry worker explicitly closes the Stripe session with retries when the hold ends. A payment racing expiry is a visible reconciliation exception and cannot take an already-released seat. Do not treat the return to the success page as settlement.
 
 ## Remaining release setup and checks
 
