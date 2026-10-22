@@ -49,7 +49,8 @@ Hosted builds reject `REGISTRATION_ALLOW_TEST_FIXTURES=true`.
 There is one sign-in for everyone. Students open `/registrations` and sign in with
 the same Convex Auth email code (or Google) that staff use; the portal is scoped to
 the signed-in account's verified email. Portal mail links to `/registrations`, never
-to a token. Legacy `registrationGrants` rows and job `portalToken` fields are cleared
+to a token. Signing in creates no `profiles` row; instructors request access from
+`/my-account`, which is what notifies admins. Legacy `registrationGrants` rows and job `portalToken` fields are cleared
 by `registrationMigration.purgeLegacyPortalGrants` before their schema entries go.
 
 Marketing pages link to the in-house flow: `/classes`, `/courses/[slug]`, and

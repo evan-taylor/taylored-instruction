@@ -43,6 +43,11 @@ export const getProfile = query({
   },
 });
 
+/**
+ * Records a sign-in. A first sign-in attaches a migrated instructor profile
+ * when one is staged for this email; otherwise it creates nothing, because
+ * students sign in here too and an account is not an instructor request.
+ */
 export const updateLastLogin = mutation({
   args: {},
   handler: async (ctx) => {
@@ -55,69 +60,72 @@ export const updateLastLogin = mutation({
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
+    const now = new Date().toISOString();
 
-    if (!profile) {
-      const user = await ctx.db.get(userId);
-      const email = user?.email?.toLowerCase();
-
-      // Check for staging profile to determine if this is a migration or new user
-      const stagingProfile = email
-        ? await ctx.db
-            .query("staging_profiles")
-            .withIndex("by_email", (q) => q.eq("email", email))
-            .first()
-        : null;
-
-      const now = new Date().toISOString();
-
-      // If staging profile exists and is unprocessed, auto-approve user with staging data
-      // No admin notification email is sent for staged users
-      if (stagingProfile && stagingProfile.processedAt === undefined) {
-        await ctx.db.insert("profiles", {
-          userId,
-          isInstructor: stagingProfile.isInstructor,
-          updatedAt: stagingProfile.updatedAt ?? now,
-          lastLogin: now,
-          notifiedAt: now, // Set to prevent duplicate notifications (important-comment)
-        });
-
-        // Mark staging profile as processed
-        await ctx.db.patch(stagingProfile._id, {
-          processedAt: Date.now(),
-          convexUserId: userId,
-        });
-
-        return;
-      }
-
-      // No staging profile or already processed - create new profile and notify admin
-      await ctx.db.insert("profiles", {
-        userId,
-        isInstructor: false,
-        updatedAt: now,
-        lastLogin: now,
-      });
-
-      try {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.notifications.sendNewUserAdminNotification,
-          {
-            userId,
-            userEmail: user?.email,
-          }
-        );
-      } catch (error) {
-        console.error("Failed to schedule notification email:", error);
-      }
-
+    if (profile) {
+      await ctx.db.patch(profile._id, { lastLogin: now });
       return;
     }
 
+    const user = await ctx.db.get(userId);
+    const email = user?.email?.toLowerCase();
+    const stagingProfile = email
+      ? await ctx.db
+          .query("staging_profiles")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .first()
+      : null;
+
+    // Staged users are already-approved migrations; no admin notification.
+    if (stagingProfile && stagingProfile.processedAt === undefined) {
+      await ctx.db.insert("profiles", {
+        userId,
+        isInstructor: stagingProfile.isInstructor,
+        updatedAt: stagingProfile.updatedAt ?? now,
+        lastLogin: now,
+        notifiedAt: now, // Set to prevent duplicate notifications (important-comment)
+      });
+      await ctx.db.patch(stagingProfile._id, {
+        processedAt: Date.now(),
+        convexUserId: userId,
+      });
+    }
+  },
+});
+
+/** The explicit instructor signup: creates the pending profile and tells admins. */
+export const requestInstructorAccess = mutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const userId = await auth.getUserId(ctx);
+    if (!userId) {
+      throw new ConvexError("Unauthorized");
+    }
+    const existing = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (existing) {
+      return null;
+    }
+    const user = await ctx.db.get(userId);
+    if (!user?.email || user.emailVerificationTime === undefined) {
+      throw new ConvexError("Verified email required");
+    }
     const now = new Date().toISOString();
-    await ctx.db.patch(profile._id, {
+    await ctx.db.insert("profiles", {
+      userId,
+      isInstructor: false,
+      updatedAt: now,
       lastLogin: now,
     });
+    await ctx.scheduler.runAfter(
+      0,
+      internal.notifications.sendNewUserAdminNotification,
+      { userId, userEmail: user.email }
+    );
+    return null;
   },
 });
 

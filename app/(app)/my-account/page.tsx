@@ -1,8 +1,9 @@
 "use client";
 
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
+import { useMutation } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +19,7 @@ import {
   PageHeader,
   Skeleton,
 } from "@/components/ui/page-header";
+import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
 import { workspaceLinks } from "@/lib/workspace-navigation";
@@ -52,12 +54,28 @@ function LinkList({ links }: { links: QuickLink[] }) {
   );
 }
 
+function instructorStatus(isInstructor: boolean, requested: boolean) {
+  if (isInstructor) {
+    return <Badge tone="success">Approved instructor</Badge>;
+  }
+  return requested ? (
+    <Badge tone="warning">Awaiting approval</Badge>
+  ) : (
+    <Badge tone="neutral">Not requested</Badge>
+  );
+}
+
 export default function MyAccountPage() {
   const router = useRouter();
   const { signOut } = useAuthActions();
   const authToken = useAuthToken();
   const { profile, loading, isInstructor, error, email } = useProfile();
   const isAdmin = isAdminEmail(email);
+  const requestInstructorAccess = useMutation(
+    api.profiles.requestInstructorAccess
+  );
+  const [requesting, setRequesting] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && authToken === null) {
@@ -132,23 +150,53 @@ export default function MyAccountPage() {
                 { label: "Email", value: email || "Not available" },
                 {
                   label: "Instructor status",
-                  value: isInstructor ? (
-                    <Badge tone="success">Approved instructor</Badge>
-                  ) : (
-                    <Badge tone="warning">Awaiting approval</Badge>
-                  ),
+                  value: instructorStatus(isInstructor, profile !== null),
                 },
               ]}
             />
           </CardContent>
-          {!isInstructor && profile ? (
-            <CardFooter>
-              <p className="text-slate-600 text-sm">
-                An administrator reviews new instructor accounts. You’ll get
-                access to instructor tools once approved.
-              </p>
+          {isInstructor ? null : (
+            <CardFooter className="flex flex-col items-start gap-3">
+              {profile ? (
+                <p className="text-slate-600 text-sm">
+                  An administrator reviews instructor requests. You’ll get
+                  access to instructor tools once approved.
+                </p>
+              ) : (
+                <>
+                  <p className="text-slate-600 text-sm">
+                    Teach with us? Request instructor access and an
+                    administrator will review it. Students don’t need this to
+                    see their registrations.
+                  </p>
+                  {requestError ? (
+                    <Notice tone="danger">{requestError}</Notice>
+                  ) : null}
+                  <Button
+                    disabled={requesting}
+                    onClick={async () => {
+                      setRequesting(true);
+                      setRequestError(null);
+                      try {
+                        await requestInstructorAccess();
+                      } catch {
+                        setRequestError(
+                          "We couldn’t send your request. Try again in a moment."
+                        );
+                      } finally {
+                        setRequesting(false);
+                      }
+                    }}
+                    size="sm"
+                    type="button"
+                    variant="secondary"
+                  >
+                    {requesting ? "Sending…" : "Request instructor access"}
+                  </Button>
+                </>
+              )}
             </CardFooter>
-          ) : null}
+          )}
         </Card>
         {linkGroups.map((group) => (
           <Card key={group.title}>
