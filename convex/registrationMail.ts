@@ -10,13 +10,15 @@ import { hash } from "./registrationHelpers";
 /**
  * The sign-in token behind the email's portal button. Minted on the first
  * delivery attempt and stored on the job, so a retried send carries the same
- * link under the same idempotency key.
+ * link under the same idempotency key. A staff retry days later gets a fresh
+ * token once the stored one has expired or been used, so the button in the
+ * email it sends still works for the promised window.
  */
 async function portalToken(ctx: MutationCtx, job: Doc<"registrationJobs">) {
   if (job.kind !== "email" || !usesPortalAction(job)) {
     return;
   }
-  if (job.portalToken) {
+  if (job.portalToken && (await tokenUsable(ctx, job.portalToken))) {
     return job.portalToken;
   }
   const token = crypto.randomUUID() + crypto.randomUUID();
@@ -29,6 +31,19 @@ async function portalToken(ctx: MutationCtx, job: Doc<"registrationJobs">) {
   });
   await ctx.db.patch(job._id, { portalToken: token });
   return token;
+}
+
+async function tokenUsable(ctx: MutationCtx, token: string) {
+  const digest = await hash(token);
+  const grant = await ctx.db
+    .query("registrationGrants")
+    .withIndex("by_hash", (q) => q.eq("hash", digest))
+    .unique();
+  return (
+    grant?.purpose === "challenge" &&
+    !grant.consumed &&
+    grant.expires > Date.now()
+  );
 }
 
 function billingDetails(

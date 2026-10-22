@@ -1157,6 +1157,22 @@ describe("Operational regression coverage", () => {
         grantHash: "a".repeat(64),
       })
     ).toBe(true);
+    // A staff retry after the link has lapsed must not resend a dead button.
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(job, { state: "pending", due: Date.now() - 1 });
+      await ctx.db.patch(grants[0]._id, { expires: Date.now() - 1 });
+    });
+    const late = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(late?.portalToken).toHaveLength(72);
+    expect(late?.portalToken).not.toBe(first?.portalToken);
+    const challenges = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationGrants").collect()).filter(
+        (g) => g.purpose === "challenge"
+      )
+    );
+    expect(challenges).toHaveLength(2);
     // Invoice and payment-request emails keep their own button.
     const linked = await f.t.run(
       async (ctx) =>

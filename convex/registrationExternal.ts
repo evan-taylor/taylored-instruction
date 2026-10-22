@@ -130,6 +130,16 @@ export const refund = action({
   },
 });
 
+/** Short, non-reversible tag for a sign-in link; safe to hand to a provider. */
+async function linkFingerprint(token: string) {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(token)
+  );
+  return Array.from(new Uint8Array(digest).slice(0, 8), (b) =>
+    b.toString(16).padStart(2, "0")
+  ).join("");
+}
 /** A fresh portal token and the SHA-256 digest stored for it. */
 async function accessToken() {
   const token = crypto.randomUUID() + crypto.randomUUID();
@@ -187,7 +197,15 @@ export const deliver = internalAction({
                 : undefined,
               html: rendered.html,
             },
-            { idempotencyKey: `registration-mail:${id}` }
+            // A freshly minted sign-in link is new content, so it gets a
+            // new key; ordinary retries keep sharing the first one.
+            {
+              idempotencyKey: `registration-mail:${id}${
+                job.portalToken
+                  ? `:${await linkFingerprint(job.portalToken)}`
+                  : ""
+              }`,
+            }
           );
           if (response.error) {
             throw new Error(response.error.message);
