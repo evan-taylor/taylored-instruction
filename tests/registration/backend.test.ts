@@ -1951,6 +1951,13 @@ describe("PR review regressions", () => {
         notify: false,
       })
     ).rejects.toThrow("already canceled");
+    // The bulk mutation reports the already-canceled group as skipped.
+    expect(
+      await f.adminClient.mutation(
+        api.registrationOperations.cancelOrderSeats,
+        { orderId: unpaid.orderId, reason: "Bulk", notify: false }
+      )
+    ).toEqual({ canceled: 0, skipped: members.length });
     expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(100);
   });
   it("retains invoice tax on offline settlement and blocks bypassing a payable invoice", async () => {

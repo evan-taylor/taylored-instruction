@@ -2,7 +2,6 @@
 import { useClientMediaQuery } from "@silk-hq/components";
 import {
   useAction,
-  useConvex,
   useMutation,
   usePaginatedQuery,
   useQuery,
@@ -435,8 +434,7 @@ function OrderModal({
 /* ------------------------------------------------------------------ */
 
 function useBulkActions(orders: Order[], selected: OrderId[]) {
-  const convex = useConvex();
-  const cancel = useMutation(api.registrationOperations.cancelSeat);
+  const cancelOrder = useMutation(api.registrationOperations.cancelOrderSeats);
   const requestRefund = useMutation(api.registrationPayments.requestRefund);
   const refund = useAction(api.registrationExternal.refund);
   const [results, setResults] = useState<BulkResult[]>([]);
@@ -446,38 +444,16 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
     const rows = await Promise.all(
       selected.map(async (orderId): Promise<BulkResult> => {
         try {
-          const seats = await convex.query(
-            api.registrationOperations.orderSeats,
-            { orderId }
-          );
-          const order = orders.find((o) => o._id === orderId);
-          const cancelable = seats.filter(
-            (seat) => seat.state === "held" || seat.state === "active"
-          );
-          // An unpaid group is released as a whole by its first cancel, so
-          // one call covers every seat; paid seats are independent.
-          const group = order?.status === "hold" || order?.status === "unpaid";
-          const targets = group ? cancelable.slice(0, 1) : cancelable;
-          const outcomes = await Promise.allSettled(
-            targets.map((seat) =>
-              cancel({
-                seatId: seat._id,
-                reason,
-                notify,
-                cancelWholeOrder: true,
-              })
-            )
-          );
-          const failed = outcomes.filter((r) => r.status === "rejected").length;
-          const succeeded = targets.length - failed;
-          // One successful group call releases every cancelable seat.
-          const canceled = group && succeeded ? cancelable.length : succeeded;
-          const skipped = seats.length - cancelable.length;
+          const { canceled, skipped } = await cancelOrder({
+            orderId,
+            reason,
+            notify,
+          });
           return {
             key: orderId,
             label: label(orderId),
-            ok: failed === 0,
-            detail: `${canceled} canceled, ${failed} failed${skipped ? `, ${skipped} already canceled or transferred` : ""}`,
+            ok: true,
+            detail: `${canceled} canceled${skipped ? `, ${skipped} already canceled or transferred` : ""}`,
           };
         } catch (error) {
           return {
