@@ -1,6 +1,7 @@
 "use cache";
 
 import FirstAidCprAedPageContent from "@/components/FirstAidCprAedPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -44,7 +45,10 @@ const FirstAidCprAedPage = async () => {
   });
 
   // Generate structured data
-  const courseSchema = getFirstAidCPRAEDCourseSchema();
+  const courseSchema = await withLiveInstances(
+    getFirstAidCPRAEDCourseSchema(),
+    "first-aid-cpr-aed"
+  );
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {

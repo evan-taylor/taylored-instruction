@@ -1,19 +1,16 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function BasicLifeSupportPageContent() {
   return (
     <ClassPageLayout
+      course="basic-life-support"
       courseName="Basic Life Support"
       image={{
         alt: "Basic Life Support training session",
         src: "/CPR-Training-Stock-Photo-1-scaled.jpeg",
       }}
-      registrationUrl={registrationBookingUrl(
-        "https://www.hovn.app/service-providers/tayloredinstruction/offerings"
-      )}
       resources={[
         { href: "/contact", label: "Request course fact sheet" },
         { href: "/contact", label: "Request participant manual" },

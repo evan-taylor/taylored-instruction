@@ -1,19 +1,16 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function FirstAidCprAedPageContent() {
   return (
     <ClassPageLayout
+      course="first-aid-cpr-aed"
       courseName="First Aid/CPR/AED"
       image={{
         alt: "First Aid CPR AED training session",
         src: "/CPR-Training-Image.jpeg",
       }}
-      registrationUrl={registrationBookingUrl(
-        "https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/"
-      )}
       resources={[
         { href: "/contact", label: "Request course fact sheet" },
         { href: "/contact", label: "Request eBook access instructions" },

@@ -2,28 +2,62 @@ import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { RegistrationDetail } from "@/components/registration/public";
 import { api } from "@/convex/_generated/api";
-import { nativeRegistrationEnabled } from "@/lib/registration-launch";
+import { courseSchemas, snippet } from "@/lib/registration-seo";
+import { buildPageMetadata } from "@/lib/seo";
+import { generateJSONLD } from "@/lib/structuredData";
 
 type Props = { params: Promise<{ slug: string }> };
 
+async function offeringFor(slug: string) {
+  return await fetchQuery(api.registration.detail, { slug }).catch(() => null);
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const offering = await fetchQuery(api.registration.detail, { slug }).catch(
-    () => null
+  const offering = await offeringFor(slug);
+  if (!offering) {
+    return {
+      title: "Course details | Taylored Instruction",
+      robots: { index: false, follow: true },
+    };
+  }
+  const description = snippet(
+    offering.description,
+    `${offering.title} with Taylored Instruction. See upcoming dates and full pricing, then register online.`
   );
-  return {
-    title: offering
-      ? `${offering.title} | Taylored Instruction`
-      : "Course details | Taylored Instruction",
-    description: offering?.description || undefined,
-    robots:
-      nativeRegistrationEnabled() && offering
-        ? { index: true, follow: true }
-        : { index: false, follow: false },
-  };
+  return buildPageMetadata({
+    title: `${offering.title} | Classes & Registration | Taylored Instruction`,
+    description,
+    path: `/courses/${slug}`,
+    keywords: [offering.title],
+    image: { title: offering.title, description },
+  });
 }
 
 export default async function Page({ params }: Props) {
   const { slug } = await params;
-  return <RegistrationDetail slug={slug} />;
+  const offering = await offeringFor(slug);
+  const sessions = offering
+    ? await fetchQuery(api.registration.upcomingClasses, {
+        slugs: [slug],
+        keywords: [],
+      })
+        .then((data) => data.sessions)
+        .catch(() => [])
+    : [];
+  return (
+    <>
+      {offering
+        ? courseSchemas(offering, sessions, slug).map((schema, index) => (
+            <script
+              dangerouslySetInnerHTML={generateJSONLD(schema)}
+              // biome-ignore lint/suspicious/noArrayIndexKey: static list of distinct schema types
+              key={index}
+              type="application/ld+json"
+            />
+          ))
+        : null}
+      <RegistrationDetail slug={slug} />
+    </>
+  );
 }

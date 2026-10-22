@@ -1,7 +1,6 @@
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
-import { nativeRegistrationEnabled } from "@/lib/registration-launch";
 import { sanityFetch } from "@/sanity/lib/client";
 import { POSTS_SITEMAP_QUERY } from "@/sanity/lib/queries";
 import type { BlogPostSitemapEntry } from "@/sanity/types";
@@ -68,6 +67,15 @@ const routeConfigByPath: Record<string, RouteConfig> = {
 };
 
 const getRouteConfig = (routePath: string): RouteConfig => {
+  if (routePath === "/classes") {
+    return { priority: 0.95, changeFrequency: "daily" };
+  }
+  if (routePath.startsWith("/s/")) {
+    return { priority: 0.8, changeFrequency: "daily" };
+  }
+  if (routePath.startsWith("/courses/")) {
+    return { priority: 0.85, changeFrequency: "weekly" };
+  }
   if (routePath.startsWith("/resources/")) {
     return {
       priority: 0.85,
@@ -152,17 +160,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If Sanity is unavailable, still return a valid sitemap.
   }
 
-  const registrationRoutes: string[] = [];
-  if (nativeRegistrationEnabled()) {
-    registrationRoutes.push("/classes", "/group-training");
-    try {
-      const courses = await fetchQuery(api.registration.selfPaced, {});
-      for (const course of courses) {
-        registrationRoutes.push(`/courses/${course.slug}`);
-      }
-    } catch {
-      // Still return the static routes when Convex is unavailable.
+  const registrationRoutes: string[] = ["/classes", "/group-training"];
+  try {
+    const catalog = await fetchQuery(api.registration.publicCatalog, {});
+    for (const course of catalog.courses) {
+      registrationRoutes.push(`/courses/${course.slug}`);
     }
+    for (const session of catalog.sessions) {
+      registrationRoutes.push(`/s/${session.code}`);
+    }
+  } catch {
+    // Still return the static routes when Convex is unavailable.
   }
 
   const entries = [

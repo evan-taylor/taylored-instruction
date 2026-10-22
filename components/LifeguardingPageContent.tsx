@@ -2,29 +2,24 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function LifeguardingPageContent() {
   return (
     <ClassPageLayout
+      course="lifeguarding"
       courseName="Lifeguarding"
       image={{
         alt: "Lifeguarding training session",
         position: "center 42%",
         src: "/lifeguard-training.jpeg",
       }}
-      registrationUrl={registrationBookingUrl(
-        "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-blended"
-      )}
       resources={[
         { href: "/contact", label: "Request course fact sheet" },
         { href: "/contact", label: "Request eBook access instructions" },
       ]}
       secondaryActions={[
         {
-          href: registrationBookingUrl(
-            "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-recertification-blended"
-          ),
+          href: "/classes?q=recertification",
           label: "View recertification courses",
         },
       ]}
