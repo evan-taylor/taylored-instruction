@@ -1,12 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
-import { internal } from "./_generated/api";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
 
 export const getProfile = query({
@@ -22,31 +16,31 @@ export const getProfile = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
 
-    if (existingProfile) {
-      if (existingProfile.deactivatedAt) {
-        return null;
-      }
-
-      const user = await ctx.db.get(userId);
-
-      return {
-        id: existingProfile._id,
-        userId: existingProfile.userId,
-        email: user?.email ?? null,
-        is_instructor: existingProfile.isInstructor,
-        updated_at: existingProfile.updatedAt,
-        last_login: existingProfile.lastLogin,
-      };
+    if (existingProfile?.deactivatedAt) {
+      return null;
     }
 
-    return null;
+    const user = await ctx.db.get(userId);
+
+    // Every signed-in account resolves here, with or without an instructor
+    // profile: admin access comes from the email allowlist, and students have
+    // no profile at all. `id` is null until an invitation is accepted.
+    return {
+      id: existingProfile?._id ?? null,
+      userId,
+      email: user?.email ?? null,
+      is_instructor: existingProfile?.isInstructor ?? false,
+      updated_at: existingProfile?.updatedAt ?? null,
+      last_login: existingProfile?.lastLogin ?? null,
+    };
   },
 });
 
 /**
  * Records a sign-in. A first sign-in attaches a migrated instructor profile
- * when one is staged for this email; otherwise it creates nothing, because
- * students sign in here too and an account is not an instructor request.
+ * when one is staged for this email; otherwise it creates nothing. Students
+ * sign in here too, and instructor access comes only from accepting an
+ * invitation (see instructorInvitations.accept).
  */
 export const updateLastLogin = mutation({
   args: {},
@@ -90,42 +84,6 @@ export const updateLastLogin = mutation({
         convexUserId: userId,
       });
     }
-  },
-});
-
-/** The explicit instructor signup: creates the pending profile and tells admins. */
-export const requestInstructorAccess = mutation({
-  args: {},
-  returns: v.null(),
-  handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
-    if (!userId) {
-      throw new ConvexError("Unauthorized");
-    }
-    const existing = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .first();
-    if (existing) {
-      return null;
-    }
-    const user = await ctx.db.get(userId);
-    if (!user?.email || user.emailVerificationTime === undefined) {
-      throw new ConvexError("Verified email required");
-    }
-    const now = new Date().toISOString();
-    await ctx.db.insert("profiles", {
-      userId,
-      isInstructor: false,
-      updatedAt: now,
-      lastLogin: now,
-    });
-    await ctx.scheduler.runAfter(
-      0,
-      internal.notifications.sendNewUserAdminNotification,
-      { userId, userEmail: user.email }
-    );
-    return null;
   },
 });
 
@@ -213,27 +171,6 @@ export const approveInstructor = mutation({
 
     // Note: Approval email is now sent by the admin UI via Next.js server action (important-comment)
     // This provides better security (no exposed secrets) and error handling
-  },
-});
-
-export const markUserNotified = internalMutation({
-  args: {
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .first();
-
-    if (!profile) {
-      throw new ConvexError("Profile not found");
-    }
-
-    const now = new Date().toISOString();
-    await ctx.db.patch(profile._id, {
-      notifiedAt: now,
-    });
   },
 });
 

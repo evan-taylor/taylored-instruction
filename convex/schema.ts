@@ -89,6 +89,16 @@ const schema = defineSchema({
   onboarding_steps: onboardingSteps,
   seo_pages: seoPages,
 
+  /** Admin-issued instructor invitations; accepting one is how an account becomes an instructor. */
+  instructorInvitations: defineTable({
+    email: v.string(),
+    invitedBy: v.id("users"),
+    createdAt: v.number(),
+    acceptedAt: v.optional(v.number()),
+    acceptedBy: v.optional(v.id("users")),
+    revokedAt: v.optional(v.number()),
+  }).index("by_email", ["email"]),
+
   profiles: defineTable({
     userId: v.id("users"), // Reference to auth users table
     isInstructor: v.boolean(),

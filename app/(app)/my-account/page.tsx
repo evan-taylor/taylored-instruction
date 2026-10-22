@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
-import { useMutation } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -59,9 +59,9 @@ function instructorStatus(isInstructor: boolean, requested: boolean) {
     return <Badge tone="success">Approved instructor</Badge>;
   }
   return requested ? (
-    <Badge tone="warning">Awaiting approval</Badge>
+    <Badge tone="warning">Not approved</Badge>
   ) : (
-    <Badge tone="neutral">Not requested</Badge>
+    <Badge tone="neutral">Not an instructor</Badge>
   );
 }
 
@@ -71,11 +71,10 @@ export default function MyAccountPage() {
   const authToken = useAuthToken();
   const { profile, loading, isInstructor, error, email } = useProfile();
   const isAdmin = isAdminEmail(email);
-  const requestInstructorAccess = useMutation(
-    api.profiles.requestInstructorAccess
-  );
-  const [requesting, setRequesting] = useState(false);
-  const [requestError, setRequestError] = useState<string | null>(null);
+  const invitation = useQuery(api.instructorInvitations.mine);
+  const acceptInvitation = useMutation(api.instructorInvitations.accept);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && authToken === null) {
@@ -150,50 +149,50 @@ export default function MyAccountPage() {
                 { label: "Email", value: email || "Not available" },
                 {
                   label: "Instructor status",
-                  value: instructorStatus(isInstructor, profile !== null),
+                  value: instructorStatus(isInstructor, Boolean(profile?.id)),
                 },
               ]}
             />
           </CardContent>
           {isInstructor ? null : (
             <CardFooter className="flex flex-col items-start gap-3">
-              {profile ? (
-                <p className="text-slate-600 text-sm">
-                  An administrator reviews instructor requests. You’ll get
-                  access to instructor tools once approved.
-                </p>
-              ) : (
+              {invitation ? (
                 <>
-                  <p className="text-slate-600 text-sm">
-                    Teach with us? Request instructor access and an
-                    administrator will review it. Students don’t need this to
-                    see their registrations.
+                  <p className="text-slate-900 text-sm">
+                    You’ve been invited to teach with Taylored Instruction.
+                    Accept to unlock instructor tools, eCard purchasing, and
+                    your assigned sessions.
                   </p>
-                  {requestError ? (
-                    <Notice tone="danger">{requestError}</Notice>
+                  {acceptError ? (
+                    <Notice tone="danger">{acceptError}</Notice>
                   ) : null}
                   <Button
-                    disabled={requesting}
+                    disabled={accepting}
                     onClick={async () => {
-                      setRequesting(true);
-                      setRequestError(null);
+                      setAccepting(true);
+                      setAcceptError(null);
                       try {
-                        await requestInstructorAccess();
+                        await acceptInvitation();
                       } catch {
-                        setRequestError(
-                          "We couldn’t send your request. Try again in a moment."
+                        setAcceptError(
+                          "We couldn’t accept the invitation. Try again in a moment."
                         );
                       } finally {
-                        setRequesting(false);
+                        setAccepting(false);
                       }
                     }}
                     size="sm"
                     type="button"
-                    variant="secondary"
                   >
-                    {requesting ? "Sending…" : "Request instructor access"}
+                    {accepting ? "Accepting…" : "Accept invitation"}
                   </Button>
                 </>
+              ) : (
+                <p className="text-slate-600 text-sm">
+                  Instructor access is by invitation. If you teach with Taylored
+                  Instruction and haven’t received one, contact us. Students
+                  don’t need this to see their registrations.
+                </p>
               )}
             </CardFooter>
           )}

@@ -42,8 +42,8 @@ export default function LoginPage() {
             <SignInForm />
             <p className="text-center text-slate-500 text-xs">
               Registered for a class? Your registrations, materials, and joining
-              details are waiting after you sign in. New instructors need
-              approval before instructor features unlock.
+              details are waiting after you sign in. Invited instructors accept
+              their invitation from the account page.
             </p>
           </CardContent>
         </Card>

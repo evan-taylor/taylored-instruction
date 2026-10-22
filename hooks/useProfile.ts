@@ -3,7 +3,8 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 type Profile = {
-  id: string;
+  /** Null for accounts without an instructor profile (students, new admins). */
+  id: string | null;
   userId: string;
   email: string | null;
   is_instructor: boolean;
