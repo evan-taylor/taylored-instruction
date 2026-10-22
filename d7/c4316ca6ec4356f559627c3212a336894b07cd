@@ -1,0 +1,33 @@
+components/admin/courses.tsx
+  s_fda7a6981cbc39::t_32405452e63fae 10,297,302,354-362,382,387,409,423,429,457-462,469-470,543,549-563
+convex/registration.ts
+  s_fda7a6981cbc39::t_e1580e61502945 238-279
+convex/registrationSchema.ts
+  s_fc856bd356d4db::t_ec52aea6290084 135
+tests/registration/backend.test.ts
+  s_fda7a6981cbc39::t_d08adca46a5891 123-206
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d7c4316ca6ec4356f559627c3212a336894b07cd",
+  "prompts": {},
+  "sessions": {
+    "s_fc856bd356d4db": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161c4-45cb-7f52-9988-bfde805b49b4",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_fda7a6981cbc39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161b0-9825-7360-b274-415e50e0d181",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
