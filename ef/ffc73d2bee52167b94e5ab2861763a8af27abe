@@ -1,0 +1,49 @@
+components/registration/operations.tsx
+  s_7688cf5eaee261::t_da64f516b6792b 555-556,572-590
+components/registration/portal.tsx
+  s_7688cf5eaee261::t_9d8f5239161341 41-47,163-175,201-202,206
+components/ui/badge.tsx
+  s_fda7a6981cbc39::t_c1bd0cf4251cd1 61
+convex/_generated/api.d.ts
+  s_fda7a6981cbc39::t_1a868ad18c4b2b 30,67
+convex/registrationHelpers.ts
+  s_7688cf5eaee261::t_a598e82c0eaa39 256,260-263,265
+convex/registrationMigration.ts
+  s_fda7a6981cbc39::t_612e04419b6cf7 1-194
+convex/registrationOperations.ts
+  s_7688cf5eaee261::t_cfb77a1e653a0e 62-68,1530-1564
+convex/registrationPortal.ts
+  s_7688cf5eaee261::t_8d666b07ac7a7d 67-68,129-130,307-308,327-328
+convex/registrationSchema.ts
+  s_fda7a6981cbc39::t_3b28835ea0d44b 30,66-71,76-82,88,243-249,255
+shared/registration/validators.ts
+  s_fda7a6981cbc39::t_39ddf3761e6e5e 131-132
+tests/registration/backend.test.ts
+  s_7688cf5eaee261::t_a94910985a1603 3236-3304
+tests/registration/migration.test.ts
+  s_fda7a6981cbc39::t_9de7e3963ed8c8 1-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "efffc73d2bee52167b94e5ab2861763a8af27abe",
+  "prompts": {},
+  "sessions": {
+    "s_7688cf5eaee261": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161b3-64e0-7f91-bc3e-2dda097e8b10",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_fda7a6981cbc39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161b0-9825-7360-b274-415e50e0d181",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
