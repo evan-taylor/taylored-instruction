@@ -264,6 +264,7 @@ function MobileDrawer({
   email: string | null;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const pressedBackdrop = useRef(false);
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) {
@@ -280,9 +281,10 @@ function MobileDrawer({
       aria-label="Admin navigation"
       className="open:slide-in-from-left m-0 h-dvh max-h-none w-72 max-w-[85vw] flex-col border-slate-200 border-r bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 open:flex open:animate-in motion-reduce:open:animate-none"
       onClick={(e) => {
-        if (e.target === ref.current) {
+        if (e.target === ref.current && pressedBackdrop.current) {
           onClose();
         }
+        pressedBackdrop.current = false;
       }}
       onClose={onClose}
       onKeyDown={(e) => {
@@ -290,6 +292,9 @@ function MobileDrawer({
           e.preventDefault();
           onClose();
         }
+      }}
+      onPointerDown={(e) => {
+        pressedBackdrop.current = e.target === ref.current;
       }}
       ref={ref}
     >

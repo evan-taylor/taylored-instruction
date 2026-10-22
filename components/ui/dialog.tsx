@@ -30,6 +30,10 @@ export function Modal({
 }) {
   const titleId = useId();
   const ref = useRef<HTMLDialogElement>(null);
+  // A text selection that starts inside the panel and ends over the backdrop
+  // still fires `click` on the dialog; only a press that began on the
+  // backdrop counts as a dismissal.
+  const pressedBackdrop = useRef(false);
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) {
@@ -56,9 +60,10 @@ export function Modal({
       )}
       onClick={(e) => {
         e.stopPropagation();
-        if (e.target === ref.current) {
+        if (e.target === ref.current && pressedBackdrop.current) {
           onClose();
         }
+        pressedBackdrop.current = false;
       }}
       onClose={onClose}
       onKeyDown={(e) => {
@@ -67,6 +72,9 @@ export function Modal({
           e.stopPropagation();
           onClose();
         }
+      }}
+      onPointerDown={(e) => {
+        pressedBackdrop.current = e.target === ref.current;
       }}
       ref={ref}
     >
