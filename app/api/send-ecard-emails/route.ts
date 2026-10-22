@@ -5,6 +5,7 @@ import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
+      replyTo: SUPPORT_EMAIL,
       subject: "Your eCard Purchase Confirmation",
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName: "Multiple Products",
@@ -129,6 +131,7 @@ export async function POST(req: NextRequest) {
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
       to: [customerEmail],
+      replyTo: SUPPORT_EMAIL,
       subject: "Your eCard Purchase Confirmation",
       react: React.createElement(EcardPurchaseUserEmail, {
         itemName,

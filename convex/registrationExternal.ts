@@ -2,6 +2,7 @@
 import { ConvexError, v } from "convex/values";
 import { Resend } from "resend";
 import Stripe from "stripe";
+import { SUPPORT_EMAIL } from "../shared/email";
 import { brandedEmail, registrationEmail } from "../shared/registration/email";
 import {
   assertRegistrationPaymentMode,
@@ -150,7 +151,7 @@ export const deliver = internalAction({
               from,
               to: recipient,
               subject: rendered.subject,
-              replyTo: "info@tayloredinstruction.com",
+              replyTo: SUPPORT_EMAIL,
               text: rendered.text,
               attachments: job.calendar
                 ? [
@@ -210,7 +211,7 @@ export const requestPortal = action({
       from,
       to: recipient,
       subject: "Your secure registration access",
-      replyTo: "info@tayloredinstruction.com",
+      replyTo: SUPPORT_EMAIL,
       ...brandedEmail({
         eyebrow: "Secure registration access",
         title: "Access your registrations",

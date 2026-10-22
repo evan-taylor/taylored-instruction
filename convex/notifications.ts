@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { Resend } from "resend";
+import { SUPPORT_EMAIL } from "../shared/email";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
 
@@ -55,6 +56,7 @@ export const sendNewUserAdminNotification = internalAction({
       const result = await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,
         to: [ADMIN_NOTIF_EMAIL],
+        replyTo: SUPPORT_EMAIL,
         subject,
         html: htmlBody,
       });
@@ -93,6 +95,7 @@ export const sendInstructorApprovalEmail = internalAction({
       await resend.emails.send({
         from: `${WEBSITE_NAME} <${FROM_EMAIL}>`,
         to: [args.email],
+        replyTo: SUPPORT_EMAIL,
         subject,
         text: textBody,
       });

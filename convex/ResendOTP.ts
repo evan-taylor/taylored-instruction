@@ -1,6 +1,6 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
-
+import { SUPPORT_EMAIL } from "../shared/email";
 import { brandedEmail } from "../shared/registration/email";
 
 const OTP_CODE_LENGTH = 6;
@@ -36,7 +36,7 @@ export const ResendOTP = Email({
       from: emailFrom,
       to: [email],
       subject: "Your Taylored Instruction Login Code",
-      replyTo: "info@tayloredinstruction.com",
+      replyTo: SUPPORT_EMAIL,
       ...brandedEmail({
         eyebrow: "Account sign-in",
         title: "Your sign-in code",

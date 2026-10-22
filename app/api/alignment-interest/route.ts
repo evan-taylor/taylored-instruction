@@ -4,6 +4,7 @@ import { z } from "zod"; // Assuming zod is needed for the schema
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
 const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend domain
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`, // Updated sender name
       to: [email],
+      replyTo: SUPPORT_EMAIL,
       subject: "Alignment Interest Received - Taylored Instruction",
       react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
     });
