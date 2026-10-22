@@ -7,9 +7,10 @@
     "node": ">=20.19 <22 || >=22.12"
   },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "dev": "bash scripts/with-infisical.sh next dev",
+    "build": "bash scripts/with-infisical.sh next build",
+    "start": "bash scripts/with-infisical.sh next start",
+    "env:pull": "bash scripts/with-infisical.sh --export > .env.local",
     "lint": "bunx ultracite check",
     "type-check": "tsc --noEmit",
     "test": "bun run lint && bun run type-check"
@@ -60,6 +61,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
+    "@infisical/cli": "^0.43.123",
     "@types/node": "^20.10.0",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
