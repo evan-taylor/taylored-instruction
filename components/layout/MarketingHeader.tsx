@@ -107,6 +107,11 @@ const generateNavLinks = (
         indent: true,
       },
       {
+        label: "Water Safety Instructor",
+        href: "/water-safety-instructor",
+        indent: true,
+      },
+      {
         label: "First Aid/CPR/AED instructor",
         href: "/fa-cpr-aed-instructor",
         indent: true,

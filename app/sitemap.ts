@@ -22,6 +22,7 @@ const staticRoutePaths = [
   "/aha-instructor-training",
   "/fa-cpr-aed-instructor",
   "/lifeguarding-instructor",
+  "/water-safety-instructor",
   "/lifeguarding-instructor-trainer",
   "/alignment",
   "/privacy-policy",
@@ -56,6 +57,7 @@ const routeConfigByPath: Record<string, RouteConfig> = {
   "/aeds": { priority: 0.85, changeFrequency: "monthly" },
   "/aha-instructor-training": { priority: 0.85, changeFrequency: "monthly" },
   "/fa-cpr-aed-instructor": { priority: 0.8, changeFrequency: "monthly" },
+  "/water-safety-instructor": { priority: 0.8, changeFrequency: "monthly" },
   "/lifeguarding-instructor": { priority: 0.8, changeFrequency: "monthly" },
   "/lifeguarding-instructor-trainer": {
     priority: 0.75,

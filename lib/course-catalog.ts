@@ -5,6 +5,11 @@ import type { CourseMatch } from "@/shared/registration/catalog";
  * the live catalog; keywords cover later title and slug edits.
  */
 const catalog = {
+  "water-safety-instructor": {
+    slugs: ["water-safety-instructor"],
+    keywords: ["water safety instructor"],
+    exclude: ["trainer"],
+  },
   bls: {
     slugs: ["bls-provider", "heartcode-bls-online-provider"],
     keywords: ["bls provider", "heartcode", "aha bls", "basic life support"],
