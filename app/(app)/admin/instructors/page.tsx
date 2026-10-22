@@ -7,6 +7,7 @@ import { useProfile } from "@/hooks/useProfile";
 import { AlertMessages } from "./alert-messages";
 import { ConfirmDialog } from "./confirm-dialog";
 import { InstructorsTable } from "./instructors-table";
+import { Invitations } from "./invitations";
 import {
   AccessDenied,
   LoadingAdminPanel,
@@ -75,11 +76,13 @@ function AdminInstructorsContent() {
               Sessions & assignments
             </Button>
           }
-          description="Approve instructor access to eCard purchasing and teaching resources. Assign approved instructors to classes from Sessions."
+          description="Invite instructors by email. Accepting an invitation grants eCard purchasing and teaching resources; assign approved instructors to classes from Sessions."
           title="Instructors"
         />
 
         <AlertMessages actionMessage={actionMessage} error={error} />
+
+        <Invitations />
 
         <InstructorsTable
           onRejectUser={initiateRejectUser}

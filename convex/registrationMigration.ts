@@ -192,3 +192,25 @@ export const importHovnCatalog = internalMutation({
     return { materials, courses };
   },
 });
+
+/**
+ * Operator-only cleanup after the portal moved to Convex Auth. Deletes the
+ * legacy magic-link grants and strips stored tokens from mail jobs, in bounded
+ * batches, so the deprecated schema entries can be removed once it reports zero.
+ */
+export const purgeLegacyPortalGrants = internalMutation({
+  args: {},
+  returns: v.object({ grants: v.number(), jobs: v.number() }),
+  handler: async (ctx) => {
+    const grants = await ctx.db.query("registrationGrants").take(200);
+    await Promise.all(grants.map((grant) => ctx.db.delete(grant._id)));
+    const jobs = await ctx.db
+      .query("registrationJobs")
+      .filter((q) => q.neq(q.field("portalToken"), undefined))
+      .take(200);
+    await Promise.all(
+      jobs.map((job) => ctx.db.patch(job._id, { portalToken: undefined }))
+    );
+    return { grants: grants.length, jobs: jobs.length };
+  },
+});

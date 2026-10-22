@@ -2,6 +2,7 @@ import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
 import { SUPPORT_EMAIL } from "../shared/email";
 import { brandedEmail } from "../shared/registration/email";
+import { registrationRecipient } from "../shared/registration/environment";
 
 const OTP_CODE_LENGTH = 6;
 const DIGIT_ALPHABET = "0123456789";
@@ -32,9 +33,11 @@ export const ResendOTP = Email({
       throw new Error("AUTH_EMAIL_FROM environment variable is not set");
     }
 
+    // Students sign in to the portal with this code, so like every other
+    // registration email it goes to the safe mailbox outside live mode.
     const { error } = await resend.emails.send({
       from: emailFrom,
-      to: [email],
+      to: [registrationRecipient(email)],
       subject: "Your Taylored Instruction sign-in code",
       replyTo: SUPPORT_EMAIL,
       ...brandedEmail({

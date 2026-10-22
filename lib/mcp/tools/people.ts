@@ -10,10 +10,64 @@ import {
   ok,
   READ,
   run,
+  WRITE,
 } from "../context";
-import { id } from "../shapes";
+import { email, id } from "../shapes";
 
 export function registerPeopleTools(server: McpServer, ctx: McpContext) {
+  server.registerTool(
+    "invite_instructor",
+    {
+      title: "Invite instructor",
+      description:
+        "Emails an instructor invitation. The person signs in with this email and accepts it on their account page, which grants instructor access. Inviting the same email again re-sends the pending invitation.",
+      inputSchema: { email },
+      annotations: EXTERNAL,
+    },
+    (args) =>
+      run(async () =>
+        ok({
+          invitationId: await ctx.convex.mutation(
+            api.instructorInvitations.invite,
+            { email: args.email }
+          ),
+          email: args.email,
+        })
+      )
+  );
+
+  server.registerTool(
+    "list_instructor_invitations",
+    {
+      title: "List instructor invitations",
+      description:
+        "Instructor invitations with status: pending, accepted, or revoked.",
+      annotations: READ,
+    },
+    () =>
+      run(async () =>
+        ok(await ctx.convex.query(api.instructorInvitations.list, {}))
+      )
+  );
+
+  server.registerTool(
+    "revoke_instructor_invitation",
+    {
+      title: "Revoke instructor invitation",
+      description:
+        "Cancels a pending instructor invitation so it cannot be accepted.",
+      inputSchema: { invitationId: id },
+      annotations: WRITE,
+    },
+    (args) =>
+      run(async () => {
+        await ctx.convex.mutation(api.instructorInvitations.revoke, {
+          id: args.invitationId as Id<"instructorInvitations">,
+        });
+        return ok({ revoked: args.invitationId });
+      })
+  );
+
   server.registerTool(
     "staff_directory",
     {

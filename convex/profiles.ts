@@ -1,13 +1,8 @@
 import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
-import { internal } from "./_generated/api";
-import {
-  internalMutation,
-  type MutationCtx,
-  mutation,
-  query,
-} from "./_generated/server";
+import { type MutationCtx, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { revokeInvitationsFor } from "./instructorInvitations";
 
 export const getProfile = query({
   args: {},
@@ -22,27 +17,32 @@ export const getProfile = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
 
-    if (existingProfile) {
-      if (existingProfile.deactivatedAt) {
-        return null;
-      }
-
-      const user = await ctx.db.get(userId);
-
-      return {
-        id: existingProfile._id,
-        userId: existingProfile.userId,
-        email: user?.email ?? null,
-        is_instructor: existingProfile.isInstructor,
-        updated_at: existingProfile.updatedAt,
-        last_login: existingProfile.lastLogin,
-      };
+    if (existingProfile?.deactivatedAt) {
+      return null;
     }
 
-    return null;
+    const user = await ctx.db.get(userId);
+
+    // Every signed-in account resolves here, with or without an instructor
+    // profile: admin access comes from the email allowlist, and students have
+    // no profile at all. `id` is null until an invitation is accepted.
+    return {
+      id: existingProfile?._id ?? null,
+      userId,
+      email: user?.email ?? null,
+      is_instructor: existingProfile?.isInstructor ?? false,
+      updated_at: existingProfile?.updatedAt ?? null,
+      last_login: existingProfile?.lastLogin ?? null,
+    };
   },
 });
 
+/**
+ * Records a sign-in. A first sign-in attaches a migrated instructor profile
+ * when one is staged for this email; otherwise it creates nothing. Students
+ * sign in here too, and instructor access comes only from accepting an
+ * invitation (see instructorInvitations.accept).
+ */
 export const updateLastLogin = mutation({
   args: {},
   handler: async (ctx) => {
@@ -55,69 +55,36 @@ export const updateLastLogin = mutation({
       .query("profiles")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
+    const now = new Date().toISOString();
 
-    if (!profile) {
-      const user = await ctx.db.get(userId);
-      const email = user?.email?.toLowerCase();
-
-      // Check for staging profile to determine if this is a migration or new user
-      const stagingProfile = email
-        ? await ctx.db
-            .query("staging_profiles")
-            .withIndex("by_email", (q) => q.eq("email", email))
-            .first()
-        : null;
-
-      const now = new Date().toISOString();
-
-      // If staging profile exists and is unprocessed, auto-approve user with staging data
-      // No admin notification email is sent for staged users
-      if (stagingProfile && stagingProfile.processedAt === undefined) {
-        await ctx.db.insert("profiles", {
-          userId,
-          isInstructor: stagingProfile.isInstructor,
-          updatedAt: stagingProfile.updatedAt ?? now,
-          lastLogin: now,
-          notifiedAt: now, // Set to prevent duplicate notifications (important-comment)
-        });
-
-        // Mark staging profile as processed
-        await ctx.db.patch(stagingProfile._id, {
-          processedAt: Date.now(),
-          convexUserId: userId,
-        });
-
-        return;
-      }
-
-      // No staging profile or already processed - create new profile and notify admin
-      await ctx.db.insert("profiles", {
-        userId,
-        isInstructor: false,
-        updatedAt: now,
-        lastLogin: now,
-      });
-
-      try {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.notifications.sendNewUserAdminNotification,
-          {
-            userId,
-            userEmail: user?.email,
-          }
-        );
-      } catch (error) {
-        console.error("Failed to schedule notification email:", error);
-      }
-
+    if (profile) {
+      await ctx.db.patch(profile._id, { lastLogin: now });
       return;
     }
 
-    const now = new Date().toISOString();
-    await ctx.db.patch(profile._id, {
-      lastLogin: now,
-    });
+    const user = await ctx.db.get(userId);
+    const email = user?.email?.toLowerCase();
+    const stagingProfile = email
+      ? await ctx.db
+          .query("staging_profiles")
+          .withIndex("by_email", (q) => q.eq("email", email))
+          .first()
+      : null;
+
+    // Staged users are already-approved migrations; no admin notification.
+    if (stagingProfile && stagingProfile.processedAt === undefined) {
+      await ctx.db.insert("profiles", {
+        userId,
+        isInstructor: stagingProfile.isInstructor,
+        updatedAt: stagingProfile.updatedAt ?? now,
+        lastLogin: now,
+        notifiedAt: now, // Set to prevent duplicate notifications (important-comment)
+      });
+      await ctx.db.patch(stagingProfile._id, {
+        processedAt: Date.now(),
+        convexUserId: userId,
+      });
+    }
   },
 });
 
@@ -202,30 +169,15 @@ export const approveInstructor = mutation({
       isInstructor: willBeInstructor,
       updatedAt: now,
     });
+    if (!willBeInstructor) {
+      const user = await ctx.db.get(args.userId);
+      if (user?.email) {
+        await revokeInvitationsFor(ctx, user.email);
+      }
+    }
 
     // Note: Approval email is now sent by the admin UI via Next.js server action (important-comment)
     // This provides better security (no exposed secrets) and error handling
-  },
-});
-
-export const markUserNotified = internalMutation({
-  args: {
-    userId: v.id("users"),
-  },
-  handler: async (ctx, args) => {
-    const profile = await ctx.db
-      .query("profiles")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .first();
-
-    if (!profile) {
-      throw new ConvexError("Profile not found");
-    }
-
-    const now = new Date().toISOString();
-    await ctx.db.patch(profile._id, {
-      notifiedAt: now,
-    });
   },
 });
 
@@ -249,5 +201,9 @@ export const deactivateUser = mutation({
     await ctx.db.patch(profile._id, {
       deactivatedAt: now,
     });
+    const user = await ctx.db.get(args.userId);
+    if (user?.email) {
+      await revokeInvitationsFor(ctx, user.email);
+    }
   },
 });

@@ -1,8 +1,9 @@
 "use client";
 
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
+import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,6 +19,7 @@ import {
   PageHeader,
   Skeleton,
 } from "@/components/ui/page-header";
+import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
 import { workspaceLinks } from "@/lib/workspace-navigation";
@@ -52,12 +54,27 @@ function LinkList({ links }: { links: QuickLink[] }) {
   );
 }
 
+function instructorStatus(isInstructor: boolean, requested: boolean) {
+  if (isInstructor) {
+    return <Badge tone="success">Approved instructor</Badge>;
+  }
+  return requested ? (
+    <Badge tone="warning">Not approved</Badge>
+  ) : (
+    <Badge tone="neutral">Not an instructor</Badge>
+  );
+}
+
 export default function MyAccountPage() {
   const router = useRouter();
   const { signOut } = useAuthActions();
   const authToken = useAuthToken();
   const { profile, loading, isInstructor, error, email } = useProfile();
   const isAdmin = isAdminEmail(email);
+  const invitation = useQuery(api.instructorInvitations.mine);
+  const acceptInvitation = useMutation(api.instructorInvitations.accept);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && authToken === null) {
@@ -132,23 +149,53 @@ export default function MyAccountPage() {
                 { label: "Email", value: email || "Not available" },
                 {
                   label: "Instructor status",
-                  value: isInstructor ? (
-                    <Badge tone="success">Approved instructor</Badge>
-                  ) : (
-                    <Badge tone="warning">Awaiting approval</Badge>
-                  ),
+                  value: instructorStatus(isInstructor, Boolean(profile?.id)),
                 },
               ]}
             />
           </CardContent>
-          {!isInstructor && profile ? (
-            <CardFooter>
-              <p className="text-slate-600 text-sm">
-                An administrator reviews new instructor accounts. You’ll get
-                access to instructor tools once approved.
-              </p>
+          {isInstructor ? null : (
+            <CardFooter className="flex flex-col items-start gap-3">
+              {invitation ? (
+                <>
+                  <p className="text-slate-900 text-sm">
+                    You’ve been invited to teach with Taylored Instruction.
+                    Accept to unlock instructor tools, eCard purchasing, and
+                    your assigned sessions.
+                  </p>
+                  {acceptError ? (
+                    <Notice tone="danger">{acceptError}</Notice>
+                  ) : null}
+                  <Button
+                    disabled={accepting}
+                    onClick={async () => {
+                      setAccepting(true);
+                      setAcceptError(null);
+                      try {
+                        await acceptInvitation();
+                      } catch {
+                        setAcceptError(
+                          "We couldn’t accept the invitation. Try again in a moment."
+                        );
+                      } finally {
+                        setAccepting(false);
+                      }
+                    }}
+                    size="sm"
+                    type="button"
+                  >
+                    {accepting ? "Accepting…" : "Accept invitation"}
+                  </Button>
+                </>
+              ) : (
+                <p className="text-slate-600 text-sm">
+                  Instructor access is by invitation. If you teach with Taylored
+                  Instruction and haven’t received one, contact us. Students
+                  don’t need this to see their registrations.
+                </p>
+              )}
             </CardFooter>
-          ) : null}
+          )}
         </Card>
         {linkGroups.map((group) => (
           <Card key={group.title}>

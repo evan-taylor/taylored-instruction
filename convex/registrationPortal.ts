@@ -3,55 +3,11 @@ import {
   paginationResultValidator,
 } from "convex/server";
 import { ConvexError, v } from "convex/values";
-import { BATCH, email, HOLD_MS } from "../shared/registration/domain";
+import { BATCH } from "../shared/registration/domain";
 import { calendar } from "../shared/registration/schedule";
-import { internalMutation, mutation, query } from "./_generated/server";
-import { hash, portalEmail, rate } from "./registrationHelpers";
+import { query } from "./_generated/server";
+import { portalEmail } from "./registrationHelpers";
 
-export const issue = internalMutation({
-  args: { email: v.string(), tokenHash: v.string() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const normalized = email(args.email);
-    await rate(ctx, `portal:${normalized}`, 3);
-    await ctx.db.insert("registrationGrants", {
-      email: normalized,
-      hash: args.tokenHash,
-      purpose: "challenge",
-      expires: Date.now() + HOLD_MS,
-      consumed: false,
-    });
-    return null;
-  },
-});
-export const exchange = mutation({
-  args: { token: v.string(), grantHash: v.string() },
-  returns: v.boolean(),
-  handler: async (ctx, args) => {
-    const digest = await hash(args.token);
-    const row = await ctx.db
-      .query("registrationGrants")
-      .withIndex("by_hash", (q) => q.eq("hash", digest))
-      .unique();
-    if (
-      row?.purpose !== "challenge" ||
-      row.consumed ||
-      row.expires <= Date.now() ||
-      args.grantHash.length !== 64
-    ) {
-      return false;
-    }
-    await ctx.db.patch(row._id, { consumed: true });
-    await ctx.db.insert("registrationGrants", {
-      email: row.email,
-      hash: args.grantHash,
-      purpose: "portal",
-      consumed: false,
-      expires: Date.now() + 86_400_000,
-    });
-    return true;
-  },
-});
 const portalSeat = v.object({
   id: v.id("registrationSeats"),
   name: v.string(),
@@ -81,7 +37,6 @@ const portalSeat = v.object({
 });
 export const registrations = query({
   args: {
-    grant: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -98,7 +53,7 @@ export const registrations = query({
     ),
   }),
   handler: async (ctx, args) => {
-    const identity = await portalEmail(ctx, args.grant);
+    const identity = await portalEmail(ctx);
     const result = await ctx.db
       .query("registrationSeats")
       .withIndex("by_email", (q) => q.eq("email", identity))
@@ -151,7 +106,6 @@ export const registrations = query({
 });
 export const orders = query({
   args: {
-    grant: v.optional(v.string()),
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -178,7 +132,7 @@ export const orders = query({
     ),
   }),
   handler: async (ctx, args) => {
-    const identity = await portalEmail(ctx, args.grant);
+    const identity = await portalEmail(ctx);
     const result = await ctx.db
       .query("registrationOrders")
       .withIndex("by_purchaser", (q) => q.eq("purchaser", identity))
@@ -201,10 +155,10 @@ export const orders = query({
   },
 });
 export const materialUrl = query({
-  args: { grant: v.optional(v.string()), id: v.id("registrationEntitlements") },
+  args: { id: v.id("registrationEntitlements") },
   returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
-    const identity = await portalEmail(ctx, args.grant);
+    const identity = await portalEmail(ctx);
     const entitlement = await ctx.db.get(args.id);
     const seat = entitlement ? await ctx.db.get(entitlement.seatId) : null;
     if (!entitlement || seat?.email !== identity || !seat.settledAt) {
@@ -216,10 +170,10 @@ export const materialUrl = query({
   },
 });
 export const calendarFile = query({
-  args: { grant: v.optional(v.string()), seatId: v.id("registrationSeats") },
+  args: { seatId: v.id("registrationSeats") },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const identity = await portalEmail(ctx, args.grant);
+    const identity = await portalEmail(ctx);
     const seat = await ctx.db.get(args.seatId);
     if (!seat || seat.email !== identity || !seat.sessionId) {
       throw new ConvexError("Calendar access denied");
@@ -295,7 +249,6 @@ export const review = query({
 
 export const materials = query({
   args: {
-    grant: v.optional(v.string()),
     seatId: v.id("registrationSeats"),
     paginationOpts: paginationOptsValidator,
   },
@@ -309,7 +262,7 @@ export const materials = query({
     })
   ),
   handler: async (ctx, args) => {
-    const identity = await portalEmail(ctx, args.grant);
+    const identity = await portalEmail(ctx);
     const seat = await ctx.db.get(args.seatId);
     if (seat?.email !== identity || !seat.settledAt) {
       throw new ConvexError("Material access denied");

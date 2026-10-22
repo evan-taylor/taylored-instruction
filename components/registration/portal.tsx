@@ -1,4 +1,5 @@
 "use client";
+import { useConvexAuth } from "convex/react";
 import {
   CalendarDays,
   Download,
@@ -6,11 +7,11 @@ import {
   FileText,
   KeyRound,
   Link2,
-  Mail,
   MapPin,
   Package,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { SignInForm } from "@/components/auth/sign-in-form";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import {
@@ -21,7 +22,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
-import { Field, TextInput } from "@/components/ui/field";
 import {
   EmptyState,
   Notice,
@@ -472,58 +472,20 @@ function OrderCard({ row }: { row: PortalRow }) {
   );
 }
 
-function RequestAccessCard({
-  email,
-  busy,
-  onEmail,
-  onSubmit,
-}: {
-  email: string;
-  busy: boolean;
-  onEmail: (value: string) => void;
-  onSubmit: () => void;
-}) {
+function SignInCard() {
   return (
     <Card>
       <CardHeader>
         <div>
-          <CardTitle>Get a secure access link</CardTitle>
+          <CardTitle>Sign in to see your registrations</CardTitle>
           <CardDescription>
-            Enter the email you registered with and we’ll send a one-time link.
+            Enter the email you registered with and we’ll send a one-time code.
             No password needed.
           </CardDescription>
         </div>
       </CardHeader>
       <CardContent>
-        <form
-          className="space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            onSubmit();
-          }}
-        >
-          <Field label="Email address">
-            {(props) => (
-              <TextInput
-                {...props}
-                autoComplete="email"
-                onChange={(e) => onEmail(e.target.value)}
-                required
-                type="email"
-                value={email}
-              />
-            )}
-          </Field>
-          <Button
-            className="w-full sm:w-auto"
-            disabled={busy}
-            type="submit"
-            variant="secondary"
-          >
-            <Mail aria-hidden="true" className="h-4 w-4" />
-            {busy ? "Sending…" : "Email me a secure link"}
-          </Button>
-        </form>
+        <SignInForm submitLabel="Open my registrations" />
       </CardContent>
     </Card>
   );
@@ -579,8 +541,8 @@ function RowList({
   );
 }
 
-export function RegistrationPortal({ access = false }: { access?: boolean }) {
-  const [email, setEmail] = useState("");
+export function RegistrationPortal() {
+  const { isAuthenticated, isLoading: checkingAuth } = useConvexAuth();
   const [message, setMessage] = useState<Message>(null);
   const [rows, setRows] = useState<PortalRow[]>([]);
   const [view, setView] = useState<PortalView>("registrations");
@@ -588,60 +550,29 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
   const [more, setMore] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [busy, setBusy] = useState(false);
 
-  /** Resolves to the HTTP outcome, or "offline" when the server was never reached. */
-  async function post(body: object): Promise<boolean | "offline"> {
-    setBusy(true);
-    try {
-      const response = await fetch("/api/registration/portal", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await response.json();
-      setMessage({
-        text:
-          data.error ??
-          data.message ??
-          "You’re signed in. Your registrations are below.",
-        tone: response.ok ? "success" : "danger",
-      });
-      return response.ok;
-    } catch {
-      setMessage({
-        text: "We couldn’t reach the portal. Check your connection and try again.",
-        tone: "danger",
-      });
-      return "offline";
-    } finally {
-      setBusy(false);
-    }
-  }
-  /**
-   * Loads a portal view. `silent` is used for the first automatic attempt:
-   * a visitor without access just sees the request form, not an error.
-   */
-  async function load(
-    nextView: PortalView,
-    nextCursor: string | null = null,
-    silent = false
-  ) {
+  // Bumped whenever the signed-in account changes, so a load that started
+  // under the previous account can never write its rows into this one.
+  const session = useRef(0);
+
+  async function load(nextView: PortalView, nextCursor: string | null = null) {
+    const started = session.current;
     setLoading(true);
     try {
       const response = await fetch(
         `/api/registration/portal?view=${nextView}${nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ""}`
       );
       const data = await response.json();
+      if (started !== session.current) {
+        return;
+      }
       if (!response.ok) {
-        if (!silent) {
-          setMessage({
-            text:
-              data.error ??
-              "We couldn’t load your registrations. Request a new secure link.",
-            tone: "danger",
-          });
-        }
+        setMessage({
+          text:
+            data.error ??
+            "We couldn’t load your registrations. Sign in again and retry.",
+          tone: "danger",
+        });
         return;
       }
       setRows(nextCursor ? [...rows, ...data.page] : data.page);
@@ -650,50 +581,38 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
       setMore(!data.isDone);
       setLoaded(true);
     } catch {
-      if (!silent) {
+      if (started === session.current) {
         setMessage({
           text: "We couldn’t reach the portal. Check your connection and try again.",
           tone: "danger",
         });
       }
     } finally {
-      setLoading(false);
+      if (started === session.current) {
+        setLoading(false);
+      }
     }
   }
-  // Signed-in users and devices that already confirmed a link go straight in.
-  // An emailed link is exchanged as soon as the page runs: the token lives in
-  // the URL fragment, so it never reaches the server until this script sends
-  // it, and the button in the email is the only step the student takes.
-  const [probing, setProbing] = useState(true);
-  // StrictMode replays this effect in development; a token must only be
-  // exchanged once, so the ref survives the replay where state would not.
-  const started = useRef(false);
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
+  // The portal is whatever the signed-in email is registered for. Signing in
+  // loads it; signing out (in this or another tab) clears it and retires any
+  // request still in flight.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reacts to auth state only
   useEffect(() => {
-    if (started.current) {
-      return;
+    session.current += 1;
+    setMessage(null);
+    setRows([]);
+    setLoaded(false);
+    setCursor(null);
+    setMore(false);
+    setLoading(false);
+    if (isAuthenticated) {
+      load("registrations");
     }
-    started.current = true;
-    const emailed = access ? window.location.hash.slice(1) : "";
-    if (!emailed) {
-      load("registrations", null, true).finally(() => setProbing(false));
-      return;
-    }
-    // A fresh emailed link always takes precedence over any access this
-    // browser already has for another email.
-    post({ token: emailed }).then(async (outcome) => {
-      if (outcome === "offline") {
-        // Nothing was exchanged; keep the link in the URL so a reload retries.
-        setProbing(false);
-        return;
-      }
-      // The token is spent either way: drop it, then show the registrations
-      // or fall back to what this browser already had (the notice stays).
-      window.history.replaceState(null, "", "/registrations");
-      await load("registrations", null, outcome !== true);
-      setProbing(false);
-    });
-  }, []);
+  }, [isAuthenticated]);
+  const probing = checkingAuth || (isAuthenticated && !loaded && loading);
+  const ready = isAuthenticated && loaded;
+  const failed =
+    isAuthenticated && message !== null && !(loaded || loading || checkingAuth);
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -711,17 +630,24 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
             <Skeleton className="h-40" />
           </div>
         ) : null}
-        {probing || loaded ? null : (
+        {probing || isAuthenticated ? null : (
           <div className="mx-auto max-w-xl">
-            <RequestAccessCard
-              busy={busy}
-              email={email}
-              onEmail={setEmail}
-              onSubmit={() => post({ email })}
-            />
+            <SignInCard />
           </div>
         )}
-        {loaded ? (
+        {failed ? (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => load("registrations")}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Try again
+            </Button>
+          </div>
+        ) : null}
+        {ready ? (
           <>
             <Tabs
               label="Portal sections"

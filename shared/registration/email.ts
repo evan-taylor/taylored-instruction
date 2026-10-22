@@ -77,15 +77,6 @@ export function brandedEmail(content: EmailContent) {
 
 const INVITATION_PATH =
   /Register at (\/s\/[A-Za-z0-9_-]+#invitation=[A-Za-z0-9-]+)/u;
-/** How long the sign-in button in a transactional email keeps working. */
-export const MAGIC_LINK_MS = 7 * 24 * 60 * 60 * 1000;
-export const MAGIC_LINK_DAYS = MAGIC_LINK_MS / 86_400_000;
-
-/** True when the email's button is the portal itself rather than an invoice or invitation. */
-export function usesPortalAction(job: { body: string; link?: unknown }) {
-  return !(job.link || INVITATION_PATH.test(job.body));
-}
-
 type RenderableJob = {
   body: string;
   subject: string;
@@ -100,15 +91,11 @@ type RenderableJob = {
 };
 /**
  * Renders a queued job into a safe subject and HTML body with structural
- * details appended. `portalUrl` is a one-time sign-in link for the recipient;
- * without it the button lands on the portal's request form.
+ * details appended. The portal button lands on the sign-in form, which emails
+ * a one-time code to the registered address.
  */
-export function registrationEmail(
-  job: RenderableJob,
-  origin: string,
-  portalUrl?: string
-) {
-  const portal = portalUrl ?? `${origin}/registrations`;
+export function registrationEmail(job: RenderableJob, origin: string) {
+  const portal = `${origin}/registrations`;
   const variables = {
     attendeeName: job.name,
     courseTitle: job.title,
@@ -154,9 +141,7 @@ export function registrationEmail(
         job.calendar
           ? "Your calendar invitation is attached. Add it to your calendar to keep the class time and location handy."
           : "",
-        portalUrl
-          ? `The button signs you in without a password and works for ${MAGIC_LINK_DAYS} days. Keep this email private. After that, request a new link with the email address you registered with.`
-          : "Use the email address you registered with to access your registration.",
+        "To open your portal, sign in with the email address you registered with. We’ll send a one-time code; no password needed.",
       ]
         .filter(Boolean)
         .join(" "),

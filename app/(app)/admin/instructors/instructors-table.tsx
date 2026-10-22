@@ -23,7 +23,7 @@ export function InstructorsTable({
   if (profiles.length === 0) {
     return (
       <EmptyState
-        description="Accounts appear here after someone signs in for the first time."
+        description="Instructors appear here once they accept an invitation."
         title="No instructor accounts yet"
       />
     );
@@ -57,7 +57,7 @@ export function InstructorsTable({
                 {profile.isInstructor ? (
                   <Badge tone="success">Approved instructor</Badge>
                 ) : (
-                  <Badge tone="warning">Awaiting approval</Badge>
+                  <Badge tone="neutral">Not approved</Badge>
                 )}
               </TD>
               <TD className="whitespace-nowrap tabular-nums">
