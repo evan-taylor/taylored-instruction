@@ -15,7 +15,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
     return children;
   }
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-dvh flex-col">
       <Header />
       <InstructorNavigation />
       <main className="grow">{children}</main>

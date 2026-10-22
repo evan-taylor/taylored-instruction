@@ -211,7 +211,7 @@ function AccountRow({ email }: { email: string | null }) {
       </div>
       <button
         aria-label="Sign out"
-        className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="-my-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
         onClick={async () => {
           await signOut();
           router.push("/");
@@ -304,7 +304,7 @@ function MobileDrawer({
               <Sheet.Trigger
                 action="dismiss"
                 aria-label="Close navigation"
-                className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+                className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
               >
                 <X aria-hidden="true" className="h-5 w-5" />
               </Sheet.Trigger>
@@ -457,7 +457,7 @@ function Workspace({
           <button
             aria-expanded={drawer}
             aria-label="Open navigation"
-            className="-mr-2 inline-flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
+            className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/40"
             onClick={() => setDrawer(true)}
             type="button"
           >

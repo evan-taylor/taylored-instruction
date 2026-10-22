@@ -1464,7 +1464,7 @@ function WizardFooter({
 }) {
   const index = STEPS.findIndex((s) => s.id === step);
   return (
-    <div className="flex items-center justify-between gap-3 border-slate-200 border-t pt-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-slate-200 border-t pt-4">
       <Button
         disabled={index === 0 || busy}
         onClick={onBack}

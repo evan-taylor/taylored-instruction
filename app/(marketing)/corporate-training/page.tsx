@@ -37,6 +37,34 @@ export const metadata = buildPageMetadata({
   },
 });
 
+const AGENCY_COMPARISON = [
+  {
+    feature: "Focus",
+    aha: "Healthcare providers and workplace teams",
+    redCross: "Workplace teams, general public, childcare",
+  },
+  {
+    feature: "Flexibility",
+    aha: "Blended and in-person options",
+    redCross: "Blended and in-person options",
+  },
+  {
+    feature: "Recognition",
+    aha: "Recognized globally, especially in healthcare",
+    redCross: "Widely recognized across industries in the U.S.",
+  },
+  {
+    feature: "Skill practice",
+    aha: "High emphasis on hands-on practice",
+    redCross: "Balance of lecture and hands-on training",
+  },
+  {
+    feature: "Renewal",
+    aha: "Every 2 years with hands-on session",
+    redCross: "Every 2 years with hands-on session",
+  },
+] as const;
+
 export default async function CorporateTrainingPage() {
   cacheLife("days");
   const webPageSchema = getWebPageSchema({
@@ -338,7 +366,7 @@ export default async function CorporateTrainingPage() {
               </p>
             </div>
             <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="grid grid-cols-3 border-slate-200 border-b">
+              <div className="hidden border-slate-200 border-b sm:grid sm:grid-cols-3">
                 <div className="border-slate-200 border-r p-5 font-bold text-lg">
                   Feature
                 </div>
@@ -349,62 +377,28 @@ export default async function CorporateTrainingPage() {
                   American Red Cross
                 </div>
               </div>
-
-              <div className="grid grid-cols-3 border-slate-200 border-b">
-                <div className="border-slate-200 border-r bg-slate-50 p-5 font-medium">
-                  Focus
+              {AGENCY_COMPARISON.map((row) => (
+                <div
+                  className="grid border-slate-200 border-b last:border-b-0 sm:grid-cols-3"
+                  key={row.feature}
+                >
+                  <div className="bg-slate-50 px-5 py-3 font-semibold sm:border-slate-200 sm:border-r sm:py-5 sm:font-medium">
+                    {row.feature}
+                  </div>
+                  <div className="px-5 pt-3 pb-1 sm:border-slate-200 sm:border-r sm:py-5">
+                    <span className="mb-0.5 block font-semibold text-primary text-xs uppercase tracking-wide sm:hidden">
+                      American Heart Association
+                    </span>
+                    {row.aha}
+                  </div>
+                  <div className="px-5 pt-2 pb-4 sm:py-5">
+                    <span className="mb-0.5 block font-semibold text-red-600 text-xs uppercase tracking-wide sm:hidden">
+                      American Red Cross
+                    </span>
+                    {row.redCross}
+                  </div>
                 </div>
-                <div className="border-slate-200 border-r p-5">
-                  Healthcare providers and workplace teams
-                </div>
-                <div className="p-5">
-                  Workplace teams, general public, childcare
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 border-slate-200 border-b">
-                <div className="border-slate-200 border-r bg-slate-50 p-5 font-medium">
-                  Flexibility
-                </div>
-                <div className="border-slate-200 border-r p-5">
-                  Blended and in-person options
-                </div>
-                <div className="p-5">Blended and in-person options</div>
-              </div>
-
-              <div className="grid grid-cols-3 border-slate-200 border-b">
-                <div className="border-slate-200 border-r bg-slate-50 p-5 font-medium">
-                  Recognition
-                </div>
-                <div className="border-slate-200 border-r p-5">
-                  Recognized globally, especially in healthcare
-                </div>
-                <div className="p-5">
-                  Widely recognized across industries in the U.S.
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 border-slate-200 border-b">
-                <div className="border-slate-200 border-r bg-slate-50 p-5 font-medium">
-                  Skill practice
-                </div>
-                <div className="border-slate-200 border-r p-5">
-                  High emphasis on hands-on practice
-                </div>
-                <div className="p-5">
-                  Balance of lecture and hands-on training
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3">
-                <div className="border-slate-200 border-r bg-slate-50 p-5 font-medium">
-                  Renewal
-                </div>
-                <div className="border-slate-200 border-r p-5">
-                  Every 2 years with hands-on session
-                </div>
-                <div className="p-5">Every 2 years with hands-on session</div>
-              </div>
+              ))}
             </div>
           </div>
 

@@ -11,10 +11,10 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+    <Suspense fallback={<div className="min-h-dvh bg-background" />}>
       <ConvexAuthNextjsServerProvider>
         <ConvexClientProvider>
-          <div className="flex min-h-screen flex-col">
+          <div className="flex min-h-dvh flex-col">
             <MarketingHeader />
             <main className="prose-site grow">{children}</main>
             <Footer />

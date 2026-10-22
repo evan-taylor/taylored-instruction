@@ -1,6 +1,6 @@
 import "./globals.css";
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Readex_Pro } from "next/font/google";
 import {
   PrivateAwareAnalytics,
@@ -21,6 +21,19 @@ const readexPro = Readex_Pro({
   display: "swap",
   variable: "--font-readex",
 });
+
+/**
+ * Edge-to-edge on notched phones (safe areas are padded back in CSS), the
+ * keyboard shrinks the layout instead of covering bottom-pinned controls,
+ * and the status bar matches the white header.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: "#ffffff",
+};
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tayloredinstruction.com"),

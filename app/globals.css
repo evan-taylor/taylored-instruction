@@ -9,6 +9,37 @@
     text-size-adjust: 100%;
   }
 
+  /* Controls fire click on the first tap instead of waiting for a double-tap. */
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    touch-action: manipulation;
+  }
+
+  /* A long press on a control must not select its label or open the callout. */
+  button,
+  summary,
+  [role="button"],
+  [role="tab"] {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* iOS zooms into any field under 16px and never zooms back out. */
+  @media (pointer: coarse) {
+    input,
+    select,
+    textarea {
+      font-size: max(16px, 1em);
+    }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     html {
       scroll-behavior: smooth;
