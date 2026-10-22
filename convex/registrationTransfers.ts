@@ -46,7 +46,15 @@ async function retainedCredit(
       continue;
     }
     if (refund.state === "pending") {
-      throw new ConvexError(PENDING_REFUND);
+      // A pending refund for another attendee on the same group order does
+      // not change this attendee's credit.
+      if (
+        !refund.allocations ||
+        refund.allocations.some((allocation) => allocation.email === seat.email)
+      ) {
+        throw new ConvexError(PENDING_REFUND);
+      }
+      continue;
     }
     if (!refund.allocations) {
       throw new ConvexError(
@@ -224,7 +232,7 @@ export const transfer = mutation({
     const oldEntitlements = await ctx.db
       .query("registrationEntitlements")
       .withIndex("by_seatId", (q) => q.eq("seatId", source._id))
-      .take(BATCH);
+      .collect();
     await Promise.all(
       oldEntitlements
         .filter(
@@ -236,12 +244,8 @@ export const transfer = mutation({
           ctx.db.insert("registrationEntitlements", { ...entitlement, seatId })
         )
     );
-    const pendingEntitlements = await ctx.db
-      .query("registrationEntitlements")
-      .withIndex("by_seatId", (q) => q.eq("seatId", source._id))
-      .take(BATCH);
     await Promise.all(
-      pendingEntitlements
+      oldEntitlements
         .filter((e) => e.state === "pending")
         .map((e) => ctx.db.patch(e._id, { state: "canceled" }))
     );

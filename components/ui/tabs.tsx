@@ -98,19 +98,23 @@ export function TabPanel({
   active,
   children,
   className,
+  keepMounted = false,
 }: {
   id: string;
   active: boolean;
   children: React.ReactNode;
   className?: string;
+  /** Keep the panel's state (e.g. a wizard draft) while another tab is shown. */
+  keepMounted?: boolean;
 }) {
-  if (!active) {
+  if (!(active || keepMounted)) {
     return null;
   }
   return (
     <div
       aria-labelledby={`${id}-tab`}
       className={cn("pt-5", className)}
+      hidden={!active}
       id={`${id}-panel`}
       role="tabpanel"
     >

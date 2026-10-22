@@ -640,7 +640,7 @@ export function GroupsAdmin() {
       <TabPanel active={tab === "invoices"} id="invoices">
         <InvoicesPanel focusOrder={focusOrder ?? undefined} />
       </TabPanel>
-      <TabPanel active={tab === "enroll"} id="enroll">
+      <TabPanel active={tab === "enroll"} id="enroll" keepMounted>
         <GroupEnrollment
           key={prefill?.requestId ?? "fresh"}
           prefill={prefill}

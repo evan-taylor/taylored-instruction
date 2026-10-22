@@ -268,11 +268,13 @@ async function openInvoice(
   ctx: MutationCtx,
   orderId: Doc<"registrationOrders">["_id"]
 ) {
-  const rows = await ctx.db
+  return await ctx.db
     .query("registrationInvoices")
     .withIndex("by_orderId", (q) => q.eq("orderId", orderId))
-    .take(BATCH);
-  return rows.find((row) => row.status === "draft" || row.status === "open");
+    .filter((q) =>
+      q.or(q.eq(q.field("status"), "draft"), q.eq(q.field("status"), "open"))
+    )
+    .first();
 }
 export const createInvoice = mutation({
   args: {

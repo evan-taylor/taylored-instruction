@@ -299,11 +299,14 @@ async function validatePayment(
       "Card checkout is closed for this offering. Use an invoice or record offline payment; the enrollment is unchanged."
     );
   }
-  const invoices = await ctx.db
+  const liveInvoice = await ctx.db
     .query("registrationInvoices")
     .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-    .take(BATCH);
-  if (invoices.some((i) => i.status === "open" || i.status === "draft")) {
+    .filter((q) =>
+      q.or(q.eq(q.field("status"), "draft"), q.eq(q.field("status"), "open"))
+    )
+    .first();
+  if (liveInvoice) {
     throw new ConvexError(
       "Void the open invoice before creating a card payment link"
     );

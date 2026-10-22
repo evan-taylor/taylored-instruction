@@ -1758,9 +1758,11 @@ describe("PR review regressions", () => {
     expect((await f.t.run((ctx) => ctx.db.get(order.orderId)))?.status).toBe(
       "settled"
     );
+    // Revenue is tax-inclusive for every settled order, so the original
+    // offline sale keeps its tax after the duplicate card payment is returned.
     expect(
       (await f.adminClient.query(api.registrationDashboard.summary, {})).revenue
-    ).toBe(10_000);
+    ).toBe(10_850);
     const attendee = (
       await f.adminClient.query(api.registrationOperations.orderSeats, {
         orderId: order.orderId,

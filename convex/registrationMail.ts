@@ -203,6 +203,30 @@ async function paymentStillOpen(
   );
 }
 
+/**
+ * A reschedule can enqueue a replacement while the prior job for the same
+ * seat and step is still sending; whichever runs first wins.
+ */
+async function stepAlreadyHandled(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">
+) {
+  if (!(job.seatId && job.stepId)) {
+    return false;
+  }
+  const stepJobs = await ctx.db
+    .query("registrationJobs")
+    .withIndex("by_seatId_and_stepId_and_state", (q) =>
+      q.eq("seatId", job.seatId).eq("stepId", job.stepId)
+    )
+    .take(BATCH);
+  return stepJobs.some(
+    (other) =>
+      other._id !== job._id &&
+      (other.state === "sent" ||
+        (other.state === "sending" && other.due > Date.now() - 300_000))
+  );
+}
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
   returns: v.union(
@@ -252,6 +276,10 @@ export const claim = internalMutation({
           (job.stepId && job.scheduleRevision !== session.revision))) ||
       (entitlement && job.kind !== "email" && entitlement.state !== "pending")
     ) {
+      await ctx.db.patch(job._id, { state: "canceled" });
+      return null;
+    }
+    if (await stepAlreadyHandled(ctx, job)) {
       await ctx.db.patch(job._id, { state: "canceled" });
       return null;
     }

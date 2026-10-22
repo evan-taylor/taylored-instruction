@@ -110,13 +110,14 @@ export const summary = query({
           refunds,
           materials,
         ].some((rows) => rows.length === BATCH),
+      // A returned duplicate card payment keeps the original offline sale,
+      // including its tax; only its own refund is excluded.
       revenue: settled.reduce(
         (sum, o) =>
           sum +
           o.total +
-          (o.source === "invoice-extra-payment"
-            ? 0
-            : (o.tax ?? 0) - o.refunded),
+          (o.tax ?? 0) -
+          (o.source === "invoice-extra-payment" ? 0 : o.refunded),
         0
       ),
       seatsSold: settled.reduce((sum, o) => sum + o.seats.length, 0),
