@@ -419,8 +419,7 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Renewal timelines are commonly every two years, but employers may set stricter internal deadlines.",
       "Skills confidence matters as much as the card—hands-on practice reduces hesitation during real incidents.",
     ],
-    ctaHref:
-      "https://www.hovn.app/tayloredinstruction/courses/aha-basic-life-support/o/cm408wcp10017ggkz39i7ptf9",
+    ctaHref: "/classes",
     faqTemplates: [
       {
         question: "How often do I need to renew my BLS card?",
@@ -461,8 +460,7 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Class design should match the likely emergencies at your workplace or program environment.",
       "Regular skills refreshers can improve confidence between certification cycles.",
     ],
-    ctaHref:
-      "https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/",
+    ctaHref: "/classes",
     faqTemplates: [
       {
         question: "What is covered in First Aid/CPR/AED training?",
@@ -503,8 +501,7 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Course selection should align with whether first aid, CPR/AED, or both are required.",
       "Practical scenarios improve retention and reduce response delay under stress.",
     ],
-    ctaHref:
-      "https://www.hovn.app/tayloredinstruction/courses/aha-heartsaver-first-aid-cpr-aed/o/cm408v8do0012ggkzda8f0otz",
+    ctaHref: "/classes",
     faqTemplates: [
       {
         question: "What is the difference between Heartsaver and BLS?",
@@ -629,8 +626,7 @@ const SERVICE_PROFILES: ServiceProfile[] = [
       "Facilities should align staffing plans with renewal windows to avoid coverage gaps.",
       "Team drills and leadership coaching improve deck communication and response consistency.",
     ],
-    ctaHref:
-      "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding/o/cm40925g1001oggkzd9r40cdz",
+    ctaHref: "/classes",
     faqTemplates: [
       {
         question: "How long does lifeguard certification take?",

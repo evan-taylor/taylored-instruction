@@ -5,6 +5,7 @@ import {
 import { ConvexError, v } from "convex/values";
 import { filter } from "convex-helpers/server/filter";
 import { doc } from "convex-helpers/validators";
+import { matchesCourse } from "../shared/registration/catalog";
 import type { Quote, Settings } from "../shared/registration/domain";
 import {
   ADMIN_MAX_SEATS,
@@ -74,6 +75,8 @@ const publicOffering = v.object({
   firstStart: v.optional(v.number()),
   available: v.optional(v.number()),
   state: v.string(),
+  /** Set for sessions that are published but not listed publicly, so they are not indexed. */
+  unlisted: v.optional(v.boolean()),
   config: publicConfig,
   meetings: v.array(
     v.object({
@@ -214,6 +217,7 @@ export const detail = query({
         ? Math.max(0, session.capacity - session.reserved)
         : undefined,
       state: session?.state === "canceled" ? "canceled" : enrollmentState,
+      unlisted: session ? session.visibility !== "public" : undefined,
       config: await describeMaterials(
         ctx,
         publicSettings(effective(course.settings, session?.overrides ?? {}))
@@ -940,6 +944,146 @@ export const publicCourseSessions = query({
         timeZone: s.timeZone,
         available: Math.max(0, s.capacity - s.reserved),
       }));
+  },
+});
+/** Base price for one seat: tuition plus every non-optional material. */
+function seatPrice(config: Settings) {
+  return (
+    config.tuition +
+    config.materials
+      .filter((m) => m.policy !== "optional")
+      .reduce((sum, m) => sum + m.cents, 0)
+  );
+}
+const upcomingSession = v.object({
+  code: v.string(),
+  title: v.string(),
+  courseSlug: v.string(),
+  firstStart: v.number(),
+  lastEnd: v.number(),
+  timeZone: v.string(),
+  available: v.number(),
+  price: v.number(),
+  meetings: v.array(
+    v.object({ start: v.number(), end: v.number(), location: v.string() })
+  ),
+});
+const catalogCourse = v.object({
+  slug: v.string(),
+  title: v.string(),
+  description: v.string(),
+  delivery: v.string(),
+  price: v.number(),
+});
+/** Open, public, upcoming sessions of one published course, soonest first. */
+async function openSessions(ctx: QueryCtx, course: Doc<"registrationCourses">) {
+  const now = Date.now();
+  const rows = await ctx.db
+    .query("registrationSessions")
+    .withIndex("by_courseId_and_firstStart", (q) =>
+      q.eq("courseId", course._id).gt("firstStart", now)
+    )
+    .take(BATCH);
+  return rows
+    .filter((s) => {
+      const config = effective(course.settings, s.overrides);
+      return (
+        s.publication === "published" &&
+        s.visibility === "public" &&
+        s.state === "open" &&
+        now < s.firstStart - config.cutoffMinutes * 60_000
+      );
+    })
+    .map((s) => ({
+      code: s.code,
+      title: s.title,
+      courseSlug: course.slug,
+      firstStart: s.firstStart,
+      lastEnd: s.lastEnd,
+      timeZone: s.timeZone,
+      available: Math.max(0, s.capacity - s.reserved),
+      price: seatPrice(effective(course.settings, s.overrides)),
+      meetings: s.meetings.map(({ start, end, location }) => ({
+        start,
+        end,
+        location,
+      })),
+    }));
+}
+async function openCourses(ctx: QueryCtx) {
+  const templates = await ctx.db
+    .query("registrationCourses")
+    .withIndex("by_publication", (q) => q.eq("publication", "published"))
+    .take(BATCH);
+  return templates.filter((c) => c.enrollmentOpen);
+}
+/**
+ * The courses a marketing page is about and their upcoming classes, so the
+ * page can embed live dates instead of linking out to a booking site.
+ */
+export const upcomingClasses = query({
+  args: {
+    slugs: v.array(v.string()),
+    keywords: v.array(v.string()),
+    exclude: v.optional(v.array(v.string())),
+  },
+  returns: v.object({
+    courses: v.array(catalogCourse),
+    sessions: v.array(upcomingSession),
+  }),
+  handler: async (ctx, args) => {
+    const matched = (await openCourses(ctx)).filter((course) =>
+      matchesCourse(course, args)
+    );
+    const upcoming = (
+      await Promise.all(
+        matched
+          .filter((c) => c.delivery === "scheduled")
+          .map((course) => openSessions(ctx, course))
+      )
+    )
+      .flat()
+      .sort((a, b) => a.firstStart - b.firstStart);
+    return {
+      courses: matched.map((c) => ({
+        slug: c.slug,
+        title: c.title,
+        description: c.description,
+        delivery: c.delivery,
+        price: seatPrice(c.settings),
+      })),
+      sessions: upcoming,
+    };
+  },
+});
+/** Every published course and upcoming public class, for the sitemap. */
+export const publicCatalog = query({
+  args: {},
+  returns: v.object({
+    courses: v.array(catalogCourse),
+    sessions: v.array(upcomingSession),
+  }),
+  handler: async (ctx) => {
+    const templates = await openCourses(ctx);
+    const upcoming = (
+      await Promise.all(
+        templates
+          .filter((c) => c.delivery === "scheduled")
+          .map((course) => openSessions(ctx, course))
+      )
+    )
+      .flat()
+      .sort((a, b) => a.firstStart - b.firstStart);
+    return {
+      courses: templates.map((c) => ({
+        slug: c.slug,
+        title: c.title,
+        description: c.description,
+        delivery: c.delivery,
+        price: seatPrice(c.settings),
+      })),
+      sessions: upcoming,
+    };
   },
 });
 export const selfPaced = query({

@@ -38,7 +38,7 @@ const ContactConfirmationEmail: React.FC<
         </Text>
         <br />
         <Link
-          href="https://www.hovn.app/tayloredinstruction"
+          href="https://tayloredinstruction.com/classes"
           rel="noopener noreferrer"
           style={link}
           target="_blank"

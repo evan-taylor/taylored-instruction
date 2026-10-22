@@ -1,20 +1,17 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function BlsPageContent() {
   return (
     <ClassPageLayout
+      course="bls"
       courseName="BLS Certification"
       image={{
         alt: "CPR training session",
         position: "20% 51%",
         src: "/CPR-Training-Stock-Photo-1-scaled.jpeg",
       }}
-      registrationUrl={registrationBookingUrl(
-        "https://www.hovn.app/tayloredinstruction/certifications/aha-bls-provider-2025/"
-      )}
       title="American Heart Association Basic Life Support"
     >
       <ClassPageSection title="Course overview">

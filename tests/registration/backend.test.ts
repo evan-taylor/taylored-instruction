@@ -977,6 +977,94 @@ describe("Payment and material policies", () => {
   });
 });
 
+describe("Public catalog for marketing pages and search engines", () => {
+  it("lists a course's open public sessions by slug or title keyword, honouring exclusions", async () => {
+    const f = await fixture(5);
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { title: "AHA BLS Provider" });
+      const instructor = await ctx.db.insert("registrationCourses", {
+        slug: "bls-instructor",
+        title: "AHA BLS Instructor",
+        description: "Teach BLS",
+        delivery: "scheduled",
+        publication: "published",
+        settings: config,
+        enrollmentOpen: true,
+        revision: 1,
+      });
+      const session = await ctx.db.get(f.session);
+      if (!session) {
+        throw new Error("Missing session");
+      }
+      const { _id, _creationTime, ...fields } = session;
+      await ctx.db.insert("registrationSessions", {
+        ...fields,
+        courseId: instructor,
+        code: "instructor-code",
+        title: "BLS Instructor class",
+      });
+      await ctx.db.insert("registrationSessions", {
+        ...fields,
+        code: "unlisted-code",
+        title: "Private class",
+        visibility: "private",
+      });
+    });
+    const bySlug = await f.t.query(api.registration.upcomingClasses, {
+      slugs: ["blended"],
+      keywords: [],
+    });
+    expect(bySlug.courses.map((c) => c.slug)).toEqual(["blended"]);
+    expect(bySlug.sessions.map((s) => s.code)).toEqual(["test-stable-code"]);
+    expect(bySlug.sessions[0]?.price).toBe(10_000);
+    const byKeyword = await f.t.query(api.registration.upcomingClasses, {
+      slugs: [],
+      keywords: ["bls"],
+      exclude: ["instructor"],
+    });
+    expect(byKeyword.courses.map((c) => c.slug)).toEqual(["blended"]);
+    const instructors = await f.t.query(api.registration.upcomingClasses, {
+      slugs: [],
+      keywords: ["bls instructor"],
+    });
+    expect(instructors.sessions.map((s) => s.code)).toEqual([
+      "instructor-code",
+    ]);
+    const catalog = await f.t.query(api.registration.publicCatalog, {});
+    expect(catalog.courses.map((c) => c.slug).sort()).toEqual([
+      "blended",
+      "bls-instructor",
+    ]);
+    expect(catalog.sessions.map((s) => s.code).sort()).toEqual([
+      "instructor-code",
+      "test-stable-code",
+    ]);
+    const unlisted = await f.t.query(api.registration.detail, {
+      code: "unlisted-code",
+    });
+    expect(unlisted?.unlisted).toBe(true);
+    const listed = await f.t.query(api.registration.detail, {
+      code: "test-stable-code",
+    });
+    expect(listed?.unlisted).toBe(false);
+  });
+  it("drops sessions that are full of cutoff, closed, or on an unpublished course", async () => {
+    const f = await fixture(1);
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, {
+        settings: { ...config, cutoffMinutes: 2000 },
+      });
+    });
+    const cutoff = await f.t.query(api.registration.publicCatalog, {});
+    expect(cutoff.sessions).toHaveLength(0);
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: config, enrollmentOpen: false });
+    });
+    const closed = await f.t.query(api.registration.publicCatalog, {});
+    expect(closed.courses).toHaveLength(0);
+  });
+});
+
 describe("Operational regression coverage", () => {
   it("cancellation clears pending material demand and restock cannot fulfill the canceled seat", async () => {
     const f = await fixture();

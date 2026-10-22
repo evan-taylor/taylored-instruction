@@ -1,6 +1,7 @@
 "use cache";
 
 import BasicLifeSupportPageContent from "@/components/BasicLifeSupportPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -43,7 +44,10 @@ const BasicLifeSupportPage = async () => {
     description: pageDescription,
     path: "/basic-life-support",
   });
-  const courseSchema = getRedCrossBLSCourseSchema();
+  const courseSchema = await withLiveInstances(
+    getRedCrossBLSCourseSchema(),
+    "basic-life-support"
+  );
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {

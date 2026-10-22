@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import HeartsaverPageContent from "@/components/HeartsaverPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -47,7 +48,10 @@ export default async function HeartsaverPage() {
   });
 
   // Generate structured data
-  const courseSchema = getHeartsaverCourseSchema();
+  const courseSchema = await withLiveInstances(
+    getHeartsaverCourseSchema(),
+    "heartsaver"
+  );
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {

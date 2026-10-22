@@ -1,6 +1,7 @@
 "use cache";
 
 import LifeguardingPageContent from "@/components/LifeguardingPageContent";
+import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -45,7 +46,10 @@ const LifeguardingPage = async () => {
   });
 
   // Generate structured data
-  const courseSchema = getLifeguardingCourseSchema();
+  const courseSchema = await withLiveInstances(
+    getLifeguardingCourseSchema(),
+    "lifeguarding"
+  );
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "https://tayloredinstruction.com" },
     {

@@ -45,8 +45,9 @@ Test mode refuses live keys/events and redirects registration mail to
 intended recipients. Both payment finalizers validate amount, tax, and replay.
 Hosted builds reject `REGISTRATION_ALLOW_TEST_FIXTURES=true`.
 
-Keep `NEXT_PUBLIC_NATIVE_REGISTRATION` off until reviewed offerings are published.
-The switch controls marketing links; direct registration routes still exist.
+Marketing pages link to the in-house flow: `/classes`, `/courses/[slug]`, and
+`/s/[code]`. Course pages embed live dates through `lib/course-catalog.ts`, which
+maps each page to its registration course templates by slug and title keywords.
 Never seed fixture users or enable the test password provider on shared deployments.
 
 ## Validation

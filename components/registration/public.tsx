@@ -14,6 +14,7 @@ import {
   Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   type ReactNode,
   useCallback,
@@ -486,7 +487,8 @@ function useDebounced<T>(value: T, delay: number) {
 
 export function ClassDiscovery() {
   const selfPaced = useQuery(api.registration.selfPaced);
-  const [search, setSearch] = useState("");
+  const params = useSearchParams();
+  const [search, setSearch] = useState(() => params.get("q") ?? "");
   const [date, setDate] = useState("");
   const [calendar, setCalendar] = useState(false);
   const needle = useDebounced(search.trim().toLowerCase(), 300);

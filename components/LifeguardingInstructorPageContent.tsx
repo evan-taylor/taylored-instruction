@@ -1,20 +1,17 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function LifeguardingInstructorPageContent() {
   return (
     <ClassPageLayout
       badgeLabel="Instructor training"
+      course="lifeguarding-instructor"
       courseName="Lifeguarding Instructor"
       image={{
         alt: "Lifeguarding instructor course training",
         src: "/lifeguard-training.jpeg",
       }}
-      registrationUrl={registrationBookingUrl(
-        "https://www.hovn.app/tayloredinstruction/courses/arc-lifeguarding-instructor-blended"
-      )}
       secondaryActions={[{ href: "/contact", label: "Host this course" }]}
       subtitle="Train to teach Red Cross Lifeguarding courses through blended online and in-person sessions led by an Instructor Trainer."
       title="American Red Cross Lifeguarding Instructor Course"

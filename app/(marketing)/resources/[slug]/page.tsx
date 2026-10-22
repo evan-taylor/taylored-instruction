@@ -22,6 +22,11 @@ const sanitizeCtaHref = (href: string): string => {
   if (href.startsWith("/") && !href.startsWith("//")) {
     return href;
   }
+  // Pages generated before registration moved in-house still store the
+  // old booking site; send those readers to our own class list.
+  if (href.startsWith("https://www.hovn.app/")) {
+    return "/classes";
+  }
 
   try {
     const parsedUrl = new URL(href);

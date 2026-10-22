@@ -1,6 +1,5 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { registrationBookingUrl } from "@/lib/registration-launch";
 
 type Service = {
   title: string;
@@ -14,7 +13,7 @@ const SERVICES: Service[] = [
     title: "CPR training",
     description:
       "American Heart Association and American Red Cross CPR for laypersons and professional rescuers. Need to train your staff? We come to you.",
-    link: registrationBookingUrl("https://www.hovn.app/tayloredinstruction/"),
+    link: "/classes",
     cta: "Find a class",
   },
   {
