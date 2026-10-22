@@ -27,21 +27,40 @@ if (!siteUrl || new URL(siteUrl).hostname === "undefined") {
   throw new Error("Configure the website origin");
 }
 
+// Production builds run with a project deploy key, which the Convex CLI rejects
+// alongside `--deployment <name>`; `--prod` selects the production deployment
+// it is scoped to. Preview builds still need the explicit preview deployment.
+const deploymentFlags =
+  target === "production" ? ["--prod"] : ["--deployment", deployment];
+
 function convexEnv(command: "get" | "set", name: string, value?: string) {
   try {
     return execFileSync(
       "bunx",
-      ["convex", "env", command, name, "--deployment", deployment ?? ""],
+      ["convex", "env", command, name, ...deploymentFlags],
       {
         input: value,
         encoding: "utf8",
         stdio: ["pipe", "pipe", "pipe"],
       }
     ).trim();
-  } catch {
-    // CLI errors can contain environment values; never forward their output.
-    // biome-ignore lint/style/useErrorCause: child-process errors may contain secrets.
-    throw new Error(`Unable to ${command} Convex environment variable ${name}`);
+  } catch (error) {
+    // Surface the CLI's message (it does not echo values) so failures are
+    // diagnosable, but never the value being written.
+    const stderr =
+      error instanceof Error && "stderr" in error
+        ? String((error as { stderr?: unknown }).stderr ?? "")
+        : "";
+    const hint = stderr
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line && !(value && line.includes(value)))
+      .slice(-3)
+      .join(" ");
+    // biome-ignore lint/style/useErrorCause: the cause may carry the secret value.
+    throw new Error(
+      `Unable to ${command} Convex environment variable ${name}${hint ? `: ${hint}` : ""}`
+    );
   }
 }
 
