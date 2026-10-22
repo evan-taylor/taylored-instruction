@@ -65,6 +65,7 @@ export const saveMaterial = mutation({
       v.literal("keycode"),
       v.literal("physical")
     ),
+    summary: v.optional(v.string()),
     instructions: v.optional(v.string()),
     url: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
@@ -88,6 +89,7 @@ export const saveMaterial = mutation({
     }
     const value = {
       ...args,
+      summary: args.summary?.trim() || undefined,
       url: args.kind === "link" ? safeUrl(args.url ?? "") : undefined,
       taxCode: taxCode(args.taxCode),
       version: (previous?.version ?? 0) + 1,

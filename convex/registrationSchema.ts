@@ -303,6 +303,8 @@ export const registrationTables = {
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
     link: v.optional(v.object({ label: v.string(), url: v.string() })),
+    /** One-time portal sign-in token, minted on first delivery so retries send the same email. */
+    portalToken: v.optional(v.string()),
   })
     .index("by_key", ["key"])
     .index("by_state_and_due", ["state", "due"])

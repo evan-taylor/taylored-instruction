@@ -225,6 +225,50 @@ describe("Registration transactions", () => {
       await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
     ).toBe(0);
   });
+  it("lets the purchaser abandon a hold early, but never a paid or foreign order", async () => {
+    const f = await fixture(1);
+    const args = attempt(f.course, f.session);
+    const held = await f.t.mutation(api.registration.reserve, args);
+    await f.t.mutation(api.registration.abandon, {
+      orderId: held.orderId,
+      requestKey: "wrong-key",
+    });
+    expect(
+      await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
+    ).toBe(1);
+    await f.t.mutation(api.registration.abandon, {
+      orderId: held.orderId,
+      requestKey: args.requestKey,
+    });
+    const session = await f.t.run((ctx) => ctx.db.get(f.session));
+    const order = await f.t.run((ctx) => ctx.db.get(held.orderId));
+    expect(session?.reserved).toBe(0);
+    expect(order?.status).toBe("expired");
+    // The seat is free again for the next purchaser.
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "next@example.test")
+    );
+    await f.t.run(async (ctx) => {
+      const latest = await ctx.db
+        .query("registrationOrders")
+        .order("desc")
+        .first();
+      if (latest) {
+        await ctx.db.patch(latest._id, { status: "settled" });
+      }
+    });
+    const latest = await f.t.run((ctx) =>
+      ctx.db.query("registrationOrders").order("desc").first()
+    );
+    await f.t.mutation(api.registration.abandon, {
+      orderId: latest?._id as Awaited<typeof held>["orderId"],
+      requestKey: latest?.requestKey ?? "",
+    });
+    expect(
+      await f.t.run(async (ctx) => (await ctx.db.get(f.session))?.reserved)
+    ).toBe(1);
+  });
   it("rejects normalized duplicate attendee emails, including simultaneous attempts", async () => {
     const f = await fixture();
     await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
@@ -1069,6 +1113,98 @@ describe("Operational regression coverage", () => {
       label: "Sales tax",
       value: "$8.90",
     });
+  });
+  it("mints one portal sign-in token per email job and reuses it on retry", async () => {
+    const f = await fixture();
+    const job = await f.t.run(
+      async (ctx) =>
+        await ctx.db.insert("registrationJobs", {
+          key: "test-magic",
+          kind: "email",
+          recipient: "Student@example.test",
+          subject: "Confirmed",
+          body: "See your portal",
+          due: Date.now(),
+          attempts: 0,
+          state: "pending",
+        })
+    );
+    const first = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(first?.portalToken).toHaveLength(72);
+    await f.t.mutation(internal.registrationMail.result, {
+      id: job,
+      success: false,
+      error: "Timed out",
+    });
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(job, { due: Date.now() - 1 });
+    });
+    const retry = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(retry?.portalToken).toBe(first?.portalToken);
+    const grants = await f.t.run((ctx) =>
+      ctx.db.query("registrationGrants").collect()
+    );
+    expect(grants).toHaveLength(1);
+    expect(grants[0]?.email).toBe("student@example.test");
+    expect(grants[0]?.expires).toBeGreaterThan(Date.now() + 6 * 86_400_000);
+    expect(
+      await f.t.mutation(api.registrationPortal.exchange, {
+        token: first?.portalToken ?? "",
+        grantHash: "a".repeat(64),
+      })
+    ).toBe(true);
+    // An automatic retry after the student already used the link (a send
+    // whose result was lost) must reuse it, or the student gets a duplicate.
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(job, { state: "pending", due: Date.now() - 1 });
+    });
+    const automatic = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(automatic?.portalToken).toBe(first?.portalToken);
+    // A staff retry after the link has lapsed must not resend a dead button.
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(job, {
+        state: "pending",
+        due: Date.now() - 1,
+        attempts: 0,
+      });
+      await ctx.db.patch(grants[0]._id, { expires: Date.now() - 1 });
+    });
+    const late = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(late?.portalToken).toHaveLength(72);
+    expect(late?.portalToken).not.toBe(first?.portalToken);
+    const challenges = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationGrants").collect()).filter(
+        (g) => g.purpose === "challenge"
+      )
+    );
+    expect(challenges).toHaveLength(2);
+    // Invoice and payment-request emails keep their own button.
+    const linked = await f.t.run(
+      async (ctx) =>
+        await ctx.db.insert("registrationJobs", {
+          key: "test-linked",
+          kind: "email",
+          recipient: "student@example.test",
+          subject: "Pay",
+          body: "Pay now",
+          due: Date.now(),
+          attempts: 0,
+          state: "pending",
+          link: { label: "Pay", url: "https://pay.example.test" },
+        })
+    );
+    const claimed = await f.t.mutation(internal.registrationMail.claim, {
+      id: linked,
+    });
+    expect(claimed?.portalToken).toBeUndefined();
   });
   it("email leases prevent parallel delivery and exhaust retries into attention", async () => {
     const f = await fixture();

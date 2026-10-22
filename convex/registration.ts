@@ -23,10 +23,11 @@ import {
   attendee,
   couponFields,
   courseFields,
+  materialAttachment,
   meeting,
   overrides,
   publication,
-  settings,
+  settingsFields,
   visibility,
 } from "../shared/registration/validators";
 import { internal } from "./_generated/api";
@@ -39,11 +40,29 @@ import {
   hash,
   offering,
   rate,
+  release,
   settle,
   staff,
 } from "./registrationHelpers";
 import schema from "./schema";
 
+/** A course material as shown to the public: the attachment plus the catalog blurb. */
+const publicMaterial = v.object({
+  ...materialAttachment.fields,
+  summary: v.optional(v.string()),
+  kind: v.optional(
+    v.union(
+      v.literal("pdf"),
+      v.literal("link"),
+      v.literal("keycode"),
+      v.literal("physical")
+    )
+  ),
+});
+const publicConfig = v.object({
+  ...settingsFields,
+  materials: v.array(publicMaterial),
+});
 const publicOffering = v.object({
   id: v.string(),
   courseId: v.id("registrationCourses"),
@@ -55,7 +74,7 @@ const publicOffering = v.object({
   firstStart: v.optional(v.number()),
   available: v.optional(v.number()),
   state: v.string(),
-  config: settings,
+  config: publicConfig,
   meetings: v.array(
     v.object({
       id: v.string(),
@@ -195,8 +214,9 @@ export const detail = query({
         ? Math.max(0, session.capacity - session.reserved)
         : undefined,
       state: session?.state === "canceled" ? "canceled" : enrollmentState,
-      config: publicSettings(
-        effective(course.settings, session?.overrides ?? {})
+      config: await describeMaterials(
+        ctx,
+        publicSettings(effective(course.settings, session?.overrides ?? {}))
       ),
       meetings: (session?.meetings ?? []).map(
         ({ id, start, end, location }) => ({ id, start, end, location })
@@ -647,6 +667,21 @@ export const reserve = mutation({
   },
 });
 
+/** Lets a purchaser give their held seats back instead of waiting out the hold. */
+export const abandon = mutation({
+  args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const order = await ctx.db.get(args.orderId);
+    if (order?.requestKey !== args.requestKey || order.status !== "hold") {
+      return null;
+    }
+    await release(ctx, order, "Checkout abandoned by purchaser");
+    await audit(ctx, "guest", "abandoned", order._id, order.purchaser);
+    return null;
+  },
+});
+
 async function settleReservation(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">,
@@ -851,6 +886,21 @@ function validateMeetings(meetings: Doc<"registrationSessions">["meetings"]) {
 
 function publicSettings(config: Settings): Settings {
   return { ...config, outcomes: [], emails: [] };
+}
+/** Attaches each material's catalog summary and kind so checkout can explain it. */
+async function describeMaterials(ctx: QueryCtx, config: Settings) {
+  const materials = await Promise.all(
+    config.materials.map(async (attachment) => {
+      const material = await ctx.db.get(attachment.materialId);
+      const summary = material?.summary?.trim();
+      return {
+        ...attachment,
+        kind: material?.kind,
+        ...(summary ? { summary } : {}),
+      };
+    })
+  );
+  return { ...config, materials };
 }
 export const publicCourseSessions = query({
   args: { courseId: v.id("registrationCourses") },

@@ -3,11 +3,14 @@ import {
   CalendarDays,
   Download,
   ExternalLink,
+  FileText,
   KeyRound,
+  Link2,
   Mail,
   MapPin,
+  Package,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import {
@@ -17,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CopyButton } from "@/components/ui/copy-button";
 import { Field, TextInput } from "@/components/ui/field";
 import {
   EmptyState,
@@ -146,6 +150,86 @@ function MaterialList({
   );
 }
 
+const KIND_ICON = {
+  pdf: FileText,
+  link: Link2,
+  keycode: KeyRound,
+  physical: Package,
+} as const;
+const KIND_LABEL = {
+  pdf: "PDF download",
+  link: "Online access",
+  keycode: "Access code",
+  physical: "Physical item",
+} as const;
+type MaterialKind = keyof typeof KIND_ICON;
+/** Letters and digits with at least one digit, so a shouted heading never qualifies. */
+const ACCESS_CODE = /^(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{7,}$/u;
+const MENTIONS_CODE = /\bcode\b/iu;
+const LINE_BREAKS = /\n+/u;
+
+function materialKind(kind?: string): MaterialKind | null {
+  return kind && kind in KIND_ICON ? (kind as MaterialKind) : null;
+}
+/**
+ * Splits instructions into steps. For a keycode material, a bare code that
+ * directly follows a line introducing it ("Copy your access code:") is lifted
+ * out so it can be copied; everything else is left as written.
+ */
+function parseInstructions(text: string, kind: MaterialKind | null) {
+  const lines = text
+    .split(LINE_BREAKS)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const code =
+    kind === "keycode"
+      ? lines.find(
+          (line, index) =>
+            index > 0 &&
+            ACCESS_CODE.test(line) &&
+            MENTIONS_CODE.test(lines.at(index - 1) ?? "")
+        )
+      : undefined;
+  return { code, steps: lines.filter((line) => line !== code) };
+}
+function openLabel(kind: MaterialKind | null) {
+  if (kind === "pdf") {
+    return "Download PDF";
+  }
+  return kind === "keycode" ? "Open and redeem" : "Open material";
+}
+
+/** What is happening with a material that has nothing to open yet. */
+function MaterialStatusNote({
+  physical,
+  state,
+}: {
+  physical: boolean;
+  state: string;
+}) {
+  if (state === "canceled") {
+    return null;
+  }
+  if (physical) {
+    return (
+      <p className="text-slate-500 text-sm">
+        {state === "fulfilled"
+          ? "Provided by your instructor."
+          : "Your instructor will arrange pickup."}
+      </p>
+    );
+  }
+  if (state === "pending") {
+    return (
+      <p className="text-slate-500 text-sm">
+        We’re preparing this for you. Contact us if it hasn’t arrived by class
+        time.
+      </p>
+    );
+  }
+  return null;
+}
+
 function MaterialRow({
   material,
   onUnavailable,
@@ -154,56 +238,83 @@ function MaterialRow({
   onUnavailable: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  const kind = materialKind(material.kind);
+  const Icon = kind ? KIND_ICON[kind] : FileText;
+  const { code, steps } = parseInstructions(material.instructions ?? "", kind);
+  const physical = kind === "physical";
+  const canceled = material.state === "canceled";
+  const ready = !physical && material.state === "ready";
   return (
-    <li className="flex flex-wrap items-center justify-between gap-2 py-2">
-      <span className="flex items-center gap-2 text-slate-800 text-sm">
-        {material.title}
-        <StatusBadge status={material.state} />
+    <li className="flex items-start gap-3 py-4 first:pt-1 last:pb-1">
+      <span className="mt-0.5 shrink-0 rounded-md bg-slate-100 p-1.5 text-slate-600">
+        <Icon aria-hidden="true" className="h-4 w-4" />
       </span>
-      {material.instructions ? (
-        <p className="w-full whitespace-pre-wrap text-slate-700 text-sm">
-          {material.instructions}
-        </p>
-      ) : null}
-      {material.kind === "physical" && material.state !== "canceled" ? (
-        <span className="text-slate-500 text-xs">
-          {material.state === "fulfilled"
-            ? "Provided by your instructor."
-            : "Your instructor will arrange pickup."}
-        </span>
-      ) : null}
-      {material.kind !== "physical" && material.state === "ready" ? (
-        <Button
-          disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              const response = await fetch(
-                `/api/registration/portal?material=${encodeURIComponent(material.id)}`
-              );
-              const data = await response.json();
-              if (response.ok && data.url) {
-                window.location.assign(data.url);
-              } else {
-                onUnavailable();
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <p className="font-medium text-slate-900 text-sm">{material.title}</p>
+          <StatusBadge status={material.state} />
+          {kind ? (
+            <span className="basis-full text-slate-500 text-xs">
+              {KIND_LABEL[kind]}
+            </span>
+          ) : null}
+        </div>
+        {code && !canceled ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-slate-500 text-xs">Your access code</p>
+              <p className="select-all break-all font-mono font-semibold text-base text-slate-900 tracking-wide">
+                {code}
+              </p>
+            </div>
+            <CopyButton label="Copy code" value={code} />
+          </div>
+        ) : null}
+        {steps.length && !canceled ? (
+          <div>
+            <p className="font-medium text-slate-500 text-xs uppercase tracking-wider">
+              {physical ? "Pickup details" : "How to redeem"}
+            </p>
+            <ol className="mt-1.5 list-decimal space-y-1 pl-5 text-slate-600 text-sm">
+              {steps.map((step) => (
+                <li className="pl-1" key={step}>
+                  {step}
+                </li>
+              ))}
+            </ol>
+          </div>
+        ) : null}
+        {physical && steps.length ? null : (
+          <MaterialStatusNote physical={physical} state={material.state} />
+        )}
+        {ready ? (
+          <Button
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                const response = await fetch(
+                  `/api/registration/portal?material=${encodeURIComponent(material.id)}`
+                );
+                const data = await response.json();
+                if (response.ok && data.url) {
+                  window.location.assign(data.url);
+                } else {
+                  onUnavailable();
+                }
+              } finally {
+                setBusy(false);
               }
-            } finally {
-              setBusy(false);
-            }
-          }}
-          size="sm"
-          type="button"
-          variant="secondary"
-        >
-          <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
-          {busy ? "Opening…" : "Open"}
-        </Button>
-      ) : null}
-      {material.kind !== "physical" && material.state === "pending" ? (
-        <span className="text-slate-500 text-xs">
-          Please contact us for your missing material.
-        </span>
-      ) : null}
+            }}
+            size="sm"
+            type="button"
+            variant={code ? "secondary" : "primary"}
+          >
+            <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+            {busy ? "Opening…" : openLabel(kind)}
+          </Button>
+        ) : null}
+      </div>
     </li>
   );
 }
@@ -288,7 +399,7 @@ function RegistrationCard({
           </section>
         ) : null}
         <section>
-          <h3 className="mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
+          <h3 className="mb-2 font-semibold text-slate-500 text-xs uppercase tracking-wide">
             Materials
           </h3>
           <MaterialList onMessage={onMessage} row={row} />
@@ -356,38 +467,6 @@ function OrderCard({ row }: { row: PortalRow }) {
             ))}
           </ul>
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-function AccessCard({
-  onConfirm,
-  busy,
-}: {
-  onConfirm: () => void;
-  busy: boolean;
-}) {
-  return (
-    <Card className="border-primary/30">
-      <CardContent className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="rounded-lg bg-primary/10 p-2 text-primary">
-            <KeyRound aria-hidden="true" className="h-5 w-5" />
-          </span>
-          <div>
-            <p className="font-semibold text-slate-900">
-              Confirm access to your registrations
-            </p>
-            <p className="mt-0.5 text-slate-600 text-sm">
-              Opening this page does not consume your email link. Confirm below
-              to unlock your registrations on this device for 24 hours.
-            </p>
-          </div>
-        </div>
-        <Button disabled={busy} onClick={onConfirm} type="button">
-          {busy ? "Working…" : "Confirm secure access"}
-        </Button>
       </CardContent>
     </Card>
   );
@@ -525,7 +604,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
         text:
           data.error ??
           data.message ??
-          "Access confirmed. Open your registrations.",
+          "You’re signed in. Your registrations are below.",
         tone: response.ok ? "success" : "danger",
       });
       return response.ok;
@@ -582,23 +661,39 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
     }
   }
   // Signed-in users and devices that already confirmed a link go straight in.
-  // Reading with the cookie never consumes an emailed token, so the probe is
-  // safe on the access route too.
+  // An emailed link is exchanged as soon as the page runs: the token lives in
+  // the URL fragment, so it never reaches the server until this script sends
+  // it, and the button in the email is the only step the student takes.
   const [probing, setProbing] = useState(true);
-  const [token, setToken] = useState("");
+  // StrictMode replays this effect in development; a token must only be
+  // exchanged once, so the ref survives the replay where state would not.
+  const started = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
   useEffect(() => {
-    const emailed = access ? window.location.hash.slice(1) : "";
-    setToken(emailed);
-    if (emailed) {
-      // A fresh emailed link always gets its own confirmation, even when
-      // this browser already has access for another email.
-      setProbing(false);
+    if (started.current) {
       return;
     }
-    load("registrations", null, true).finally(() => setProbing(false));
+    started.current = true;
+    const emailed = access ? window.location.hash.slice(1) : "";
+    if (!emailed) {
+      load("registrations", null, true).finally(() => setProbing(false));
+      return;
+    }
+    // A fresh emailed link always takes precedence over any access this
+    // browser already has for another email.
+    post({ token: emailed }).then(async (outcome) => {
+      if (outcome === "offline") {
+        // Nothing was exchanged; keep the link in the URL so a reload retries.
+        setProbing(false);
+        return;
+      }
+      // The token is spent either way: drop it, then show the registrations
+      // or fall back to what this browser already had (the notice stays).
+      window.history.replaceState(null, "", "/registrations");
+      await load("registrations", null, outcome !== true);
+      setProbing(false);
+    });
   }, []);
-  const confirming = access && token !== "";
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -607,30 +702,6 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
           eyebrow="Secure portal"
           title="Your registrations"
         />
-        {confirming && !probing ? (
-          <AccessCard
-            busy={busy}
-            onConfirm={async () => {
-              const outcome = await post({ token });
-              if (outcome === "offline") {
-                // Nothing was exchanged; keep the link so it can be retried.
-                return;
-              }
-              // The emailed token is spent either way: drop it from the URL,
-              // then fall back to any access this browser already has or the
-              // request form (the failure notice stays visible).
-              setToken("");
-              window.history.replaceState(null, "", "/registrations");
-              if (outcome) {
-                await load("registrations");
-                return;
-              }
-              setProbing(true);
-              await load("registrations", null, true);
-              setProbing(false);
-            }}
-          />
-        ) : null}
         {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
         {probing ? (
           <div aria-busy="true" className="space-y-4" role="status">
@@ -640,7 +711,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
             <Skeleton className="h-40" />
           </div>
         ) : null}
-        {probing || loaded || confirming ? null : (
+        {probing || loaded ? null : (
           <div className="mx-auto max-w-xl">
             <RequestAccessCard
               busy={busy}
