@@ -27,6 +27,7 @@ import type * as registrationGroups from "../registrationGroups.js";
 import type * as registrationHelpers from "../registrationHelpers.js";
 import type * as registrationInvoiceActions from "../registrationInvoiceActions.js";
 import type * as registrationMail from "../registrationMail.js";
+import type * as registrationMigration from "../registrationMigration.js";
 import type * as registrationOperations from "../registrationOperations.js";
 import type * as registrationPayments from "../registrationPayments.js";
 import type * as registrationPortal from "../registrationPortal.js";
@@ -63,6 +64,7 @@ declare const fullApi: ApiFromModules<{
   registrationHelpers: typeof registrationHelpers;
   registrationInvoiceActions: typeof registrationInvoiceActions;
   registrationMail: typeof registrationMail;
+  registrationMigration: typeof registrationMigration;
   registrationOperations: typeof registrationOperations;
   registrationPayments: typeof registrationPayments;
   registrationPortal: typeof registrationPortal;

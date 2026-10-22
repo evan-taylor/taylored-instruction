@@ -47,3 +47,6 @@ playwright-report/
 # Safe onboarding template
 !.env.example
 .vercel/
+
+# Private source exports and redemption inventory
+/migration-backups/

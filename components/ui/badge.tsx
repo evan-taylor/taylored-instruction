@@ -58,6 +58,7 @@ const STATUS_TONES: Record<string, BadgeTone> = {
   transferred: "neutral",
   pending: "warning",
   ready: "success",
+  fulfilled: "success",
   // Invoices and group requests
   paid: "success",
   void: "neutral",

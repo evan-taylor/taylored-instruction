@@ -552,6 +552,8 @@ function MaterialRow({
 }: {
   material: Doc<"registrationEntitlements">;
 }) {
+  const fulfill = useMutation(api.registrationOperations.fulfillPhysical);
+  const [fulfilling, setFulfilling] = useState(false);
   const replaceCode = useMutation(api.registrationOperations.replaceCode);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState("");
@@ -567,6 +569,25 @@ function MaterialRow({
           <span className="text-slate-500 text-xs">v{material.version}</span>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {material.kind === "physical" && material.state === "pending" ? (
+            <Button
+              disabled={fulfilling}
+              onClick={async () => {
+                setFulfilling(true);
+                try {
+                  await fulfill({ entitlementId: material._id });
+                } catch (error) {
+                  setMessage(errorText(error));
+                } finally {
+                  setFulfilling(false);
+                }
+              }}
+              size="xs"
+              type="button"
+            >
+              Mark fulfilled
+            </Button>
+          ) : null}
           {material.url ? (
             <Button
               href={material.url}

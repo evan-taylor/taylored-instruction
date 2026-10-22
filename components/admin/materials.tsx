@@ -34,7 +34,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TaxCodeSelect } from "@/components/ui/tax-code-select";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
-import { inventoryPreview } from "@/shared/registration/domain";
+import { formatMoney, inventoryPreview } from "@/shared/registration/domain";
 
 type Material = Doc<"registrationMaterials">;
 type Kind = Material["kind"];
@@ -47,11 +47,13 @@ type EditorState = { open: boolean; material?: Material };
 
 const LOW_STOCK = 5;
 const KIND_LABELS: Record<Kind, string> = {
+  physical: "Physical item",
   pdf: "PDF",
   link: "Shared link",
   keycode: "Keycode inventory",
 };
 const KIND_TONES = {
+  physical: "neutral",
   pdf: "info",
   link: "neutral",
   keycode: "primary",
@@ -105,6 +107,14 @@ function MaterialRow({
     <TR>
       <TD>
         <div className="font-medium text-slate-900">{material.title}</div>
+        {material.sku ? (
+          <div className="text-slate-500 text-xs">{material.sku}</div>
+        ) : null}
+        {material.defaultPrice === undefined ? null : (
+          <div className="text-slate-500 text-xs">
+            Catalog price {formatMoney(material.defaultPrice)}
+          </div>
+        )}
         <div className="text-slate-500 text-xs">
           {material.taxCode
             ? `Tax code ${material.taxCode}`
@@ -221,7 +231,7 @@ function MaterialsTable({
               New material
             </Button>
           }
-          description="Materials are attached to course templates and delivered automatically after payment."
+          description="Attach materials to course templates. Digital access is delivered after payment; staff records physical handoffs."
           title="No materials yet"
         />
       </div>
@@ -323,6 +333,9 @@ function MaterialEditor({
   const upload = useMutation(api.registrationOperations.uploadUrl);
   const [title, setTitle] = useState(material?.title ?? "");
   const [kind, setKind] = useState<Kind>(material?.kind ?? "link");
+  const [instructions, setInstructions] = useState(
+    material?.instructions ?? ""
+  );
   const [url, setUrl] = useState(material?.url ?? "");
   const [storageId, setStorageId] = useState(material?.storageId);
   const [fileName, setFileName] = useState("");
@@ -359,6 +372,7 @@ function MaterialEditor({
       await save({
         id: material?._id,
         title,
+        instructions,
         kind,
         url: kind === "link" ? url : undefined,
         storageId,
@@ -408,6 +422,11 @@ function MaterialEditor({
           submit();
         }}
       >
+        {material?.description ? (
+          <p className="whitespace-pre-wrap text-slate-700 text-sm">
+            {material.description}
+          </p>
+        ) : null}
         <Field label="Title" required>
           {(props) => (
             <TextInput
@@ -423,7 +442,7 @@ function MaterialEditor({
           hint={
             material
               ? "Kind is immutable once a material exists."
-              : "PDFs are stored and served from your portal; shared links are the same URL for everyone; keycode inventories hand each student a unique link."
+              : "PDFs are stored and served from your portal; shared links are the same URL for everyone; keycode inventories hand each student a unique link; physical items are fulfilled by staff."
           }
           label="Kind"
           required
@@ -435,6 +454,7 @@ function MaterialEditor({
               onChange={(e) => setKind(e.target.value as Kind)}
               value={kind}
             >
+              <option value="physical">Physical item</option>
               <option value="link">Shared link</option>
               <option value="pdf">PDF</option>
               <option value="keycode">Unique keycode inventory</option>
@@ -474,6 +494,18 @@ function MaterialEditor({
             fulfilled oldest-first as stock arrives.
           </Notice>
         ) : null}
+        <Field
+          hint="Redemption steps or pickup instructions, shown in the secure portal after payment."
+          label="Student instructions"
+        >
+          {(props) => (
+            <TextArea
+              {...props}
+              onChange={(e) => setInstructions(e.target.value)}
+              value={instructions}
+            />
+          )}
+        </Field>
         <TaxCodeSelect
           hint="Applied to this material on checkout and invoices. Digital access codes usually use an electronically supplied services code; printed manuals use tangible goods."
           onChange={setTaxCode}

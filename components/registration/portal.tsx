@@ -38,7 +38,13 @@ type PortalRow = {
   total?: number;
   refunded?: number;
   tax?: number;
-  materials?: { id: string; title: string; state: string }[];
+  materials?: {
+    id: string;
+    title: string;
+    state: string;
+    kind?: string;
+    instructions?: string;
+  }[];
   meetings?: {
     id: string;
     start: number;
@@ -154,7 +160,19 @@ function MaterialRow({
         {material.title}
         <StatusBadge status={material.state} />
       </span>
-      {material.state === "ready" ? (
+      {material.instructions ? (
+        <p className="w-full whitespace-pre-wrap text-slate-700 text-sm">
+          {material.instructions}
+        </p>
+      ) : null}
+      {material.kind === "physical" && material.state !== "canceled" ? (
+        <span className="text-slate-500 text-xs">
+          {material.state === "fulfilled"
+            ? "Provided by your instructor."
+            : "Your instructor will arrange pickup."}
+        </span>
+      ) : null}
+      {material.kind !== "physical" && material.state === "ready" ? (
         <Button
           disabled={busy}
           onClick={async () => {
@@ -180,11 +198,12 @@ function MaterialRow({
           <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
           {busy ? "Opening…" : "Open"}
         </Button>
-      ) : (
+      ) : null}
+      {material.kind !== "physical" && material.state === "pending" ? (
         <span className="text-slate-500 text-xs">
           Please contact us for your missing material.
         </span>
-      )}
+      ) : null}
     </li>
   );
 }

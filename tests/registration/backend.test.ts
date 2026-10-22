@@ -3233,3 +3233,72 @@ describe("Session files", () => {
     ).rejects.toThrow("name");
   });
 });
+
+it("keeps physical materials pending until authorized handoff and snapshots instructions", async () => {
+  const f = await fixture();
+  const materialId = await f.adminClient.mutation(
+    api.registrationOperations.saveMaterial,
+    {
+      title: "Pocket mask",
+      kind: "physical",
+      archived: false,
+      instructions: "Collect at class.",
+    }
+  );
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        tuition: 0,
+        materials: [
+          {
+            id: "mask",
+            materialId,
+            title: "Pocket mask",
+            policy: "included",
+            cents: 0,
+          },
+        ],
+      },
+    })
+  );
+  await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+  const entitlement = await f.t.run((ctx) =>
+    ctx.db.query("registrationEntitlements").first()
+  );
+  if (!entitlement) {
+    throw new Error("Missing physical entitlement");
+  }
+  expect(entitlement.state).toBe("pending");
+  expect(entitlement.url).toBeUndefined();
+  expect(entitlement.instructions).toBe("Collect at class.");
+  await expect(
+    f.outsiderClient.mutation(api.registrationOperations.fulfillPhysical, {
+      entitlementId: entitlement._id,
+    })
+  ).rejects.toThrow();
+  await f.adminClient.mutation(api.registrationOperations.saveMaterial, {
+    id: materialId,
+    title: "Pocket mask",
+    kind: "physical",
+    archived: false,
+    instructions: "New instructions.",
+  });
+  await f.adminClient.mutation(api.registrationOperations.fulfillPhysical, {
+    entitlementId: entitlement._id,
+  });
+  await f.adminClient.mutation(api.registrationOperations.fulfillPhysical, {
+    entitlementId: entitlement._id,
+  });
+  const after = await f.t.run((ctx) => ctx.db.get(entitlement._id));
+  expect(after?.state).toBe("fulfilled");
+  expect(after?.instructions).toBe("Collect at class.");
+  await f.t.run((ctx) =>
+    ctx.db.patch(entitlement.seatId, { state: "canceled" })
+  );
+  await expect(
+    f.adminClient.mutation(api.registrationOperations.fulfillPhysical, {
+      entitlementId: entitlement._id,
+    })
+  ).rejects.toThrow("active, paid");
+});

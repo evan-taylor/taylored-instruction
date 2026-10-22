@@ -27,6 +27,7 @@ export const registrationTables = {
     at: v.number(),
   }).index("by_from", ["from"]),
   registrationCourses: defineTable(courseFields)
+    .index("by_hovnId", ["hovnId"])
     .index("by_slug", ["slug"])
     .index("by_publication", ["publication"])
     .index("by_publication_and_delivery", ["publication", "delivery"]),
@@ -62,17 +63,29 @@ export const registrationTables = {
     archived: v.boolean(),
   }),
   registrationMaterials: defineTable({
+    hovnId: v.optional(v.string()),
+    sourceData: v.optional(v.string()),
+    sku: v.optional(v.string()),
+    description: v.optional(v.string()),
+    summary: v.optional(v.string()),
+    defaultPrice: v.optional(v.number()),
     title: v.string(),
     availableCount: v.optional(v.number()),
     assignedCount: v.optional(v.number()),
     retiredCount: v.optional(v.number()),
-    kind: v.union(v.literal("pdf"), v.literal("link"), v.literal("keycode")),
+    kind: v.union(
+      v.literal("pdf"),
+      v.literal("link"),
+      v.literal("keycode"),
+      v.literal("physical")
+    ),
+    instructions: v.optional(v.string()),
     url: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
     version: v.number(),
     archived: v.boolean(),
     taxCode: v.optional(v.string()),
-  }),
+  }).index("by_hovnId", ["hovnId"]),
   registrationCodes: defineTable({
     materialId: v.id("registrationMaterials"),
     url: v.string(),
@@ -227,12 +240,19 @@ export const registrationTables = {
     attachmentId: v.string(),
     title: v.string(),
     version: v.number(),
-    kind: v.union(v.literal("pdf"), v.literal("link"), v.literal("keycode")),
+    kind: v.union(
+      v.literal("pdf"),
+      v.literal("link"),
+      v.literal("keycode"),
+      v.literal("physical")
+    ),
+    instructions: v.optional(v.string()),
     url: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
     state: v.union(
       v.literal("pending"),
       v.literal("ready"),
+      v.literal("fulfilled"),
       v.literal("canceled")
     ),
     paidAt: v.number(),
