@@ -73,6 +73,9 @@ describe("agent tokens", () => {
     });
     const session = await t.mutation(api.mcp.exchange, { token: issued.token });
     expect(session).not.toBeNull();
+    expect((session?.expiresAt ?? 0) - Date.now()).toBeLessThanOrEqual(
+      5 * 60 * 1000
+    );
     expect(session?.email).toBe(ADMIN_EMAILS[0]);
     expect(session?.userId).toBe(ids.admin);
     const { payload } = await jwtVerify(
@@ -120,6 +123,7 @@ describe("agent tokens", () => {
       await t.mutation(api.mcp.exchange, { token: issued.token })
     ).not.toBeNull();
     await admin.mutation(api.mcp.revokeToken, { id: issued.id });
+    // The route exchanges on every request, so the next call is refused.
     expect(
       await t.mutation(api.mcp.exchange, { token: issued.token })
     ).toBeNull();

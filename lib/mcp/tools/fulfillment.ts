@@ -13,6 +13,46 @@ import {
 } from "../context";
 import { id, materialKind, pagination, paginationOpts } from "../shapes";
 
+type MaterialDoc = Doc<"registrationMaterials">;
+type MaterialArgs = {
+  title?: string;
+  kind?: MaterialDoc["kind"];
+  summary?: string;
+  instructions?: string;
+  url?: string;
+  pdfBase64?: string;
+  archived?: boolean;
+  taxCode?: string;
+};
+
+/** Validates a create-or-update request before any file is uploaded. */
+function materialInput(previous: MaterialDoc | null, args: MaterialArgs) {
+  const value = fill(
+    {
+      title: "",
+      kind: undefined as MaterialDoc["kind"] | undefined,
+      summary: undefined as string | undefined,
+      instructions: undefined as string | undefined,
+      url: undefined as string | undefined,
+      archived: false,
+      taxCode: undefined as string | undefined,
+    },
+    previous,
+    args
+  );
+  const { kind } = value;
+  if (!(value.title && kind)) {
+    throw new Error("New materials need a title and kind");
+  }
+  if (previous && previous.kind !== kind) {
+    throw new Error("A material's kind cannot change; create a new one");
+  }
+  if (args.pdfBase64 && kind !== "pdf") {
+    throw new Error("pdfBase64 only applies to pdf materials");
+  }
+  return { ...value, kind };
+}
+
 async function uploadPdf(ctx: McpContext, base64: string) {
   const bytes = Buffer.from(base64, "base64");
   const uploadUrl = await ctx.convex.mutation(
@@ -83,29 +123,13 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
         if (args.id && !previous) {
           throw new Error("Material not found");
         }
+        const { title, kind, ...value } = materialInput(previous, args);
         const storageId = args.pdfBase64
           ? await uploadPdf(ctx, args.pdfBase64)
           : previous?.storageId;
-        const value = fill(
-          {
-            title: "",
-            kind: undefined as Doc<"registrationMaterials">["kind"] | undefined,
-            summary: undefined as string | undefined,
-            instructions: undefined as string | undefined,
-            url: undefined as string | undefined,
-            archived: false,
-            taxCode: undefined as string | undefined,
-          },
-          previous,
-          args
-        );
-        const { title, kind } = value;
-        if (!(title && kind)) {
-          throw new Error("New materials need a title and kind");
-        }
         const saved = await ctx.convex.mutation(
           api.registrationOperations.saveMaterial,
-          { id: previous?._id, ...value, kind, storageId }
+          { id: previous?._id, ...value, title, kind, storageId }
         );
         return ok(
           { id: saved, title, kind },

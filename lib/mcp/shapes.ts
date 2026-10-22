@@ -125,6 +125,27 @@ export const settings = z.object({
     .describe("Minutes before the first meeting when online enrollment closes"),
 });
 
+/** Partial settings for updates: omitted arrays keep the stored value. */
+export const settingsPatch = z.object({
+  tuition: z.number().int().min(0).optional(),
+  taxCode: z.string().optional(),
+  materials: z.array(materialAttachment).optional(),
+  questions: z.array(question).optional(),
+  outcomes: z.array(outcome).optional(),
+  emails: z.array(emailStep).optional(),
+  cutoffMinutes: z.number().int().min(0).optional(),
+});
+
+export const overrideField = z.enum([
+  "tuition",
+  "taxCode",
+  "materials",
+  "questions",
+  "outcomes",
+  "emails",
+  "cutoffMinutes",
+]);
+
 export const overrides = z
   .object({
     tuition: z.number().int().min(0).optional(),

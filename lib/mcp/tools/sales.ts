@@ -3,15 +3,15 @@ import { z } from "zod";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
-  DESTRUCTIVE,
+  DESTRUCTIVE_EXTERNAL,
   EXTERNAL,
+  errorMessage,
   fill,
   type McpContext,
   ok,
   READ,
   run,
   UPSERT,
-  WRITE,
 } from "../context";
 import {
   email,
@@ -156,11 +156,14 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
     {
       title: "Update group request",
       description:
-        "Sets the status and internal notes of a group request, optionally linking the organization and order created for it.",
+        "Updates a group request's status; notes, organization, and order links are kept unless given.",
       inputSchema: {
         id,
         status: groupStatus,
-        internalNotes: z.string().default(""),
+        internalNotes: z
+          .string()
+          .optional()
+          .describe("Replaces the stored notes; omitted notes are kept"),
         organizationId: id.optional(),
         orderId: id.optional(),
       },
@@ -168,14 +171,23 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
     },
     (args) =>
       run(async () => {
+        const previous = (await ctx.convex.query(api.mcp.record, {
+          table: "registrationGroupRequests",
+          id: args.id,
+        })) as Doc<"registrationGroupRequests"> | null;
+        if (!previous) {
+          throw new Error("Group request not found");
+        }
         await ctx.convex.mutation(api.registrationGroups.updateGroupRequest, {
-          id: args.id as Id<"registrationGroupRequests">,
+          id: previous._id,
           status: args.status,
-          internalNotes: args.internalNotes,
-          organizationId: args.organizationId as
+          internalNotes: args.internalNotes ?? previous.internalNotes,
+          organizationId: (args.organizationId ?? previous.organizationId) as
             | Id<"registrationOrganizations">
             | undefined,
-          orderId: args.orderId as Id<"registrationOrders"> | undefined,
+          orderId: (args.orderId ?? previous.orderId) as
+            | Id<"registrationOrders">
+            | undefined,
         });
         return ok({ id: args.id, status: args.status });
       })
@@ -342,11 +354,18 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
         if (!args.send) {
           return ok({ invoiceId, status: "draft" }, "Draft invoice created");
         }
-        const hostedUrl = await ctx.convex.action(
-          api.registrationInvoiceActions.issue,
-          { id: invoiceId }
-        );
-        return ok({ invoiceId, hostedUrl }, "Invoice issued through Stripe");
+        try {
+          const hostedUrl = await ctx.convex.action(
+            api.registrationInvoiceActions.issue,
+            { id: invoiceId }
+          );
+          return ok({ invoiceId, hostedUrl }, "Invoice issued through Stripe");
+        } catch (error) {
+          return ok(
+            { invoiceId, status: "draft", error: errorMessage(error) },
+            `Invoice ${invoiceId} was saved as a draft but Stripe could not issue it. Fix the problem and call issue_invoice.`
+          );
+        }
       })
   );
 
@@ -380,7 +399,7 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
       description:
         "Marks an invoice paid by check, ACH, or PO, settles the order, and voids the Stripe copy.",
       inputSchema: { invoiceId: id, reason: z.string().min(1) },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {
@@ -398,7 +417,7 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
       title: "Void invoice",
       description: "Voids an invoice locally and in Stripe.",
       inputSchema: { invoiceId: id, reason: z.string().min(1) },
-      annotations: DESTRUCTIVE,
+      annotations: DESTRUCTIVE_EXTERNAL,
     },
     (args) =>
       run(async () => {

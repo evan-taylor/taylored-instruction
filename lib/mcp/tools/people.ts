@@ -3,7 +3,14 @@ import { z } from "zod";
 import { sendInstructorApprovalEmail } from "@/app/actions/send-instructor-approval-email";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { DESTRUCTIVE, type McpContext, ok, READ, run, WRITE } from "../context";
+import {
+  DESTRUCTIVE,
+  EXTERNAL,
+  type McpContext,
+  ok,
+  READ,
+  run,
+} from "../context";
 import { id } from "../shapes";
 
 export function registerPeopleTools(server: McpServer, ctx: McpContext) {
@@ -59,7 +66,7 @@ export function registerPeopleTools(server: McpServer, ctx: McpContext) {
         approve: z.boolean(),
         sendEmail: z.boolean().default(true),
       },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {

@@ -37,9 +37,11 @@ same page; the agent loses access on its next request.
 
 - `convex/mcp.ts` stores a SHA-256 hash of each token in `mcpTokens` with the
   owning administrator. Only `ADMIN_EMAILS` accounts can mint tokens.
-- `app/api/mcp/route.ts` reads the bearer token and calls `mcp.exchange`, which
-  validates the hash, creates or extends an `authSessions` row, and signs a
-  one-hour Convex Auth JWT with the deployment's `JWT_PRIVATE_KEY`.
+- `app/api/mcp/route.ts` reads the bearer token and calls `mcp.exchange` on
+  every request, which validates the hash, creates or extends an `authSessions`
+  row, and signs a five-minute Convex Auth JWT with the deployment's
+  `JWT_PRIVATE_KEY`. Revoking a token therefore refuses the agent's next call;
+  a JWT already in flight expires within minutes.
 - The route then calls the public Convex functions with that JWT, so every
   existing `staff()` check, audit entry, test/live payment guard, and email
   redirect applies exactly as it does for the browser.
@@ -75,9 +77,15 @@ Prompts: `morning_review`, `enroll_group`, `close_out_session`,
 `handle_refund`, `schedule_sessions`.
 
 Update-style tools (`save_course`, `save_session`, `save_coupon`,
-`save_organization`, `save_material`) accept partial input when an id is given
-and merge it over the stored record; array fields replace the stored array.
-Dates accept epoch milliseconds or ISO 8601. Money is integer cents.
+`save_organization`, `save_material`, `update_group_request`) accept partial
+input when an id is given and merge it over the stored record; array fields
+replace the stored array only when supplied, and `save_session` takes
+`clearOverrides` to drop session overrides. Tools that send email or move money
+(`enroll`, `refund_order`, `transfer_seat`, `request_payment_email`,
+`email_attendees`, `resend_materials`, `send_test_email`) accept an
+`operationKey`; pass the same key when retrying so the backend recognizes the
+retry instead of repeating it. Dates accept epoch milliseconds or ISO 8601.
+Money is integer cents.
 
 ## Validation
 

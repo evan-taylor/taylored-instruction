@@ -233,4 +233,259 @@ describe("MCP server", () => {
     expect(plan.sessions).toHaveLength(4);
     expect(calls).toHaveLength(0);
   });
+
+  it("keeps stored settings arrays when only the price changes", async () => {
+    const stored = {
+      _id: "course1",
+      slug: "cpr",
+      title: "CPR",
+      description: "",
+      delivery: "scheduled",
+      publication: "published",
+      enrollmentOpen: true,
+      revision: 1,
+      settings: {
+        tuition: 9000,
+        materials: [
+          {
+            id: "m1",
+            materialId: "mat1",
+            title: "Book",
+            policy: "included",
+            cents: 500,
+          },
+        ],
+        questions: [
+          {
+            id: "q1",
+            title: "Employer",
+            type: "text",
+            required: false,
+            options: [],
+            version: 1,
+          },
+        ],
+        outcomes: [
+          {
+            id: "o1",
+            title: "Result",
+            type: "category",
+            options: ["Pass"],
+            required: true,
+            version: 1,
+          },
+        ],
+        emails: [
+          {
+            id: "e1",
+            anchor: "first",
+            offsetMinutes: -60,
+            subject: "Soon",
+            body: "See you",
+          },
+        ],
+        cutoffMinutes: 60,
+      },
+    };
+    const { client, calls } = await connect({
+      "mcp:record": stored,
+      "registration:saveCourse": "course1",
+    });
+    await client.callTool({
+      name: "save_course",
+      arguments: { id: "course1", settings: { tuition: 9500 } },
+    });
+    const save = calls.find((call) => call.name === "registration:saveCourse");
+    expect(save?.args).toMatchObject({
+      settings: { ...stored.settings, tuition: 9500 },
+    });
+  });
+
+  it("clears session overrides on request and merges the rest", async () => {
+    const stored = {
+      _id: "session1",
+      courseId: "course1",
+      title: "Class",
+      publication: "published",
+      visibility: "public",
+      capacity: 10,
+      timeZone: "America/Chicago",
+      offerMinutes: 1440,
+      instructors: [],
+      meetings: [
+        {
+          id: "mt1",
+          start: 1,
+          end: 2,
+          location: "Room",
+          instructions: "",
+          sequence: 3,
+        },
+      ],
+      overrides: { tuition: 5000, cutoffMinutes: 30, taxCode: "txcd_1" },
+    };
+    const { client, calls } = await connect({
+      "mcp:record": stored,
+      "registration:saveSession": "session1",
+    });
+    await client.callTool({
+      name: "save_session",
+      arguments: {
+        id: "session1",
+        overrides: { cutoffMinutes: 45 },
+        clearOverrides: ["tuition"],
+      },
+    });
+    const save = calls.find((call) => call.name === "registration:saveSession");
+    const args = save?.args as {
+      overrides: Record<string, unknown>;
+      meetings: { sequence: number }[];
+    };
+    expect(args.overrides.tuition).toBeUndefined();
+    expect(args.overrides).toMatchObject({
+      cutoffMinutes: 45,
+      taxCode: "txcd_1",
+    });
+    expect(args.meetings[0]?.sequence).toBe(3);
+  });
+
+  it("stitches multi-page roster exports into one CSV", async () => {
+    let page = 0;
+    const { client } = await connect({
+      "registrationOperations:exportRoster": () => {
+        page += 1;
+        return page === 1
+          ? {
+              csv: '"Name","Email","State"\r\n"Ann","a@x.test","active"',
+              continueCursor: "c1",
+              isDone: false,
+            }
+          : {
+              csv: '"Name","Email","State"\r\n"Bob","b@x.test","active"',
+              continueCursor: "",
+              isDone: true,
+            };
+      },
+    });
+    const result = await client.callTool({
+      name: "export_roster_csv",
+      arguments: { sessionId: "session1" },
+    });
+    const text = (result.content as { text: string }[])[0]?.text;
+    expect(text).toBe(
+      '"Name","Email","State"\r\n"Ann","a@x.test","active"\r\n"Bob","b@x.test","active"'
+    );
+  });
+
+  it("reuses caller-supplied operation keys so retries are idempotent", async () => {
+    const { client, calls } = await connect({
+      "registrationPayments:requestRefund": "refund1",
+      "registrationExternal:refund": null,
+    });
+    const key = "retry-me-retry-me-retry-me-1";
+    await client.callTool({
+      name: "refund_order",
+      arguments: {
+        orderId: "order1",
+        cents: 2000,
+        reason: "Dup",
+        operationKey: key,
+      },
+    });
+    await client.callTool({
+      name: "refund_order",
+      arguments: {
+        orderId: "order1",
+        cents: 2000,
+        reason: "Dup",
+        operationKey: key,
+      },
+    });
+    const keys = calls
+      .filter((call) => call.name === "registrationPayments:requestRefund")
+      .map((call) => (call.args as { key: string }).key);
+    expect(keys).toEqual([key, key]);
+  });
+
+  it("preserves group request notes when only the status changes", async () => {
+    const { client, calls } = await connect({
+      "mcp:record": {
+        _id: "req1",
+        status: "new",
+        internalNotes: "Called twice",
+        organizationId: "org1",
+      },
+      "registrationGroups:updateGroupRequest": null,
+    });
+    await client.callTool({
+      name: "update_group_request",
+      arguments: { id: "req1", status: "contacted" },
+    });
+    const update = calls.find(
+      (call) => call.name === "registrationGroups:updateGroupRequest"
+    );
+    expect(update?.args).toMatchObject({
+      status: "contacted",
+      internalNotes: "Called twice",
+      organizationId: "org1",
+    });
+  });
+
+  it("emails the payment request when a transfer collects a difference", async () => {
+    const { client, calls } = await connect({
+      "registrationTransfers:transfer": {
+        orderId: "order2",
+        seatId: "seat2",
+        adjustment: 2500,
+      },
+      "registrationPayments:requestPayment": "https://example.test/pay",
+    });
+    const result = await client.callTool({
+      name: "transfer_seat",
+      arguments: {
+        seatId: "seat1",
+        sessionId: "session2",
+        choice: "collect",
+        reason: "Moved",
+      },
+    });
+    expect(result.structuredContent).toMatchObject({
+      paymentUrl: "https://example.test/pay",
+    });
+    expect(calls.map((call) => call.name)).toEqual([
+      "registrationTransfers:transfer",
+      "registrationPayments:requestPayment",
+    ]);
+  });
+
+  it("returns the draft invoice id when Stripe issuance fails", async () => {
+    const { client } = await connect({
+      "registrationGroups:createInvoice": "inv1",
+      "registrationInvoiceActions:issue": new ConvexError("Stripe unavailable"),
+    });
+    const result = await client.callTool({
+      name: "create_invoice",
+      arguments: {
+        orderId: "order1",
+        billToName: "Acme",
+        billToEmail: "ap@acme.test",
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({
+      invoiceId: "inv1",
+      status: "draft",
+      error: "Stripe unavailable",
+    });
+  });
+
+  it("validates material input before uploading a PDF", async () => {
+    const { client, calls } = await connect({});
+    const result = await client.callTool({
+      name: "save_material",
+      arguments: { kind: "pdf", pdfBase64: "aGVsbG8=" },
+    });
+    expect(result.isError).toBe(true);
+    expect(calls).toHaveLength(0);
+  });
 });

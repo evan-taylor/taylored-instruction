@@ -3,11 +3,12 @@ import { z } from "zod";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
-  DESTRUCTIVE,
+  DESTRUCTIVE_EXTERNAL,
   EXTERNAL,
   formatMoney,
   type McpContext,
   ok,
+  operationKey,
   READ,
   requestKey,
   run,
@@ -86,7 +87,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
     {
       title: "Enroll attendees (staff)",
       description:
-        "Creates a staff enrollment order, the same as the admin 'Enroll' and group enrollment forms. payment=unpaid creates an order awaiting payment (then use request_payment_email or create_invoice); offline records payment received outside Stripe; waived grants free seats. Material ids come from the course settings (get_course); included materials are always charged, optional ones only when listed in selected, waivable ones unless listed in waived. Required course questions must be answered. Up to 100 attendees; overbook=true ignores capacity.",
+        "Creates a staff enrollment order, the same as the admin 'Enroll' and group enrollment forms. Offline and waived payments send confirmation emails immediately. payment=unpaid creates an order awaiting payment (then use request_payment_email or create_invoice); offline records payment received outside Stripe; waived grants free seats. Material ids come from the course settings (get_course); included materials are always charged, optional ones only when listed in selected, waivable ones unless listed in waived. Required course questions must be answered. Up to 100 attendees; overbook=true ignores capacity.",
       inputSchema: {
         courseId: id,
         sessionId: id.optional().describe("Omit for self-paced courses"),
@@ -109,15 +110,16 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
           .describe("Negotiated per-seat tuition override"),
         organizationId: id.optional(),
         pricingNote: z.string().optional(),
+        operationKey,
       },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {
         const result = await ctx.convex.mutation(api.registration.reserve, {
           courseId: args.courseId as Id<"registrationCourses">,
           sessionId: args.sessionId as Id<"registrationSessions"> | undefined,
-          requestKey: requestKey(),
+          requestKey: args.operationKey ?? requestKey(),
           purchaser: args.purchaser,
           purchaserName: args.purchaserName,
           purchaserPhone: args.purchaserPhone,
@@ -147,7 +149,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
       title: "Email payment request",
       description:
         "Emails the purchaser of an unpaid order a secure link to pay by card. Returns the link so you can share it directly as well.",
-      inputSchema: { orderId: id },
+      inputSchema: { orderId: id, operationKey },
       annotations: EXTERNAL,
     },
     (args) =>
@@ -156,7 +158,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
           api.registrationPayments.requestPayment,
           {
             orderId: args.orderId as Id<"registrationOrders">,
-            requestId: requestKey(),
+            requestId: args.operationKey ?? requestKey(),
           }
         );
         return ok({ url }, "Payment request queued");
@@ -174,7 +176,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
         source: z.enum(["offline", "waived"]),
         reason: z.string().min(1),
       },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {
@@ -211,11 +213,12 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
     {
       title: "Refund card payment",
       description:
-        "Refunds part or all of a settled Stripe payment (amount in cents, tax included in the refundable balance). Records the refund, then submits it to Stripe; if Stripe is slow the refund stays pending and reconciles automatically. Seats are not canceled; use cancel_seat for that.",
+        "Refunds part or all of a settled Stripe payment (amount in cents, tax included in the refundable balance). Pass the same operationKey when retrying so the refund is never duplicated. Records the refund, then submits it to Stripe; if Stripe is slow the refund stays pending and reconciles automatically. Seats are not canceled; use cancel_seat for that.",
       inputSchema: {
         orderId: id,
         cents: z.number().int().min(1),
         reason: z.string().min(1),
+        operationKey,
       },
       annotations: EXTERNAL,
     },
@@ -227,7 +230,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
             orderId: args.orderId as Id<"registrationOrders">,
             cents: args.cents,
             reason: args.reason,
-            key: requestKey(),
+            key: args.operationKey ?? requestKey(),
           }
         );
         try {
@@ -263,7 +266,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
         notify: z.boolean().default(true),
         cancelWholeOrder: z.boolean().default(false),
       },
-      annotations: DESTRUCTIVE,
+      annotations: DESTRUCTIVE_EXTERNAL,
     },
     (args) =>
       run(async () => {
@@ -302,30 +305,43 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
     {
       title: "Transfer seat",
       description:
-        "Moves a settled active seat to a different open session. choice handles a price difference: collect (email a payment request for the increase), refund (refund the decrease), or keep (no money moves). Provide answers if the destination course asks required questions.",
+        "Moves a settled active seat to a different open session. choice handles a price difference: collect (the increase is emailed as a payment request to the purchaser), refund (the decrease is refunded through Stripe), or keep (no money moves). Provide answers if the destination course asks required questions.",
       inputSchema: {
         seatId: id,
         sessionId: id,
         choice: z.enum(["collect", "refund", "keep"]),
         reason: z.string().min(1),
         answers: z.array(answer).optional(),
+        operationKey,
       },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
-      run(async () =>
-        ok(
-          await ctx.convex.mutation(api.registrationTransfers.transfer, {
+      run(async () => {
+        const key = args.operationKey ?? requestKey();
+        const result = await ctx.convex.mutation(
+          api.registrationTransfers.transfer,
+          {
             seatId: args.seatId as Id<"registrationSeats">,
             sessionId: args.sessionId as Id<"registrationSessions">,
             choice: args.choice,
             reason: args.reason,
-            requestKey: requestKey(),
+            requestKey: key,
             answers: args.answers,
-          }),
-          "Seat transferred"
-        )
-      )
+          }
+        );
+        if (args.choice === "collect" && result.adjustment > 0) {
+          const paymentUrl = await ctx.convex.mutation(
+            api.registrationPayments.requestPayment,
+            { orderId: result.orderId, requestId: `transfer:${key}` }
+          );
+          return ok(
+            { ...result, paymentUrl },
+            `Seat transferred; payment request for ${formatMoney(result.adjustment)} emailed`
+          );
+        }
+        return ok(result, "Seat transferred");
+      })
   );
 
   server.registerTool(
@@ -352,14 +368,14 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
     {
       title: "Resend materials email",
       description: "Re-sends the attendee's materials/portal access email.",
-      inputSchema: { seatId: id },
+      inputSchema: { seatId: id, operationKey },
       annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {
         await ctx.convex.mutation(api.registrationOperations.resendMaterials, {
           seatId: args.seatId as Id<"registrationSeats">,
-          key: requestKey(),
+          key: args.operationKey ?? requestKey(),
         });
         return ok({ queued: args.seatId });
       })
@@ -372,7 +388,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
       description:
         "Retires the keycode assigned to an entitlement and assigns a fresh one from stock, emailing the attendee.",
       inputSchema: { entitlementId: id, reason: z.string().min(1) },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {

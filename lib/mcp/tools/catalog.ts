@@ -5,10 +5,12 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { recurrence } from "@/shared/registration/schedule";
 import {
   DESTRUCTIVE,
+  DESTRUCTIVE_EXTERNAL,
   EXTERNAL,
   fill,
   type McpContext,
   ok,
+  operationKey,
   READ,
   requestKey,
   run,
@@ -19,11 +21,12 @@ import {
   id,
   instant,
   meeting,
+  overrideField,
   overrides,
   pagination,
   paginationOpts,
   publication,
-  settings,
+  settingsPatch,
   toEpoch,
   visibility,
   withIds,
@@ -32,13 +35,14 @@ import {
 const DEFAULT_OFFER_MINUTES = 1440;
 const DEFAULT_TIME_ZONE = "America/Los_Angeles";
 const ROSTER_PAGE = 100;
+const EMAIL_BATCH = 50;
 
 type Course = Doc<"registrationCourses">;
 type Session = Doc<"registrationSessions">;
 
 function mergeSettings(
   previous: Course["settings"] | undefined,
-  patch: Partial<z.infer<typeof settings>> | undefined
+  patch: z.infer<typeof settingsPatch> | undefined
 ): Course["settings"] {
   const base = previous ?? {
     tuition: 0,
@@ -78,12 +82,16 @@ function mergeSettings(
 
 function mergeOverrides(
   previous: Session["overrides"] | undefined,
-  patch: z.infer<typeof overrides> | undefined
+  patch: z.infer<typeof overrides> | undefined,
+  clear: z.infer<typeof overrideField>[] = []
 ): Session["overrides"] {
-  if (!patch) {
-    return previous ?? {};
+  const base = { ...(previous ?? {}) };
+  for (const field of clear) {
+    base[field] = undefined;
   }
-  const base = previous ?? {};
+  if (!patch) {
+    return base;
+  }
   return {
     tuition: patch.tuition ?? base.tuition,
     taxCode: patch.taxCode ?? base.taxCode,
@@ -168,9 +176,10 @@ async function collectCsv(
     sessionId,
     paginationOpts: { cursor, numItems: ROSTER_PAGE },
   });
-  parts.push(page.csv);
+  // Every page carries the header row; keep only the first one.
+  parts.push(cursor ? page.csv.slice(page.csv.indexOf("\n") + 1) : page.csv);
   if (page.isDone) {
-    return parts.join("");
+    return parts.join("\r\n");
   }
   return collectCsv(ctx, sessionId, page.continueCursor, parts);
 }
@@ -190,8 +199,8 @@ async function activeSeatIds(
       found.push(seat._id);
     }
   }
-  if (page.isDone) {
-    return found;
+  if (page.isDone || found.length >= EMAIL_BATCH) {
+    return found.slice(0, EMAIL_BATCH);
   }
   return activeSeatIds(ctx, sessionId, page.continueCursor, found);
 }
@@ -250,7 +259,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
         delivery: z.enum(["scheduled", "self-paced"]).optional(),
         publication: publication.optional(),
         enrollmentOpen: z.boolean().optional(),
-        settings: settings.partial().optional(),
+        settings: settingsPatch.optional(),
       },
       annotations: UPSERT,
     },
@@ -442,7 +451,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
     {
       title: "Create or update session",
       description:
-        "Creates a session for a scheduled course template, or merges the given fields into an existing session. Meetings replace the stored list (reuse meeting ids to preserve attendance). Instructors may be given as user ids or approved-instructor emails. Set notify=true to email instructors about schedule changes; attendees are notified of changed meetings automatically. Capacity cannot drop below reserved seats.",
+        "Creates a session for a scheduled course template, or merges the given fields into an existing session. Meetings replace the stored list (reuse meeting ids to preserve attendance). Overrides merge field by field; list fields in clearOverrides to fall back to the template. Instructors may be given as user ids or approved-instructor emails. Set notify=true to email instructors about schedule changes; attendees are notified of changed meetings automatically. Capacity cannot drop below reserved seats.",
       inputSchema: {
         id: id.optional(),
         courseId: id.optional().describe("Required when creating"),
@@ -453,6 +462,12 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
         timeZone: z.string().optional(),
         meetings: z.array(meeting).min(1).max(20).optional(),
         overrides: overrides.optional(),
+        clearOverrides: z
+          .array(overrideField)
+          .optional()
+          .describe(
+            "Override fields to remove so the session follows the course template again"
+          ),
         instructors: z.array(z.string()).optional(),
         offerMinutes: z
           .number()
@@ -462,7 +477,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
           .describe("How long a waitlist offer stays open; default 1440"),
         notify: z.boolean().default(false),
       },
-      annotations: UPSERT,
+      annotations: { ...UPSERT, openWorldHint: true },
     },
     (args) =>
       run(async () => {
@@ -507,7 +522,11 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
           id: previous?._id,
           ...value,
           meetings,
-          overrides: mergeOverrides(previous?.overrides, args.overrides),
+          overrides: mergeOverrides(
+            previous?.overrides,
+            args.overrides,
+            args.clearOverrides
+          ),
           instructors,
           notify: args.notify,
         });
@@ -536,7 +555,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
         reason: z.string().min(1),
         notify: z.boolean().default(true),
       },
-      annotations: DESTRUCTIVE,
+      annotations: DESTRUCTIVE_EXTERNAL,
     },
     (args) =>
       run(async () => {
@@ -600,6 +619,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
         seatIds: z.array(id).max(50).optional(),
         subject: z.string().min(1),
         body: z.string().min(1),
+        operationKey,
       },
       annotations: EXTERNAL,
     },
@@ -617,7 +637,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
           seats,
           subject: args.subject,
           body: args.body,
-          requestKey: requestKey(),
+          requestKey: args.operationKey ?? requestKey(),
         });
         return ok({ queued: seats.length, seats });
       })

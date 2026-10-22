@@ -18,8 +18,11 @@ export const TOKEN_PREFIX = "ti_mcp_";
 const TOKEN_HEX = 64;
 const TOKEN_LENGTH = TOKEN_PREFIX.length + TOKEN_HEX;
 const PREVIEW_CHARS = 8;
-/** Agent sessions are short; the MCP route exchanges again when one expires. */
-export const SESSION_MS = 60 * 60 * 1000;
+/**
+ * Agent sessions are short: the MCP route exchanges on every request, so a
+ * revoked token fails immediately and an already-issued JWT dies within minutes.
+ */
+export const SESSION_MS = 5 * 60 * 1000;
 const MAX_TOKENS = 20;
 
 const tokenView = v.object({
@@ -408,6 +411,8 @@ export const emailQueue = query({
         .withIndex("by_state_and_due", (q) => q.eq("state", "sending"))
         .take(limit),
     ]);
-    return [...pending, ...sending].sort((a, b) => a.due - b.due);
+    return [...pending, ...sending]
+      .sort((a, b) => a.due - b.due)
+      .slice(0, limit);
   },
 });

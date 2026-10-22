@@ -6,6 +6,7 @@ import {
   EXTERNAL,
   type McpContext,
   ok,
+  operationKey,
   READ,
   requestKey,
   run,
@@ -140,14 +141,17 @@ export function registerOverviewTools(server: McpServer, ctx: McpContext) {
         recipient: email,
         subject: z.string().min(1),
         body: z.string().min(1),
+        operationKey,
       },
       annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {
         await ctx.convex.mutation(api.registrationOperations.testEmail, {
-          ...args,
-          key: requestKey(),
+          recipient: args.recipient,
+          subject: args.subject,
+          body: args.body,
+          key: args.operationKey ?? requestKey(),
         });
         return ok({ queued: args.recipient });
       })
