@@ -45,6 +45,16 @@ export const registrationTables = {
       "visibility",
       "firstStart",
     ]),
+  /** Staff uploads attached to a session: rosters, sign-in sheets, handouts. */
+  registrationSessionFiles: defineTable({
+    sessionId: v.id("registrationSessions"),
+    storageId: v.id("_storage"),
+    name: v.string(),
+    type: v.string(),
+    size: v.number(),
+    uploadedBy: v.id("users"),
+    uploadedAt: v.number(),
+  }).index("by_sessionId", ["sessionId"]),
   registrationLocations: defineTable({
     name: v.string(),
     address: v.string(),

@@ -1,7 +1,8 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
 import { Plus, Trash2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useCourses, useSessions } from "@/components/registration/catalog";
 import {
@@ -182,8 +183,11 @@ function SessionRow({
   onCancel: () => void;
 }) {
   const zone = session.timeZone;
+  const router = useRouter();
+  const href = `/admin/sessions/${session._id}`;
+  // The title link is the keyboard path; clicking anywhere on the row is a mouse shortcut.
   return (
-    <TR>
+    <TR className="cursor-pointer" onClick={() => router.push(href)}>
       <TD className="whitespace-nowrap">
         <div className="font-medium text-slate-900">
           {formatWeekday(session.firstStart, zone)}
@@ -195,7 +199,13 @@ function SessionRow({
         </div>
       </TD>
       <TD>
-        <div className="font-medium text-slate-900">{session.title}</div>
+        <Link
+          className="font-medium text-slate-900 underline-offset-2 hover:text-primary hover:underline"
+          href={href}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {session.title}
+        </Link>
         <div className="text-slate-500 text-xs">
           {course?.title ?? "Unknown course"} ·{" "}
           {pluralize(session.meetings.length, "meeting")}
@@ -217,7 +227,7 @@ function SessionRow({
       <TD>
         <StatusBadge status={session.state} />
       </TD>
-      <TD className="text-right">
+      <TD className="text-right" onClick={(e) => e.stopPropagation()}>
         <div className="flex flex-wrap justify-end gap-1">
           <Button
             aria-label={`Edit ${session.title}`}
@@ -241,12 +251,11 @@ function SessionRow({
             label="Share link"
             value={`${origin}/s/${session.code}`}
           />
-          <Button
-            href={`/instructor/sessions/${session._id}`}
-            size="xs"
-            variant="ghost"
-          >
+          <Button href={`${href}?tab=roster`} size="xs" variant="ghost">
             Roster
+          </Button>
+          <Button href={`${href}?tab=files`} size="xs" variant="ghost">
+            Files
           </Button>
           <Button
             className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"

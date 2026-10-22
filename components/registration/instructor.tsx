@@ -580,8 +580,11 @@ async function downloadRoster(fetchPage: FetchPage) {
 
 export function InstructorRoster({
   sessionId,
+  embedded = false,
 }: {
   sessionId: Id<"registrationSessions">;
+  /** Renders without the page chrome, for use inside the admin session page. */
+  embedded?: boolean;
 }) {
   const session = useQuery(api.registrationOperations.sessionForStaff, {
     sessionId,
@@ -621,6 +624,187 @@ export function InstructorRoster({
       </div>
     );
   }
+  const actions = (
+    <>
+      <Button
+        disabled={!selected.length}
+        onClick={() => {
+          setMessage("");
+          setEmailOpen(true);
+        }}
+        size="sm"
+        type="button"
+        variant="secondary"
+      >
+        <Mail aria-hidden="true" className="h-4 w-4" />
+        Email selected ({selected.length})
+      </Button>
+      <Button
+        disabled={exporting}
+        onClick={async () => {
+          setExporting(true);
+          setMessage("");
+          try {
+            await downloadRoster((cursor) =>
+              convex.query(api.registrationOperations.exportRoster, {
+                sessionId,
+                paginationOpts: { numItems: 100, cursor },
+              })
+            );
+            setMessage("Complete roster exported");
+          } catch (error) {
+            setMessage(errorText(error));
+          } finally {
+            setExporting(false);
+          }
+        }}
+        size="sm"
+        type="button"
+      >
+        <Download aria-hidden="true" className="h-4 w-4" />
+        {exporting ? "Exporting…" : "Export CSV"}
+      </Button>
+    </>
+  );
+  const body = (
+    <>
+      <ResultNotice message={message} />
+      <Card>
+        <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <Field className="w-full sm:max-w-sm" label="Search loaded attendees">
+            {(props) => (
+              <div className="relative">
+                <Search
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-slate-400"
+                />
+                <TextInput
+                  {...props}
+                  className="pl-9"
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Name or email"
+                  type="search"
+                  value={search}
+                />
+              </div>
+            )}
+          </Field>
+          <p className="text-slate-500 text-sm">
+            {pluralize(visible.length, "attendee")} shown ·{" "}
+            {pluralize(selected.length, "selected", "selected")}
+          </p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-0">
+          {roster.status === "LoadingFirstPage" ? (
+            <div aria-busy="true" className="space-y-3 p-5" role="status">
+              <span className="sr-only">Loading roster…</span>
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+              <Skeleton className="h-12" />
+            </div>
+          ) : null}
+          {roster.status !== "LoadingFirstPage" && !visible.length ? (
+            <div className="p-5">
+              <EmptyState
+                description={
+                  needle
+                    ? "No loaded attendees match your search."
+                    : "Attendees appear here as registrations are paid."
+                }
+                title="No attendees"
+              />
+            </div>
+          ) : null}
+          {visible.length ? (
+            <Table wrapperClassName="rounded-none border-0">
+              <THead>
+                <TR>
+                  <TH className="w-10">
+                    <input
+                      aria-label="Select all shown attendees"
+                      checked={allVisibleSelected}
+                      className="h-4 w-4 rounded-sm border-slate-300 accent-primary"
+                      onChange={(e) =>
+                        setSelected(
+                          e.target.checked
+                            ? [
+                                ...new Set([
+                                  ...selected,
+                                  ...visible.map((s) => s._id),
+                                ]),
+                              ]
+                            : selected.filter(
+                                (id) => !visible.some((s) => s._id === id)
+                              )
+                        )
+                      }
+                      type="checkbox"
+                    />
+                  </TH>
+                  <TH>Attendee</TH>
+                  <TH>State</TH>
+                  <TH>Completion</TH>
+                  <TH className="text-right">Record</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {visible.map((seat) => (
+                  <RosterRow
+                    key={seat._id}
+                    meetings={meetings}
+                    onSelect={(checked) =>
+                      setSelected(
+                        checked
+                          ? [...selected, seat._id]
+                          : selected.filter((id) => id !== seat._id)
+                      )
+                    }
+                    seat={seat}
+                    selected={selected.includes(seat._id)}
+                    timeZone={session?.timeZone}
+                  />
+                ))}
+              </TBody>
+            </Table>
+          ) : null}
+        </CardContent>
+      </Card>
+      {roster.status === "CanLoadMore" || roster.status === "LoadingMore" ? (
+        <div className="flex justify-center">
+          <Button
+            disabled={roster.status === "LoadingMore"}
+            onClick={() => roster.loadMore(20)}
+            size="sm"
+            type="button"
+            variant="secondary"
+          >
+            {roster.status === "LoadingMore"
+              ? "Loading…"
+              : "Load more attendees"}
+          </Button>
+        </div>
+      ) : null}
+      <EmailDialog
+        onClose={() => setEmailOpen(false)}
+        onResult={setMessage}
+        open={emailOpen}
+        seats={selected}
+        sessionId={sessionId}
+      />
+    </>
+  );
+  if (embedded) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {actions}
+        </div>
+        {body}
+      </div>
+    );
+  }
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -631,48 +815,7 @@ export function InstructorRoster({
           ← Assigned sessions
         </Link>
         <PageHeader
-          actions={
-            <>
-              <Button
-                disabled={!selected.length}
-                onClick={() => {
-                  setMessage("");
-                  setEmailOpen(true);
-                }}
-                size="sm"
-                type="button"
-                variant="secondary"
-              >
-                <Mail aria-hidden="true" className="h-4 w-4" />
-                Email selected ({selected.length})
-              </Button>
-              <Button
-                disabled={exporting}
-                onClick={async () => {
-                  setExporting(true);
-                  setMessage("");
-                  try {
-                    await downloadRoster((cursor) =>
-                      convex.query(api.registrationOperations.exportRoster, {
-                        sessionId,
-                        paginationOpts: { numItems: 100, cursor },
-                      })
-                    );
-                    setMessage("Complete roster exported");
-                  } catch (error) {
-                    setMessage(errorText(error));
-                  } finally {
-                    setExporting(false);
-                  }
-                }}
-                size="sm"
-                type="button"
-              >
-                <Download aria-hidden="true" className="h-4 w-4" />
-                {exporting ? "Exporting…" : "Export CSV"}
-              </Button>
-            </>
-          }
+          actions={actions}
           description={
             session
               ? `${meetings.map((m) => formatMeeting(m, session.timeZone)).join(" · ")} ${shortZone(session.timeZone, session.firstStart)} · ${session.reserved} of ${session.capacity} seats reserved`
@@ -681,134 +824,7 @@ export function InstructorRoster({
           eyebrow="Roster"
           title={session?.title ?? "Session roster"}
         />
-        <ResultNotice message={message} />
-        <Card>
-          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <Field
-              className="w-full sm:max-w-sm"
-              label="Search loaded attendees"
-            >
-              {(props) => (
-                <div className="relative">
-                  <Search
-                    aria-hidden="true"
-                    className="pointer-events-none absolute inset-y-0 left-3 my-auto h-4 w-4 text-slate-400"
-                  />
-                  <TextInput
-                    {...props}
-                    className="pl-9"
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Name or email"
-                    type="search"
-                    value={search}
-                  />
-                </div>
-              )}
-            </Field>
-            <p className="text-slate-500 text-sm">
-              {pluralize(visible.length, "attendee")} shown ·{" "}
-              {pluralize(selected.length, "selected", "selected")}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-0">
-            {roster.status === "LoadingFirstPage" ? (
-              <div aria-busy="true" className="space-y-3 p-5" role="status">
-                <span className="sr-only">Loading roster…</span>
-                <Skeleton className="h-12" />
-                <Skeleton className="h-12" />
-                <Skeleton className="h-12" />
-              </div>
-            ) : null}
-            {roster.status !== "LoadingFirstPage" && !visible.length ? (
-              <div className="p-5">
-                <EmptyState
-                  description={
-                    needle
-                      ? "No loaded attendees match your search."
-                      : "Attendees appear here as registrations are paid."
-                  }
-                  title="No attendees"
-                />
-              </div>
-            ) : null}
-            {visible.length ? (
-              <Table wrapperClassName="rounded-none border-0">
-                <THead>
-                  <TR>
-                    <TH className="w-10">
-                      <input
-                        aria-label="Select all shown attendees"
-                        checked={allVisibleSelected}
-                        className="h-4 w-4 rounded-sm border-slate-300 accent-primary"
-                        onChange={(e) =>
-                          setSelected(
-                            e.target.checked
-                              ? [
-                                  ...new Set([
-                                    ...selected,
-                                    ...visible.map((s) => s._id),
-                                  ]),
-                                ]
-                              : selected.filter(
-                                  (id) => !visible.some((s) => s._id === id)
-                                )
-                          )
-                        }
-                        type="checkbox"
-                      />
-                    </TH>
-                    <TH>Attendee</TH>
-                    <TH>State</TH>
-                    <TH>Completion</TH>
-                    <TH className="text-right">Record</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {visible.map((seat) => (
-                    <RosterRow
-                      key={seat._id}
-                      meetings={meetings}
-                      onSelect={(checked) =>
-                        setSelected(
-                          checked
-                            ? [...selected, seat._id]
-                            : selected.filter((id) => id !== seat._id)
-                        )
-                      }
-                      seat={seat}
-                      selected={selected.includes(seat._id)}
-                      timeZone={session?.timeZone}
-                    />
-                  ))}
-                </TBody>
-              </Table>
-            ) : null}
-          </CardContent>
-        </Card>
-        {roster.status === "CanLoadMore" || roster.status === "LoadingMore" ? (
-          <div className="flex justify-center">
-            <Button
-              disabled={roster.status === "LoadingMore"}
-              onClick={() => roster.loadMore(20)}
-              size="sm"
-              type="button"
-              variant="secondary"
-            >
-              {roster.status === "LoadingMore"
-                ? "Loading…"
-                : "Load more attendees"}
-            </Button>
-          </div>
-        ) : null}
-        <EmailDialog
-          onClose={() => setEmailOpen(false)}
-          onResult={setMessage}
-          open={emailOpen}
-          seats={selected}
-          sessionId={sessionId}
-        />
+        {body}
       </div>
     </div>
   );

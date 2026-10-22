@@ -3167,3 +3167,64 @@ it("rejects a transfer when a newer waitlist entry has an active offer", async (
   ).rejects.toThrow("waitlist offer");
   expect((await f.t.run((ctx) => ctx.db.get(target)))?.reserved).toBe(1);
 });
+
+describe("Session files", () => {
+  it("stores staff uploads per session and removes them from storage", async () => {
+    const f = await fixture();
+    const storageId = await f.t.run((ctx) =>
+      ctx.storage.store(new Blob(["sign-in sheet"], { type: "text/plain" }))
+    );
+    await expect(
+      f.t.mutation(api.registrationOperations.attachFile, {
+        sessionId: f.session,
+        storageId,
+        name: "sign-in.txt",
+        type: "text/plain",
+        size: 13,
+      })
+    ).rejects.toThrow("sign-in required");
+    const id = await f.adminClient.mutation(
+      api.registrationOperations.attachFile,
+      {
+        sessionId: f.session,
+        storageId,
+        name: "  sign-in.txt ",
+        type: "text/plain",
+        size: 13,
+      }
+    );
+    const listed = await f.adminClient.query(
+      api.registrationOperations.sessionFiles,
+      { sessionId: f.session }
+    );
+    expect(listed).toHaveLength(1);
+    expect(listed[0]?.name).toBe("sign-in.txt");
+    expect(listed[0]?.uploadedBy).toBe(ADMIN_EMAILS[0]);
+    expect(listed[0]?.url).toBeTruthy();
+    await f.adminClient.mutation(api.registrationOperations.removeFile, { id });
+    expect(
+      await f.adminClient.query(api.registrationOperations.sessionFiles, {
+        sessionId: f.session,
+      })
+    ).toHaveLength(0);
+    expect(await f.t.run((ctx) => ctx.storage.getUrl(storageId))).toBeNull();
+  });
+
+  it("rejects oversized uploads before issuing an upload URL", async () => {
+    const f = await fixture();
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.fileUploadUrl, {
+        sessionId: f.session,
+        name: "huge.bin",
+        size: 26 * 1024 * 1024,
+      })
+    ).rejects.toThrow("25 MB");
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.fileUploadUrl, {
+        sessionId: f.session,
+        name: "   ",
+        size: 10,
+      })
+    ).rejects.toThrow("name");
+  });
+});

@@ -1403,3 +1403,117 @@ export const advanceCourseWaitlists = internalMutation({
     return null;
   },
 });
+
+/* ------------------------------- Session files ------------------------------- */
+
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
+
+function validateFile(name: string, size: number) {
+  if (!name.trim() || name.trim().length > 200) {
+    throw new ConvexError("Give the file a name under 200 characters");
+  }
+  if (size <= 0 || size > MAX_FILE_BYTES) {
+    throw new ConvexError("Files must be between 1 byte and 25 MB");
+  }
+}
+
+/**
+ * Validates before any blob exists: a mutation that throws rolls back its own
+ * storage delete, so rejecting at attach time would orphan the upload.
+ */
+export const fileUploadUrl = mutation({
+  args: {
+    sessionId: v.id("registrationSessions"),
+    name: v.string(),
+    size: v.number(),
+  },
+  returns: v.string(),
+  handler: async (ctx, args) => {
+    await staff(ctx, args.sessionId);
+    validateFile(args.name, args.size);
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+export const attachFile = mutation({
+  args: {
+    sessionId: v.id("registrationSessions"),
+    storageId: v.id("_storage"),
+    name: v.string(),
+    type: v.string(),
+    size: v.number(),
+  },
+  returns: v.id("registrationSessionFiles"),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx, args.sessionId);
+    validateFile(args.name, args.size);
+    const name = args.name.trim();
+    const id = await ctx.db.insert("registrationSessionFiles", {
+      sessionId: args.sessionId,
+      storageId: args.storageId,
+      name,
+      type: args.type,
+      size: args.size,
+      uploadedBy: actor.userId,
+      uploadedAt: Date.now(),
+    });
+    await audit(ctx, actor.userId, "session-file-added", args.sessionId, name);
+    return id;
+  },
+});
+export const sessionFiles = query({
+  args: { sessionId: v.id("registrationSessions") },
+  returns: v.array(
+    v.object({
+      _id: v.id("registrationSessionFiles"),
+      name: v.string(),
+      type: v.string(),
+      size: v.number(),
+      uploadedAt: v.number(),
+      uploadedBy: v.string(),
+      url: v.union(v.string(), v.null()),
+    })
+  ),
+  handler: async (ctx, args) => {
+    await staff(ctx, args.sessionId);
+    const files = await ctx.db
+      .query("registrationSessionFiles")
+      .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
+      .order("desc")
+      .take(BATCH);
+    return await Promise.all(
+      files.map(async (file) => {
+        const user = await ctx.db.get(file.uploadedBy);
+        return {
+          _id: file._id,
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          uploadedAt: file.uploadedAt,
+          uploadedBy: user?.email ?? "Staff",
+          url: await ctx.storage.getUrl(file.storageId),
+        };
+      })
+    );
+  },
+});
+export const removeFile = mutation({
+  args: { id: v.id("registrationSessionFiles") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const file = await ctx.db.get(args.id);
+    if (!file) {
+      return null;
+    }
+    const actor = await staff(ctx, file.sessionId);
+    await ctx.storage.delete(file.storageId);
+    await ctx.db.delete(file._id);
+    await audit(
+      ctx,
+      actor.userId,
+      "session-file-removed",
+      file.sessionId,
+      file.name
+    );
+    return null;
+  },
+});
