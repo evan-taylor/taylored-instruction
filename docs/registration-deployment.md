@@ -12,6 +12,7 @@ commands, so project dashboard overrides cannot silently change this branch's pi
 | Convex target | Personal dev deployment | Separate backend per branch | Existing production backend |
 | `REGISTRATION_MODE` (Convex) | `test` | `test` | `live` |
 | `STRIPE_SECRET_KEY` (both services) | Test account | Test account | Live account |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (Vercel/Next.js) | Matching `pk_test_` key | Matching `pk_test_` key | Matching `pk_live_` key |
 | `REGISTRATION_TEST_RECIPIENT` (Convex) | Tester mailbox | Tester mailbox | Not used for customer delivery |
 | `SITE_URL` (Convex) | `http://localhost:3000` | Vercel branch URL | Public production origin |
 | `REGISTRATION_STRIPE_WEBHOOK_SECRET` (Convex) | Dev endpoint secret | Branch endpoint secret | Production endpoint secret |
@@ -21,6 +22,11 @@ Convex deployment. Preserve existing auth identities and signing keys. Google OA
 also needs its existing `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` and the deployment's
 callback URL registered with Google. Google/OTP provider acceptance is separate from
 build validation. Vercel environment variables do not automatically populate Convex.
+
+`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is public browser configuration, not a Convex
+secret. Use the same Stripe account and mode as `STRIPE_SECRET_KEY`. Next.js embeds
+public variables at build time, so changes require a new deployment (or restarting
+the local development server).
 
 Use a sender on a verified Resend domain. The configured sender is
 `Taylored Instruction <info@mail.tayloredinstruction.com>`; the root-domain sender
