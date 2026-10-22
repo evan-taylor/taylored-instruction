@@ -667,6 +667,85 @@ export const restoreCoupon = mutation({
     return null;
   },
 });
+type CancelArgs = { reason: string; notify: boolean };
+
+/**
+ * Cancels one seat, or releases its whole unpaid order when asked. Returns
+ * how many seats this call canceled so bulk callers can report truthfully.
+ */
+async function cancelOne(
+  ctx: MutationCtx,
+  actor: { userId: string },
+  seat: Doc<"registrationSeats">,
+  args: CancelArgs & { cancelWholeOrder: boolean }
+) {
+  const order = await ctx.db.get(seat.orderId);
+  let count = 1;
+  if (order && (order.status === "hold" || order.status === "unpaid")) {
+    if (order.seats.length > 1 && !args.cancelWholeOrder) {
+      throw new ConvexError(
+        "This unpaid group must be canceled as a whole order. Confirm cancellation of all attendees."
+      );
+    }
+    count = order.seats.length;
+    await release(ctx, order, args.reason);
+    if (args.notify) {
+      await Promise.all(
+        order.seats
+          .filter((s) => s.attendee.email !== seat.email)
+          .map((s) =>
+            enqueue(ctx, {
+              key: `cancel-order:${order._id}:${s.attendee.email}`,
+              kind: "email",
+              recipient: s.attendee.email,
+              subject: "Registration canceled",
+              body: "Your unpaid group registration was canceled. Contact us for assistance.",
+              due: Date.now(),
+            })
+          )
+      );
+    }
+  } else {
+    await ctx.db.patch(seat._id, { state: "canceled" });
+    if (seat.sessionId) {
+      const session = await ctx.db.get(seat.sessionId);
+      if (session) {
+        await ctx.db.patch(session._id, { reserved: session.reserved - 1 });
+        await ctx.scheduler.runAfter(0, internal.registrationWaitlist.advance, {
+          sessionId: session._id,
+        });
+      }
+    }
+  }
+  const pendingEntitlements = await ctx.db
+    .query("registrationEntitlements")
+    .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
+    .take(BATCH);
+  await Promise.all(
+    pendingEntitlements
+      .filter((e) => e.state === "pending")
+      .map((e) => ctx.db.patch(e._id, { state: "canceled" }))
+  );
+  if (args.notify) {
+    await enqueue(ctx, {
+      key: `cancel:${seat._id}`,
+      kind: "email",
+      recipient: seat.email,
+      subject: "Registration canceled",
+      body: "Your registration was canceled. A cancellation does not automatically refund your payment. Please contact us for assistance.",
+      due: Date.now(),
+    });
+  }
+  await audit(
+    ctx,
+    actor.userId,
+    "registration-canceled",
+    seat._id,
+    `${args.reason}; notify=${args.notify}`
+  );
+  return count;
+}
+
 export const cancelSeat = mutation({
   args: {
     seatId: v.id("registrationSeats"),
@@ -681,74 +760,65 @@ export const cancelSeat = mutation({
       throw new ConvexError("Reason required");
     }
     const seat = await ctx.db.get(args.seatId);
-    if (!seat || seat.state === "canceled" || seat.state === "transferred") {
-      return null;
+    if (!seat) {
+      throw new ConvexError("This registration no longer exists.");
     }
-    const order = await ctx.db.get(seat.orderId);
-    if (order && (order.status === "hold" || order.status === "unpaid")) {
-      if (order.seats.length > 1 && !args.cancelWholeOrder) {
-        throw new ConvexError(
-          "This unpaid group must be canceled as a whole order. Confirm cancellation of all attendees."
-        );
-      }
-      await release(ctx, order, args.reason);
-      if (args.notify) {
-        await Promise.all(
-          order.seats
-            .filter((s) => s.attendee.email !== seat.email)
-            .map((s) =>
-              enqueue(ctx, {
-                key: `cancel-order:${order._id}:${s.attendee.email}`,
-                kind: "email",
-                recipient: s.attendee.email,
-                subject: "Registration canceled",
-                body: "Your unpaid group registration was canceled. Contact us for assistance.",
-                due: Date.now(),
-              })
-            )
-        );
-      }
-    } else {
-      await ctx.db.patch(seat._id, { state: "canceled" });
-      if (seat.sessionId) {
-        const session = await ctx.db.get(seat.sessionId);
-        if (session) {
-          await ctx.db.patch(session._id, { reserved: session.reserved - 1 });
-          await ctx.scheduler.runAfter(
-            0,
-            internal.registrationWaitlist.advance,
-            { sessionId: session._id }
-          );
-        }
-      }
+    if (seat.state === "canceled" || seat.state === "transferred") {
+      throw new ConvexError(
+        `This registration is already ${seat.state}; nothing was changed.`
+      );
     }
-    const pendingEntitlements = await ctx.db
-      .query("registrationEntitlements")
-      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-      .take(BATCH);
-    await Promise.all(
-      pendingEntitlements
-        .filter((e) => e.state === "pending")
-        .map((e) => ctx.db.patch(e._id, { state: "canceled" }))
-    );
-    if (args.notify) {
-      await enqueue(ctx, {
-        key: `cancel:${seat._id}`,
-        kind: "email",
-        recipient: seat.email,
-        subject: "Registration canceled",
-        body: "Your registration was canceled. A cancellation does not automatically refund your payment. Please contact us for assistance.",
-        due: Date.now(),
-      });
-    }
-    await audit(
-      ctx,
-      actor.userId,
-      "registration-canceled",
-      seat._id,
-      `${args.reason}; notify=${args.notify}`
-    );
+    await cancelOne(ctx, actor, seat, {
+      reason: args.reason,
+      notify: args.notify,
+      cancelWholeOrder: args.cancelWholeOrder ?? false,
+    });
     return null;
+  },
+});
+/**
+ * Cancels every cancelable seat on an order in one transaction, so the
+ * decision about group release and the reported counts come from the same
+ * database state. Used by the bulk action on the registrations page.
+ */
+export const cancelOrderSeats = mutation({
+  args: {
+    orderId: v.id("registrationOrders"),
+    reason: v.string(),
+    notify: v.boolean(),
+  },
+  returns: v.object({ canceled: v.number(), skipped: v.number() }),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    if (!args.reason.trim()) {
+      throw new ConvexError("Reason required");
+    }
+    const seats = await ctx.db
+      .query("registrationSeats")
+      .withIndex("by_orderId", (q) => q.eq("orderId", args.orderId))
+      .collect();
+    const cancelable = seats.filter(
+      (seat) => seat.state === "held" || seat.state === "active"
+    );
+    let canceled = 0;
+    // Sequential on purpose: releasing an unpaid group cancels every seat,
+    // and each step must see the previous one's writes.
+    await cancelable.reduce(async (previous, seat) => {
+      await previous;
+      const current = await ctx.db.get(seat._id);
+      if (!current || current.state !== seat.state) {
+        return;
+      }
+      canceled += await cancelOne(ctx, actor, current, {
+        reason: args.reason,
+        notify: args.notify,
+        cancelWholeOrder: true,
+      });
+    }, Promise.resolve());
+    return {
+      canceled: Math.min(canceled, cancelable.length),
+      skipped: seats.length - cancelable.length,
+    };
   },
 });
 export const cancelSession = mutation({

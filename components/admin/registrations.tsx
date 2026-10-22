@@ -2,7 +2,6 @@
 import { useClientMediaQuery } from "@silk-hq/components";
 import {
   useAction,
-  useConvex,
   useMutation,
   usePaginatedQuery,
   useQuery,
@@ -47,6 +46,7 @@ import {
   EmptyState,
   Notice,
   PageHeader,
+  ResultNotice,
   Skeleton,
 } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
@@ -108,6 +108,7 @@ function AttendeesTable({ order }: { order: Order }) {
     null
   );
   const wide = useClientMediaQuery("(min-width: 640px)");
+  const [notice, setNotice] = useState("");
   if (!seats) {
     return <Skeleton className="h-24" />;
   }
@@ -124,134 +125,151 @@ function AttendeesTable({ order }: { order: Order }) {
   // duplicated into a hidden copy that would surface on rotation.
   if (!wide) {
     return (
-      <ul className="list-none space-y-3 p-0">
-        {seats.map((seat) => {
-          const open = expanded === seat._id;
-          return (
-            <li
-              className="rounded-lg border border-slate-200 bg-white p-4"
-              key={seat._id}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="break-words font-medium text-slate-900">
-                    {seat.name}
-                  </p>
-                  <p className="break-all text-slate-500 text-xs">
-                    {seat.email}
-                    {seat.snapshot.attendee.phone
-                      ? ` · ${seat.snapshot.attendee.phone}`
-                      : ""}
-                  </p>
+      <div className="space-y-3">
+        <ResultNotice message={notice} />
+        <ul className="list-none space-y-3 p-0">
+          {seats.map((seat) => {
+            const open = expanded === seat._id;
+            return (
+              <li
+                className="rounded-lg border border-slate-200 bg-white p-4"
+                key={seat._id}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words font-medium text-slate-900">
+                      {seat.name}
+                    </p>
+                    <p className="break-all text-slate-500 text-xs">
+                      {seat.email}
+                      {seat.snapshot.attendee.phone
+                        ? ` · ${seat.snapshot.attendee.phone}`
+                        : ""}
+                    </p>
+                  </div>
+                  <StatusBadge status={seat.state} />
                 </div>
-                <StatusBadge status={seat.state} />
-              </div>
-              <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
-                <div>
-                  <dt className="text-slate-500 text-xs uppercase tracking-wide">
-                    Materials
-                  </dt>
-                  <dd className="tabular-nums">
-                    {seat.snapshot.materials.length}
-                  </dd>
+                <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-slate-500 text-xs uppercase tracking-wide">
+                      Materials
+                    </dt>
+                    <dd className="tabular-nums">
+                      {seat.snapshot.materials.length}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500 text-xs uppercase tracking-wide">
+                      Seat total
+                    </dt>
+                    <dd>
+                      <Money cents={seat.snapshot.total} />
+                      <TaxCodes lines={seat.snapshot.lines} />
+                    </dd>
+                  </div>
+                </dl>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <Button
+                    aria-expanded={open}
+                    onClick={() => toggle(seat)}
+                    size="sm"
+                    type="button"
+                    variant={open ? "secondary" : "outline"}
+                  >
+                    {open ? "Hide" : "Manage"}
+                  </Button>
+                  <CancelSeatButton
+                    onDone={setNotice}
+                    seat={seat}
+                    size="sm"
+                    variant="secondary"
+                  />
                 </div>
-                <div>
-                  <dt className="text-slate-500 text-xs uppercase tracking-wide">
-                    Seat total
-                  </dt>
-                  <dd>
-                    <Money cents={seat.snapshot.total} />
-                    <TaxCodes lines={seat.snapshot.lines} />
-                  </dd>
-                </div>
-              </dl>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <Button
-                  aria-expanded={open}
-                  onClick={() => toggle(seat)}
-                  size="sm"
-                  type="button"
-                  variant={open ? "secondary" : "outline"}
-                >
-                  {open ? "Hide" : "Manage"}
-                </Button>
-                <CancelSeatButton seat={seat} size="sm" variant="secondary" />
-              </div>
-              {open ? (
-                <div className="mt-3 rounded-md bg-slate-50 p-3">
-                  <SeatOperations seat={seat} />
-                </div>
-              ) : null}
-            </li>
-          );
-        })}
-      </ul>
+                {open ? (
+                  <div className="mt-3 rounded-md bg-slate-50 p-3">
+                    <SeatOperations seat={seat} />
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
+        </ul>
+      </div>
     );
   }
   return (
-    <Table>
-      <THead>
-        <TR>
-          <TH>Attendee</TH>
-          <TH>State</TH>
-          <TH>Materials</TH>
-          <TH className="text-right">Seat total</TH>
-          <TH className="text-right">Actions</TH>
-        </TR>
-      </THead>
-      <TBody>
-        {seats.map((seat) => {
-          const open = expanded === seat._id;
-          return (
-            <Fragment key={seat._id}>
-              <TR>
-                <TD>
-                  <div className="font-medium text-slate-900">{seat.name}</div>
-                  <div className="text-slate-500 text-xs">
-                    {seat.email}
-                    {seat.snapshot.attendee.phone
-                      ? ` · ${seat.snapshot.attendee.phone}`
-                      : ""}
-                  </div>
-                </TD>
-                <TD>
-                  <StatusBadge status={seat.state} />
-                </TD>
-                <TD className="tabular-nums">
-                  {seat.snapshot.materials.length}
-                </TD>
-                <TD className="text-right">
-                  <Money cents={seat.snapshot.total} />
-                  <TaxCodes lines={seat.snapshot.lines} />
-                </TD>
-                <TD className="text-right">
-                  <div className="inline-flex items-center gap-1">
-                    <Button
-                      aria-expanded={open}
-                      aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
-                      onClick={() => toggle(seat)}
-                      size="xs"
-                      type="button"
-                      variant={open ? "secondary" : "ghost"}
-                    >
-                      {open ? "Hide" : "Manage"}
-                    </Button>
-                    <CancelSeatButton seat={seat} variant="ghost" />
-                  </div>
-                </TD>
-              </TR>
-              {open ? (
-                <TR className="hover:bg-slate-50">
-                  <TD className="bg-slate-50 p-4" colSpan={5}>
-                    <SeatOperations seat={seat} />
+    <div className="space-y-3">
+      <ResultNotice message={notice} />
+      <Table>
+        <THead>
+          <TR>
+            <TH>Attendee</TH>
+            <TH>State</TH>
+            <TH>Materials</TH>
+            <TH className="text-right">Seat total</TH>
+            <TH className="text-right">Actions</TH>
+          </TR>
+        </THead>
+        <TBody>
+          {seats.map((seat) => {
+            const open = expanded === seat._id;
+            return (
+              <Fragment key={seat._id}>
+                <TR>
+                  <TD>
+                    <div className="font-medium text-slate-900">
+                      {seat.name}
+                    </div>
+                    <div className="text-slate-500 text-xs">
+                      {seat.email}
+                      {seat.snapshot.attendee.phone
+                        ? ` · ${seat.snapshot.attendee.phone}`
+                        : ""}
+                    </div>
+                  </TD>
+                  <TD>
+                    <StatusBadge status={seat.state} />
+                  </TD>
+                  <TD className="tabular-nums">
+                    {seat.snapshot.materials.length}
+                  </TD>
+                  <TD className="text-right">
+                    <Money cents={seat.snapshot.total} />
+                    <TaxCodes lines={seat.snapshot.lines} />
+                  </TD>
+                  <TD className="text-right">
+                    <div className="inline-flex items-center gap-1">
+                      <Button
+                        aria-expanded={open}
+                        aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
+                        onClick={() => toggle(seat)}
+                        size="xs"
+                        type="button"
+                        variant={open ? "secondary" : "ghost"}
+                      >
+                        {open ? "Hide" : "Manage"}
+                      </Button>
+                      <CancelSeatButton
+                        onDone={setNotice}
+                        seat={seat}
+                        variant="ghost"
+                      />
+                    </div>
                   </TD>
                 </TR>
-              ) : null}
-            </Fragment>
-          );
-        })}
-      </TBody>
-    </Table>
+                {open ? (
+                  <TR className="hover:bg-slate-50">
+                    <TD className="bg-slate-50 p-4" colSpan={5}>
+                      <SeatOperations seat={seat} />
+                    </TD>
+                  </TR>
+                ) : null}
+              </Fragment>
+            );
+          })}
+        </TBody>
+      </Table>
+    </div>
   );
 }
 
@@ -416,8 +434,7 @@ function OrderModal({
 /* ------------------------------------------------------------------ */
 
 function useBulkActions(orders: Order[], selected: OrderId[]) {
-  const convex = useConvex();
-  const cancel = useMutation(api.registrationOperations.cancelSeat);
+  const cancelOrder = useMutation(api.registrationOperations.cancelOrderSeats);
   const requestRefund = useMutation(api.registrationPayments.requestRefund);
   const refund = useAction(api.registrationExternal.refund);
   const [results, setResults] = useState<BulkResult[]>([]);
@@ -427,26 +444,16 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
     const rows = await Promise.all(
       selected.map(async (orderId): Promise<BulkResult> => {
         try {
-          const seats = await convex.query(
-            api.registrationOperations.orderSeats,
-            { orderId }
-          );
-          const outcomes = await Promise.allSettled(
-            seats.map((seat) =>
-              cancel({
-                seatId: seat._id,
-                reason,
-                notify,
-                cancelWholeOrder: true,
-              })
-            )
-          );
-          const failed = outcomes.filter((r) => r.status === "rejected").length;
+          const { canceled, skipped } = await cancelOrder({
+            orderId,
+            reason,
+            notify,
+          });
           return {
             key: orderId,
             label: label(orderId),
-            ok: failed === 0,
-            detail: `${outcomes.length - failed} canceled, ${failed} failed`,
+            ok: true,
+            detail: `${canceled} canceled${skipped ? `, ${skipped} already canceled or transferred` : ""}`,
           };
         } catch (error) {
           return {
