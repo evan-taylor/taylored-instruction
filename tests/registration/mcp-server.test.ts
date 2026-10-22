@@ -407,27 +407,17 @@ describe("MCP server", () => {
     expect(keys).toEqual([key, key]);
   });
 
-  it("preserves group request notes when only the status changes", async () => {
-    const { client, calls } = await connect({
-      "mcp:record": {
-        _id: "req1",
-        status: "new",
-        internalNotes: "Called twice",
-        organizationId: "org1",
-      },
-      "registrationGroups:updateGroupRequest": null,
-    });
+  it("sends only the given group request fields so stored links survive", async () => {
+    const { client, calls } = await connect({ "mcp:patchGroupRequest": null });
     await client.callTool({
       name: "update_group_request",
-      arguments: { id: "req1", status: "contacted" },
+      arguments: { id: "req1", status: "contacted", orderId: null },
     });
-    const update = calls.find(
-      (call) => call.name === "registrationGroups:updateGroupRequest"
-    );
-    expect(update?.args).toMatchObject({
+    const update = calls.find((call) => call.name === "mcp:patchGroupRequest");
+    expect(update?.args).toEqual({
+      id: "req1",
       status: "contacted",
-      internalNotes: "Called twice",
-      organizationId: "org1",
+      orderId: null,
     });
   });
 
@@ -487,5 +477,31 @@ describe("MCP server", () => {
     });
     expect(result.isError).toBe(true);
     expect(calls).toHaveLength(0);
+  });
+
+  it("reports a completed transfer even when the payment request fails", async () => {
+    const { client } = await connect({
+      "registrationTransfers:transfer": {
+        orderId: "order2",
+        seatId: "seat2",
+        adjustment: 2500,
+      },
+      "registrationPayments:requestPayment": new ConvexError("Cutoff passed"),
+    });
+    const result = await client.callTool({
+      name: "transfer_seat",
+      arguments: {
+        seatId: "seat1",
+        sessionId: "session2",
+        choice: "collect",
+        reason: "Moved",
+      },
+    });
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toMatchObject({
+      orderId: "order2",
+      seatId: "seat2",
+      paymentWarning: "Cutoff passed",
+    });
   });
 });

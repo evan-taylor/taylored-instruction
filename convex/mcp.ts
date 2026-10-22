@@ -394,6 +394,66 @@ export const seoPage = query({
   },
 });
 
+const groupStatus = v.union(
+  v.literal("new"),
+  v.literal("contacted"),
+  v.literal("quoted"),
+  v.literal("scheduled"),
+  v.literal("closed")
+);
+
+/**
+ * Partial update of a group request in one transaction: omitted fields keep
+ * their stored value, and null clears a link. The admin UI's form sends every
+ * field, so it keeps using registrationGroups.updateGroupRequest.
+ */
+export const patchGroupRequest = mutation({
+  args: {
+    id: v.id("registrationGroupRequests"),
+    status: v.optional(groupStatus),
+    internalNotes: v.optional(v.string()),
+    organizationId: v.optional(
+      v.union(v.id("registrationOrganizations"), v.null())
+    ),
+    orderId: v.optional(v.union(v.id("registrationOrders"), v.null())),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const actor = await admin(ctx);
+    const request = await ctx.db.get(args.id);
+    if (!request) {
+      throw new ConvexError("Request not found");
+    }
+    const patch: Partial<Doc<"registrationGroupRequests">> = {
+      updatedAt: Date.now(),
+    };
+    if (args.status !== undefined) {
+      patch.status = args.status;
+    }
+    if (args.internalNotes !== undefined) {
+      if (args.internalNotes.length > 5000) {
+        throw new ConvexError("Internal notes are too long");
+      }
+      patch.internalNotes = args.internalNotes;
+    }
+    if (args.organizationId !== undefined) {
+      patch.organizationId = args.organizationId ?? undefined;
+    }
+    if (args.orderId !== undefined) {
+      patch.orderId = args.orderId ?? undefined;
+    }
+    await ctx.db.patch(request._id, patch);
+    await ctx.db.insert("registrationActivity", {
+      actor: actor.userId,
+      action: "group-request-updated",
+      entity: request._id,
+      detail: `${request.status} -> ${args.status ?? request.status}`,
+      at: Date.now(),
+    });
+    return null;
+  },
+});
+
 /** Pending and in-flight email jobs, oldest first. */
 export const emailQueue = query({
   args: { limit: v.optional(v.number()) },

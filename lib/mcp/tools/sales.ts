@@ -156,40 +156,40 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
     {
       title: "Update group request",
       description:
-        "Updates a group request's status; notes, organization, and order links are kept unless given.",
+        "Updates a group request in one step. Only the fields given change; notes, organization, and order links are kept unless supplied (null unlinks).",
       inputSchema: {
         id,
-        status: groupStatus,
+        status: groupStatus.optional(),
         internalNotes: z
           .string()
           .optional()
           .describe("Replaces the stored notes; omitted notes are kept"),
-        organizationId: id.optional(),
-        orderId: id.optional(),
+        organizationId: id
+          .nullable()
+          .optional()
+          .describe("Link an organization; null unlinks; omitted keeps"),
+        orderId: id
+          .nullable()
+          .optional()
+          .describe(
+            "Link the order created for it; null unlinks; omitted keeps"
+          ),
       },
-      annotations: UPSERT,
+      annotations: { ...UPSERT, idempotentHint: true },
     },
     (args) =>
       run(async () => {
-        const previous = (await ctx.convex.query(api.mcp.record, {
-          table: "registrationGroupRequests",
-          id: args.id,
-        })) as Doc<"registrationGroupRequests"> | null;
-        if (!previous) {
-          throw new Error("Group request not found");
-        }
-        await ctx.convex.mutation(api.registrationGroups.updateGroupRequest, {
-          id: previous._id,
+        await ctx.convex.mutation(api.mcp.patchGroupRequest, {
+          id: args.id as Id<"registrationGroupRequests">,
           status: args.status,
-          internalNotes: args.internalNotes ?? previous.internalNotes,
-          organizationId: (args.organizationId ?? previous.organizationId) as
+          internalNotes: args.internalNotes,
+          organizationId: args.organizationId as
             | Id<"registrationOrganizations">
+            | null
             | undefined,
-          orderId: (args.orderId ?? previous.orderId) as
-            | Id<"registrationOrders">
-            | undefined,
+          orderId: args.orderId as Id<"registrationOrders"> | null | undefined,
         });
-        return ok({ id: args.id, status: args.status });
+        return ok({ id: args.id, status: args.status ?? "unchanged" });
       })
   );
 

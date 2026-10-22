@@ -177,4 +177,55 @@ describe("agent tokens", () => {
     ).rejects.toThrow(FORBIDDEN);
     expect(await admin.query(api.mcp.emailQueue, {})).toEqual([]);
   });
+
+  it("patches group requests without disturbing omitted fields", async () => {
+    const { t, admin } = await fixture();
+    const organization = await t.run((ctx) =>
+      ctx.db.insert("registrationOrganizations", {
+        name: "Acme",
+        contactName: "",
+        contactEmail: "",
+        phone: "",
+        address: "",
+        notes: "",
+        archived: false,
+      })
+    );
+    const request = await t.run((ctx) =>
+      ctx.db.insert("registrationGroupRequests", {
+        organization: "Acme",
+        contactName: "Pat",
+        email: "pat@acme.test",
+        phone: "",
+        courseInterest: "CPR",
+        headcount: 5,
+        preferredDates: "",
+        location: "",
+        notes: "",
+        status: "new",
+        internalNotes: "Called twice",
+        organizationId: organization,
+        updatedAt: 0,
+      })
+    );
+    await admin.mutation(api.mcp.patchGroupRequest, {
+      id: request,
+      status: "contacted",
+    });
+    let stored = await t.run((ctx) => ctx.db.get(request));
+    expect(stored).toMatchObject({
+      status: "contacted",
+      internalNotes: "Called twice",
+      organizationId: organization,
+    });
+    await admin.mutation(api.mcp.patchGroupRequest, {
+      id: request,
+      organizationId: null,
+      internalNotes: "Unlinked",
+    });
+    stored = await t.run((ctx) => ctx.db.get(request));
+    expect(stored?.organizationId).toBeUndefined();
+    expect(stored?.internalNotes).toBe("Unlinked");
+    expect(stored?.status).toBe("contacted");
+  });
 });

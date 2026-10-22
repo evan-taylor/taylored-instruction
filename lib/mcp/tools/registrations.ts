@@ -5,6 +5,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import {
   DESTRUCTIVE_EXTERNAL,
   EXTERNAL,
+  errorMessage,
   formatMoney,
   type McpContext,
   ok,
@@ -330,7 +331,11 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
             answers: args.answers,
           }
         );
-        if (args.choice === "collect" && result.adjustment > 0) {
+        if (args.choice !== "collect" || result.adjustment <= 0) {
+          return ok(result, "Seat transferred");
+        }
+        // The transfer is already saved; a payment problem must not hide it.
+        try {
           const paymentUrl = await ctx.convex.mutation(
             api.registrationPayments.requestPayment,
             { orderId: result.orderId, requestId: `transfer:${key}` }
@@ -339,8 +344,12 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
             { ...result, paymentUrl },
             `Seat transferred; payment request for ${formatMoney(result.adjustment)} emailed`
           );
+        } catch (error) {
+          return ok(
+            { ...result, paymentWarning: errorMessage(error) },
+            `Seat transferred, but the ${formatMoney(result.adjustment)} payment request could not be emailed. Collect it with create_invoice or record_offline_payment on order ${result.orderId}.`
+          );
         }
-        return ok(result, "Seat transferred");
       })
   );
 
