@@ -160,11 +160,18 @@ export const invite = mutation({
         invitedBy,
         createdAt: Date.now(),
       }));
-    await ctx.db.patch(id, { sentAt: undefined, sendError: undefined });
+    // Each send is numbered so a slow earlier attempt cannot overwrite the
+    // outcome of a resend that finished after it.
+    const attempt = (pending?.attempt ?? 0) + 1;
+    await ctx.db.patch(id, {
+      attempt,
+      sentAt: undefined,
+      sendError: undefined,
+    });
     await ctx.scheduler.runAfter(
       0,
       internal.instructorInvitations.sendInvitationEmail,
-      { id, email }
+      { id, email, attempt }
     );
     return id;
   },
@@ -275,10 +282,16 @@ export const accept = mutation({
 });
 
 export const recordSend = internalMutation({
-  args: { id: v.id("instructorInvitations"), error: v.optional(v.string()) },
+  args: {
+    id: v.id("instructorInvitations"),
+    attempt: v.number(),
+    error: v.optional(v.string()),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
-    if (await ctx.db.get(args.id)) {
+    const row = await ctx.db.get(args.id);
+    // Only the latest attempt may report; older ones are stale.
+    if (row && row.attempt === args.attempt) {
       await ctx.db.patch(
         args.id,
         args.error
@@ -292,17 +305,23 @@ export const recordSend = internalMutation({
 
 /** Sends the invitation and records whether the provider accepted it. */
 export const sendInvitationEmail = internalAction({
-  args: { id: v.id("instructorInvitations"), email: v.string() },
+  args: {
+    id: v.id("instructorInvitations"),
+    email: v.string(),
+    attempt: v.number(),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
     try {
       await deliver(args.email);
       await ctx.runMutation(internal.instructorInvitations.recordSend, {
         id: args.id,
+        attempt: args.attempt,
       });
     } catch (error) {
       await ctx.runMutation(internal.instructorInvitations.recordSend, {
         id: args.id,
+        attempt: args.attempt,
         error: error instanceof Error ? error.message : "Email failed",
       });
       throw error;

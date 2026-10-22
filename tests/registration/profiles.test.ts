@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { api } from "../../convex/_generated/api";
+import { api, internal } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
 
@@ -25,11 +25,13 @@ beforeEach(() => {
   vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
   vi.stubEnv("SITE_URL", "https://preview.example.test");
   vi.stubEnv("RESEND_API_KEY", "re_local_mock_only");
-  vi.spyOn(globalThis, "fetch").mockResolvedValue(
-    new Response(JSON.stringify({ id: "local-email" }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    })
+  // A fresh Response per call: a body can only be read once.
+  vi.spyOn(globalThis, "fetch").mockImplementation(
+    async () =>
+      new Response(JSON.stringify({ id: "local-email" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      })
   );
 });
 afterEach(async () => {
@@ -202,6 +204,21 @@ it("records whether the invitation email was delivered", async () => {
   [row] = await w.admin.query(api.instructorInvitations.list);
   expect(row?.sendError).toContain("Domain not verified");
   expect(row?.sentAt).toBeUndefined();
+  // A resend succeeds; a straggling result from the earlier attempt is ignored.
+  const id = await w.admin.mutation(api.instructorInvitations.invite, {
+    email: INVITEE,
+  });
+  await drain(w.t);
+  [row] = await w.admin.query(api.instructorInvitations.list);
+  expect(row?.sentAt).toBeTypeOf("number");
+  await w.t.mutation(internal.instructorInvitations.recordSend, {
+    id,
+    attempt: 2,
+    error: "Stale failure from attempt two",
+  });
+  [row] = await w.admin.query(api.instructorInvitations.list);
+  expect(row?.sendError).toBeUndefined();
+  expect(row?.sentAt).toBeTypeOf("number");
 });
 
 it("removing access cancels pending invitations, and a disabled account cannot accept", async () => {
