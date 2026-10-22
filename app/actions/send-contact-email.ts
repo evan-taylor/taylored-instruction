@@ -109,7 +109,7 @@ export async function sendContactEmail(
       from: `Contact Form <${fromEmail}>`,
       to: [adminEmail],
       replyTo: email,
-      subject: `New Contact Form Submission from ${firstName} ${lastName}`,
+      subject: `New message from ${firstName} ${lastName}`,
       react: React.createElement(ContactFormEmail, {
         firstName,
         lastName,
@@ -133,7 +133,7 @@ export async function sendContactEmail(
       from: `Taylored Instruction <${fromEmail}>`,
       to: [email],
       replyTo: SUPPORT_EMAIL,
-      subject: "Message Received - Taylored Instruction",
+      subject: "We got your message",
       react: React.createElement(ContactConfirmationEmail, { firstName }),
     });
 

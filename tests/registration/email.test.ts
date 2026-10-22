@@ -7,7 +7,6 @@ import {
 
 it("escapes all customer content and rejects executable action URLs", () => {
   const content = {
-    eyebrow: "Receipt",
     title: '<script>alert("x")</script>',
     preview: "Preview",
     paragraphs: ["<img src=x onerror=alert(1)>"],
@@ -28,7 +27,6 @@ it("escapes all customer content and rejects executable action URLs", () => {
 it("keeps the access token and expiry in both HTML and plain text", () => {
   const url = "https://example.com/registrations/access#one-time-token";
   const result = brandedEmail({
-    eyebrow: "Secure access",
     title: "Your registrations",
     preview: "Expires in 30 minutes",
     paragraphs: ["Confirm access on the next page."],
@@ -112,7 +110,6 @@ it("preserves invitation actions and includes readable schedules and material ti
 
 it("keeps branded emails accessible and below inbox clipping limits", () => {
   const result = brandedEmail({
-    eyebrow: "Invoice",
     title: "Your training invoice",
     preview: "Your invoice is ready",
     paragraphs: ["Review your training invoice."],
@@ -125,11 +122,10 @@ it("keeps branded emails accessible and below inbox clipping limits", () => {
       url: "https://example.com/invoice",
     },
   });
-  expect(result.html).toContain('<html lang="en" dir="ltr">');
-  expect(result.html).toContain('table lang="en" dir="ltr"');
+  expect(result.html).toContain('<html dir="ltr" lang="en">');
   expect(result.html).toContain('alt="Taylored Instruction"');
   expect(result.html).toContain('<th scope="row"');
-  expect(result.html).toContain("Transaction details</caption>");
+  expect(result.html).toContain('href="tel:+13606858199"');
   expect(result.html.match(/<h1\b/gu)).toHaveLength(1);
   expect(result.html.match(/\$108\.90/gu)).toHaveLength(1);
   expect(new TextEncoder().encode(result.html).byteLength).toBeLessThan(
@@ -137,4 +133,56 @@ it("keeps branded emails accessible and below inbox clipping limits", () => {
   );
   expect(result.text).toContain("Invoice total: $108.90");
   expect(result.text).toContain("Due date: November 20, 2026");
+});
+
+const receiptJob = (details: { label: string; value: string }[]) => ({
+  category: "Payment receipt",
+  subject: "Receipt",
+  body: "Thank you for your payment.",
+  name: "Sam",
+  title: "BLS",
+  schedule: "",
+  materials: [],
+  details: [{ label: "Course", value: "BLS" }, ...details],
+});
+const count = (haystack: string, needle: string) =>
+  haystack.split(needle).length - 1;
+
+it("moves receipt amounts into the totals box exactly once", () => {
+  const amounts = [
+    { label: "Subtotal", value: "$170.00" },
+    { label: "Sales tax", value: "$14.62" },
+    { label: "Total paid", value: "$184.62" },
+  ];
+  const result = registrationEmail(
+    receiptJob([...amounts, { label: "Attendees", value: "Sam\nAlex" }]),
+    "https://example.com"
+  );
+  for (const { label, value } of amounts) {
+    expect(count(result.html, `>${label}</th>`)).toBe(1);
+    expect(count(result.html, `>${value}</td>`)).toBe(1);
+    expect(count(result.text, `${label}: ${value}`)).toBe(1);
+  }
+  // Amounts render before the remaining details, which keep their rows.
+  expect(result.html.indexOf(">Total paid</th>")).toBeLessThan(
+    result.html.indexOf(">Course</th>")
+  );
+  expect(count(result.html, ">Attendees</th>")).toBe(1);
+  expect(count(result.html, ">Course</th>")).toBe(1);
+});
+
+it("shows a waived payment alongside a zero total", () => {
+  const amounts = [
+    { label: "Payment waived", value: "$170.00" },
+    { label: "Subtotal", value: "$170.00" },
+    { label: "Sales tax", value: "$0.00" },
+    { label: "Total paid", value: "$0.00" },
+  ];
+  const result = registrationEmail(receiptJob(amounts), "https://example.com");
+  for (const { label, value } of amounts) {
+    expect(count(result.html, `>${label}</th>`)).toBe(1);
+    expect(count(result.text, `${label}: ${value}`)).toBe(1);
+  }
+  expect(count(result.html, ">$170.00</td>")).toBe(2);
+  expect(count(result.html, ">$0.00</td>")).toBe(2);
 });
