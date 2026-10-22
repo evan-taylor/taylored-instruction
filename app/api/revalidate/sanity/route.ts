@@ -2,12 +2,12 @@ import { revalidatePath, revalidateTag } from "next/cache";
 
 const secretHeaderName = "x-sanity-revalidate-secret";
 
-interface SanityWebhookPayload {
+type SanityWebhookPayload = {
   _type?: string;
   slug?: {
     current?: string;
   };
-}
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -18,7 +18,7 @@ const readPayload = async (request: Request): Promise<SanityWebhookPayload> => {
     return {};
   }
 
-  const slug = payload.slug;
+  const { slug } = payload;
 
   return {
     _type: typeof payload._type === "string" ? payload._type : undefined,

@@ -18,28 +18,28 @@ const signaturePrefix = "sha256=";
 const defaultAuthor = "Taylored Instruction";
 const fallbackExcerptLength = 320;
 
-interface PortableTextSpan {
+type PortableTextSpan = {
   _key: string;
   _type: "span";
   marks: string[];
   text: string;
-}
+};
 
-interface PortableTextMarkDef {
+type PortableTextMarkDef = {
   _key: string;
   _type: "link";
   href: string;
-}
+};
 
-interface PortableTextBlock {
+type PortableTextBlock = {
   _key: string;
   _type: "block";
   children: PortableTextSpan[];
   markDefs: PortableTextMarkDef[];
   style: "blockquote" | "h2" | "h3" | "normal";
-}
+};
 
-interface SightAiArticle {
+type SightAiArticle = {
   article_type?: string;
   author_name?: string | null;
   category?: string | null;
@@ -58,30 +58,30 @@ interface SightAiArticle {
   thumbnail_image_url?: string | null;
   title?: string;
   updated_at?: string;
-}
+};
 
-interface SightAiWebhookPayload {
+type SightAiWebhookPayload = {
   article?: SightAiArticle;
   event?: string;
   event_id?: string;
   site?: { host?: string; id?: string; name?: string };
   test?: boolean;
   timestamp?: string;
-}
+};
 
-interface ExistingPost {
+type ExistingPost = {
   _id: string;
   mainImage?: unknown;
-}
+};
 
-interface SanityImage {
+type SanityImage = {
   _type: "image";
   alt: string;
   asset: {
     _ref: string;
     _type: "reference";
   };
-}
+};
 
 type RequiredSightAiArticle = SightAiArticle & {
   content: string;
@@ -90,7 +90,7 @@ type RequiredSightAiArticle = SightAiArticle & {
   title: string;
 };
 
-interface SanityPostInput {
+type SanityPostInput = {
   _type: "post";
   author: string;
   body: PortableTextBlock[];
@@ -107,7 +107,7 @@ interface SanityPostInput {
     current: string;
   };
   title: string;
-}
+};
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -489,7 +489,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, test: true });
   }
 
-  const article = payload.article;
+  const { article } = payload;
   if (!hasRequiredArticleFields(article)) {
     return NextResponse.json(
       { error: "Missing required article fields" },

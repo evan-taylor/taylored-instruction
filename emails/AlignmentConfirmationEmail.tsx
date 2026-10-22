@@ -11,9 +11,9 @@ import {
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
-interface AlignmentConfirmationEmailProps {
+type AlignmentConfirmationEmailProps = {
   firstName: string;
-}
+};
 
 export default function AlignmentConfirmationEmail({
   firstName,

@@ -5,11 +5,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-interface OgImageParams {
+type OgImageParams = {
   description?: string;
   title: string;
   type?: "default" | "bls" | "heartsaver" | "aha" | "lifeguarding" | "swimming";
-}
+};
 
 export function generateOgImageUrl(params: OgImageParams): string {
   const searchParams = new URLSearchParams();

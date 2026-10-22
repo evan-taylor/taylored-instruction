@@ -6,39 +6,46 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { isAdminEmail } from "@/lib/admin";
+import { registrationBookingUrl } from "@/lib/registration-launch";
+import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
+const REGISTER_URL = registrationBookingUrl(
+  "https://www.hovn.app/tayloredinstruction"
+);
+const REGISTER_EXTERNAL = EXTERNAL_LINK_REGEX.test(REGISTER_URL);
 
 // --- Type Definitions ---
-interface NavLinkItem {
-  hideWhenLoggedIn?: boolean;
-  hideWhenLoggedOut?: boolean;
+type NavLinkItem = {
+  label: string;
   href: string;
   indent?: boolean;
-  label: string;
-  requiresInstructor?: boolean; // Added for conditional display
   type?: undefined; // Ensure type compatibility with Divider
-}
+  requiresInstructor?: boolean; // Added for conditional display
+  hideWhenLoggedIn?: boolean;
+  hideWhenLoggedOut?: boolean;
+};
 
-interface NavDivider {
+type NavDivider = {
+  label: string;
+  type: "divider";
   href?: string; // Optional href for clickable dividers
   indent?: undefined;
-  label: string;
   requiresInstructor?: undefined; // Added
-  type: "divider";
-}
+};
 
 type DropdownItem = NavLinkItem | NavDivider;
 
-interface NavTopLevelLink {
+type NavTopLevelLink = {
+  label: string;
   dropdown?: DropdownItem[]; // Optional dropdown
+  href?: string; // Optional direct href if no dropdown
   hideWhenLoggedIn?: boolean; // Added
   hideWhenLoggedOut?: boolean; // Added
-  href?: string; // Optional direct href if no dropdown
-  label: string;
   requiresInstructor?: boolean; // Added for top-level links if needed
-}
+};
 
 // Helper function for active link class
 const getLinkClass = (href: string, pathname: string, isMobile = false) => {
@@ -57,8 +64,8 @@ const getLinkClass = (href: string, pathname: string, isMobile = false) => {
 // Helper function for dropdown link active class
 const getDropdownLinkClass = (href: string, pathname: string) => {
   const baseClass =
-    "block px-4 py-2 hover:bg-gray-100 text-sm text-text-light transition-colors duration-200";
-  const activeClass = "bg-gray-100 text-primary font-medium";
+    "block px-4 py-2 hover:bg-slate-100 text-sm text-text-light transition-colors duration-200";
+  const activeClass = "bg-slate-100 text-primary font-medium";
   const isActive =
     pathname === href || (href !== "/" && pathname.startsWith(href));
   return `${baseClass} ${isActive ? activeClass : ""}`;
@@ -68,110 +75,87 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
 
 // Function to generate nav links based on auth state
 const generateNavLinks = (
-  _isLoggedIn: boolean,
-  isInstructor: boolean
+  isLoggedIn: boolean,
+  isInstructor: boolean,
+  isAdmin: boolean
 ): NavTopLevelLink[] => [
   {
+    label: "About us",
     dropdown: [
-      { href: "/about", label: "About Taylored Instruction" },
-      { href: "/resources", label: "Training Resources" },
-      { href: "/contact", label: "Contact Us" },
+      { label: "About Taylored Instruction", href: "/about" },
+      { label: "Training resources", href: "/resources" },
+      { label: "Contact us", href: "/contact" },
     ],
-    label: "About Us",
   },
   {
+    label: "Classes",
     dropdown: [
       {
-        href: "https://www.hovn.app/tayloredinstruction",
-        label: "Register for Classes",
+        label: "Register for classes",
+        href: registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction"
+        ),
       },
       {
-        href: "https://www.hovn.app/tayloredinstruction/agencies/aha",
-        label: "American Heart Association Courses",
         type: "divider",
+        label: "American Heart Association courses",
+        href: registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction/agencies/aha"
+        ),
       },
-      { href: "/bls", indent: true, label: "BLS" },
-      { href: "/heartsaver", indent: true, label: "Heartsaver" },
+      { label: "BLS", href: "/bls", indent: true },
+      { label: "Heartsaver", href: "/heartsaver", indent: true },
       {
+        label: "Instructor training",
         href: "/aha-instructor-training",
         indent: true,
-        label: "Instructor Training",
       },
       {
-        href: "https://www.hovn.app/tayloredinstruction/agencies/arc",
-        label: "American Red Cross Courses",
         type: "divider",
+        label: "American Red Cross courses",
+        href: registrationBookingUrl(
+          "https://www.hovn.app/tayloredinstruction/agencies/arc"
+        ),
       },
       {
+        label: "Adult and Pediatric First Aid/CPR/AED",
         href: "/first-aid-cpr-aed",
         indent: true,
-        label: "Adult and Pediatric First Aid/CPR/AED",
       },
-      { href: "/lifeguarding", indent: true, label: "Lifeguarding" },
+      { label: "Lifeguarding", href: "/lifeguarding", indent: true },
       {
+        label: "Lifeguarding instructor",
         href: "/lifeguarding-instructor",
         indent: true,
-        label: "Lifeguarding Instructor",
       },
       {
+        label: "First Aid/CPR/AED instructor",
         href: "/fa-cpr-aed-instructor",
         indent: true,
-        label: "First Aid/CPR/AED Instructor",
       },
     ],
-    label: "Classes",
   },
   {
-    dropdown: [
-      {
-        href: "https://shop.tayloredinstruction.com/",
-        label: "Shop All Products",
-      },
-      {
-        href: "https://shop.tayloredinstruction.com/search/aeds",
-        label: "AEDs",
-      },
-      {
-        href: "https://shop.tayloredinstruction.com/search/instructor-supplies",
-        label: "Instructor Supplies",
-      },
-    ],
     label: "Products",
-  },
-  {
     dropdown: [
-      // Hide Alignment if logged in as an instructor
-      ...(isInstructor
-        ? ([] as NavLinkItem[])
-        : ([{ href: "/alignment", label: "Alignment" }] as NavLinkItem[])),
       {
-        href: "https://docs.tayloredinstruction.com/",
-        label: "Instructor Resources",
-        requiresInstructor: true,
-      },
-      // Conditionally add eCards if instructor
-      ...(isInstructor
-        ? [
-            {
-              href: "/ecards",
-              label: "eCards",
-              requiresInstructor: true,
-            } as NavLinkItem,
-          ]
-        : []),
-      { label: "Account", type: "divider" },
-      {
-        hideWhenLoggedIn: true,
-        href: "/login",
-        label: "Login",
+        label: "Shop all products",
+        href: "https://shop.tayloredinstruction.com/",
       },
       {
-        hideWhenLoggedOut: true,
-        href: "/my-account",
-        label: "My Account",
+        label: "AEDs",
+        href: "https://shop.tayloredinstruction.com/search/aeds",
+      },
+      {
+        label: "Instructor supplies",
+        href: "https://shop.tayloredinstruction.com/search/instructor-supplies",
       },
     ],
-    label: "Instructors",
+  },
+  {
+    label:
+      isLoggedIn && (isInstructor || isAdmin) ? "Workspace" : "Instructors",
+    dropdown: workspaceLinks(isLoggedIn, isInstructor, isAdmin),
   },
 ];
 
@@ -184,7 +168,7 @@ export const Header = () => {
   const _pathname = usePathname() ?? ""; // Provide default empty string if null
 
   // --- Authentication State ---
-  const { session, isInstructor } = useProfile();
+  const { session, isInstructor, email } = useProfile();
   const { signOut } = useAuthActions();
   const router = useRouter();
 
@@ -202,7 +186,11 @@ export const Header = () => {
   };
 
   // Generate nav links based on current auth state
-  const currentNavLinks = generateNavLinks(isLoggedIn, isInstructor);
+  const currentNavLinks = generateNavLinks(
+    isLoggedIn,
+    isInstructor,
+    isAdminEmail(email)
+  );
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -261,14 +249,14 @@ export const Header = () => {
 
   return (
     <header
-      className="sticky top-0 z-50 bg-background shadow-md"
+      className="sticky top-0 z-50 border-slate-200 border-b bg-background/95 shadow-xs backdrop-blur-sm"
       ref={headerRef}
     >
       <div className="container py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link
-            className="flex-shrink-0"
+            className="shrink-0"
             href="/"
             onClick={() => {
               setActiveDesktopDropdown(null);
@@ -309,18 +297,21 @@ export const Header = () => {
                 className="btn btn-primary px-4 py-2 text-sm"
                 data-visitors-event="Register Now Click"
                 data-visitors-source="header"
-                href="https://www.hovn.app/tayloredinstruction"
-                target="_blank"
+                href={REGISTER_URL}
+                rel={REGISTER_EXTERNAL ? "noopener noreferrer" : undefined}
+                target={REGISTER_EXTERNAL ? "_blank" : undefined}
               >
-                Register Now
+                Register now
               </Link>
             </div>
           </nav>
 
           {/* Mobile Menu Button */}
           <button
+            aria-controls="mobile-menu"
+            aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            className="text-text-light hover:text-primary lg:hidden"
+            className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-text-light transition-colors hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             type="button"
           >
@@ -331,33 +322,38 @@ export const Header = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`overflow-hidden bg-background-light transition-all duration-300 ease-in-out lg:hidden ${isMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}
+        className={`grid bg-background-light transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none lg:hidden ${isMenuOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+        id="mobile-menu"
+        inert={isMenuOpen ? undefined : true}
       >
-        <div className="container py-4">
-          <MobileNavMenu
-            closeMenu={closeMobileMenu}
-            isInstructor={isInstructor}
-            isLoggedIn={isLoggedIn}
-            navLinks={visibleNavLinks}
-          />
-          <div className="mt-6 flex flex-col items-center space-y-4">
-            {/* Mobile Search & Cart - REMOVED */}
-            {/* <button className="flex items-center space-x-2 text-text hover:text-primary" aria-label="Search">
+        <div className="min-h-0 overflow-hidden">
+          <div className="container py-4">
+            <MobileNavMenu
+              closeMenu={closeMobileMenu}
+              isInstructor={isInstructor}
+              isLoggedIn={isLoggedIn}
+              navLinks={visibleNavLinks}
+            />
+            <div className="mt-6 flex flex-col items-center space-y-4">
+              {/* Mobile Search & Cart - REMOVED */}
+              {/* <button className="flex items-center space-x-2 text-text hover:text-primary" aria-label="Search">
               <Search size={18} /> <span>Search</span>
             </button> */}
-            {/* <Link href="/cart" className="flex items-center space-x-2 text-text hover:text-primary" onClick={closeMobileMenu}>
+              {/* <Link href="/cart" className="flex items-center space-x-2 text-text hover:text-primary" onClick={closeMobileMenu}>
               <ShoppingCart size={20} /> <span>Cart</span>
             </Link> */}
-            <Link
-              className="btn btn-primary w-full text-center"
-              data-visitors-event="Register Now Click"
-              data-visitors-source="mobile_header"
-              href="https://www.hovn.app/tayloredinstruction"
-              onClick={closeMobileMenu}
-              target="_blank"
-            >
-              Register Now
-            </Link>
+              <Link
+                className="btn btn-primary w-full text-center"
+                data-visitors-event="Register Now Click"
+                data-visitors-source="mobile_header"
+                href={REGISTER_URL}
+                onClick={closeMobileMenu}
+                rel={REGISTER_EXTERNAL ? "noopener noreferrer" : undefined}
+                target={REGISTER_EXTERNAL ? "_blank" : undefined}
+              >
+                Register now
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -402,7 +398,7 @@ const NavMenu = ({
     if (!item.href) {
       return (
         <div
-          className="px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
+          className="px-4 pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide"
           key={`divider-${item.label}`}
         >
           {item.label}
@@ -412,12 +408,12 @@ const NavMenu = ({
     const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
     return (
       <Link
-        className="block px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
+        className="block px-4 pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
         href={item.href}
         key={`divider-${item.label}`}
         onClick={onItemClick}
         {...(isExternal
-          ? { rel: "noopener noreferrer", target: "_blank" }
+          ? { target: "_blank", rel: "noopener noreferrer" }
           : {})}
       >
         {item.label}
@@ -438,7 +434,7 @@ const NavMenu = ({
     const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
     const indentClass = item.indent ? " pl-8" : "";
     const linkProps = isExternal
-      ? { rel: "noopener noreferrer", target: "_blank" as const }
+      ? { target: "_blank" as const, rel: "noopener noreferrer" }
       : {};
     return (
       <Link
@@ -498,7 +494,7 @@ const NavMenu = ({
             {renderNavLink(link)}
 
             {activeDropdown === link.label && link.dropdown && (
-              <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+              <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden">
                 {filterDropdownItems(link.dropdown).map((item) =>
                   renderDropdownItem(item, () => toggleDropdown(link.label))
                 )}
@@ -555,12 +551,12 @@ const MobileNavMenu = ({
         const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
         return (
           <Link
-            className="block pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
+            className="block pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
             href={item.href}
             key={`divider-${item.label}`}
             onClick={closeMenu}
             {...(isExternal
-              ? { rel: "noopener noreferrer", target: "_blank" }
+              ? { target: "_blank", rel: "noopener noreferrer" }
               : {})}
           >
             {item.label}
@@ -569,7 +565,7 @@ const MobileNavMenu = ({
       }
       return (
         <div
-          className="pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
+          className="pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide"
           key={`divider-${item.label}`}
         >
           {item.label}
@@ -590,7 +586,7 @@ const MobileNavMenu = ({
         key={item.label}
         onClick={closeMenu}
         {...(isExternal
-          ? { rel: "noopener noreferrer", target: "_blank" }
+          ? { target: "_blank", rel: "noopener noreferrer" }
           : {})}
       >
         {item.label}
@@ -613,7 +609,7 @@ const MobileNavMenu = ({
             />
           </button>
           {openMobileDropdown === link.label && (
-            <div className="ml-2 space-y-1 border-gray-200 border-l pt-1 pb-2 pl-4">
+            <div className="ml-2 space-y-1 border-slate-200 border-l pt-1 pb-2 pl-4">
               {filterDropdownItems(link.dropdown).map(renderDropdownItem)}
             </div>
           )}
@@ -623,7 +619,7 @@ const MobileNavMenu = ({
     if (link.href) {
       return (
         <Link
-          className={`${getLinkClass(link.href, pathname, true)} block border-gray-200 border-b py-2`}
+          className={`${getLinkClass(link.href, pathname, true)} block border-slate-200 border-b py-2`}
           href={link.href}
           onClick={closeMenu}
         >
@@ -632,7 +628,7 @@ const MobileNavMenu = ({
       );
     }
     return (
-      <span className="block border-gray-200 border-b py-2 text-text">
+      <span className="block border-slate-200 border-b py-2 text-text">
         {link.label}
       </span>
     );

@@ -1,5 +1,5 @@
 // Product type matches Supabase database schema which uses snake_case
-export interface Product {
+export type Product = {
   categories: string[] | null;
   created_at: string; // timestamp with time zone (string representation)
   description: string | null;
@@ -11,6 +11,6 @@ export interface Product {
   requires_instructor: boolean;
   sku: string | null;
   type: "digital" | "aed" | "ecard";
-}
+};
 
 // You might add other shared types here later

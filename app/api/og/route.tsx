@@ -87,6 +87,7 @@ export function GET(request: NextRequest) {
             justifyContent: "center",
           }}
         >
+          {/* biome-ignore lint/performance/noImgElement: img required for OG image generation */}
           <img
             alt="Taylored Instruction Logo"
             height={220}

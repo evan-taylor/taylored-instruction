@@ -1,15 +1,15 @@
-interface FallbackSection {
+type FallbackSection = {
   bullets?: string[];
   heading: string;
   paragraphs: string[];
-}
+};
 
-interface FallbackFaqItem {
+type FallbackFaqItem = {
   answer: string;
   question: string;
-}
+};
 
-export interface FallbackSeoPage {
+export type FallbackSeoPage = {
   audience: string;
   createdAt: string;
   ctaHref: string;
@@ -33,9 +33,9 @@ export interface FallbackSeoPage {
   slug: string;
   title: string;
   updatedAt: string;
-}
+};
 
-interface FallbackLocation {
+type FallbackLocation = {
   city: string;
   label: string;
   nearbyAreas: string[];
@@ -44,9 +44,9 @@ interface FallbackLocation {
   seoWeight: "primary" | "secondary";
   slug: string;
   state: string;
-}
+};
 
-interface FallbackService {
+type FallbackService = {
   audience: string;
   credential: string;
   ctaHref: string;
@@ -54,7 +54,7 @@ interface FallbackService {
   shortName: string;
   slugPrefix: string;
   titleLabel: string;
-}
+};
 
 const GENERATED_TIMESTAMP = "2026-03-15T00:00:00.000Z";
 

@@ -1,6 +1,7 @@
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import { registrationBookingUrl } from "@/lib/registration-launch";
 
 export default function BasicLifeSupportPageContent() {
   return (
@@ -10,14 +11,16 @@ export default function BasicLifeSupportPageContent() {
         alt: "Basic Life Support training session",
         src: "/CPR-Training-Stock-Photo-1-scaled.jpeg",
       }}
-      registrationUrl="https://www.hovn.app/service-providers/tayloredinstruction/offerings"
+      registrationUrl={registrationBookingUrl(
+        "https://www.hovn.app/service-providers/tayloredinstruction/offerings"
+      )}
       resources={[
-        { href: "/contact", label: "Request Course Fact Sheet" },
-        { href: "/contact", label: "Request Participant Manual" },
+        { href: "/contact", label: "Request course fact sheet" },
+        { href: "/contact", label: "Request participant manual" },
       ]}
       title="American Red Cross Basic Life Support"
     >
-      <ClassPageSection title="Course Purpose">
+      <ClassPageSection title="Course purpose">
         <p>
           The American Red Cross Basic Life Support (BLS) course provides
           participants with the knowledge and skills they need to assess,
@@ -33,11 +36,11 @@ export default function BasicLifeSupportPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Prerequisites">
+      <ClassPageSection title="Course prerequisites">
         <p>None.</p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Length">
+      <ClassPageSection title="Course length">
         <p>
           Blended Learning: Approximately 2 hours online, 3 hours in-person.
         </p>
