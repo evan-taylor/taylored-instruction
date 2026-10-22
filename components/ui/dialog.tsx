@@ -12,13 +12,15 @@ import { useEffect, useState } from "react";
 import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/page-header";
+import { usePressOrigin } from "@/components/ui/use-press-origin";
 import { cn } from "@/lib/utils";
 
 /**
- * Silk requires a commercial license for commercial use; see silkhq.com/access.
- * Every sheet in the app declares it here so there is one place to change.
+ * Silk's license declaration. This deployment is non-commercial; switch to
+ * "commercial" (and buy the license at silkhq.com/access) before any
+ * commercial use. The admin drawer in components/admin/shell.tsx reads this.
  */
-const SILK_LICENSE = "commercial" as const;
+export const SILK_LICENSE = "non-commercial" as const;
 
 const WIDTHS = {
   sm: "sm:max-w-md",
@@ -50,6 +52,7 @@ export function Modal({
   size?: "sm" | "md" | "lg" | "xl";
 }) {
   const wide = useClientMediaQuery("(min-width: 640px)");
+  const { ref: panelRef, pressedInside } = usePressOrigin<HTMLDivElement>();
   const contentPlacement = wide ? "center" : "bottom";
   const tracks: SheetViewProps["tracks"] = wide ? ["top", "bottom"] : "bottom";
   return (
@@ -68,11 +71,18 @@ export function Modal({
           className={cn("app-sheet-view", wide && "app-sheet-view-center")}
           contentPlacement={contentPlacement}
           nativeEdgeSwipePrevention
+          onClickOutside={(event) => {
+            // Only a press that started on the backdrop dismisses.
+            event.changeDefault({ dismiss: !pressedInside.current });
+          }}
           tracks={tracks}
         >
           <Sheet.Backdrop className="app-sheet-backdrop" />
           <Sheet.Content className={cn("app-sheet-content", WIDTHS[size])}>
-            <div className="app-sheet-panel flex flex-col rounded-t-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl sm:rounded-xl">
+            <div
+              className="app-sheet-panel flex flex-col rounded-t-2xl border border-slate-200 bg-white text-slate-900 shadow-2xl sm:rounded-xl"
+              ref={panelRef}
+            >
               {wide ? null : (
                 <Sheet.Handle
                   action="dismiss"

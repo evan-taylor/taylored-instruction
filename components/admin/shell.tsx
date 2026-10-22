@@ -25,7 +25,9 @@ import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { SILK_LICENSE } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/page-header";
+import { usePressOrigin } from "@/components/ui/use-press-origin";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
@@ -264,9 +266,10 @@ function MobileDrawer({
   attentionCount: number;
   email: string | null;
 }) {
+  const { ref: panelRef, pressedInside } = usePressOrigin<HTMLDivElement>();
   return (
     <Sheet.Root
-      license="commercial"
+      license={SILK_LICENSE}
       onPresentedChange={(presented) => {
         if (!presented) {
           onClose();
@@ -280,10 +283,16 @@ function MobileDrawer({
           className="app-drawer-view"
           contentPlacement="left"
           nativeEdgeSwipePrevention
+          onClickOutside={(event) => {
+            event.changeDefault({ dismiss: !pressedInside.current });
+          }}
           swipeOvershoot={false}
         >
           <Sheet.Backdrop className="app-sheet-backdrop" />
-          <Sheet.Content className="app-drawer-content flex flex-col border-slate-200 border-r bg-white text-slate-900 shadow-2xl">
+          <Sheet.Content
+            className="app-drawer-content flex flex-col border-slate-200 border-r bg-white text-slate-900 shadow-2xl"
+            ref={panelRef}
+          >
             <VisuallyHidden.Root>
               <Sheet.Title>Admin navigation</Sheet.Title>
               <Sheet.Description>
