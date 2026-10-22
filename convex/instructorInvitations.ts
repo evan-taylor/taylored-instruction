@@ -10,6 +10,7 @@ import { internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   internalAction,
+  internalMutation,
   type MutationCtx,
   mutation,
   type QueryCtx,
@@ -24,6 +25,8 @@ const invitation = v.object({
   createdAt: v.number(),
   acceptedAt: v.optional(v.number()),
   revokedAt: v.optional(v.number()),
+  sentAt: v.optional(v.number()),
+  sendError: v.optional(v.string()),
 });
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
@@ -99,10 +102,12 @@ async function grantInstructor(ctx: MutationCtx, userId: Id<"users">) {
     .query("profiles")
     .withIndex("by_user", (q) => q.eq("userId", userId))
     .first();
+  if (profile?.deactivatedAt) {
+    throw new ConvexError("This account has been disabled. Contact us.");
+  }
   if (profile) {
     await ctx.db.patch(profile._id, {
       isInstructor: true,
-      deactivatedAt: undefined,
       updatedAt: now,
       lastLogin: now,
     });
@@ -115,6 +120,23 @@ async function grantInstructor(ctx: MutationCtx, userId: Id<"users">) {
     lastLogin: now,
     notifiedAt: now,
   });
+}
+
+/**
+ * Cancels every pending invitation for an email. Called when an admin
+ * removes access, so an old invitation can never restore it.
+ */
+export async function revokeInvitationsFor(ctx: MutationCtx, email: string) {
+  const normalized = email.trim().toLowerCase();
+  const rows = await ctx.db
+    .query("instructorInvitations")
+    .withIndex("by_email", (q) => q.eq("email", normalized))
+    .collect();
+  await Promise.all(
+    rows
+      .filter((row) => !(row.acceptedAt || row.revokedAt))
+      .map((row) => ctx.db.patch(row._id, { revokedAt: Date.now() }))
+  );
 }
 
 /**
@@ -138,10 +160,11 @@ export const invite = mutation({
         invitedBy,
         createdAt: Date.now(),
       }));
+    await ctx.db.patch(id, { sentAt: undefined, sendError: undefined });
     await ctx.scheduler.runAfter(
       0,
       internal.instructorInvitations.sendInvitationEmail,
-      { email }
+      { id, email }
     );
     return id;
   },
@@ -166,10 +189,28 @@ export const list = query({
   returns: v.array(invitation),
   handler: async (ctx) => {
     await admin(ctx);
-    const rows = await ctx.db
+    // Every pending invitation stays actionable; settled history is capped.
+    const pending = await ctx.db
       .query("instructorInvitations")
+      .filter((q) =>
+        q.and(
+          q.eq(q.field("acceptedAt"), undefined),
+          q.eq(q.field("revokedAt"), undefined)
+        )
+      )
       .order("desc")
-      .take(200);
+      .collect();
+    const settled = await ctx.db
+      .query("instructorInvitations")
+      .filter((q) =>
+        q.or(
+          q.neq(q.field("acceptedAt"), undefined),
+          q.neq(q.field("revokedAt"), undefined)
+        )
+      )
+      .order("desc")
+      .take(100);
+    const rows = [...pending, ...settled];
     const inviterIds = [...new Set(rows.map((row) => row.invitedBy))];
     const inviters = new Map(
       await Promise.all(
@@ -178,18 +219,16 @@ export const list = query({
         )
       )
     );
-    const settled = (row: { acceptedAt?: number; revokedAt?: number }) =>
-      row.acceptedAt || row.revokedAt ? 1 : 0;
-    return rows
-      .map((row) => ({
-        id: row._id,
-        email: row.email,
-        invitedBy: inviters.get(row.invitedBy) ?? null,
-        createdAt: row.createdAt,
-        acceptedAt: row.acceptedAt,
-        revokedAt: row.revokedAt,
-      }))
-      .sort((a, b) => settled(a) - settled(b));
+    return rows.map((row) => ({
+      id: row._id,
+      email: row.email,
+      invitedBy: inviters.get(row.invitedBy) ?? null,
+      createdAt: row.createdAt,
+      acceptedAt: row.acceptedAt,
+      revokedAt: row.revokedAt,
+      sentAt: row.sentAt,
+      sendError: row.sendError,
+    }));
   },
 });
 
@@ -235,39 +274,66 @@ export const accept = mutation({
   },
 });
 
-export const sendInvitationEmail = internalAction({
-  args: { email: v.string() },
+export const recordSend = internalMutation({
+  args: { id: v.id("instructorInvitations"), error: v.optional(v.string()) },
   returns: v.null(),
-  handler: async (_ctx, args) => {
-    const { AUTH_EMAIL_FROM: from, SITE_URL: site } = process.env;
-    if (!(from && site && process.env.RESEND_API_KEY)) {
-      throw new Error(
-        "Configure AUTH_EMAIL_FROM, SITE_URL, and RESEND_API_KEY"
+  handler: async (ctx, args) => {
+    if (await ctx.db.get(args.id)) {
+      await ctx.db.patch(
+        args.id,
+        args.error
+          ? { sendError: args.error, sentAt: undefined }
+          : { sentAt: Date.now(), sendError: undefined }
       );
-    }
-    const { origin } = new URL(site);
-    const signInUrl = `${origin}/my-account`;
-    const response = await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from,
-      to: [registrationRecipient(args.email)],
-      replyTo: SUPPORT_EMAIL,
-      subject: "You’re invited to teach with Taylored Instruction",
-      html: renderEmailHtml(
-        createElement(InstructorInvitationEmail, {
-          signInUrl,
-          email: args.email,
-        })
-      ),
-      text: [
-        "You’re invited to teach with Taylored Instruction.",
-        `Sign in at ${signInUrl} using ${args.email}, then choose “Accept invitation” on your account page. That unlocks instructor tools, eCard purchasing, and your assigned sessions.`,
-        "No password is needed: we email you a one-time code when you sign in.",
-        `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
-      ].join("\n\n"),
-    });
-    if (response.error) {
-      throw new Error(response.error.message);
     }
     return null;
   },
 });
+
+/** Sends the invitation and records whether the provider accepted it. */
+export const sendInvitationEmail = internalAction({
+  args: { id: v.id("instructorInvitations"), email: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    try {
+      await deliver(args.email);
+      await ctx.runMutation(internal.instructorInvitations.recordSend, {
+        id: args.id,
+      });
+    } catch (error) {
+      await ctx.runMutation(internal.instructorInvitations.recordSend, {
+        id: args.id,
+        error: error instanceof Error ? error.message : "Email failed",
+      });
+      throw error;
+    }
+    return null;
+  },
+});
+
+async function deliver(email: string) {
+  const { AUTH_EMAIL_FROM: from, SITE_URL: site } = process.env;
+  if (!(from && site && process.env.RESEND_API_KEY)) {
+    throw new Error("Configure AUTH_EMAIL_FROM, SITE_URL, and RESEND_API_KEY");
+  }
+  const { origin } = new URL(site);
+  const signInUrl = `${origin}/my-account`;
+  const response = await new Resend(process.env.RESEND_API_KEY).emails.send({
+    from,
+    to: [registrationRecipient(email)],
+    replyTo: SUPPORT_EMAIL,
+    subject: "You’re invited to teach with Taylored Instruction",
+    html: renderEmailHtml(
+      createElement(InstructorInvitationEmail, { signInUrl, email })
+    ),
+    text: [
+      "You’re invited to teach with Taylored Instruction.",
+      `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks instructor tools, eCard purchasing, and your assigned sessions.`,
+      "No password is needed: we email you a one-time code when you sign in.",
+      `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
+    ].join("\n\n"),
+  });
+  if (response.error) {
+    throw new Error(response.error.message);
+  }
+}

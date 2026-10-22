@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { revokeInvitationsFor } from "./instructorInvitations";
 
 const SHORT_ID_PREFIX_LENGTH = 6;
 const SHORT_ID_SUFFIX_LENGTH = 4;
@@ -110,6 +111,10 @@ export const deleteUserAndProfile = mutation({
     }
 
     await ctx.db.delete(args.profileId);
+    const user = await ctx.db.get(profile.userId);
+    if (user?.email) {
+      await revokeInvitationsFor(ctx, user.email);
+    }
 
     return { ok: true };
   },

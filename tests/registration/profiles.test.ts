@@ -178,3 +178,61 @@ it("a staged migration still attaches on first sign-in", async () => {
   expect(profiles).toHaveLength(1);
   expect(profiles[0]?.isInstructor).toBe(true);
 });
+
+it("records whether the invitation email was delivered", async () => {
+  const w = await world();
+  await w.admin.mutation(api.instructorInvitations.invite, { email: INVITEE });
+  await drain(w.t);
+  let [row] = await w.admin.query(api.instructorInvitations.list);
+  expect(row?.sentAt).toBeTypeOf("number");
+  expect(row?.sendError).toBeUndefined();
+  vi.mocked(fetch).mockResolvedValueOnce(
+    new Response(
+      JSON.stringify({
+        message: "Domain not verified",
+        name: "validation_error",
+      }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    )
+  );
+  await w.admin.mutation(api.instructorInvitations.invite, { email: INVITEE });
+  [row] = await w.admin.query(api.instructorInvitations.list);
+  expect(row?.sentAt).toBeUndefined();
+  await drain(w.t);
+  [row] = await w.admin.query(api.instructorInvitations.list);
+  expect(row?.sendError).toContain("Domain not verified");
+  expect(row?.sentAt).toBeUndefined();
+});
+
+it("removing access cancels pending invitations, and a disabled account cannot accept", async () => {
+  const w = await world();
+  // An instructor who later loses approval: the old invitation dies with it.
+  await w.admin.mutation(api.instructorInvitations.invite, { email: INVITEE });
+  await w.invitee.mutation(api.instructorInvitations.accept);
+  const inviteeId = (await w.profiles())[0]?.userId;
+  if (!inviteeId) {
+    throw new Error("expected a profile");
+  }
+  await w.admin.mutation(api.instructorInvitations.invite, {
+    email: "someone@example.test",
+  });
+  await w.admin.mutation(api.profiles.approveInstructor, {
+    userId: inviteeId,
+    approve: false,
+  });
+  await w.admin.mutation(api.instructorInvitations.invite, { email: INVITEE });
+  expect(await w.invitee.query(api.instructorInvitations.mine)).not.toBeNull();
+  await w.admin.mutation(api.profiles.deactivateUser, { userId: inviteeId });
+  expect(await w.invitee.query(api.instructorInvitations.mine)).toBeNull();
+  await expect(
+    w.invitee.mutation(api.instructorInvitations.accept)
+  ).rejects.toThrow("No pending invitation");
+  // Even a brand-new invitation cannot revive a disabled account.
+  await w.admin.mutation(api.instructorInvitations.invite, { email: INVITEE });
+  await expect(
+    w.invitee.mutation(api.instructorInvitations.accept)
+  ).rejects.toThrow("disabled");
+  expect((await w.profiles())[0]?.deactivatedAt).toBeTypeOf("string");
+  // The unrelated invitation survived all of that.
+  expect(await w.other.query(api.instructorInvitations.mine)).not.toBeNull();
+});

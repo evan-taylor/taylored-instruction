@@ -27,9 +27,13 @@ function when(ms: number) {
 function InvitationStatus({
   acceptedAt,
   revokedAt,
+  sentAt,
+  sendError,
 }: {
   acceptedAt?: number;
   revokedAt?: number;
+  sentAt?: number;
+  sendError?: string;
 }) {
   if (acceptedAt) {
     return <Badge tone="success">Accepted {when(acceptedAt)}</Badge>;
@@ -37,7 +41,24 @@ function InvitationStatus({
   if (revokedAt) {
     return <Badge tone="neutral">Revoked {when(revokedAt)}</Badge>;
   }
-  return <Badge tone="warning">Pending</Badge>;
+  if (sendError) {
+    return (
+      <span className="space-y-1">
+        <Badge tone="danger">Send failed</Badge>
+        <span className="block text-slate-500 text-xs">
+          {sendError}. Use Resend to try again.
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span className="space-y-1">
+      <Badge tone="warning">Pending</Badge>
+      <span className="block text-slate-500 text-xs">
+        {sentAt ? `Emailed ${when(sentAt)}` : "Sending…"}
+      </span>
+    </span>
+  );
 }
 
 /** Invite instructors by email and track who has accepted. */
@@ -54,7 +75,10 @@ export function Invitations() {
     setMessage(null);
     try {
       await invite({ email: target });
-      setMessage({ text: `Invitation emailed to ${target}.`, tone: "success" });
+      setMessage({
+        text: `Invitation queued for ${target}. Delivery status appears in the list below.`,
+        tone: "success",
+      });
       setEmail("");
     } catch (error) {
       setMessage({ text: errorText(error), tone: "danger" });
@@ -123,6 +147,8 @@ export function Invitations() {
                       <InvitationStatus
                         acceptedAt={row.acceptedAt}
                         revokedAt={row.revokedAt}
+                        sendError={row.sendError}
+                        sentAt={row.sentAt}
                       />
                     </TD>
                     <TD className="whitespace-nowrap text-slate-600">

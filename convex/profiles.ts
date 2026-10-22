@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { revokeInvitationsFor } from "./instructorInvitations";
 
 export const getProfile = query({
   args: {},
@@ -168,6 +169,12 @@ export const approveInstructor = mutation({
       isInstructor: willBeInstructor,
       updatedAt: now,
     });
+    if (!willBeInstructor) {
+      const user = await ctx.db.get(args.userId);
+      if (user?.email) {
+        await revokeInvitationsFor(ctx, user.email);
+      }
+    }
 
     // Note: Approval email is now sent by the admin UI via Next.js server action (important-comment)
     // This provides better security (no exposed secrets) and error handling
@@ -194,5 +201,9 @@ export const deactivateUser = mutation({
     await ctx.db.patch(profile._id, {
       deactivatedAt: now,
     });
+    const user = await ctx.db.get(args.userId);
+    if (user?.email) {
+      await revokeInvitationsFor(ctx, user.email);
+    }
   },
 });

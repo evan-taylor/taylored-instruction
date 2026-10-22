@@ -97,6 +97,9 @@ const schema = defineSchema({
     acceptedAt: v.optional(v.number()),
     acceptedBy: v.optional(v.id("users")),
     revokedAt: v.optional(v.number()),
+    /** Delivery outcome of the latest send; absent while queued. */
+    sentAt: v.optional(v.number()),
+    sendError: v.optional(v.string()),
   }).index("by_email", ["email"]),
 
   profiles: defineTable({
