@@ -3,12 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { Resend } from "resend";
 import Stripe from "stripe";
 import { SUPPORT_EMAIL } from "../shared/email";
-import {
-  brandedEmail,
-  MAGIC_LINK_MS,
-  registrationEmail,
-  usesPortalAction,
-} from "../shared/registration/email";
+import { brandedEmail, registrationEmail } from "../shared/registration/email";
 import {
   assertRegistrationPaymentMode,
   registrationRecipient,
@@ -166,18 +161,11 @@ export const deliver = internalAction({
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
             throw new Error("Recipient, sender, and Resend key required");
           }
-          let portalUrl: string | undefined;
-          if (usesPortalAction(job)) {
-            // The button signs the student in, so the email is the whole
-            // journey: no second "email me a link" step on the portal.
-            const { token, tokenHash } = await accessToken();
-            await ctx.runMutation(internal.registrationPortal.issueLink, {
-              email: job.recipient,
-              tokenHash,
-              expires: Date.now() + MAGIC_LINK_MS,
-            });
-            portalUrl = `${baseUrl()}/registrations/access#${token}`;
-          }
+          // The button signs the student in, so the email is the whole
+          // journey: no second "email me a link" step on the portal.
+          const portalUrl = job.portalToken
+            ? `${baseUrl()}/registrations/access#${job.portalToken}`
+            : undefined;
           const rendered = registrationEmail(job, baseUrl(), portalUrl);
           const response = await new Resend(
             process.env.RESEND_API_KEY

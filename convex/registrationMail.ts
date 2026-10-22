@@ -1,9 +1,35 @@
 import { v } from "convex/values";
-import { BATCH, formatMoney } from "../shared/registration/domain";
+import { BATCH, email, formatMoney } from "../shared/registration/domain";
+import { MAGIC_LINK_MS, usesPortalAction } from "../shared/registration/email";
 import { calendar } from "../shared/registration/schedule";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { hash } from "./registrationHelpers";
+
+/**
+ * The sign-in token behind the email's portal button. Minted on the first
+ * delivery attempt and stored on the job, so a retried send carries the same
+ * link under the same idempotency key.
+ */
+async function portalToken(ctx: MutationCtx, job: Doc<"registrationJobs">) {
+  if (job.kind !== "email" || !usesPortalAction(job)) {
+    return;
+  }
+  if (job.portalToken) {
+    return job.portalToken;
+  }
+  const token = crypto.randomUUID() + crypto.randomUUID();
+  await ctx.db.insert("registrationGrants", {
+    email: email(job.recipient),
+    hash: await hash(token),
+    purpose: "challenge",
+    expires: Date.now() + MAGIC_LINK_MS,
+    consumed: false,
+  });
+  await ctx.db.patch(job._id, { portalToken: token });
+  return token;
+}
 
 function billingDetails(
   order: Doc<"registrationOrders"> | null,
@@ -250,6 +276,7 @@ export const claim = internalMutation({
       ),
       calendar: v.optional(v.string()),
       link: v.optional(v.object({ label: v.string(), url: v.string() })),
+      portalToken: v.optional(v.string()),
     }),
     v.null()
   ),
@@ -326,6 +353,7 @@ export const claim = internalMutation({
       name: seat?.name ?? "",
       ...scheduleContent(session, seat),
       link: job.link,
+      portalToken: await portalToken(ctx, job),
     };
   },
 });

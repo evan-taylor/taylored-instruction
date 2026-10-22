@@ -1114,6 +1114,69 @@ describe("Operational regression coverage", () => {
       value: "$8.90",
     });
   });
+  it("mints one portal sign-in token per email job and reuses it on retry", async () => {
+    const f = await fixture();
+    const job = await f.t.run(
+      async (ctx) =>
+        await ctx.db.insert("registrationJobs", {
+          key: "test-magic",
+          kind: "email",
+          recipient: "Student@example.test",
+          subject: "Confirmed",
+          body: "See your portal",
+          due: Date.now(),
+          attempts: 0,
+          state: "pending",
+        })
+    );
+    const first = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(first?.portalToken).toHaveLength(72);
+    await f.t.mutation(internal.registrationMail.result, {
+      id: job,
+      success: false,
+      error: "Timed out",
+    });
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(job, { due: Date.now() - 1 });
+    });
+    const retry = await f.t.mutation(internal.registrationMail.claim, {
+      id: job,
+    });
+    expect(retry?.portalToken).toBe(first?.portalToken);
+    const grants = await f.t.run((ctx) =>
+      ctx.db.query("registrationGrants").collect()
+    );
+    expect(grants).toHaveLength(1);
+    expect(grants[0]?.email).toBe("student@example.test");
+    expect(grants[0]?.expires).toBeGreaterThan(Date.now() + 6 * 86_400_000);
+    expect(
+      await f.t.mutation(api.registrationPortal.exchange, {
+        token: first?.portalToken ?? "",
+        grantHash: "a".repeat(64),
+      })
+    ).toBe(true);
+    // Invoice and payment-request emails keep their own button.
+    const linked = await f.t.run(
+      async (ctx) =>
+        await ctx.db.insert("registrationJobs", {
+          key: "test-linked",
+          kind: "email",
+          recipient: "student@example.test",
+          subject: "Pay",
+          body: "Pay now",
+          due: Date.now(),
+          attempts: 0,
+          state: "pending",
+          link: { label: "Pay", url: "https://pay.example.test" },
+        })
+    );
+    const claimed = await f.t.mutation(internal.registrationMail.claim, {
+      id: linked,
+    });
+    expect(claimed?.portalToken).toBeUndefined();
+  });
   it("email leases prevent parallel delivery and exhaust retries into attention", async () => {
     const f = await fixture();
     const job = await f.t.run(

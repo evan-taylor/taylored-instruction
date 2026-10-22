@@ -214,8 +214,10 @@ export function PaymentStep({
   const [failure, setFailure] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
-  const paying = useRef(false);
+  const [paying, setPaying] = useState(false);
+  const payingRef = useRef(false);
   const released = useRef(false);
+  const unmountRelease = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -228,7 +230,7 @@ export function PaymentStep({
     // order is anything other than a live hold, so a late or duplicate
     // release can never undo a payment.
     const leave = () => {
-      if (paying.current || released.current) {
+      if (payingRef.current || released.current) {
         return;
       }
       released.current = true;
@@ -237,14 +239,24 @@ export function PaymentStep({
         JSON.stringify({ orderId, requestKey })
       );
     };
+    // StrictMode replays unmount and mount on the same instance in
+    // development. Deferring the unmount release lets that immediate
+    // remount cancel it, so only a real unmount gives the seats back.
+    if (unmountRelease.current) {
+      clearTimeout(unmountRelease.current);
+      unmountRelease.current = null;
+    }
     window.addEventListener("pagehide", leave);
     return () => {
       window.removeEventListener("pagehide", leave);
       // Client-side navigation and "start again" unmount the step instead.
-      leave();
+      unmountRelease.current = setTimeout(leave, 250);
     };
   }, [releaseOnLeave, orderId, requestKey]);
   const cancel = async () => {
+    if (payingRef.current || released.current) {
+      return;
+    }
     released.current = true;
     try {
       await abandon({ orderId, requestKey });
@@ -340,7 +352,8 @@ export function PaymentStep({
           <PaymentForm
             expired={expired}
             onPaying={(value) => {
-              paying.current = value;
+              payingRef.current = value;
+              setPaying(value);
             }}
           />
         </CheckoutElementsProvider>
@@ -349,7 +362,8 @@ export function PaymentStep({
         <p className="text-center text-slate-500 text-sm">
           Changed your mind?{" "}
           <button
-            className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="font-medium text-primary underline-offset-2 hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
+            disabled={paying}
             onClick={cancel}
             type="button"
           >

@@ -10,7 +10,7 @@ import {
   MapPin,
   Package,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import {
@@ -163,19 +163,33 @@ const KIND_LABEL = {
   physical: "Physical item",
 } as const;
 type MaterialKind = keyof typeof KIND_ICON;
-const ACCESS_CODE = /^[A-Z0-9][A-Z0-9-]{7,}$/u;
+/** Letters and digits with at least one digit, so a shouted heading never qualifies. */
+const ACCESS_CODE = /^(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{7,}$/u;
+const MENTIONS_CODE = /\bcode\b/iu;
 const LINE_BREAKS = /\n+/u;
 
 function materialKind(kind?: string): MaterialKind | null {
   return kind && kind in KIND_ICON ? (kind as MaterialKind) : null;
 }
-/** Splits instructions into steps and lifts out a bare access code so it can be copied. */
-function parseInstructions(text: string) {
+/**
+ * Splits instructions into steps. For a keycode material, a bare code that
+ * directly follows a line introducing it ("Copy your access code:") is lifted
+ * out so it can be copied; everything else is left as written.
+ */
+function parseInstructions(text: string, kind: MaterialKind | null) {
   const lines = text
     .split(LINE_BREAKS)
     .map((line) => line.trim())
     .filter(Boolean);
-  const code = lines.find((line) => ACCESS_CODE.test(line));
+  const code =
+    kind === "keycode"
+      ? lines.find(
+          (line, index) =>
+            index > 0 &&
+            ACCESS_CODE.test(line) &&
+            MENTIONS_CODE.test(lines.at(index - 1) ?? "")
+        )
+      : undefined;
   return { code, steps: lines.filter((line) => line !== code) };
 }
 function openLabel(kind: MaterialKind | null) {
@@ -226,7 +240,7 @@ function MaterialRow({
   const [busy, setBusy] = useState(false);
   const kind = materialKind(material.kind);
   const Icon = kind ? KIND_ICON[kind] : FileText;
-  const { code, steps } = parseInstructions(material.instructions ?? "");
+  const { code, steps } = parseInstructions(material.instructions ?? "", kind);
   const physical = kind === "physical";
   const canceled = material.state === "canceled";
   const ready = !physical && material.state === "ready";
@@ -651,8 +665,15 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
   // the URL fragment, so it never reaches the server until this script sends
   // it, and the button in the email is the only step the student takes.
   const [probing, setProbing] = useState(true);
+  // StrictMode replays this effect in development; a token must only be
+  // exchanged once, so the ref survives the replay where state would not.
+  const started = useRef(false);
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
   useEffect(() => {
+    if (started.current) {
+      return;
+    }
+    started.current = true;
     const emailed = access ? window.location.hash.slice(1) : "";
     if (!emailed) {
       load("registrations", null, true).finally(() => setProbing(false));
