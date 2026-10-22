@@ -492,7 +492,8 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  async function post(body: object) {
+  /** Resolves to the HTTP outcome, or "offline" when the server was never reached. */
+  async function post(body: object): Promise<boolean | "offline"> {
     setBusy(true);
     try {
       const response = await fetch("/api/registration/portal", {
@@ -514,7 +515,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
         text: "We couldn’t reach the portal. Check your connection and try again.",
         tone: "danger",
       });
-      return false;
+      return "offline";
     } finally {
       setBusy(false);
     }
@@ -591,13 +592,17 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
           <AccessCard
             busy={busy}
             onConfirm={async () => {
-              const ok = await post({ token });
-              // Either way the emailed token is spent: drop it from the URL,
+              const outcome = await post({ token });
+              if (outcome === "offline") {
+                // Nothing was exchanged; keep the link so it can be retried.
+                return;
+              }
+              // The emailed token is spent either way: drop it from the URL,
               // then fall back to any access this browser already has or the
               // request form (the failure notice stays visible).
               setToken("");
               window.history.replaceState(null, "", "/registrations");
-              if (ok) {
+              if (outcome) {
                 await load("registrations");
                 return;
               }
