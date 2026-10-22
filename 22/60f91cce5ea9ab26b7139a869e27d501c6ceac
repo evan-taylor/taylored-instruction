@@ -1,0 +1,37 @@
+app/(marketing)/water-safety-instructor/page.tsx
+  s_fda7a6981cbc39::t_4a6a5d0e6c80c3 1-76
+app/sitemap.ts
+  s_fc856bd356d4db::t_9d1bb1337de7fa 25,60
+components/WaterSafetyInstructorPageContent.tsx
+  s_fda7a6981cbc39::t_cbbe7ca32f7b61 1-80
+components/layout/Header.tsx
+  s_fc856bd356d4db::t_e4a59f3f04ed36 120-124
+components/layout/MarketingHeader.tsx
+  s_fc856bd356d4db::t_1d95f6d1ac9076 109-113
+lib/course-catalog.ts
+  s_fc856bd356d4db::t_d168473a09223a 8-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2260f91cce5ea9ab26b7139a869e27d501c6ceac",
+  "prompts": {},
+  "sessions": {
+    "s_fc856bd356d4db": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161c4-45cb-7f52-9988-bfde805b49b4",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_fda7a6981cbc39": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a161b0-9825-7360-b274-415e50e0d181",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
