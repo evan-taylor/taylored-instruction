@@ -180,7 +180,7 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
         type="application/ld+json"
       />
 
-      <section className="border-gray-100 border-b bg-gray-50">
+      <section className="border-slate-100 border-b bg-slate-50">
         <div className="container mx-auto max-w-4xl px-4 py-14">
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-blue-50 px-3 py-1 font-medium text-blue-700 text-xs">
@@ -189,17 +189,17 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
             <span className="rounded-full bg-green-50 px-3 py-1 font-medium text-green-700 text-xs">
               {page.serviceLine}
             </span>
-            <span className="rounded-full bg-gray-100 px-3 py-1 font-medium text-gray-700 text-xs">
+            <span className="rounded-full bg-slate-100 px-3 py-1 font-medium text-slate-700 text-xs">
               {page.readingTimeMinutes} min read
             </span>
           </div>
-          <h1 className="mt-4 font-bold text-4xl text-gray-900 leading-tight md:text-5xl">
+          <h1 className="mt-4 font-bold text-4xl text-slate-900 leading-tight md:text-5xl">
             {page.title}
           </h1>
-          <p className="mt-5 text-gray-700 text-lg leading-relaxed">
+          <p className="mt-5 text-lg text-slate-700 leading-relaxed">
             {page.excerpt}
           </p>
-          <p className="mt-4 text-gray-500 text-sm">
+          <p className="mt-4 text-slate-500 text-sm">
             Updated {new Date(page.updatedAt).toLocaleDateString()}
           </p>
         </div>
@@ -217,10 +217,10 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
 
               return (
                 <section key={sectionKey}>
-                  <h2 className="font-semibold text-2xl text-gray-900">
+                  <h2 className="font-semibold text-2xl text-slate-900">
                     {section.heading}
                   </h2>
-                  <div className="mt-4 space-y-4 text-gray-700 leading-relaxed">
+                  <div className="mt-4 space-y-4 text-slate-700 leading-relaxed">
                     {withOccurrenceKeys(
                       section.paragraphs,
                       `${sectionKey}-paragraph`
@@ -229,7 +229,7 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
                     ))}
                   </div>
                   {section.bullets && section.bullets.length > 0 ? (
-                    <ul className="mt-5 list-disc space-y-2 pl-6 text-gray-700">
+                    <ul className="mt-5 list-disc space-y-2 pl-6 text-slate-700">
                       {withOccurrenceKeys(
                         section.bullets,
                         `${sectionKey}-bullet`
@@ -246,8 +246,8 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
       </section>
 
       <section className="container mx-auto max-w-4xl px-4 pb-12">
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-7">
-          <h2 className="font-semibold text-2xl text-gray-900">
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-7">
+          <h2 className="font-semibold text-2xl text-slate-900">
             Frequently asked questions
           </h2>
           <div className="mt-5 space-y-4">
@@ -260,13 +260,13 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
 
                 return (
                   <div
-                    className="rounded-lg border border-gray-200 bg-white p-4"
+                    className="rounded-lg border border-slate-200 bg-white p-4"
                     key={`faq-${item.question}-${questionOccurrence}`}
                   >
-                    <h3 className="font-medium text-gray-900">
+                    <h3 className="font-medium text-slate-900">
                       {item.question}
                     </h3>
-                    <p className="mt-2 text-gray-700">{item.answer}</p>
+                    <p className="mt-2 text-slate-700">{item.answer}</p>
                   </div>
                 );
               });
@@ -277,10 +277,10 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
 
       <section className="container mx-auto max-w-4xl px-4 pb-16">
         <div className="rounded-xl bg-primary/5 p-8">
-          <h2 className="font-semibold text-2xl text-gray-900">
+          <h2 className="font-semibold text-2xl text-slate-900">
             Ready to plan your training?
           </h2>
-          <p className="mt-3 max-w-3xl text-gray-700">{page.ctaText}</p>
+          <p className="mt-3 max-w-3xl text-slate-700">{page.ctaText}</p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
               className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
@@ -292,7 +292,7 @@ export default async function ResourceDetailPage(props: ResourcePageProps) {
               {page.ctaLabel}
             </Link>
             <Link
-              className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-5 py-2.5 font-medium text-gray-700 hover:bg-gray-100"
+              className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
               href="/resources"
             >
               Back to resources

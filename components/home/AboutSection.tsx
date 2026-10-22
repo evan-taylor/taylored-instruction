@@ -13,7 +13,7 @@ export const AboutSection = () => (
         <div className="mb-12 grid grid-cols-1 items-center gap-12 md:grid-cols-2">
           <div>
             <h3 className="mb-4 font-semibold text-2xl text-text">
-              What We Do
+              What we do
             </h3>
             <p className="mb-8 text-text-light">
               Taylored Instruction was built upon the core value of teaching
@@ -23,7 +23,7 @@ export const AboutSection = () => (
             </p>
 
             <h3 className="mb-4 font-semibold text-2xl text-text">
-              How We Do It
+              How we work
             </h3>
             <p className="mb-8 text-text-light">
               Taylored Instruction provides classes periodically in various
@@ -44,8 +44,8 @@ export const AboutSection = () => (
           </div>
         </div>
 
-        <h3 className="mb-4 font-semibold text-2xl text-text">Who We Are</h3>
-        <p className="mb-8 text-text-light">
+        <h3 className="mb-4 font-semibold text-2xl text-text">Who we are</h3>
+        <p className="mb-8 max-w-prose text-text-light">
           Taylored Instruction is a small business born in Vancouver, WA, owned
           and operated by Evan Taylor. Evan has been swimming since a young age,
           and began teaching swimming lessons and lifeguarding at age 15. He
@@ -62,7 +62,7 @@ export const AboutSection = () => (
               Let us know how we can help you by contacting us today!
             </p>
             <Button href="/contact" size="lg" variant="primary">
-              Contact Us
+              Contact us
             </Button>
           </div>
           <div className="flex justify-center md:justify-end">

@@ -11,7 +11,7 @@ import {
 } from "@react-email/components";
 import { Tailwind } from "@react-email/tailwind";
 
-interface AlignmentInterestEmailProps {
+type AlignmentInterestEmailProps = {
   agencies?: string[];
   email: string;
   firstName: string;
@@ -21,7 +21,7 @@ interface AlignmentInterestEmailProps {
   phone: string;
   smsOptIn?: boolean;
   smsOptOut?: boolean;
-}
+};
 
 export default function AlignmentInterestEmail({
   firstName,

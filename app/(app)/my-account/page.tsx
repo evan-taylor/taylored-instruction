@@ -1,37 +1,63 @@
 "use client";
 
 import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  DescriptionList,
+  Notice,
+  PageHeader,
+  Skeleton,
+} from "@/components/ui/page-header";
 import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
+import { workspaceLinks } from "@/lib/workspace-navigation";
 
-const _getProfileStatus = (
-  profile: unknown,
-  loadingProfile: boolean
-): string => {
-  if (profile) {
-    return "Loaded";
-  }
-  if (loadingProfile) {
-    return "Loading";
-  }
-  return "Not found";
-};
+type QuickLink = { label: string; href: string };
+
+function LinkList({ links }: { links: QuickLink[] }) {
+  return (
+    <ul className="list-none divide-y divide-slate-100 p-0">
+      {links.map((link) => (
+        <li key={link.href}>
+          <a
+            className="-mx-2 flex items-center justify-between gap-4 rounded-md px-2 py-3 transition-colors hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+            href={link.href}
+            rel={
+              link.href.startsWith("http") ? "noopener noreferrer" : undefined
+            }
+            target={link.href.startsWith("http") ? "_blank" : undefined}
+          >
+            <span>
+              <span className="block font-medium text-slate-900">
+                {link.label}
+              </span>
+            </span>
+            <span aria-hidden="true" className="text-slate-400">
+              →
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export default function MyAccountPage() {
   const router = useRouter();
   const { signOut } = useAuthActions();
   const authToken = useAuthToken();
   const { profile, loading, isInstructor, error, email } = useProfile();
-
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-
-  useEffect(() => {
-    setIsAdmin(isAdminEmail(email));
-  }, [email]);
+  const isAdmin = isAdminEmail(email);
 
   useEffect(() => {
     if (!loading && authToken === null) {
@@ -41,135 +67,99 @@ export default function MyAccountPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto flex items-center justify-center px-4 py-8">
-        <div className="text-center">
-          <p className="text-lg text-red-600">Error loading account: {error}</p>
-          <button
-            className="mt-4 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-            onClick={() => window.location.reload()}
-            type="button"
-          >
-            Retry
-          </button>
+      <div className="mx-auto max-w-lg px-4 py-16 sm:px-6">
+        <Notice tone="danger">We couldn’t load your account. {error}</Notice>
+        <div className="mt-4">
+          <Button onClick={() => window.location.reload()} type="button">
+            Try again
+          </Button>
         </div>
       </div>
     );
   }
 
-  if (loading) {
+  if (loading || authToken === null) {
     return (
-      <div className="container mx-auto flex items-center justify-center px-4 py-8">
-        <div className="text-center">
-          <p className="text-lg">Loading account information...</p>
-        </div>
+      <div
+        aria-busy="true"
+        className="mx-auto max-w-3xl space-y-6 px-4 py-10 sm:px-6"
+        role="status"
+      >
+        <span className="sr-only">Loading your account…</span>
+        <Skeleton className="h-9 w-48" />
+        <Skeleton className="h-40" />
+        <Skeleton className="h-40" />
       </div>
     );
   }
 
-  if (authToken === null) {
-    return (
-      <div className="container mx-auto flex items-center justify-center px-4 py-8">
-        <div className="text-center">
-          <p className="text-lg">Redirecting to login...</p>
-        </div>
-      </div>
-    );
+  const groups: { title: string; links: QuickLink[] }[] = [];
+  for (const item of workspaceLinks(true, isInstructor, isAdmin)) {
+    if (item.type === "divider") {
+      groups.push({ title: item.label, links: [] });
+    } else if (item.href !== "/my-account" && groups.length) {
+      groups.at(-1)?.links.push({ label: item.label, href: item.href });
+    }
   }
+  const linkGroups = groups.filter((group) => group.links.length > 0);
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 font-bold text-3xl md:text-4xl">My Account</h1>
-
-        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 font-semibold text-xl">Account Information</h2>
-
-          <div className="mb-4">
-            <p className="text-gray-600">Email:</p>
-            <p className="font-medium">{email || "Not available"}</p>
-          </div>
-
-          <div className="mb-4">
-            <p className="text-gray-600">Instructor Status:</p>
-            <p className="font-medium">
-              {isInstructor ? (
-                <span className="text-green-600">Approved Instructor</span>
-              ) : (
-                <span className="text-yellow-600">Pending Approval</span>
-              )}
-            </p>
-            {!isInstructor && profile && (
-              <p className="mt-1 text-gray-500 text-sm">
-                Your instructor status is pending approval from an
-                administrator.
+    <div className="bg-slate-50">
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+        <PageHeader
+          actions={
+            <Button
+              onClick={async () => {
+                await signOut();
+                router.push("/");
+              }}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Sign out
+            </Button>
+          }
+          title="My account"
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Account</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DescriptionList
+              items={[
+                { label: "Email", value: email || "Not available" },
+                {
+                  label: "Instructor status",
+                  value: isInstructor ? (
+                    <Badge tone="success">Approved instructor</Badge>
+                  ) : (
+                    <Badge tone="warning">Awaiting approval</Badge>
+                  ),
+                },
+              ]}
+            />
+          </CardContent>
+          {!isInstructor && profile ? (
+            <CardFooter>
+              <p className="text-slate-600 text-sm">
+                An administrator reviews new instructor accounts. You’ll get
+                access to instructor tools once approved.
               </p>
-            )}
-          </div>
-        </div>
-
-        {/* Quick Links */}
-        <div className="mb-6 rounded-lg bg-white p-6 shadow-md">
-          <h2 className="mb-4 font-semibold text-xl">Quick Links</h2>
-          <div className="space-y-2">
-            {isInstructor && profile && (
-              <>
-                <Link
-                  className="block text-primary hover:underline"
-                  href="/ecards"
-                >
-                  Purchase eCards
-                </Link>
-                <Link
-                  className="block text-primary hover:underline"
-                  href="/instructor-resources"
-                  rel="noopener"
-                  target="_blank"
-                >
-                  Instructor Resources
-                </Link>
-              </>
-            )}
-            {isAdmin && (
-              <div>
-                <button
-                  className="block text-primary hover:underline"
-                  onClick={() => setShowAdmin(!showAdmin)}
-                  type="button"
-                >
-                  Admin
-                </button>
-                {showAdmin && (
-                  <div className="mt-2 ml-4 space-y-1">
-                    <Link
-                      className="block text-primary hover:underline"
-                      href="/admin/instructors"
-                    >
-                      Manage Instructors
-                    </Link>
-                    <Link
-                      className="block text-primary hover:underline"
-                      href="/admin/studio"
-                    >
-                      Sanity Studio
-                    </Link>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Sign Out Button */}
-        <button
-          className="w-full transform rounded-lg bg-red-600 px-6 py-3 font-medium text-sm text-white capitalize tracking-wide transition-colors duration-300 hover:bg-red-500 focus:outline-none focus:ring focus:ring-red-300 focus:ring-opacity-50 md:w-auto"
-          onClick={async () => {
-            await signOut();
-            router.push("/");
-          }}
-          type="button"
-        >
-          Sign Out
-        </button>
+            </CardFooter>
+          ) : null}
+        </Card>
+        {linkGroups.map((group) => (
+          <Card key={group.title}>
+            <CardHeader>
+              <CardTitle>{group.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="py-1">
+              <LinkList links={group.links} />
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

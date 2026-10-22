@@ -11,15 +11,15 @@ import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { trackVisitorsEvent } from "@/lib/analytics";
 
-interface Product {
-  description: string | null;
+type Product = {
   id: string;
-  image_urls: string | null;
   name: string;
-  requires_instructor: boolean;
+  description: string | null;
   stripe_price_id: string | null;
+  image_urls: string | null;
   type: string;
-}
+  requires_instructor: boolean;
+};
 
 interface ProductWithPrice extends Product {
   currency: string;
@@ -28,16 +28,19 @@ interface ProductWithPrice extends Product {
   stripe_product_name?: string;
 }
 
-interface CartItem {
+type CartItem = {
   product: ProductWithPrice;
   quantity: number;
-}
+};
 
 export default function ECardsPage() {
   const router = useRouter();
   const posthog = usePostHog();
   const { isInstructor, loading, session } = useProfile();
-  const ecardProducts = useQuery(api.products.getEcardProducts);
+  const ecardProducts = useQuery(
+    api.products.getEcardProducts,
+    session && isInstructor ? {} : "skip"
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedQuantities, setSelectedQuantities] = useState<
@@ -53,14 +56,14 @@ export default function ECardsPage() {
     Record<string, StripePriceData[]>
   >({});
 
-  interface StripePriceData {
-    currency: string;
-    error?: string;
+  type StripePriceData = {
     id: string;
-    product_description?: string | null;
-    product_name: string;
     unit_amount: number | null;
-  }
+    currency: string;
+    product_name: string;
+    product_description?: string | null;
+    error?: string;
+  };
 
   const idsKey = useMemo(() => {
     if (!ecardProducts) {
@@ -114,9 +117,9 @@ export default function ECardsPage() {
 
   const fetchStripePrices = useCallback(async (priceIds: string[]) => {
     const priceResponse = await fetch("/api/get-stripe-prices", {
-      body: JSON.stringify({ priceIds }),
-      headers: { "Content-Type": "application/json" },
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ priceIds }),
     });
 
     if (!priceResponse.ok) {
@@ -139,18 +142,18 @@ export default function ECardsPage() {
       if (stripeInfo && stripeInfo.unit_amount !== null) {
         return {
           ...convexProduct,
-          currency: stripeInfo.currency.toUpperCase(),
           display_price: stripeInfo.unit_amount / CentsInDollar,
-          stripe_product_description: stripeInfo.product_description,
+          currency: stripeInfo.currency.toUpperCase(),
           stripe_product_name: stripeInfo.product_name,
+          stripe_product_description: stripeInfo.product_description,
         };
       }
       return {
         ...convexProduct,
-        currency: "N/A",
         display_price: 0,
-        stripe_product_description: undefined,
+        currency: "N/A",
         stripe_product_name: undefined,
+        stripe_product_description: undefined,
       };
     },
     []
@@ -177,10 +180,10 @@ export default function ECardsPage() {
     if (!idsKey) {
       return (ecardProducts as unknown as Product[]).map((item) => ({
         ...item,
-        currency: "USD",
         display_price: 0,
-        stripe_product_description: undefined,
+        currency: "USD",
         stripe_product_name: undefined,
+        stripe_product_description: undefined,
       }));
     }
 
@@ -295,15 +298,15 @@ export default function ECardsPage() {
     }
 
     trackVisitorsEvent("Add to Cart", {
-      price: product.display_price,
       productName: product.name,
       quantity,
+      price: product.display_price,
     });
     posthog.capture("ecard_added_to_cart", {
-      currency: product.currency,
       product_id: product.id,
       quantity,
       unit_price: product.display_price,
+      currency: product.currency,
     });
 
     setSelectedQuantities((prev) => ({
@@ -318,10 +321,10 @@ export default function ECardsPage() {
     const cartItem = cartItems.find((item) => item.product.id === productId);
     if (cartItem) {
       posthog.capture("ecard_removed_from_cart", {
-        currency: cartItem.product.currency,
         product_id: cartItem.product.id,
         quantity: cartItem.quantity,
         unit_price: cartItem.product.display_price,
+        currency: cartItem.product.currency,
       });
     }
     setCartItems(cartItems.filter((item) => item.product.id !== productId));
@@ -362,10 +365,10 @@ export default function ECardsPage() {
     // Track checkout initiation
     posthog.capture("ecard_checkout_initiated", {
       cartItems: cartItems.map((item) => ({
-        price: item.product.display_price,
         productId: item.product.id,
         productName: item.product.name,
         quantity: item.quantity,
+        price: item.product.display_price,
       })),
       totalItems: cartItems.length,
       totalValue: cartItems.reduce(
@@ -384,10 +387,13 @@ export default function ECardsPage() {
       setLoadingProductIds(cartItems.map((item) => item.product.id));
 
       const response = await fetch("/api/create-cart-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: session?.user?.email,
           lineItems,
           metadata: {
+            userId: session?.user?.id,
             cartItems: JSON.stringify(
               cartItems.map((item) => ({
                 productId: item.product.id,
@@ -395,11 +401,8 @@ export default function ECardsPage() {
                 quantity: item.quantity,
               }))
             ),
-            userId: session?.user?.id,
           },
         }),
-        headers: { "Content-Type": "application/json" },
-        method: "POST",
       });
 
       const data = await response.json();
@@ -427,12 +430,12 @@ export default function ECardsPage() {
       } else {
         // Track checkout error
         posthog.capture("ecard_checkout_error", {
+          error: data.error || "Unknown error",
           cartItems: cartItems.map((item) => ({
             productId: item.product.id,
             productName: item.product.name,
             quantity: item.quantity,
           })),
-          error: data.error || "Unknown error",
           userId: session?.user?.id,
         });
 
@@ -443,12 +446,12 @@ export default function ECardsPage() {
     } catch {
       // Track unexpected error
       posthog.capture("ecard_checkout_error", {
+        error: "Network or server error",
         cartItems: cartItems.map((item) => ({
           productId: item.product.id,
           productName: item.product.name,
           quantity: item.quantity,
         })),
-        error: "Network or server error",
         userId: session?.user?.id,
       });
 
@@ -504,11 +507,11 @@ export default function ECardsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="prose-site container mx-auto px-4 py-8">
       {/* Shopping Cart Button */}
       <div className="mb-4 flex justify-end">
         <button
-          className="relative flex items-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
+          className="relative flex items-center rounded-lg bg-primary px-4 py-2 text-white shadow-xs transition-colors hover:bg-primary-dark"
           onClick={() => setIsCartOpen(!isCartOpen)}
           type="button"
         >
@@ -526,12 +529,12 @@ export default function ECardsPage() {
 
       {/* Shopping Cart Dropdown */}
       {isCartOpen && (
-        <div className="fixed top-0 right-0 z-50 flex h-full w-full flex-col overflow-hidden border-gray-200 border-l bg-white shadow-xl md:w-96">
-          <div className="flex items-center justify-between border-gray-200 border-b p-4">
+        <div className="fixed top-0 right-0 z-50 flex h-full w-full flex-col overflow-hidden border-slate-200 border-l bg-white shadow-xl md:w-96">
+          <div className="flex items-center justify-between border-slate-200 border-b p-4">
             <h2 className="font-semibold text-xl">Your Cart</h2>
             <button
               aria-label="Close cart"
-              className="rounded-full p-1 hover:bg-gray-100"
+              className="rounded-full p-1 hover:bg-slate-100"
               onClick={() => setIsCartOpen(false)}
               type="button"
             >
@@ -555,17 +558,17 @@ export default function ECardsPage() {
           <div className="flex-1 overflow-y-auto p-4">
             {cartItems.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center">
-                <ShoppingCart className="mb-4 text-gray-300" size={48} />
-                <p className="text-gray-500">Your cart is empty</p>
+                <ShoppingCart className="mb-4 text-slate-300" size={48} />
+                <p className="text-slate-500">Your cart is empty</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {cartItems.map((item) => (
                   <div
-                    className="flex rounded-lg border p-3 shadow-sm"
+                    className="flex rounded-lg border p-3 shadow-xs"
                     key={item.product.id}
                   >
-                    <div className="mr-3 h-16 w-16 flex-shrink-0 overflow-hidden rounded">
+                    <div className="mr-3 h-16 w-16 shrink-0 overflow-hidden rounded-sm">
                       <Image
                         alt={item.product.name}
                         className="h-full w-full object-cover"
@@ -576,13 +579,13 @@ export default function ECardsPage() {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-slate-500 text-sm">
                         ${(item.product.display_price ?? 0).toFixed(2)} each
                       </p>
                       <div className="mt-2 flex items-center justify-between">
-                        <div className="flex items-center rounded border">
+                        <div className="flex items-center rounded-sm border">
                           <button
-                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
+                            className="px-2 py-1 text-slate-500 hover:text-slate-700"
                             onClick={() =>
                               updateCartItemQuantity(
                                 item.product.id,
@@ -595,7 +598,7 @@ export default function ECardsPage() {
                           </button>
                           <span className="px-2">{item.quantity}</span>
                           <button
-                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
+                            className="px-2 py-1 text-slate-500 hover:text-slate-700"
                             onClick={() =>
                               updateCartItemQuantity(
                                 item.product.id,
@@ -622,7 +625,7 @@ export default function ECardsPage() {
             )}
           </div>
 
-          <div className="border-gray-200 border-t p-4">
+          <div className="border-slate-200 border-t p-4">
             {cartItems.length > 0 && (
               <button
                 className="mb-4 inline-block text-red-500 text-sm hover:underline"
@@ -639,7 +642,7 @@ export default function ECardsPage() {
             </div>
 
             <button
-              className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-sm transition-colors hover:bg-primary-dark disabled:opacity-50"
+              className="w-full rounded-lg bg-primary px-4 py-3 font-medium text-white shadow-xs transition-colors hover:bg-primary-dark disabled:opacity-50"
               disabled={cartItems.length === 0 || loadingProductIds.length > 0}
               onClick={handleCartCheckout}
               type="button"
@@ -658,7 +661,7 @@ export default function ECardsPage() {
 
       {products.length === 0 && !error && (
         <div className="py-12 text-center">
-          <p className="text-gray-600 text-lg">
+          <p className="text-lg text-slate-600">
             No eCards available at this time.
           </p>
         </div>
@@ -679,9 +682,9 @@ export default function ECardsPage() {
                 width={300}
               />
             </div>
-            <div className="flex flex-grow flex-col p-4">
+            <div className="flex grow flex-col p-4">
               <h3 className="mb-2 font-semibold text-lg">{product.name}</h3>
-              <p className="mb-4 text-gray-600 text-sm">
+              <p className="mb-4 text-slate-600 text-sm">
                 {product.description}
               </p>
               <div className="mt-auto font-semibold text-lg text-primary">
@@ -691,9 +694,9 @@ export default function ECardsPage() {
 
             <div className="mt-auto border-t p-4 pt-0">
               <div className="flex items-center gap-3">
-                <div className="flex items-center overflow-hidden rounded border">
+                <div className="flex items-center overflow-hidden rounded-sm border">
                   <button
-                    className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
+                    className="bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200"
                     onClick={() =>
                       handleQuantityChange(
                         product.id,
@@ -717,7 +720,7 @@ export default function ECardsPage() {
                     value={selectedQuantities[product.id] || 1}
                   />
                   <button
-                    className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
+                    className="bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200"
                     onClick={() =>
                       handleQuantityChange(
                         product.id,
@@ -731,7 +734,7 @@ export default function ECardsPage() {
                 </div>
 
                 <button
-                  className="flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2 text-white shadow-sm transition-colors hover:bg-primary-dark"
+                  className="flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2 text-white shadow-xs transition-colors hover:bg-primary-dark"
                   onClick={() => addToCart(product)}
                   type="button"
                 >

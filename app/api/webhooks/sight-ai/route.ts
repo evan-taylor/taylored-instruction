@@ -489,7 +489,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, test: true });
   }
 
-  const article = payload.article;
+  const { article } = payload;
   if (!hasRequiredArticleFields(article)) {
     return NextResponse.json(
       { error: "Missing required article fields" },

@@ -57,7 +57,7 @@ export default async function PrivacyPolicyPage() {
       <section className="relative py-16 md:py-24">
         <div className="container relative mx-auto px-4 text-center">
           <h1 className="mb-4 font-bold text-3xl text-text md:text-4xl">
-            Privacy Policy
+            Privacy policy
           </h1>
         </div>
       </section>
@@ -78,10 +78,10 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            2. Information We Collect
+            2. Information we collect
           </h2>
           <h3 className="mb-3 font-semibold text-text text-xl">
-            Personal Information
+            Personal information
           </h3>
           <p>
             We collect personal information you provide to us directly or
@@ -108,7 +108,7 @@ export default async function PrivacyPolicyPage() {
           </ul>
 
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
-            Automatically Collected Information
+            Automatically collected information
           </h3>
           <p>
             We may automatically collect certain information about your device
@@ -129,10 +129,10 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            3. How We Use Your Information
+            3. How we use your information
           </h2>
           <h3 className="mb-3 font-semibold text-text text-xl">
-            To Provide Services
+            To provide services
           </h3>
           <p>We use your information to:</p>
           <ul className="mb-4 list-inside list-disc text-text-light">
@@ -157,7 +157,7 @@ export default async function PrivacyPolicyPage() {
           </ul>
 
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
-            SMS Notifications
+            SMS notifications
           </h3>
           <p>
             If you opt in to receive SMS messages from us, you will receive
@@ -180,7 +180,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
-            Improving Our Services
+            Improving our services
           </h3>
           <p>
             We use information to understand how our services are used, improve
@@ -202,7 +202,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            5. Embedded Content and Third-Party Services
+            5. Embedded content and third-party services
           </h2>
           <p>
             Our website may include embedded content (such as videos, images, or
@@ -213,7 +213,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            6. Sharing and Selling of Information
+            6. Sharing and selling of information
           </h2>
           <p>
             We do not share, sell, rent, or trade your personal information,
@@ -236,7 +236,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
-            Data Sharing
+            Data sharing
           </h3>
           <ul className="mb-4 list-inside list-disc text-text-light">
             <li>
@@ -251,7 +251,7 @@ export default async function PrivacyPolicyPage() {
           </ul>
 
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
-            Messaging Terms and Conditions
+            Messaging terms and conditions
           </h3>
           <p>
             By providing your phone number and agreeing to receive texts, you
@@ -272,7 +272,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            7. Data Transfer Policy
+            7. Data transfer policy
           </h2>
           <p>
             We do not transfer your personal information to any external
@@ -280,7 +280,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            8. Data Retention
+            8. Data retention
           </h2>
           <p>
             We retain your personal information only as long as necessary to
@@ -289,7 +289,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            9. Your Rights
+            9. Your rights
           </h2>
           <p>You have the right to:</p>
           <ul className="mb-4 list-inside list-disc text-text-light">
@@ -307,7 +307,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            10. Data Security
+            10. Data security
           </h2>
           <p>
             We take appropriate measures to protect your information from
@@ -317,7 +317,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            11. Your Choices
+            11. Your choices
           </h2>
           <ul className="mb-4 list-inside list-disc text-text-light">
             <li>
@@ -333,14 +333,14 @@ export default async function PrivacyPolicyPage() {
           </ul>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            12. Automated Detection
+            12. Automated detection
           </h2>
           <p>
             We may use automated tools to detect spam or abuse on our website.
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            13. Changes to This Privacy Policy
+            13. Changes to this privacy policy
           </h2>
           <p>
             We may update this policy periodically. Changes will be posted on
@@ -349,7 +349,7 @@ export default async function PrivacyPolicyPage() {
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
-            14. Contact Us
+            14. Contact us
           </h2>
           <p>
             If you have questions or concerns about this Privacy Policy or our

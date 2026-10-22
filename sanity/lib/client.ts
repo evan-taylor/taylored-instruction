@@ -24,10 +24,10 @@ export const getWriteClient = () => {
   return writeClient;
 };
 
-interface SanityFetchOptions {
+type SanityFetchOptions = {
   params?: Record<string, string>;
   tags?: string[];
-}
+};
 
 const defaultRevalidateSeconds = 60;
 

@@ -6,6 +6,7 @@ import ContactConfirmationEmail from "@/emails/ContactConfirmationEmail";
 import ContactFormEmail from "@/emails/ContactFormEmail";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
+import { SUPPORT_EMAIL } from "@/shared/email";
 
 // Resend client will be initialized lazily via getResendClient()
 const adminEmail = "info@tayloredinstruction.com"; // Your admin email
@@ -14,6 +15,17 @@ const fromEmail = "info@mail.tayloredinstruction.com"; // Use verified Resend do
 // Define schema for form validation
 const MIN_MESSAGE_LENGTH = 5;
 const ContactFormSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().optional(),
+  location: z.string().optional(),
+  otherLocation: z.string().optional(),
+  message: z
+    .string()
+    .min(MIN_MESSAGE_LENGTH, "Message must be at least 5 characters"),
+  smsOptIn: z.preprocess((val) => val === "on", z.boolean()).optional(),
+  smsOptOut: z.preprocess((val) => val === "on", z.boolean()).optional(),
   contactMethod: z.preprocess(
     (val) => {
       if (typeof val === "string") {
@@ -26,23 +38,12 @@ const ContactFormSchema = z.object({
     },
     z.array(z.string()).min(1, "At least one contact method must be selected")
   ),
-  email: z.string().email("Invalid email address"),
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  location: z.string().optional(),
-  message: z
-    .string()
-    .min(MIN_MESSAGE_LENGTH, "Message must be at least 5 characters"),
-  otherLocation: z.string().optional(),
-  phone: z.string().optional(),
-  smsOptIn: z.preprocess((val) => val === "on", z.boolean()).optional(),
-  smsOptOut: z.preprocess((val) => val === "on", z.boolean()).optional(),
 });
 
-interface SendEmailResult {
-  error?: string | null;
+type SendEmailResult = {
   success: boolean;
-}
+  error?: string | null;
+};
 
 export async function sendContactEmail(
   formData: FormData
@@ -64,7 +65,7 @@ export async function sendContactEmail(
     const errors = Object.entries(validatedFields.error.flatten().fieldErrors)
       .map(([field, messages]) => `${field}: ${messages.join(", ")}`)
       .join("; ");
-    return { error: `Invalid form data. ${errors}`, success: false };
+    return { success: false, error: `Invalid form data. ${errors}` };
   }
 
   const {
@@ -89,16 +90,16 @@ export async function sendContactEmail(
       distinctId: email, // Use email as distinct ID for anonymous users
       event: "contact_form_server_submitted",
       properties: {
-        contactMethodCount: contactMethodList.length,
-        contactMethods: contactMethodList,
-        email,
         firstName,
-        hasMessage: message.length > 0,
         lastName,
-        location: location || otherLocation || null,
+        email,
         phone: phone || null,
+        location: location || otherLocation || null,
+        hasMessage: message.length > 0,
         smsOptIn,
         smsOptOut,
+        contactMethods: contactMethodList,
+        contactMethodCount: contactMethodList.length,
       },
     });
     await posthog?.shutdown();
@@ -106,33 +107,34 @@ export async function sendContactEmail(
     // Send email to admin
     const adminEmailData = await getResendClient().emails.send({
       from: `Contact Form <${fromEmail}>`,
-      react: React.createElement(ContactFormEmail, {
-        contactMethods: contactMethodList,
-        email,
-        firstName,
-        lastName,
-        location,
-        message,
-        otherLocation,
-        phone,
-        smsOptIn,
-        smsOptOut,
-      }),
+      to: [adminEmail],
       replyTo: email,
       subject: `New Contact Form Submission from ${firstName} ${lastName}`,
-      to: [adminEmail],
+      react: React.createElement(ContactFormEmail, {
+        firstName,
+        lastName,
+        email,
+        phone,
+        location,
+        otherLocation,
+        message,
+        smsOptIn,
+        smsOptOut,
+        contactMethods: contactMethodList,
+      }),
     });
 
     if (adminEmailData.error) {
-      return { error: "Failed to send notification email.", success: false };
+      return { success: false, error: "Failed to send notification email." };
     }
 
     // Send confirmation email to user
     const userEmailData = await getResendClient().emails.send({
       from: `Taylored Instruction <${fromEmail}>`,
-      react: React.createElement(ContactConfirmationEmail, { firstName }),
-      subject: "Message Received - Taylored Instruction",
       to: [email],
+      replyTo: SUPPORT_EMAIL,
+      subject: "Message Received - Taylored Instruction",
+      react: React.createElement(ContactConfirmationEmail, { firstName }),
     });
 
     if (userEmailData.error) {
@@ -143,11 +145,11 @@ export async function sendContactEmail(
     return { success: true };
   } catch (error) {
     if (error instanceof Error) {
-      return { error: error.message, success: false };
+      return { success: false, error: error.message };
     }
     return {
-      error: "An unexpected error occurred while sending the email.",
       success: false,
+      error: "An unexpected error occurred while sending the email.",
     };
   }
 }

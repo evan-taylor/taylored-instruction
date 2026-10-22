@@ -1,8 +1,8 @@
-interface VisitorsWindow {
+type VisitorsWindow = {
   visitors: {
     track: (event: string, props?: Record<string, string | number>) => void;
   };
-}
+};
 
 /**
  * Track an event with visitors.now analytics.
