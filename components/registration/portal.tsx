@@ -52,8 +52,8 @@ type PortalRow = {
 type Message = { text: string; tone: "info" | "success" | "danger" } | null;
 
 const TABS: { id: PortalView; label: string }[] = [
-  { id: "registrations", label: "Registrations" },
-  { id: "orders", label: "Orders" },
+  { id: "registrations", label: "My registrations" },
+  { id: "orders", label: "Orders I placed" },
 ];
 
 async function fetchMaterialPage(
@@ -102,7 +102,9 @@ function MaterialList({
           ))}
         </ul>
       ) : (
-        <p>No materials are currently available for this registration.</p>
+        <p className="m-0 text-slate-500 text-sm">
+          No materials are available for this registration yet.
+        </p>
       )}
       {!done && (row.materials?.length ?? 0) >= 50 ? (
         <Button
@@ -171,7 +173,7 @@ function MaterialRow({
               setBusy(false);
             }
           }}
-          size="xs"
+          size="sm"
           type="button"
           variant="secondary"
         >
@@ -396,7 +398,7 @@ function RequestAccessCard({
       </CardHeader>
       <CardContent>
         <form
-          className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end"
+          className="space-y-3"
           onSubmit={(e) => {
             e.preventDefault();
             onSubmit();
@@ -414,9 +416,14 @@ function RequestAccessCard({
               />
             )}
           </Field>
-          <Button disabled={busy} type="submit" variant="secondary">
+          <Button
+            className="w-full sm:w-auto"
+            disabled={busy}
+            type="submit"
+            variant="secondary"
+          >
             <Mail aria-hidden="true" className="h-4 w-4" />
-            {busy ? "Sending…" : "Email me secure access"}
+            {busy ? "Sending…" : "Email me a secure link"}
           </Button>
         </form>
       </CardContent>
@@ -435,7 +442,7 @@ function RowList({
   loading: boolean;
   onMessage: (message: Message) => void;
 }) {
-  if (loading) {
+  if (loading && !rows.length) {
     return (
       <div aria-busy="true" className="space-y-4" role="status">
         <span className="sr-only">Loading…</span>
@@ -502,6 +509,12 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
         tone: response.ok ? "success" : "danger",
       });
       return response.ok;
+    } catch {
+      setMessage({
+        text: "We couldn’t reach the portal. Check your connection and try again.",
+        tone: "danger",
+      });
+      return false;
     } finally {
       setBusy(false);
     }
@@ -514,7 +527,12 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
       );
       const data = await response.json();
       if (!response.ok) {
-        setMessage({ text: data.error, tone: "danger" });
+        setMessage({
+          text:
+            data.error ??
+            "We couldn’t load your registrations. Request a new secure link.",
+          tone: "danger",
+        });
         return;
       }
       setRows(nextCursor ? [...rows, ...data.page] : data.page);
@@ -522,6 +540,11 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
       setCursor(data.continueCursor);
       setMore(!data.isDone);
       setLoaded(true);
+    } catch {
+      setMessage({
+        text: "We couldn’t reach the portal. Check your connection and try again.",
+        tone: "danger",
+      });
     } finally {
       setLoading(false);
     }
@@ -571,7 +594,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
                   onClick={() => load("registrations")}
                   type="button"
                 >
-                  {loading ? "Loading…" : "My registrations and materials"}
+                  {loading ? "Loading…" : "My registrations"}
                 </Button>
                 <Button
                   disabled={loading}
@@ -579,7 +602,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
                   type="button"
                   variant="secondary"
                 >
-                  My purchaser orders
+                  Orders I placed
                 </Button>
               </CardContent>
             </Card>
@@ -615,7 +638,7 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
                   type="button"
                   variant="secondary"
                 >
-                  Load more
+                  {loading ? "Loading…" : "Load more"}
                 </Button>
               </div>
             ) : null}

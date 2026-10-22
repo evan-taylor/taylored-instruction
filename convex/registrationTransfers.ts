@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import {
   type Attendee,
   BATCH,
@@ -22,11 +22,11 @@ async function retainedCredit(
   depth = 0
 ): Promise<number> {
   if (depth >= 100) {
-    throw new Error("Transfer history requires reconciliation");
+    throw new ConvexError("Transfer history requires reconciliation");
   }
   const order = await ctx.db.get(seat.orderId);
   if (!order) {
-    throw new Error("Original order missing");
+    throw new ConvexError("Original order missing");
   }
   // This source marks a separate card payment received after offline settlement.
   // Returning that duplicate does not return the original offline tuition.
@@ -38,7 +38,7 @@ async function retainedCredit(
           .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
           .take(1000);
   if (refunds.length === 1000) {
-    throw new Error("Refund history requires reconciliation");
+    throw new ConvexError("Refund history requires reconciliation");
   }
   let refunded = 0;
   for (const refund of refunds) {
@@ -46,10 +46,12 @@ async function retainedCredit(
       continue;
     }
     if (refund.state === "pending") {
-      throw new Error(PENDING_REFUND);
+      throw new ConvexError(PENDING_REFUND);
     }
     if (!refund.allocations) {
-      throw new Error("Legacy refund requires line allocation reconciliation");
+      throw new ConvexError(
+        "Legacy refund requires line allocation reconciliation"
+      );
     }
     refunded += refund.allocations
       .filter((allocation) => allocation.email === seat.email)
@@ -94,7 +96,7 @@ export const transfer = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Transfer reason required");
+      throw new ConvexError("Transfer reason required");
     }
     const previous = await previousTransfer(ctx, args.seatId);
     if (previous) {
@@ -109,13 +111,13 @@ export const transfer = mutation({
       target.state !== "open" ||
       target._id === source.sessionId
     ) {
-      throw new Error(
+      throw new ConvexError(
         "Choose a settled active registration and a different open session"
       );
     }
     const { config } = await offering(ctx, target.courseId, target._id);
     if (target.reserved >= target.capacity) {
-      throw new Error("Target session is full");
+      throw new ConvexError("Target session is full");
     }
     const duplicate = await ctx.db
       .query("registrationSeats")
@@ -126,7 +128,7 @@ export const transfer = mutation({
     if (
       duplicate.some((seat) => seat.state === "active" || seat.state === "held")
     ) {
-      throw new Error("Attendee already registered in destination");
+      throw new ConvexError("Attendee already registered in destination");
     }
     await rejectOfferedSeat(ctx, target._id, source.email);
     const selections = new Set(config.materials.map((m) => m.id));
@@ -152,19 +154,21 @@ export const transfer = mutation({
       0
     );
     if (!snapshot) {
-      throw new Error("Unable to price transfer");
+      throw new ConvexError("Unable to price transfer");
     }
     const credit = await retainedCredit(ctx, source);
     const difference = snapshot.total - credit;
     if (difference > 0 && args.choice === "refund") {
-      throw new Error("Choose collect or keep for a higher-price transfer");
+      throw new ConvexError(
+        "Choose collect or keep for a higher-price transfer"
+      );
     }
     if (difference < 0 && args.choice === "collect") {
-      throw new Error("Choose refund or keep for a lower-price transfer");
+      throw new ConvexError("Choose refund or keep for a lower-price transfer");
     }
     const sourceOrder = await ctx.db.get(source.orderId);
     if (!sourceOrder) {
-      throw new Error("Original order missing");
+      throw new ConvexError("Original order missing");
     }
     const adjustment = args.choice === "keep" ? 0 : difference;
     const total = Math.max(0, adjustment);
@@ -286,7 +290,7 @@ async function previousTransfer(
   if (previous) {
     const destination = await ctx.db.get(previous.to);
     if (!destination) {
-      throw new Error("Transfer requires reconciliation");
+      throw new ConvexError("Transfer requires reconciliation");
     }
     return {
       orderId: destination.orderId,
@@ -362,7 +366,7 @@ async function refundLineage(
   depth: number
 ): Promise<void> {
   if (depth >= 100) {
-    throw new Error("Transfer history requires reconciliation");
+    throw new ConvexError("Transfer history requires reconciliation");
   }
   const order = await ctx.db.get(seat.orderId);
   let remaining = amount;
@@ -420,7 +424,7 @@ async function refundLineage(
     ? await ctx.db.get(seat.transferredFrom)
     : null;
   if (!previous) {
-    throw new Error(
+    throw new ConvexError(
       "Original payments cannot support this refund; choose keep or reconcile first"
     );
   }
@@ -451,7 +455,7 @@ export const preview = query({
     const seat = await ctx.db.get(args.seatId);
     const target = await ctx.db.get(args.sessionId);
     if (!(seat && target)) {
-      throw new Error("Registration or session missing");
+      throw new ConvexError("Registration or session missing");
     }
     const { config } = await offering(ctx, target.courseId, target._id);
     const allowed = new Set(config.materials.map((m) => m.id));
@@ -471,13 +475,13 @@ export const preview = query({
       0
     );
     if (!priced) {
-      throw new Error("Unable to price transfer");
+      throw new ConvexError("Unable to price transfer");
     }
     let credit: number;
     try {
       credit = await retainedCredit(ctx, seat);
     } catch (error) {
-      if (error instanceof Error && error.message === PENDING_REFUND) {
+      if (error instanceof ConvexError && error.data === PENDING_REFUND) {
         return {
           original: 0,
           destination: priced.total,
@@ -507,7 +511,7 @@ async function rejectOfferedSeat(
     )
     .first();
   if (offer?.state === "offered") {
-    throw new Error(
+    throw new ConvexError(
       "Decline the attendee’s waitlist offer before transferring into this session"
     );
   }

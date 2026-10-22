@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { errorText } from "./errors";
 
 /** Shown when the URL hash carries a waitlist invitation token. */
 export function InvitationActions() {
@@ -12,6 +13,7 @@ export function InvitationActions() {
   const [token, setToken] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [declined, setDeclined] = useState(false);
   useEffect(() => {
     setToken(
       new URLSearchParams(window.location.hash.slice(1)).get("invitation") ?? ""
@@ -42,17 +44,18 @@ export function InvitationActions() {
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          disabled={busy}
+          disabled={busy || declined}
           onClick={async () => {
             setBusy(true);
             setMessage("");
             try {
               await decline({ token });
+              setDeclined(true);
               setMessage(
-                "Invitation declined; the next person can be offered the opening."
+                "Invitation declined. The next person can be offered the opening."
               );
             } catch (error) {
-              setMessage(String(error));
+              setMessage(errorText(error));
             } finally {
               setBusy(false);
             }
@@ -64,7 +67,7 @@ export function InvitationActions() {
           {busy ? "Working…" : "Decline this opening"}
         </Button>
       </div>
-      <ResultNotice message={message} />
+      <ResultNotice message={message} tone={declined ? "success" : "danger"} />
     </aside>
   );
 }

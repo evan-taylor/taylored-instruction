@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { BATCH, effective, email } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
 import { internalMutation, mutation } from "./_generated/server";
@@ -28,7 +28,7 @@ export const join = mutation({
         session.firstStart -
           effective(course.settings, session.overrides).cutoffMinutes * 60_000
     ) {
-      throw new Error("Waitlist is closed");
+      throw new ConvexError("Waitlist is closed");
     }
     const existing = await ctx.db
       .query("registrationWaitlist")

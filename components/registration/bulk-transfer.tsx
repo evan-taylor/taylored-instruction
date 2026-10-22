@@ -13,6 +13,7 @@ import {
   formatMoney,
   type Settings,
 } from "@/shared/registration/domain";
+import { errorText } from "./errors";
 import {
   AdjustmentChoice,
   type AdjustmentChoiceValue,
@@ -122,7 +123,7 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
               key: seat._id,
               label: seat.name,
               ok: false,
-              detail: String(error),
+              detail: errorText(error),
             };
           }
         })
@@ -132,7 +133,7 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
         setMessage("No active, paid seats were found in the selected orders.");
       }
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -170,7 +171,7 @@ function useBulkTransfer(orders: Id<"registrationOrders">[]) {
             key: seat._id,
             label: seat.name,
             ok: false,
-            detail: String(error),
+            detail: errorText(error),
           };
         }
       })

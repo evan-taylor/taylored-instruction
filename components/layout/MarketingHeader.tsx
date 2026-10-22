@@ -11,6 +11,10 @@ import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
+const REGISTER_URL = registrationBookingUrl(
+  "https://www.hovn.app/tayloredinstruction"
+);
+const REGISTER_EXTERNAL = EXTERNAL_LINK_REGEX.test(REGISTER_URL);
 
 // --- Type Definitions ---
 type NavLinkItem = {
@@ -51,8 +55,8 @@ const getLinkClass = (href: string, pathname: string, isMobile = false) => {
 // Helper function for dropdown link active class
 const getDropdownLinkClass = (href: string, pathname: string) => {
   const baseClass =
-    "block px-4 py-2 hover:bg-gray-100 text-sm text-text-light transition-colors duration-200";
-  const activeClass = "bg-gray-100 text-primary font-medium";
+    "block px-4 py-2 hover:bg-slate-100 text-sm text-text-light transition-colors duration-200";
+  const activeClass = "bg-slate-100 text-primary font-medium";
   const isActive =
     pathname === href || (href !== "/" && pathname.startsWith(href));
   return `${baseClass} ${isActive ? activeClass : ""}`;
@@ -64,26 +68,26 @@ const generateNavLinks = (
   isAdmin: boolean
 ): NavTopLevelLink[] => [
   {
-    label: "About Us",
+    label: "About us",
     dropdown: [
       { label: "About Taylored Instruction", href: "/about" },
-      { label: "Training Resources", href: "/resources" },
+      { label: "Training resources", href: "/resources" },
       { label: "Blog", href: "/blog" },
-      { label: "Contact Us", href: "/contact" },
+      { label: "Contact us", href: "/contact" },
     ],
   },
   {
     label: "Classes",
     dropdown: [
       {
-        label: "Register for Classes",
+        label: "Register for classes",
         href: registrationBookingUrl(
           "https://www.hovn.app/tayloredinstruction"
         ),
       },
       {
         type: "divider",
-        label: "American Heart Association Courses",
+        label: "American Heart Association courses",
         href: registrationBookingUrl(
           "https://www.hovn.app/tayloredinstruction/agencies/aha"
         ),
@@ -91,13 +95,13 @@ const generateNavLinks = (
       { label: "BLS", href: "/bls", indent: true },
       { label: "Heartsaver", href: "/heartsaver", indent: true },
       {
-        label: "Instructor Training",
+        label: "Instructor training",
         href: "/aha-instructor-training",
         indent: true,
       },
       {
         type: "divider",
-        label: "American Red Cross Courses",
+        label: "American Red Cross courses",
         href: registrationBookingUrl(
           "https://www.hovn.app/tayloredinstruction/agencies/arc"
         ),
@@ -109,12 +113,12 @@ const generateNavLinks = (
       },
       { label: "Lifeguarding", href: "/lifeguarding", indent: true },
       {
-        label: "Lifeguarding Instructor",
+        label: "Lifeguarding instructor",
         href: "/lifeguarding-instructor",
         indent: true,
       },
       {
-        label: "First Aid/CPR/AED Instructor",
+        label: "First Aid/CPR/AED instructor",
         href: "/fa-cpr-aed-instructor",
         indent: true,
       },
@@ -124,7 +128,7 @@ const generateNavLinks = (
     label: "Products",
     dropdown: [
       {
-        label: "Shop All Products",
+        label: "Shop all products",
         href: "https://shop.tayloredinstruction.com/",
       },
       {
@@ -132,7 +136,7 @@ const generateNavLinks = (
         href: "https://shop.tayloredinstruction.com/search/aeds",
       },
       {
-        label: "Instructor Supplies",
+        label: "Instructor supplies",
         href: "https://shop.tayloredinstruction.com/search/instructor-supplies",
       },
     ],
@@ -188,7 +192,7 @@ export const MarketingHeader = () => {
 
   return (
     <header
-      className="sticky top-0 z-50 bg-background shadow-md"
+      className="sticky top-0 z-50 border-slate-200 border-b bg-background/95 shadow-xs backdrop-blur-sm"
       ref={headerRef}
     >
       <div className="container py-3">
@@ -225,20 +229,21 @@ export const MarketingHeader = () => {
             <div className="ml-4 flex items-center space-x-4">
               <Link
                 className="btn btn-primary px-4 py-2 text-sm"
-                href={registrationBookingUrl(
-                  "https://www.hovn.app/tayloredinstruction"
-                )}
-                target="_blank"
+                href={REGISTER_URL}
+                rel={REGISTER_EXTERNAL ? "noopener noreferrer" : undefined}
+                target={REGISTER_EXTERNAL ? "_blank" : undefined}
               >
-                Register Now
+                Register now
               </Link>
             </div>
           </nav>
 
           {/* Mobile Menu Button */}
           <button
+            aria-controls="mobile-menu"
+            aria-expanded={isMenuOpen}
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            className="text-text-light hover:text-primary lg:hidden"
+            className="-mr-2 inline-flex h-11 w-11 items-center justify-center rounded-md text-text-light transition-colors hover:text-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary lg:hidden"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             type="button"
           >
@@ -249,25 +254,28 @@ export const MarketingHeader = () => {
 
       {/* Mobile Menu */}
       <div
-        className={`overflow-hidden bg-background-light transition-all duration-300 ease-in-out lg:hidden ${isMenuOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"}`}
+        className={`grid bg-background-light transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none lg:hidden ${isMenuOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}
+        id="mobile-menu"
+        inert={isMenuOpen ? undefined : true}
       >
-        <div className="container py-4">
-          <MobileNavMenu
-            closeMenu={closeMobileMenu}
-            navLinks={navLinks}
-            pathname={pathname}
-          />
-          <div className="mt-6 flex flex-col items-center space-y-4">
-            <Link
-              className="btn btn-primary w-full text-center"
-              href={registrationBookingUrl(
-                "https://www.hovn.app/tayloredinstruction"
-              )}
-              onClick={closeMobileMenu}
-              target="_blank"
-            >
-              Register Now
-            </Link>
+        <div className="min-h-0 overflow-hidden">
+          <div className="container py-4">
+            <MobileNavMenu
+              closeMenu={closeMobileMenu}
+              navLinks={navLinks}
+              pathname={pathname}
+            />
+            <div className="mt-6 flex flex-col items-center space-y-4">
+              <Link
+                className="btn btn-primary w-full text-center"
+                href={REGISTER_URL}
+                onClick={closeMobileMenu}
+                rel={REGISTER_EXTERNAL ? "noopener noreferrer" : undefined}
+                target={REGISTER_EXTERNAL ? "_blank" : undefined}
+              >
+                Register now
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -296,7 +304,7 @@ const NavMenu = ({
         const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
         return (
           <Link
-            className="block px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
+            className="block px-4 pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
             href={item.href}
             key={`divider-${item.label}`}
             onClick={onItemClick}
@@ -310,7 +318,7 @@ const NavMenu = ({
       }
       return (
         <div
-          className="px-4 pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
+          className="px-4 pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide"
           key={`divider-${item.label}`}
         >
           {item.label}
@@ -412,7 +420,7 @@ const MobileNavMenu = ({
         const isExternal = EXTERNAL_LINK_REGEX.test(item.href);
         return (
           <Link
-            className="block pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
+            className="block pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide transition-colors duration-200 hover:text-primary"
             href={item.href}
             key={`divider-${item.label}`}
             onClick={closeMenu}
@@ -426,7 +434,7 @@ const MobileNavMenu = ({
       }
       return (
         <div
-          className="pt-2 pb-1 font-semibold text-[11px] text-gray-500 uppercase tracking-wide"
+          className="pt-2 pb-1 font-semibold text-[11px] text-slate-500 uppercase tracking-wide"
           key={`divider-${item.label}`}
         >
           {item.label}
@@ -467,7 +475,7 @@ const MobileNavMenu = ({
             />
           </button>
           {openMobileDropdown === link.label && (
-            <div className="ml-2 space-y-1 border-gray-200 border-l pt-1 pb-2 pl-4">
+            <div className="ml-2 space-y-1 border-slate-200 border-l pt-1 pb-2 pl-4">
               {link.dropdown.map(renderDropdownItem)}
             </div>
           )}
@@ -477,7 +485,7 @@ const MobileNavMenu = ({
     if (link.href) {
       return (
         <Link
-          className={`${getLinkClass(link.href, pathname, true)} block border-gray-200 border-b py-2`}
+          className={`${getLinkClass(link.href, pathname, true)} block border-slate-200 border-b py-2`}
           href={link.href}
           onClick={closeMenu}
         >
@@ -486,7 +494,7 @@ const MobileNavMenu = ({
       );
     }
     return (
-      <span className="block border-gray-200 border-b py-2 text-text">
+      <span className="block border-slate-200 border-b py-2 text-text">
         {link.label}
       </span>
     );

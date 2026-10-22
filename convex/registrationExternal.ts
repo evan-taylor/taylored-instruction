@@ -1,5 +1,5 @@
 "use node";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { Resend } from "resend";
 import Stripe from "stripe";
 import { brandedEmail, registrationEmail } from "../shared/registration/email";
@@ -72,7 +72,9 @@ export const checkout = action({
     );
     assertRegistrationPaymentMode(session.livemode);
     if (!session.url) {
-      throw new Error("A Checkout URL was not returned");
+      throw new ConvexError(
+        "Checkout could not be opened. Please try again in a moment."
+      );
     }
     const attached = await ctx.runMutation(
       internal.registrationPayments.attachCheckout,
@@ -83,7 +85,7 @@ export const checkout = action({
       }
     );
     if (!attached) {
-      throw new Error(
+      throw new ConvexError(
         "Reservation ended before checkout was ready. No payment link was issued."
       );
     }
@@ -111,7 +113,7 @@ export const refund = action({
       { idempotencyKey: `registration-refund:${intent._id}` }
     );
     if (result.status !== "succeeded") {
-      throw new Error("Refund awaiting reconciliation");
+      throw new ConvexError("Refund awaiting reconciliation");
     }
     await ctx.runMutation(internal.registrationPayments.finishRefund, {
       id: intent._id,
@@ -226,7 +228,7 @@ export const requestPortal = action({
       }),
     });
     if (response.error) {
-      throw new Error("Access email could not be sent. Try again later.");
+      throw new ConvexError("Access email could not be sent. Try again later.");
     }
     return null;
   },

@@ -17,7 +17,6 @@ import {
   Search,
   ShieldCheck,
   Trash2,
-  Users,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -56,6 +55,7 @@ import {
   WAIVER,
 } from "@/shared/registration/domain";
 import { SessionCalendar } from "./calendar";
+import { errorText } from "./errors";
 import {
   formatDateTime,
   formatMeeting,
@@ -248,7 +248,7 @@ function ViewToggle({
 }) {
   const option = (active: boolean) =>
     cn(
-      "inline-flex items-center gap-1.5 px-3 py-2 font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
+      "inline-flex min-h-10 items-center gap-1.5 px-3 py-2 font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-inset",
       active
         ? "bg-primary text-white"
         : "bg-white text-slate-700 hover:bg-slate-50"
@@ -305,6 +305,7 @@ function FilterBar({
               <TextInput
                 {...props}
                 className="pl-9"
+                enterKeyHint="search"
                 onChange={(e) => onSearch(e.target.value)}
                 placeholder="BLS, Heartsaver, Vancouver…"
                 type="search"
@@ -387,29 +388,15 @@ const TEAM_BENEFITS = [
 
 function TeamTrainingCard() {
   return (
-    <Card className="border-primary/20 bg-linear-to-br from-primary/5 to-white">
+    <Card>
       <CardContent className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:justify-between">
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Users aria-hidden="true" className="h-5 w-5 text-primary" />
-            <h2 className="m-0 font-bold text-slate-900 text-xl">
-              Training for your team?
-            </h2>
-          </div>
-          <ul className="m-0 list-none space-y-1.5 p-0">
-            {TEAM_BENEFITS.map((benefit) => (
-              <li
-                className="flex items-start gap-2 text-slate-700 text-sm"
-                key={benefit}
-              >
-                <CheckCircle2
-                  aria-hidden="true"
-                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
-                />
-                {benefit}
-              </li>
-            ))}
-          </ul>
+        <div className="space-y-2">
+          <h2 className="m-0 font-bold text-slate-900 text-xl">
+            Training for your team?
+          </h2>
+          <p className="m-0 max-w-xl text-slate-600 text-sm">
+            {TEAM_BENEFITS.join(". ")}.
+          </p>
         </div>
         <Button className="shrink-0" href="/group-training">
           Request group training
@@ -422,9 +409,11 @@ function TeamTrainingCard() {
 function SessionGrid({
   sessions,
   loading,
+  onLoadMore,
 }: {
   sessions: DiscoveredSession[];
   loading: boolean;
+  onLoadMore?: () => void;
 }) {
   if (loading) {
     return (
@@ -440,11 +429,22 @@ function SessionGrid({
     return (
       <EmptyState
         action={
-          <Button href="/contact" size="sm" variant="secondary">
-            Contact us
-          </Button>
+          <div className="flex flex-wrap justify-center gap-3">
+            {onLoadMore ? (
+              <Button onClick={onLoadMore} size="sm" type="button">
+                Load more classes
+              </Button>
+            ) : null}
+            <Button href="/contact" size="sm" variant="secondary">
+              Contact us
+            </Button>
+          </div>
         }
-        description="Try clearing your filters, or contact us for upcoming courses."
+        description={
+          onLoadMore
+            ? "More classes are available. Load more, clear your filters, or contact us about upcoming dates."
+            : "Try clearing your filters, or contact us about upcoming dates."
+        }
         title="No scheduled classes match"
       />
     );
@@ -458,27 +458,46 @@ function SessionGrid({
   );
 }
 
+/** A window wide enough to hold the chosen calendar day in any US time zone. */
+function dayWindow(date: string) {
+  if (!date) {
+    return {};
+  }
+  const [y, m, d] = date.split("-").map(Number);
+  const utcMidnight = Date.UTC(y, m - 1, d);
+  return {
+    dayStart: utcMidnight - 14 * 3_600_000,
+    dayEnd: utcMidnight + 38 * 3_600_000,
+  };
+}
+
+function useDebounced<T>(value: T, delay: number) {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export function ClassDiscovery() {
   const selfPaced = useQuery(api.registration.selfPaced);
-  const { results, status, loadMore } = usePaginatedQuery(
-    api.registration.discover,
-    {},
-    { initialNumItems: 20 }
-  );
   const [search, setSearch] = useState("");
   const [date, setDate] = useState("");
   const [calendar, setCalendar] = useState(false);
-  const needle = search.trim().toLowerCase();
+  const needle = useDebounced(search.trim().toLowerCase(), 300);
+  const { results, status, loadMore } = usePaginatedQuery(
+    api.registration.discover,
+    { search: needle || undefined, ...dayWindow(date) },
+    { initialNumItems: 20 }
+  );
   const visible = results.filter(
     (s) =>
-      `${s.title} ${s.meetings.map((m) => m.location).join(" ")}`
-        .toLowerCase()
-        .includes(needle) &&
-      (!date || (s.firstStart ? dayKey(s.firstStart, s.timeZone) : "") === date)
+      !date || (s.firstStart ? dayKey(s.firstStart, s.timeZone) : "") === date
   );
   return (
     <div className="bg-slate-50">
-      <section className="bg-linear-to-br from-primary to-primary-800 text-white">
+      <section className="bg-primary text-white">
         <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
           <p className="m-0 mb-2 font-medium text-white/80 text-xs uppercase tracking-wide">
             Classes
@@ -503,7 +522,7 @@ export function ClassDiscovery() {
             search={search}
           />
         </div>
-        {calendar ? (
+        {calendar && status !== "LoadingFirstPage" ? (
           <SessionCalendar
             sessions={visible.map((s) => ({
               code: s.code ?? "",
@@ -515,6 +534,9 @@ export function ClassDiscovery() {
         ) : (
           <SessionGrid
             loading={status === "LoadingFirstPage"}
+            onLoadMore={
+              status === "CanLoadMore" ? () => loadMore(20) : undefined
+            }
             sessions={visible}
           />
         )}
@@ -646,12 +668,8 @@ function useRegistrationForm(
       setReview(order);
       await continueToPayment(order);
     } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Unable to start checkout. Please try again."
-      );
-    } finally {
+      // On success the browser is navigating away; leave busy on.
+      setError(errorText(e, "Unable to start checkout. Please try again."));
       submitting.current = false;
       setBusy(false);
     }
@@ -930,12 +948,14 @@ function AttendeeCard({
   return (
     <Card>
       <fieldset className="m-0 min-w-0 border-0 p-0" disabled={disabled}>
+        <legend className="sr-only">Attendee {index + 1}</legend>
         <CardHeader className="sm:items-center">
           <CardTitle>Attendee {index + 1}</CardTitle>
           <Button
+            aria-label={`Remove attendee ${index + 1}`}
             disabled={disabled}
             onClick={onRemove}
-            size="xs"
+            size="sm"
             type="button"
             variant="ghost"
           >
@@ -945,7 +965,7 @@ function AttendeeCard({
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Full name">
+            <Field label="Full name" required>
               {(props) => (
                 <TextInput
                   {...props}
@@ -956,7 +976,7 @@ function AttendeeCard({
                 />
               )}
             </Field>
-            <Field label="Email">
+            <Field label="Email" required>
               {(props) => (
                 <TextInput
                   {...props}
@@ -1022,6 +1042,9 @@ function PurchaserCard({
   return (
     <Card>
       <fieldset className="m-0 min-w-0 border-0 p-0" disabled={disabled}>
+        <legend className="sr-only">
+          {form.registeringSelf ? "Your details" : "Purchaser details"}
+        </legend>
         <CardHeader>
           <div>
             <CardTitle>
@@ -1035,7 +1058,7 @@ function PurchaserCard({
           </div>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Field label="Your name">
+          <Field label="Your name" required>
             {(props) => (
               <TextInput
                 {...props}
@@ -1046,7 +1069,7 @@ function PurchaserCard({
               />
             )}
           </Field>
-          <Field label="Your email">
+          <Field label="Your email" required>
             {(props) => (
               <TextInput
                 {...props}
@@ -1130,10 +1153,13 @@ function CouponCard({ form }: { form: RegistrationForm }) {
           {(props) => (
             <TextInput
               {...props}
+              autoCapitalize="characters"
               autoComplete="off"
+              autoCorrect="off"
               disabled={form.busy}
               onChange={(e) => form.setCoupon(e.target.value)}
               placeholder="Optional"
+              spellCheck={false}
               value={form.coupon}
             />
           )}
@@ -1143,12 +1169,7 @@ function CouponCard({ form }: { form: RegistrationForm }) {
   );
 }
 
-function HoldCountdown({ expires }: { expires: number }) {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(timer);
-  }, []);
+function HoldCountdown({ expires, now }: { expires: number; now: number }) {
   const expired = expires <= now;
   return (
     <p
@@ -1167,9 +1188,15 @@ function HoldCountdown({ expires }: { expires: number }) {
 
 function ReviewSummary({ form }: { form: RegistrationForm }) {
   const { review, authoritativeReview: quoteResult } = form;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
   if (!review) {
     return null;
   }
+  const expired = review.expires <= now;
   return (
     <div className="space-y-4">
       {quoteResult === undefined ? <Skeleton className="h-20" /> : null}
@@ -1213,15 +1240,27 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
         </span>
       </div>
       <p className="m-0 text-slate-500 text-xs">{TAX_NOTE}</p>
-      <HoldCountdown expires={review.expires} />
-      <Button
-        className="w-full"
-        disabled={form.busy}
-        onClick={form.pay}
-        type="button"
-      >
-        {form.busy ? "Opening checkout…" : "Try checkout again"}
-      </Button>
+      <HoldCountdown expires={review.expires} now={now} />
+      <ResultNotice message={form.error} tone="danger" />
+      {expired ? (
+        <Button
+          className="w-full"
+          onClick={() => window.location.reload()}
+          type="button"
+          variant="secondary"
+        >
+          Start again
+        </Button>
+      ) : (
+        <Button
+          className="w-full"
+          disabled={form.busy}
+          onClick={form.pay}
+          type="button"
+        >
+          {form.busy ? "Opening checkout…" : "Continue to payment"}
+        </Button>
+      )}
     </div>
   );
 }
@@ -1235,7 +1274,16 @@ function WaitlistAction({
 }) {
   const join = useMutation(api.registrationWaitlist.join);
   const [busy, setBusy] = useState(false);
+  const [joined, setJoined] = useState(false);
   const ready = Boolean(form.purchaser && form.name);
+  if (joined) {
+    return (
+      <Notice tone="success">
+        You’re on the waitlist. We’ll email {form.purchaser} if a seat opens. No
+        payment is required.
+      </Notice>
+    );
+  }
   return (
     <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
       <p className="m-0 font-medium text-amber-900 text-sm">
@@ -1253,11 +1301,9 @@ function WaitlistAction({
           form.setError("");
           try {
             await join({ sessionId, name: form.name, email: form.purchaser });
-            form.setError(
-              "You have joined the waitlist. No payment is required."
-            );
+            setJoined(true);
           } catch (e) {
-            form.setError(String(e));
+            form.setError(errorText(e));
           } finally {
             setBusy(false);
           }
@@ -1266,7 +1312,7 @@ function WaitlistAction({
         type="button"
         variant="secondary"
       >
-        {busy ? "Working…" : "Join waitlist using purchaser details"}
+        {busy ? "Joining…" : "Join the waitlist"}
       </Button>
       {ready ? null : (
         <p className="m-0 text-amber-900/80 text-xs">
@@ -1288,7 +1334,7 @@ function OrderSummary({
 }) {
   const open = offering.state === "open";
   return (
-    <Card className="lg:sticky lg:top-24">
+    <Card>
       <CardHeader>
         <div>
           <CardTitle>
@@ -1296,7 +1342,7 @@ function OrderSummary({
           </CardTitle>
           <CardDescription>
             {form.review
-              ? "Final total confirmed by our system."
+              ? "Final total, confirmed before payment."
               : "Prices shown per attendee, before any coupon."}
           </CardDescription>
         </div>
@@ -1327,10 +1373,12 @@ function OrderSummary({
                 {`${formatMoney(basePrice(offering.config))} per attendee. Add at least one attendee to continue.`}
               </p>
             )}
-            <p className="m-0 border-slate-200 border-t pt-3 font-semibold text-slate-900">
-              {`Estimated total before coupon: ${formatMoney(form.estimate)}`}
+            <p className="m-0 flex items-baseline justify-between gap-3 border-slate-200 border-t pt-3 font-semibold text-slate-900">
+              <span>Estimated total before coupon:</span>
+              <span className="tabular-nums">{formatMoney(form.estimate)}</span>
             </p>
             <p className="m-0 text-slate-500 text-xs">{TAX_NOTE}</p>
+            <ResultNotice message={form.error} tone="danger" />
             {open ? (
               <Button
                 className="w-full"
@@ -1355,6 +1403,29 @@ function OrderSummary({
         </p>
       </CardContent>
     </Card>
+  );
+}
+
+/** Keeps the total and the submit reachable while scrolling a long form on a phone. */
+function MobileCheckoutBar({ form }: { form: RegistrationForm }) {
+  return (
+    <div className="sticky bottom-0 z-10 -mx-4 border-slate-200 border-t bg-white/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:-mx-6 sm:px-6 lg:hidden">
+      <div className="flex items-center justify-between gap-4">
+        <p className="m-0 text-sm">
+          <span className="block text-slate-500 text-xs">Estimated total</span>
+          <span className="font-semibold text-slate-900 tabular-nums">
+            {formatMoney(form.estimate)}
+          </span>
+        </p>
+        <Button
+          disabled={form.busy || !form.attendees.length}
+          size="sm"
+          type="submit"
+        >
+          {form.busy ? "Opening checkout…" : "Continue to checkout"}
+        </Button>
+      </div>
+    </div>
   );
 }
 
@@ -1462,7 +1533,7 @@ function OfferingDetails({ offering }: { offering: Offering }) {
         </div>
         {offering.delivery === "self-paced" ? (
           <Notice tone="info">
-            Buying again creates a new enrollment, even if this attendee has
+            Buying again creates a new registration, even if this attendee has
             previously purchased the course.
           </Notice>
         ) : null}
@@ -1471,16 +1542,22 @@ function OfferingDetails({ offering }: { offering: Offering }) {
   );
 }
 
+const CLOSED_COPY: Record<string, string> = {
+  finished: "This class has already taken place.",
+  canceled: "This class has been canceled.",
+  draft: "This class isn’t open for registration yet.",
+  archived: "This class is no longer offered.",
+};
+
 function ClosedState({ state }: { state: string }) {
   return (
     <Card>
       <CardContent className="space-y-4 p-6">
         <p className="m-0 font-semibold text-slate-900" role="status">
-          This session is {state}. Please contact us for assistance.
+          {CLOSED_COPY[state] ?? "Registration for this class is closed."}
         </p>
         <p className="m-0 text-slate-600 text-sm">
-          Registration isn’t available for this offering right now. We can help
-          you find another date or arrange training for your group.
+          We can help you find another date or arrange training for your group.
         </p>
         <div className="flex flex-wrap gap-3">
           <Button href="/contact" size="sm">
@@ -1536,15 +1613,15 @@ function OfferingPage({
             ) : (
               <ClosedState state={offering.state} />
             )}
-            <ResultNotice message={form.error} />
           </div>
-          <aside className="min-w-0">
+          <aside className="min-w-0 lg:sticky lg:top-24">
             <OrderSummary
               form={form}
               offering={offering}
               sessionId={sessionId}
             />
           </aside>
+          {open && !form.review ? <MobileCheckoutBar form={form} /> : null}
         </form>
       </div>
     </div>
@@ -1571,8 +1648,8 @@ export function RegistrationDetail({
               Browse classes
             </Button>
           }
-          description="It may have been removed or is not yet published."
-          title="This offering is unavailable."
+          description="It may have been removed or isn’t published yet."
+          title="This class isn’t available."
         />
       </div>
     );
@@ -1602,8 +1679,22 @@ export function RegistrationSuccess() {
     requestKey: string;
   } | null>(null);
   const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    try {
+      const value = sessionStorage.getItem("registration-order");
+      const parsed = value ? JSON.parse(value) : null;
+      if (parsed?.orderId && parsed?.requestKey) {
+        setOrder({ orderId: parsed.orderId, requestKey: parsed.requestKey });
+        return;
+      }
+    } catch {
+      /* corrupt storage; treated as missing */
+    }
+    setMissing(true);
+  }, []);
   const status = useQuery(api.registrationPortal.status, order ?? "skip");
   const settled = status?.status === "settled";
+  const checking = order !== null && status === undefined;
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:py-16">
@@ -1629,8 +1720,13 @@ export function RegistrationSuccess() {
               </h1>
               {status ? (
                 <Badge tone={settled ? "success" : "warning"}>
-                  {settled ? "Paid" : status.status}
+                  {settled ? "Paid" : "Payment processing"}
                 </Badge>
+              ) : null}
+              {checking ? (
+                <p className="m-0 text-slate-500 text-sm" role="status">
+                  Checking your order…
+                </p>
               ) : null}
               <p className="m-0 text-slate-700">
                 {settled
@@ -1647,24 +1743,12 @@ export function RegistrationSuccess() {
                 </p>
               ) : null}
             </div>
-            <Button
-              onClick={() => {
-                const value = sessionStorage.getItem("registration-order");
-                if (value) {
-                  const parsed = JSON.parse(value);
-                  setMissing(false);
-                  setOrder({
-                    orderId: parsed.orderId,
-                    requestKey: parsed.requestKey,
-                  });
-                } else {
-                  setMissing(true);
-                }
-              }}
-              type="button"
-            >
-              Check this order
-            </Button>
+            {status === null ? (
+              <Notice tone="warning">
+                We couldn’t find that order. If you were charged, open the
+                secure portal or contact us.
+              </Notice>
+            ) : null}
             {missing ? (
               <Notice tone="warning">
                 We couldn’t find a recent order in this browser. Use the secure
@@ -1730,7 +1814,7 @@ function ScheduledCourse({
         </Link>
         <div>
           <p className="m-0 mb-1 font-medium text-primary text-xs uppercase tracking-wide">
-            Scheduled course
+            Course
           </p>
           <h1 className="m-0 font-bold text-3xl text-slate-900 leading-tight lg:text-4xl">
             {title}
@@ -1742,7 +1826,7 @@ function ScheduledCourse({
           ) : null}
         </div>
         <h2 className="m-0 font-semibold text-slate-900 text-xl">
-          Upcoming sessions
+          Upcoming classes
         </h2>
         {sessions === undefined ? (
           <div
@@ -1750,7 +1834,7 @@ function ScheduledCourse({
             className="grid gap-4 md:grid-cols-2"
             role="status"
           >
-            <span className="sr-only">Loading sessions…</span>
+            <span className="sr-only">Loading classes…</span>
             <Skeleton className="h-36" />
             <Skeleton className="h-36" />
           </div>
@@ -1763,7 +1847,7 @@ function ScheduledCourse({
               </Button>
             }
             description="Contact us to be notified when the next date is scheduled."
-            title="No public sessions are currently available."
+            title="No upcoming dates are scheduled."
           />
         ) : null}
         {sessions?.length ? (

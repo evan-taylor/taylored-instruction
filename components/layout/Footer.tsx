@@ -4,16 +4,16 @@ import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
 
 export const Footer = () => {
   return (
-    <footer className="bg-gray-100 pt-16 pb-8 text-text-light">
+    <footer className="border-slate-200 border-t bg-slate-50 pt-16 pb-8 text-text-light">
       <div className="container mx-auto px-4">
         {/* Footer Grid: Company, Links, Help, Social */}
         <div className="mb-12 grid grid-cols-1 items-start gap-8 text-left sm:grid-cols-2 md:grid-cols-4">
           {/* About Us */}
           <div className="space-y-4">
-            <h3 className="mb-2 font-semibold text-sm text-text uppercase">
-              About Us
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              About us
             </h3>
-            <p className="text-gray-600 text-sm">
+            <p className="text-slate-600 text-sm">
               At Taylored Instruction, we are dedicated to providing the highest
               quality health and safety training. Our goal is to equip every
               individual and organization with the skills they need to respond
@@ -23,16 +23,16 @@ export const Footer = () => {
 
           {/* Information Links */}
           <div className="space-y-4">
-            <h3 className="mb-2 font-semibold text-sm text-text uppercase">
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
               Information
             </h3>
-            <ul className="space-y-2 text-gray-600 text-sm">
+            <ul className="space-y-2 text-slate-600 text-sm">
               <li>
                 <Link
                   className="transition-colors hover:text-primary"
                   href="/my-account"
                 >
-                  My Account
+                  My account
                 </Link>
               </li>
               <li>
@@ -40,7 +40,7 @@ export const Footer = () => {
                   className="transition-colors hover:text-primary"
                   href="/resources"
                 >
-                  Training Resources
+                  Training resources
                 </Link>
               </li>
               <li>
@@ -48,7 +48,7 @@ export const Footer = () => {
                   className="transition-colors hover:text-primary"
                   href="/terms"
                 >
-                  Terms & Conditions
+                  Terms and conditions
                 </Link>
               </li>
               <li>
@@ -56,7 +56,7 @@ export const Footer = () => {
                   className="transition-colors hover:text-primary"
                   href="/privacy-policy"
                 >
-                  Privacy Policy
+                  Privacy policy
                 </Link>
               </li>
             </ul>
@@ -64,10 +64,10 @@ export const Footer = () => {
 
           {/* Get Help */}
           <div className="space-y-4">
-            <h3 className="mb-2 font-semibold text-sm text-text uppercase">
-              Get Help
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              Get help
             </h3>
-            <ul className="space-y-2 text-gray-600 text-sm">
+            <ul className="space-y-2 text-slate-600 text-sm">
               {/* Visit Help Center link removed */}
               <li>
                 <a
@@ -92,7 +92,7 @@ export const Footer = () => {
                   rel="noopener noreferrer"
                   target="_blank"
                 >
-                  Taylored Instruction on Google
+                  Find us on Google
                 </a>
               </li>
             </ul>
@@ -100,13 +100,13 @@ export const Footer = () => {
 
           {/* Social Media */}
           <div className="space-y-4">
-            <h3 className="mb-2 font-semibold text-sm text-text uppercase">
-              Follow Us
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              Follow us
             </h3>
             <div className="flex space-x-4">
               <a
                 aria-label="Facebook"
-                className="text-gray-500 transition-colors hover:text-primary"
+                className="text-slate-500 transition-colors hover:text-primary"
                 href="https://www.facebook.com/tayloredinstruction.us"
                 rel="noopener noreferrer"
                 target="_blank"
@@ -115,7 +115,7 @@ export const Footer = () => {
               </a>
               <a
                 aria-label="Instagram"
-                className="text-gray-500 transition-colors hover:text-primary"
+                className="text-slate-500 transition-colors hover:text-primary"
                 href="https://www.instagram.com/taylored.instruction/"
                 rel="noopener noreferrer"
                 target="_blank"
@@ -126,11 +126,11 @@ export const Footer = () => {
           </div>
         </div>
 
-        {/* Copyright - text-gray-600 for WCAG 4.5:1 contrast on gray-100 */}
-        <div className="border-gray-300 border-t pt-6 text-center text-gray-600 text-xs">
+        {/* Copyright - text-slate-600 for WCAG 4.5:1 contrast on gray-100 */}
+        <div className="border-slate-300 border-t pt-6 text-center text-slate-600 text-xs">
           <p>
-            &copy; {new Date().getFullYear()} Taylored Instruction. All Rights
-            Reserved.
+            &copy; {new Date().getFullYear()} Taylored Instruction. All rights
+            reserved.
           </p>
         </div>
       </div>

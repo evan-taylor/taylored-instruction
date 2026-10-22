@@ -111,12 +111,17 @@ export function Notice({
   );
 }
 
-/** Shows an action result: errors in red, everything else as a status. */
+/**
+ * Shows an action result. Pass `tone` when the caller knows the outcome;
+ * otherwise errors are guessed from the wording.
+ */
 export function ResultNotice({
   message,
+  tone,
   className,
 }: {
   message: string;
+  tone?: "info" | "success" | "warning" | "danger";
   className?: string;
 }) {
   if (!message) {
@@ -124,7 +129,10 @@ export function ResultNotice({
   }
   const failed = FAILURE_WORDS.test(message);
   return (
-    <Notice className={className} tone={failed ? "danger" : "success"}>
+    <Notice
+      className={className}
+      tone={tone ?? (failed ? "danger" : "success")}
+    >
       {message.replace(ERROR_PREFIX, "").replace(STACK_SUFFIX, "")}
     </Notice>
   );

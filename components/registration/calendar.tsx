@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
 import { cn } from "@/lib/utils";
-import { formatTime } from "./format";
+import { formatTime, formatWeekday } from "./format";
 
 type CalendarSession = {
   code: string;
@@ -25,7 +25,7 @@ function dayKey(ms: number, timeZone?: string) {
 }
 
 function monthKey(month: Date, day: number) {
-  return `${month.getUTCFullYear()}-${String(month.getUTCMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  return `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
 function NavButton({
@@ -40,7 +40,7 @@ function NavButton({
   return (
     <button
       aria-label={label}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+      className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
       onClick={onClick}
       title={label}
       type="button"
@@ -78,7 +78,8 @@ function DayCell({
         {sessions.map((s) => (
           <li key={s.code}>
             <Link
-              className="block truncate rounded-md bg-primary/10 px-1.5 py-1 font-medium text-primary text-xs leading-tight hover:bg-primary/20"
+              aria-label={`${s.title}, ${formatWeekday(s.firstStart ?? 0, s.timeZone)}${s.firstStart ? ` at ${formatTime(s.firstStart, s.timeZone)}` : ""}`}
+              className="block truncate rounded-md bg-primary/10 px-1.5 py-1.5 font-medium text-primary text-xs leading-tight hover:bg-primary/20"
               href={`/s/${s.code}`}
               title={s.title}
             >
@@ -99,13 +100,13 @@ function DayCell({
 export function SessionCalendar({ sessions }: { sessions: CalendarSession[] }) {
   const [offset, setOffset] = useState(0);
   const now = new Date();
-  const month = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1)
-  );
+  const month = new Date(now.getFullYear(), now.getMonth() + offset, 1);
   const count = new Date(
-    Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0)
-  ).getUTCDate();
-  const leading = month.getUTCDay();
+    month.getFullYear(),
+    month.getMonth() + 1,
+    0
+  ).getDate();
+  const leading = month.getDay();
   const total = Math.ceil((leading + count) / 7) * 7;
   const cells = Array.from({ length: total }, (_, i) => i - leading + 1);
   const todayKey = dayKey(now.getTime());
@@ -127,11 +128,7 @@ export function SessionCalendar({ sessions }: { sessions: CalendarSession[] }) {
           <ChevronLeft aria-hidden="true" className="h-4 w-4" />
         </NavButton>
         <h2 className="m-0 font-semibold text-base text-slate-900">
-          {month.toLocaleString("en-US", {
-            month: "long",
-            year: "numeric",
-            timeZone: "UTC",
-          })}
+          {month.toLocaleString("en-US", { month: "long", year: "numeric" })}
         </h2>
         <NavButton label="Next month" onClick={() => setOffset(offset + 1)}>
           <ChevronRight aria-hidden="true" className="h-4 w-4" />

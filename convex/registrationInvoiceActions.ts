@@ -1,5 +1,5 @@
 "use node";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import Stripe from "stripe";
 import { DEFAULT_TAX_CODES } from "../shared/registration/domain";
 import {
@@ -156,12 +156,16 @@ export const issue = action({
       );
       assertRegistrationPaymentMode(finalized.livemode);
       if (!finalized.hosted_invoice_url) {
-        throw new Error("An invoice URL was not returned");
+        throw new ConvexError(
+          "The invoice was created but no payment link came back. Retry sending it."
+        );
       }
       const preTax = finalized.total_excluding_tax ?? finalized.subtotal;
       if (preTax !== order.total) {
         await client.invoices.voidInvoice(finalized.id);
-        throw new Error("Provider invoice subtotal did not match the order");
+        throw new ConvexError(
+          "Provider invoice subtotal did not match the order"
+        );
       }
       await ctx.runMutation(internal.registrationGroups.attachStripeInvoice, {
         id: invoice._id,

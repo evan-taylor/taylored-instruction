@@ -3,6 +3,7 @@ import { useMutation, usePaginatedQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { useCoupons, useCourses } from "@/components/registration/catalog";
+import { errorText } from "@/components/registration/errors";
 import { formatDate } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -157,10 +158,17 @@ function CouponRow({
       </TD>
       <TD className="text-right">
         <div className="flex justify-end gap-1">
-          <Button onClick={onEdit} size="xs" type="button" variant="ghost">
+          <Button
+            aria-label={`Edit ${coupon.code}`}
+            onClick={onEdit}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
             Edit
           </Button>
           <Button
+            aria-label={`${coupon.disabled ? "Enable" : "Disable"} ${coupon.code}`}
             onClick={onToggle}
             size="xs"
             type="button"
@@ -429,14 +437,18 @@ function MaterialsChecklist({
   return (
     <Checklist
       footer={
-        materials.status === "CanLoadMore" ? (
+        materials.status === "CanLoadMore" ||
+        materials.status === "LoadingMore" ? (
           <Button
+            disabled={materials.status === "LoadingMore"}
             onClick={() => materials.loadMore(50)}
             size="xs"
             type="button"
             variant="ghost"
           >
-            Load more materials
+            {materials.status === "LoadingMore"
+              ? "Loading…"
+              : "Load more materials"}
           </Button>
         ) : null
       }
@@ -544,6 +556,7 @@ function CouponEditor({
   const [expires, setExpires] = useState(
     coupon ? new Date(coupon.expires).toISOString().slice(0, 10) : ""
   );
+  const formId = useId();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -572,7 +585,7 @@ function CouponEditor({
       });
       onClose();
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -588,12 +601,7 @@ function CouponEditor({
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
-          <Button
-            disabled={busy || !code.trim() || !expires}
-            onClick={submit}
-            size="sm"
-            type="button"
-          >
+          <Button disabled={busy} form={formId} size="sm" type="submit">
             {busy ? "Working…" : "Save coupon"}
           </Button>
         </>
@@ -605,6 +613,7 @@ function CouponEditor({
     >
       <form
         className="space-y-6"
+        id={formId}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -701,6 +710,7 @@ function ToggleDialog({
 }) {
   const save = useMutation(api.registration.saveCoupon);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
   const disabling = coupon ? !coupon.disabled : false;
   return (
     <ConfirmDialog
@@ -718,13 +728,14 @@ function ToggleDialog({
           return;
         }
         setBusy(true);
+        setError("");
         const { _id, _creationTime, ...fields } = coupon;
         try {
           await save({ ...fields, id: _id, disabled: !coupon.disabled });
           onDone(`${coupon.code} ${disabling ? "disabled" : "enabled"}.`);
           onClose();
-        } catch (error) {
-          onDone(String(error));
+        } catch (caught) {
+          setError(errorText(caught));
         } finally {
           setBusy(false);
         }
@@ -735,7 +746,9 @@ function ToggleDialog({
           ? `Disable ${coupon?.code ?? ""}?`
           : `Enable ${coupon?.code ?? ""}?`
       }
-    />
+    >
+      <ResultNotice message={error} tone="danger" />
+    </ConfirmDialog>
   );
 }
 

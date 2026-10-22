@@ -15,12 +15,12 @@ export default function FirstAidCprAedPageContent() {
         "https://www.hovn.app/tayloredinstruction/certifications/arc-adult-and-pediatric-first-aid-cpr-aed-bl-r25/"
       )}
       resources={[
-        { href: "/contact", label: "Request Course Fact Sheet" },
-        { href: "/contact", label: "Request eBook Access Instructions" },
+        { href: "/contact", label: "Request course fact sheet" },
+        { href: "/contact", label: "Request eBook access instructions" },
       ]}
       title="American Red Cross First Aid/CPR/AED"
     >
-      <ClassPageSection title="Course Purpose">
+      <ClassPageSection title="Course purpose">
         <p>
           The American Red Cross First Aid/CPR/AED r.21 program is designed to
           help participants recognize and respond appropriately to cardiac,
@@ -36,13 +36,13 @@ export default function FirstAidCprAedPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Prerequisites">
+      <ClassPageSection title="Course prerequisites">
         <p>
           There are no prerequisites for the core courses within the First
           Aid/CPR/AED r.21 program.
         </p>
         <p>
-          <strong>Skill Boost Prerequisites:</strong> Participants must have a
+          <strong>Skill boost prerequisites:</strong> Participants must have a
           valid and current certification in First Aid, including FA/CPR/AED,
           Lifeguarding, EMR, RTE, or equivalent training, to take an optional
           Skill Boost. Participants may also add skill boosts onto a First
@@ -50,7 +50,7 @@ export default function FirstAidCprAedPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Length">
+      <ClassPageSection title="Course length">
         <p>Approximately 2 hours online, 3 hours in-person.</p>
       </ClassPageSection>
     </ClassPageLayout>

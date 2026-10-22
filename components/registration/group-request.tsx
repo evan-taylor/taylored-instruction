@@ -1,6 +1,6 @@
 "use client";
 import { useMutation } from "convex/react";
-import { Building2, CheckCircle2, FileText, Tag } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -13,6 +13,7 @@ import {
 import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { errorText } from "./errors";
 
 const COURSES = [
   "BLS Provider",
@@ -31,17 +32,14 @@ const LOCATIONS = [
 
 const BENEFITS = [
   {
-    icon: Building2,
     title: "On-site or at our facility",
     text: "We bring equipment and instructors to your workplace, or host your team at our Vancouver, WA training center.",
   },
   {
-    icon: Tag,
     title: "Volume pricing",
     text: "Per-person rates drop as your group grows. Quotes include all required materials and certification cards.",
   },
   {
-    icon: FileText,
     title: "Invoice or PO billing",
     text: "Pay by invoice or purchase order with a dedicated coordinator who handles scheduling and rosters.",
   },
@@ -72,32 +70,48 @@ const EMPTY: FormState = {
 
 function Intro() {
   return (
-    <section className="bg-linear-to-br from-primary to-primary-800 text-white">
+    <section className="bg-primary text-white">
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:py-16">
         <p className="m-0 mb-2 font-medium text-white/80 text-xs uppercase tracking-wide">
           Group training
         </p>
-        <h1 className="m-0 font-bold text-3xl leading-tight sm:text-4xl lg:text-5xl">
+        <h1 className="m-0 max-w-3xl font-bold text-3xl leading-tight sm:text-4xl lg:text-5xl">
           Train your whole team, on your schedule
         </h1>
         <p className="m-0 mt-3 max-w-2xl text-base text-white/90 sm:text-lg">
           Tell us about your group and we’ll reply within one business day with
           dates, pricing, and a plan that fits your workplace.
         </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {BENEFITS.map(({ icon: Icon, title, text }) => (
-            <div
-              className="rounded-xl border border-white/15 bg-white/10 p-5 backdrop-blur-xs"
-              key={title}
-            >
-              <Icon aria-hidden="true" className="h-6 w-6 text-white" />
-              <h2 className="m-0 mt-3 font-semibold text-base">{title}</h2>
-              <p className="m-0 mt-1 text-sm text-white/85">{text}</p>
-            </div>
-          ))}
-        </div>
       </div>
     </section>
+  );
+}
+
+function Expectations() {
+  return (
+    <aside className="space-y-6 lg:pt-2">
+      <h2 className="m-0 font-semibold text-slate-900 text-xl">
+        What to expect
+      </h2>
+      <dl className="m-0 space-y-5">
+        {BENEFITS.map(({ title, text }) => (
+          <div key={title}>
+            <dt className="font-semibold text-slate-900">{title}</dt>
+            <dd className="m-0 mt-1 text-slate-600 text-sm">{text}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="m-0 text-slate-600 text-sm">
+        Prefer to talk it through?{" "}
+        <a
+          className="font-medium text-primary underline-offset-2 hover:underline"
+          href="tel:3606588199"
+        >
+          Call (360) 658-8199
+        </a>
+        .
+      </p>
+    </aside>
   );
 }
 
@@ -298,7 +312,7 @@ export function GroupTrainingRequest() {
       });
       setDone(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(errorText(e));
     } finally {
       setBusy(false);
     }
@@ -306,64 +320,67 @@ export function GroupTrainingRequest() {
   return (
     <div className="bg-slate-50">
       <Intro />
-      <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:py-14">
-        {done ? (
-          <SuccessCard
-            onReset={() => {
-              setForm(EMPTY);
-              setDone(false);
-            }}
-          />
-        ) : (
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Request group training</CardTitle>
-                <CardDescription>
-                  No commitment. We’ll reply with dates and a quote within one
-                  business day.
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <form
-                className="space-y-6"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSubmit();
-                }}
-              >
-                <fieldset
-                  className="m-0 min-w-0 space-y-4 border-0 p-0"
-                  disabled={busy}
-                >
-                  <h3 className="m-0 font-semibold text-slate-900 text-sm uppercase tracking-wide">
-                    Your contact details
-                  </h3>
-                  <ContactFields form={form} update={update} />
-                </fieldset>
-                <fieldset
-                  className="m-0 min-w-0 space-y-4 border-0 p-0"
-                  disabled={busy}
-                >
-                  <h3 className="m-0 font-semibold text-slate-900 text-sm uppercase tracking-wide">
-                    About the training
-                  </h3>
-                  <TrainingFields form={form} update={update} />
-                </fieldset>
-                <ResultNotice message={error} />
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="m-0 text-slate-500 text-xs">
-                    We only use your details to respond to this request.
-                  </p>
-                  <Button disabled={busy} type="submit">
-                    {busy ? "Sending…" : "Send request"}
-                  </Button>
+      <section className="mx-auto grid max-w-6xl gap-10 px-4 py-10 sm:px-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:py-14">
+        <Expectations />
+        <div className="lg:order-first">
+          {done ? (
+            <SuccessCard
+              onReset={() => {
+                setForm(EMPTY);
+                setDone(false);
+              }}
+            />
+          ) : (
+            <Card>
+              <CardHeader>
+                <div>
+                  <CardTitle>Request group training</CardTitle>
+                  <CardDescription>
+                    No commitment. We’ll reply with dates and a quote within one
+                    business day.
+                  </CardDescription>
                 </div>
-              </form>
-            </CardContent>
-          </Card>
-        )}
+              </CardHeader>
+              <CardContent>
+                <form
+                  className="space-y-6"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit();
+                  }}
+                >
+                  <fieldset
+                    className="m-0 min-w-0 space-y-4 border-0 p-0"
+                    disabled={busy}
+                  >
+                    <h3 className="m-0 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      Your contact details
+                    </h3>
+                    <ContactFields form={form} update={update} />
+                  </fieldset>
+                  <fieldset
+                    className="m-0 min-w-0 space-y-4 border-0 p-0"
+                    disabled={busy}
+                  >
+                    <h3 className="m-0 font-semibold text-slate-900 text-sm uppercase tracking-wide">
+                      About the training
+                    </h3>
+                    <TrainingFields form={form} update={update} />
+                  </fieldset>
+                  <ResultNotice message={error} />
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="m-0 text-slate-500 text-xs">
+                      We only use your details to respond to this request.
+                    </p>
+                    <Button disabled={busy} type="submit">
+                      {busy ? "Sending…" : "Send request"}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { ConvexError } from "convex/values";
 import { ADMIN_EMAILS, isAdminEmail } from "../shared/adminEmails";
 import { effective, email, HOLD_MS } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
@@ -15,7 +16,7 @@ export async function staff(
     !(user && userId && user.email) ||
     user.emailVerificationTime === undefined
   ) {
-    throw new Error("Verified staff sign-in required");
+    throw new ConvexError("Verified staff sign-in required");
   }
   if (isAdminEmail(user.email)) {
     return { userId, admin: true };
@@ -34,7 +35,7 @@ export async function staff(
       return { userId, admin: false };
     }
   }
-  throw new Error("Forbidden");
+  throw new ConvexError("Forbidden");
 }
 export async function audit(
   ctx: MutationCtx,
@@ -58,7 +59,7 @@ export async function rate(ctx: MutationCtx, key: string, limit = 10) {
     .unique();
   const now = Date.now();
   if (row && row.until > now && row.count >= limit) {
-    throw new Error("Too many attempts. Try again later.");
+    throw new ConvexError("Too many attempts. Try again later.");
   }
   if (row) {
     await ctx.db.patch(row._id, {
@@ -96,14 +97,14 @@ export async function portalEmail(ctx: QueryCtx, grant?: string) {
     ) {
       return row.email;
     }
-    throw new Error("Access expired. Request another access email.");
+    throw new ConvexError("Access expired. Request another access email.");
   }
   const id = await getAuthUserId(ctx);
   const user = id ? await ctx.db.get(id) : null;
   if (user?.email && user.emailVerificationTime !== undefined) {
     return email(user.email);
   }
-  throw new Error("Verified access required");
+  throw new ConvexError("Verified access required");
 }
 export async function offering(
   ctx: QueryCtx,
@@ -118,7 +119,7 @@ export async function offering(
       (!session || session.courseId !== courseId)) ||
     (course.delivery === "self-paced" && session)
   ) {
-    throw new Error("Offering not found");
+    throw new ConvexError("Offering not found");
   }
   return {
     course,
@@ -330,7 +331,7 @@ export async function assignCode(
     entitlement.state === "canceled" ||
     (entitlement.codeId !== undefined && !replace)
   ) {
-    throw new Error("Code unavailable or wrong inventory");
+    throw new ConvexError("Code unavailable or wrong inventory");
   }
   const seat = await ctx.db.get(entitlement.seatId);
   const session = seat?.sessionId ? await ctx.db.get(seat.sessionId) : null;
@@ -339,7 +340,9 @@ export async function assignCode(
     seat.state !== "active" ||
     session?.state === "canceled"
   ) {
-    throw new Error("Code assignment requires an active paid registration");
+    throw new ConvexError(
+      "Code assignment requires an active paid registration"
+    );
   }
   const material = await ctx.db.get(code.materialId);
   if (material) {

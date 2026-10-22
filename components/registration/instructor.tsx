@@ -25,6 +25,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { useAssignedSessions } from "./catalog";
+import { errorText } from "./errors";
 import {
   formatMeeting,
   formatRelative,
@@ -33,7 +34,7 @@ import {
   shortZone,
 } from "./format";
 
-type Seat = Doc<"registrationSeats">;
+type Seat = Doc<"registrationSeats"> & { completion: string };
 type Meeting = Doc<"registrationSessions">["meetings"][number];
 type AttendanceStatus = "present" | "absent" | "not-recorded";
 
@@ -209,7 +210,7 @@ function AttendanceControls({
                     status: e.target.value as AttendanceStatus,
                   });
                 } catch (error) {
-                  onError(String(error));
+                  onError(errorText(error));
                 }
               }}
               value={
@@ -258,7 +259,7 @@ function OutcomeForm({
           });
           onResult("Outcome saved");
         } catch (error) {
-          onResult(String(error));
+          onResult(errorText(error));
         } finally {
           setBusy(false);
         }
@@ -385,10 +386,11 @@ function RosterRow({
   selected: boolean;
   onSelect: (checked: boolean) => void;
 }) {
-  const data = useQuery(api.registrationOperations.outcomeState, {
-    seatId: seat._id,
-  });
   const [open, setOpen] = useState(false);
+  const data = useQuery(
+    api.registrationOperations.outcomeState,
+    open ? { seatId: seat._id } : "skip"
+  );
   return (
     <>
       <TR className={cn(open && "bg-slate-50/70")}>
@@ -409,8 +411,8 @@ function RosterRow({
           <StatusBadge status={seat.state} />
         </TD>
         <TD>
-          <Badge className="capitalize" tone={completionTone(data?.completion)}>
-            {completionLabel(data?.completion)}
+          <Badge className="capitalize" tone={completionTone(seat.completion)}>
+            {completionLabel(seat.completion)}
           </Badge>
         </TD>
         <TD className="text-right">
@@ -478,7 +480,7 @@ function EmailDialog({
       setBody("");
       onClose();
     } catch (error) {
-      onResult(String(error));
+      onResult(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -587,6 +589,23 @@ export function InstructorRoster({
   const allVisibleSelected =
     visible.length > 0 && visible.every((s) => selected.includes(s._id));
   const meetings = session?.meetings ?? [];
+  if (session === null) {
+    return (
+      <div className="bg-slate-50">
+        <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+          <EmptyState
+            action={
+              <Button href="/instructor/sessions" size="sm">
+                Assigned sessions
+              </Button>
+            }
+            description="It may have been removed, or you aren’t assigned to teach it."
+            title="This session isn’t available to you."
+          />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -626,7 +645,7 @@ export function InstructorRoster({
                     );
                     setMessage("Complete roster exported");
                   } catch (error) {
-                    setMessage(String(error));
+                    setMessage(errorText(error));
                   } finally {
                     setExporting(false);
                   }
@@ -753,15 +772,18 @@ export function InstructorRoster({
             ) : null}
           </CardContent>
         </Card>
-        {roster.status === "CanLoadMore" ? (
+        {roster.status === "CanLoadMore" || roster.status === "LoadingMore" ? (
           <div className="flex justify-center">
             <Button
+              disabled={roster.status === "LoadingMore"}
               onClick={() => roster.loadMore(20)}
               size="sm"
               type="button"
               variant="secondary"
             >
-              Load more attendees
+              {roster.status === "LoadingMore"
+                ? "Loading…"
+                : "Load more attendees"}
             </Button>
           </div>
         ) : null}

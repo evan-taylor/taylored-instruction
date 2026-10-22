@@ -2,7 +2,8 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
+import { filter } from "convex-helpers/server/filter";
 import { doc } from "convex-helpers/validators";
 import type { Quote, Settings } from "../shared/registration/domain";
 import {
@@ -64,7 +65,14 @@ const publicOffering = v.object({
   ),
 });
 export const discover = query({
-  args: { paginationOpts: paginationOptsValidator },
+  args: {
+    paginationOpts: paginationOptsValidator,
+    /** Case-insensitive match against the title and meeting locations. */
+    search: v.optional(v.string()),
+    /** Epoch bounds for the first meeting, when filtering by date. */
+    dayStart: v.optional(v.number()),
+    dayEnd: v.optional(v.number()),
+  },
   returns: v.object({
     page: v.array(publicOffering),
     isDone: v.boolean(),
@@ -79,15 +87,24 @@ export const discover = query({
     ),
   }),
   handler: async (ctx, args) => {
-    const result = await ctx.db
-      .query("registrationSessions")
-      .withIndex("by_publication_and_visibility_and_firstStart", (q) =>
-        q
-          .eq("publication", "published")
-          .eq("visibility", "public")
-          .gte("firstStart", Date.now())
-      )
-      .paginate(args.paginationOpts);
+    const needle = args.search?.trim().toLowerCase() ?? "";
+    const from = Math.max(Date.now(), args.dayStart ?? 0);
+    const result = await filter(
+      ctx.db
+        .query("registrationSessions")
+        .withIndex("by_publication_and_visibility_and_firstStart", (q) =>
+          q
+            .eq("publication", "published")
+            .eq("visibility", "public")
+            .gte("firstStart", from)
+        ),
+      (s) =>
+        (args.dayEnd === undefined || s.firstStart <= args.dayEnd) &&
+        (needle === "" ||
+          `${s.title} ${s.meetings.map((m) => m.location).join(" ")}`
+            .toLowerCase()
+            .includes(needle))
+    ).paginate(args.paginationOpts);
     const page = await Promise.all(
       result.page.map(async (s) => {
         const course = await ctx.db.get(s.courseId);
@@ -224,18 +241,18 @@ export const saveCourse = mutation({
     const actor = await staff(ctx);
     validateSettings(value.settings);
     if (!(value.title.trim() && value.slug.trim())) {
-      throw new Error("Title and slug are required");
+      throw new ConvexError("Title and slug are required");
     }
     const other = await ctx.db
       .query("registrationCourses")
       .withIndex("by_slug", (q) => q.eq("slug", value.slug))
       .unique();
     if (other && other._id !== id) {
-      throw new Error("Slug already exists");
+      throw new ConvexError("Slug already exists");
     }
     const previous = id ? await ctx.db.get(id) : null;
     if (previous && previous.delivery !== value.delivery) {
-      throw new Error("Duplicate the template to change delivery type");
+      throw new ConvexError("Duplicate the template to change delivery type");
     }
     const revision = (previous?.revision ?? 0) + 1;
     const saved =
@@ -283,7 +300,7 @@ export const saveSession = mutation({
     const actor = await staff(ctx);
     const course = await ctx.db.get(value.courseId);
     if (course?.delivery !== "scheduled") {
-      throw new Error("Choose a scheduled course");
+      throw new ConvexError("Choose a scheduled course");
     }
     validateSettings(effective(course.settings, value.overrides));
     new Intl.DateTimeFormat("en", {
@@ -296,7 +313,7 @@ export const saveSession = mutation({
       value.meetings.length > 20 ||
       value.offerMinutes <= 0
     ) {
-      throw new Error("Invalid capacity, meetings, or offer duration");
+      throw new ConvexError("Invalid capacity, meetings, or offer duration");
     }
     validateMeetings(value.meetings);
     const previous = id ? await ctx.db.get(id) : null;
@@ -305,7 +322,7 @@ export const saveSession = mutation({
       (previous.courseId !== value.courseId ||
         value.capacity < previous.reserved)
     ) {
-      throw new Error(
+      throw new ConvexError(
         "Cannot change course or reduce capacity below reservations"
       );
     }
@@ -317,7 +334,7 @@ export const saveSession = mutation({
         .withIndex("by_code", (q) => q.eq("code", code))
         .unique())
     ) {
-      throw new Error("Please retry creating the session");
+      throw new ConvexError("Please retry creating the session");
     }
     const revision = (previous?.revision ?? 0) + 1;
     const values = {
@@ -404,7 +421,7 @@ export const saveCoupon = mutation({
       !Number.isInteger(value.limit) ||
       (value.type === "percent" && value.amount > 100)
     ) {
-      throw new Error("Invalid coupon");
+      throw new ConvexError("Invalid coupon");
     }
     const previous = id ? await ctx.db.get(id) : null;
     const duplicate = await ctx.db
@@ -412,7 +429,7 @@ export const saveCoupon = mutation({
       .withIndex("by_code", (q) => q.eq("code", code))
       .unique();
     if (duplicate && duplicate._id !== id) {
-      throw new Error("Coupon code already exists");
+      throw new ConvexError("Coupon code already exists");
     }
     const saved = {
       ...value,
@@ -421,7 +438,7 @@ export const saveCoupon = mutation({
       consumed: previous?.consumed ?? 0,
     };
     if (saved.limit < saved.reserved + saved.consumed) {
-      throw new Error("Limit cannot be below reserved and consumed uses");
+      throw new ConvexError("Limit cannot be below reserved and consumed uses");
     }
     const result = id ?? (await ctx.db.insert("registrationCoupons", saved));
     if (id) {
@@ -475,7 +492,7 @@ export const reserve = mutation({
   }),
   handler: async (ctx, args) => {
     if (args.requestKey.length < 24 || args.requestKey.length > 100) {
-      throw new Error("Invalid checkout attempt");
+      throw new ConvexError("Invalid checkout attempt");
     }
     const purchaser = email(args.purchaser);
     const previous = await ctx.db
@@ -492,7 +509,7 @@ export const reserve = mutation({
     }
     const actor = args.admin ? await staff(ctx) : null;
     if (args.admin && !args.admin.reason.trim()) {
-      throw new Error("An admin reason is required");
+      throw new ConvexError("An admin reason is required");
     }
     await rate(ctx, `checkout:${purchaser}`);
     const { course, session, config } = await offering(
@@ -566,7 +583,7 @@ export const reserve = mutation({
     );
     const order = await ctx.db.get(id);
     if (!order) {
-      throw new Error("Order insert failed");
+      throw new ConvexError("Order insert failed");
     }
     const status = await settleReservation(ctx, order, args.admin);
     await audit(
@@ -600,7 +617,7 @@ async function settleReservation(
   }
   const saved = await ctx.db.get(order._id);
   if (!saved) {
-    throw new Error("Order missing after settlement");
+    throw new ConvexError("Order missing after settlement");
   }
   return saved.status;
 }
@@ -643,7 +660,7 @@ function adminPricing(config: Settings, admin?: AdminReservation): Settings {
     return config;
   }
   if (!admin.pricingNote?.trim()) {
-    throw new Error("Explain the custom group price");
+    throw new ConvexError("Explain the custom group price");
   }
   return { ...config, tuition: cents(admin.tuition) };
 }
@@ -676,7 +693,7 @@ async function reserveCapacity(
       (offer.expires ?? 0) <= Date.now() ||
       !seats.some((s) => s.attendee.email === offer.email)
     ) {
-      throw new Error("Invitation invalid or expired");
+      throw new ConvexError("Invitation invalid or expired");
     }
     offeredSeats = 1;
     await ctx.db.patch(offer._id, { state: "accepted" });
@@ -686,7 +703,7 @@ async function reserveCapacity(
       session.reserved + seats.length - offeredSeats > session.capacity &&
       !overbook
     ) {
-      throw new Error("Not enough seats available");
+      throw new ConvexError("Not enough seats available");
     }
     const duplicate = await Promise.all(
       seats.map(async (seat) => {
@@ -709,7 +726,7 @@ async function reserveCapacity(
       })
     );
     if (duplicate.some(Boolean)) {
-      throw new Error(
+      throw new ConvexError(
         "An attendee already has a registration or reservation for this session"
       );
     }
@@ -734,10 +751,10 @@ function requireOpen(
           session.visibility === "admin" ||
           Date.now() >= session.firstStart - config.cutoffMinutes * 60_000)))
   ) {
-    throw new Error("Registration is closed");
+    throw new ConvexError("Registration is closed");
   }
   if (session && session.state !== "open") {
-    throw new Error("Session is closed");
+    throw new ConvexError("Session is closed");
   }
 }
 
@@ -761,7 +778,7 @@ async function validCoupon(
       coupon.expires <= Date.now() ||
       (coupon.courseIds.length && !coupon.courseIds.includes(courseId)))
   ) {
-    throw new Error("Coupon is not valid for this course");
+    throw new ConvexError("Coupon is not valid for this course");
   }
   return coupon;
 }
@@ -774,7 +791,7 @@ function validateMeetings(meetings: Doc<"registrationSessions">["meetings"]) {
       !Number.isFinite(m.end) ||
       !(m.location || m.onlineUrl)
     ) {
-      throw new Error(
+      throw new ConvexError(
         "Every meeting needs valid times and a location or online link"
       );
     }
@@ -783,7 +800,7 @@ function validateMeetings(meetings: Doc<"registrationSessions">["meetings"]) {
     }
   }
   if (new Set(meetings.map((m) => m.id)).size !== meetings.length) {
-    throw new Error("Meeting IDs must be unique");
+    throw new ConvexError("Meeting IDs must be unique");
   }
 }
 

@@ -100,7 +100,7 @@ function NavLinks({
       {NAV.map((section) => (
         <div key={section.group}>
           {compact ? null : (
-            <p className="m-0 mb-1 px-3 font-semibold text-[11px] text-slate-400 uppercase tracking-wider">
+            <p className="m-0 mb-1 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
               {section.group}
             </p>
           )}
@@ -130,7 +130,7 @@ function NavLinks({
                     <Icon aria-hidden={true} className="h-4 w-4 shrink-0" />
                     <span className="truncate">{item.label}</span>
                     {count > 0 ? (
-                      <span className="ml-auto rounded-full bg-rose-600 px-1.5 py-0.5 font-semibold text-[11px] text-white tabular-nums leading-none">
+                      <span className="ml-auto rounded-full bg-rose-600 px-1.5 py-0.5 font-semibold text-white text-xs tabular-nums leading-none">
                         {count}
                       </span>
                     ) : null}
@@ -237,7 +237,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               <div className="min-w-0 flex-1">
                 <nav
                   aria-label="Admin"
-                  className="sticky top-0 z-10 overflow-x-auto border-slate-200 border-b bg-white/95 px-3 py-2 backdrop-blur lg:hidden"
+                  className="sticky top-0 z-10 overflow-x-auto border-slate-200 border-b bg-white px-3 py-2 [mask-image:linear-gradient(to_right,black_calc(100%-2.5rem),transparent)] lg:hidden"
                 >
                   <div className="flex gap-1">
                     <NavLinks

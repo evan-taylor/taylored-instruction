@@ -7,8 +7,9 @@ import {
 } from "convex/react";
 import { ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useOrganizations } from "@/components/registration/catalog";
+import { errorText } from "@/components/registration/errors";
 import {
   formatDate,
   formatDateTime,
@@ -97,6 +98,7 @@ export function AddressFields({
           <TextInput
             {...p}
             onChange={(e) => onChange({ city: e.target.value })}
+            required
             value={value.city}
           />
         )}
@@ -111,6 +113,7 @@ export function AddressFields({
                 onChange({ state: e.target.value.toUpperCase() })
               }
               placeholder="WA"
+              required
               value={value.state}
             />
           )}
@@ -121,6 +124,7 @@ export function AddressFields({
               {...p}
               inputMode="numeric"
               onChange={(e) => onChange({ postalCode: e.target.value })}
+              required
               value={value.postalCode}
             />
           )}
@@ -159,6 +163,7 @@ export function InvoiceFields({
             {...p}
             onChange={(e) => set({ billToName: e.target.value })}
             placeholder="Accounts payable contact or organization"
+            required
             value={value.billToName}
           />
         )}
@@ -172,6 +177,7 @@ export function InvoiceFields({
           <TextInput
             {...p}
             onChange={(e) => set({ billToEmail: e.target.value })}
+            required
             type="email"
             value={value.billToEmail}
           />
@@ -187,6 +193,7 @@ export function InvoiceFields({
           <TextInput
             {...p}
             onChange={(e) => set({ billToAddress: e.target.value })}
+            required
             value={value.billToAddress}
           />
         )}
@@ -259,15 +266,17 @@ function InvoiceActions({
   const [dialog, setDialog] = useState<"record" | "void" | null>(null);
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
+  const [dialogError, setDialogError] = useState("");
   const { invoice } = row;
   async function run(task: () => Promise<string>) {
     setBusy(true);
+    setDialogError("");
     try {
       onMessage(await task());
       setDialog(null);
       setReason("");
     } catch (error) {
-      onMessage(String(error));
+      setDialogError(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -386,6 +395,7 @@ function InvoiceActions({
             />
           )}
         </Field>
+        <ResultNotice className="mt-3" message={dialogError} tone="danger" />
       </ConfirmDialog>
     </div>
   );
@@ -427,6 +437,8 @@ export function CreateInvoiceModal({
   const [sendNow, setSendNow] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [createdId, setCreatedId] = useState<Id<"registrationInvoices">>();
+  const formId = useId();
   const order = useQuery(
     api.registrationOperations.order,
     selected ? { orderId: selected } : "skip"
@@ -459,46 +471,15 @@ export function CreateInvoiceModal({
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
-          <Button
-            disabled={
-              busy ||
-              !order ||
-              !draft.billToName ||
-              !draft.billToEmail ||
-              !draft.city ||
-              !draft.state ||
-              !draft.postalCode
-            }
-            onClick={async () => {
-              if (!order) {
-                return;
-              }
-              setBusy(true);
-              setMessage("");
-              try {
-                const id = await create({
-                  orderId: order._id,
-                  ...draft,
-                  organizationId: organizationId || undefined,
-                });
-                let text = "Invoice created as a draft.";
-                if (sendNow) {
-                  const url = await issue({ id });
-                  text = `Invoice sent to ${draft.billToEmail}. Pay link: ${url}`;
-                }
-                onCreated?.(id);
-                setMessage(text);
-              } catch (error) {
-                setMessage(String(error));
-              } finally {
-                setBusy(false);
-              }
-            }}
-            size="sm"
-            type="button"
-          >
-            {createLabel(busy, sendNow)}
-          </Button>
+          {createdId ? (
+            <Button onClick={onClose} size="sm" type="button">
+              Done
+            </Button>
+          ) : (
+            <Button disabled={busy} form={formId} size="sm" type="submit">
+              {createLabel(busy, sendNow)}
+            </Button>
+          )}
         </>
       }
       onClose={onClose}
@@ -506,7 +487,41 @@ export function CreateInvoiceModal({
       size="lg"
       title="Create invoice"
     >
-      <div className="space-y-5">
+      <form
+        className="space-y-5"
+        id={formId}
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!order) {
+            setMessage("Choose an unpaid enrollment to invoice.");
+            return;
+          }
+          if (createdId) {
+            return;
+          }
+          setBusy(true);
+          setMessage("");
+          try {
+            const id = await create({
+              orderId: order._id,
+              ...draft,
+              organizationId: organizationId || undefined,
+            });
+            setCreatedId(id);
+            let text = "Invoice created as a draft.";
+            if (sendNow) {
+              const url = await issue({ id });
+              text = `Invoice sent to ${draft.billToEmail}. Pay link: ${url}`;
+            }
+            onCreated?.(id);
+            setMessage(text);
+          } catch (error) {
+            setMessage(errorText(error));
+          } finally {
+            setBusy(false);
+          }
+        }}
+      >
         <Field
           hint="Only orders awaiting payment can be invoiced."
           label="Order"
@@ -535,13 +550,16 @@ export function CreateInvoiceModal({
             </Select>
           )}
         </Field>
-        {unpaid.status === "CanLoadMore" ? (
+        {unpaid.status === "CanLoadMore" || unpaid.status === "LoadingMore" ? (
           <Button
+            disabled={unpaid.status === "LoadingMore"}
             onClick={() => unpaid.loadMore(50)}
             type="button"
             variant="secondary"
           >
-            Load more unpaid orders
+            {unpaid.status === "LoadingMore"
+              ? "Loading…"
+              : "Load more unpaid orders"}
           </Button>
         ) : null}
         {order ? (
@@ -584,7 +602,7 @@ export function CreateInvoiceModal({
           Send the invoice email now with a hosted pay link
         </label>
         <ResultNotice message={message} />
-      </div>
+      </form>
     </Modal>
   );
 }
@@ -760,13 +778,17 @@ export function InvoicesPanel({
           </TBody>
         </Table>
       </ListState>
-      {invoicePage.status === "CanLoadMore" ? (
+      {invoicePage.status === "CanLoadMore" ||
+      invoicePage.status === "LoadingMore" ? (
         <Button
+          disabled={invoicePage.status === "LoadingMore"}
           onClick={() => invoicePage.loadMore(50)}
           type="button"
           variant="secondary"
         >
-          Load more invoices
+          {invoicePage.status === "LoadingMore"
+            ? "Loading…"
+            : "Load more invoices"}
         </Button>
       ) : null}
       {creating ? (

@@ -403,7 +403,7 @@ export function AdminDashboard() {
                     <span className="font-medium text-slate-800 text-sm capitalize">
                       {row.action.replaceAll("-", " ")}
                     </span>
-                    <span className="whitespace-nowrap text-slate-400 text-xs">
+                    <span className="whitespace-nowrap text-slate-500 text-xs">
                       {formatRelative(row.at)}
                     </span>
                   </div>

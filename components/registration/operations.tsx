@@ -28,6 +28,7 @@ import {
   type Settings,
 } from "@/shared/registration/domain";
 import { AssignmentHistory } from "./assignment-history";
+import { errorText } from "./errors";
 import { formatDate, formatDateTime, pluralize } from "./format";
 
 type Order = Doc<"registrationOrders">;
@@ -122,7 +123,7 @@ export function ReasonDialog({
       await onConfirm(reason.trim());
       onClose();
     } catch (error) {
-      setFailure(String(error));
+      setFailure(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -386,7 +387,7 @@ function useManualEnrollment() {
       );
       update({ name: "", email: "", answers: {} });
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -621,7 +622,7 @@ function SeatMaterials({ seat }: { seat: Seat }) {
       await resend({ seatId: seat._id, key: crypto.randomUUID() });
       setMessage("Material access email queued using existing assignments.");
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -943,7 +944,7 @@ function RequestPayment({ order }: { order: Order }) {
       setMessage(`Payment request queued for ${order.purchaser}.`);
       requestId.current = crypto.randomUUID();
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }

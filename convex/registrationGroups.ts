@@ -2,7 +2,7 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { ADMIN_EMAILS } from "../shared/adminEmails";
 import {
@@ -46,10 +46,10 @@ const DAY_MS = 86_400_000;
 function text(value: string, label: string, required = false) {
   const trimmed = value.trim();
   if (required && !trimmed) {
-    throw new Error(`${label} is required`);
+    throw new ConvexError(`${label} is required`);
   }
   if (trimmed.length > MAX_TEXT) {
-    throw new Error(`${label} is too long`);
+    throw new ConvexError(`${label} is too long`);
   }
   return trimmed;
 }
@@ -79,7 +79,7 @@ export const submitGroupRequest = mutation({
       args.headcount < 1 ||
       args.headcount > MAX_HEADCOUNT
     ) {
-      throw new Error("Enter the expected number of attendees");
+      throw new ConvexError("Enter the expected number of attendees");
     }
     const request = {
       organization: text(args.organization, "Organization", true),
@@ -156,7 +156,7 @@ export const updateGroupRequest = mutation({
     const actor = await staff(ctx);
     const request = await ctx.db.get(id);
     if (!request) {
-      throw new Error("Request not found");
+      throw new ConvexError("Request not found");
     }
     await ctx.db.patch(id, {
       ...value,
@@ -291,22 +291,22 @@ export const createInvoice = mutation({
     const actor = await staff(ctx);
     const order = await ctx.db.get(args.orderId);
     if (order?.status !== "unpaid") {
-      throw new Error("Only unpaid enrollments can be invoiced");
+      throw new ConvexError("Only unpaid enrollments can be invoiced");
     }
     if (order.total <= 0) {
-      throw new Error(
+      throw new ConvexError(
         "This order has nothing to invoice; waive payment instead"
       );
     }
     if (await openInvoice(ctx, order._id)) {
-      throw new Error("An invoice is already open for this order");
+      throw new ConvexError("An invoice is already open for this order");
     }
     if (
       !Number.isInteger(args.dueDays) ||
       args.dueDays < 0 ||
       args.dueDays > MAX_DUE_DAYS
     ) {
-      throw new Error("Payment terms must be between 0 and 180 days");
+      throw new ConvexError("Payment terms must be between 0 and 180 days");
     }
     if (
       !(
@@ -316,7 +316,7 @@ export const createInvoice = mutation({
         args.postalCode?.trim()
       )
     ) {
-      throw new Error(
+      throw new ConvexError(
         "A full billing address (street, city, state, ZIP) is required so sales tax can be calculated"
       );
     }
@@ -407,16 +407,16 @@ export const invoiceForIssue = internalQuery({
     const invoice = await ctx.db.get(args.id);
     const order = invoice ? await ctx.db.get(invoice.orderId) : null;
     if (!(invoice && order)) {
-      throw new Error("Invoice not found");
+      throw new ConvexError("Invoice not found");
     }
     if (invoice.status === "paid" || invoice.status === "void") {
-      throw new Error(`This invoice is already ${invoice.status}`);
+      throw new ConvexError(`This invoice is already ${invoice.status}`);
     }
     if (order.status !== "unpaid") {
-      throw new Error("The order is no longer awaiting payment");
+      throw new ConvexError("The order is no longer awaiting payment");
     }
     if (invoice.amount !== order.total) {
-      throw new Error("Invoice amount no longer matches the order");
+      throw new ConvexError("Invoice amount no longer matches the order");
     }
     return { invoice, order };
   },
@@ -448,13 +448,15 @@ export const attachStripeInvoice = internalMutation({
   handler: async (ctx, args) => {
     const invoice = await ctx.db.get(args.id);
     if (!invoice) {
-      throw new Error("Invoice not found");
+      throw new ConvexError("Invoice not found");
     }
     if (
       invoice.stripeInvoiceId &&
       invoice.stripeInvoiceId !== args.stripeInvoiceId
     ) {
-      throw new Error("Invoice already attached to a different Stripe invoice");
+      throw new ConvexError(
+        "Invoice already attached to a different Stripe invoice"
+      );
     }
     const order = await ctx.db.get(invoice.orderId);
     if (
@@ -544,14 +546,14 @@ export const invoicePaid = internalMutation({
       .unique();
     const order = invoice ? await ctx.db.get(invoice.orderId) : null;
     if (!(invoice && order)) {
-      throw new Error("Unknown invoice payment");
+      throw new ConvexError("Unknown invoice payment");
     }
     if (
       invoice.status === "paid" &&
       order.paymentIntent !== args.paymentIntent
     ) {
       if (!args.paymentIntent || order.paymentIntent) {
-        throw new Error(
+        throw new ConvexError(
           "Unexpected additional invoice payment requires reconciliation"
         );
       }
@@ -560,7 +562,7 @@ export const invoicePaid = internalMutation({
         args.currency !== order.currency ||
         args.amount !== order.total + tax
       ) {
-        throw new Error("Invoice payment mismatch");
+        throw new ConvexError("Invoice payment mismatch");
       }
       await ctx.db.patch(order._id, {
         status: "exception",
@@ -585,7 +587,7 @@ export const invoicePaid = internalMutation({
         tax < 0 ||
         args.amount !== order.total + tax
       ) {
-        throw new Error(
+        throw new ConvexError(
           "Invoice payment does not match the authoritative order"
         );
       }
@@ -648,20 +650,20 @@ export const recordInvoicePayment = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error(
+      throw new ConvexError(
         "Describe how payment was received (check number, ACH, etc.)"
       );
     }
     const invoice = await ctx.db.get(args.id);
     const order = invoice ? await ctx.db.get(invoice.orderId) : null;
     if (!(invoice && order)) {
-      throw new Error("Invoice not found");
+      throw new ConvexError("Invoice not found");
     }
     if (invoice.status === "paid" || invoice.status === "void") {
-      throw new Error(`This invoice is already ${invoice.status}`);
+      throw new ConvexError(`This invoice is already ${invoice.status}`);
     }
     if (order.status !== "unpaid") {
-      throw new Error("The order is no longer awaiting payment");
+      throw new ConvexError("The order is no longer awaiting payment");
     }
     await ctx.db.patch(invoice._id, {
       status: "paid",
@@ -693,14 +695,16 @@ export const voidInvoice = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Reason required");
+      throw new ConvexError("Reason required");
     }
     const invoice = await ctx.db.get(args.id);
     if (!invoice) {
-      throw new Error("Invoice not found");
+      throw new ConvexError("Invoice not found");
     }
     if (invoice.status === "paid") {
-      throw new Error("Paid invoices cannot be voided; issue a refund instead");
+      throw new ConvexError(
+        "Paid invoices cannot be voided; issue a refund instead"
+      );
     }
     if (invoice.status === "void") {
       return null;
@@ -730,7 +734,7 @@ export const remindInvoice = mutation({
     const actor = await staff(ctx);
     const invoice = await ctx.db.get(args.id);
     if (invoice?.status !== "open" || !invoice.hostedUrl) {
-      throw new Error("Only sent, unpaid invoices can be reminded");
+      throw new ConvexError("Only sent, unpaid invoices can be reminded");
     }
     const now = Date.now();
     const overdue = invoice.dueAt < now;

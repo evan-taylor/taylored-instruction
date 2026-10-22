@@ -4,8 +4,10 @@ import { useAction, useMutation } from "convex/react";
 import { useSearchParams } from "next/navigation";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Notice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { errorText } from "./errors";
 
 export function RequestedPayment() {
   const params = useSearchParams();
@@ -30,19 +32,17 @@ export function RequestedPayment() {
       sessionStorage.setItem("registration-order", JSON.stringify(args));
       window.location.assign(url);
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "Unable to open checkout. Please try again."
-      );
+      setError(errorText(cause, "Unable to open checkout. Please try again."));
       lock.current = false;
       setBusy(false);
     }
   };
   return (
-    <section className="mx-auto max-w-xl px-6 py-20">
-      <p className="font-semibold text-primary text-sm">Taylored Instruction</p>
-      <h1 className="mt-3 font-bold text-3xl text-slate-950">
+    <section className="mx-auto max-w-xl px-4 py-16 sm:px-6 lg:py-20">
+      <p className="m-0 font-medium text-primary text-xs uppercase tracking-wide">
+        Taylored Instruction
+      </p>
+      <h1 className="mt-2 font-bold text-3xl text-slate-900">
         Complete your training payment
       </h1>
       <p className="mt-4 text-slate-600">
@@ -55,19 +55,19 @@ export function RequestedPayment() {
         your confirmation when payment is complete.
       </p>
       {error ? (
-        <p className="my-4 text-red-700" role="alert">
+        <Notice className="my-4" tone="danger">
           {error}
-        </p>
+        </Notice>
       ) : null}
       {orderId && requestKey ? (
         <Button className="mt-6" disabled={busy} onClick={pay} type="button">
           {busy ? "Opening checkout…" : "Continue to secure checkout"}
         </Button>
       ) : (
-        <p className="mt-6 text-red-700" role="alert">
+        <Notice className="mt-6" tone="danger">
           This payment link is incomplete. Please open the full link from your
           email.
-        </p>
+        </Notice>
       )}
       <p className="mt-6 text-slate-500 text-sm">
         Already paid or need help? Reply to your payment request email before

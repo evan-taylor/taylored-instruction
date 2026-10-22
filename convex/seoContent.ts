@@ -1,5 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -883,16 +883,16 @@ const buildSeoSeedPages = (): GeneratedPage[] => {
 const requireAdmin = async (ctx: QueryCtx | MutationCtx) => {
   const userId = await getAuthUserId(ctx);
   if (!userId) {
-    throw new Error("Not authenticated");
+    throw new ConvexError("Not authenticated");
   }
 
   const user = await ctx.db.get(userId);
   if (!user) {
-    throw new Error("User not found");
+    throw new ConvexError("User not found");
   }
 
   if (!isAdminEmail(user.email)) {
-    throw new Error("Admin access required");
+    throw new ConvexError("Admin access required");
   }
 
   return user;

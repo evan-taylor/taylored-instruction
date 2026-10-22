@@ -529,12 +529,12 @@ export default function ECardsPage() {
 
       {/* Shopping Cart Dropdown */}
       {isCartOpen && (
-        <div className="fixed top-0 right-0 z-50 flex h-full w-full flex-col overflow-hidden border-gray-200 border-l bg-white shadow-xl md:w-96">
-          <div className="flex items-center justify-between border-gray-200 border-b p-4">
+        <div className="fixed top-0 right-0 z-50 flex h-full w-full flex-col overflow-hidden border-slate-200 border-l bg-white shadow-xl md:w-96">
+          <div className="flex items-center justify-between border-slate-200 border-b p-4">
             <h2 className="font-semibold text-xl">Your Cart</h2>
             <button
               aria-label="Close cart"
-              className="rounded-full p-1 hover:bg-gray-100"
+              className="rounded-full p-1 hover:bg-slate-100"
               onClick={() => setIsCartOpen(false)}
               type="button"
             >
@@ -558,8 +558,8 @@ export default function ECardsPage() {
           <div className="flex-1 overflow-y-auto p-4">
             {cartItems.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center">
-                <ShoppingCart className="mb-4 text-gray-300" size={48} />
-                <p className="text-gray-500">Your cart is empty</p>
+                <ShoppingCart className="mb-4 text-slate-300" size={48} />
+                <p className="text-slate-500">Your cart is empty</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -579,13 +579,13 @@ export default function ECardsPage() {
                     </div>
                     <div className="flex-1">
                       <h3 className="font-medium">{item.product.name}</h3>
-                      <p className="text-gray-500 text-sm">
+                      <p className="text-slate-500 text-sm">
                         ${(item.product.display_price ?? 0).toFixed(2)} each
                       </p>
                       <div className="mt-2 flex items-center justify-between">
                         <div className="flex items-center rounded-sm border">
                           <button
-                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
+                            className="px-2 py-1 text-slate-500 hover:text-slate-700"
                             onClick={() =>
                               updateCartItemQuantity(
                                 item.product.id,
@@ -598,7 +598,7 @@ export default function ECardsPage() {
                           </button>
                           <span className="px-2">{item.quantity}</span>
                           <button
-                            className="px-2 py-1 text-gray-500 hover:text-gray-700"
+                            className="px-2 py-1 text-slate-500 hover:text-slate-700"
                             onClick={() =>
                               updateCartItemQuantity(
                                 item.product.id,
@@ -625,7 +625,7 @@ export default function ECardsPage() {
             )}
           </div>
 
-          <div className="border-gray-200 border-t p-4">
+          <div className="border-slate-200 border-t p-4">
             {cartItems.length > 0 && (
               <button
                 className="mb-4 inline-block text-red-500 text-sm hover:underline"
@@ -661,7 +661,7 @@ export default function ECardsPage() {
 
       {products.length === 0 && !error && (
         <div className="py-12 text-center">
-          <p className="text-gray-600 text-lg">
+          <p className="text-lg text-slate-600">
             No eCards available at this time.
           </p>
         </div>
@@ -684,7 +684,7 @@ export default function ECardsPage() {
             </div>
             <div className="flex grow flex-col p-4">
               <h3 className="mb-2 font-semibold text-lg">{product.name}</h3>
-              <p className="mb-4 text-gray-600 text-sm">
+              <p className="mb-4 text-slate-600 text-sm">
                 {product.description}
               </p>
               <div className="mt-auto font-semibold text-lg text-primary">
@@ -696,7 +696,7 @@ export default function ECardsPage() {
               <div className="flex items-center gap-3">
                 <div className="flex items-center overflow-hidden rounded-sm border">
                   <button
-                    className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
+                    className="bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200"
                     onClick={() =>
                       handleQuantityChange(
                         product.id,
@@ -720,7 +720,7 @@ export default function ECardsPage() {
                     value={selectedQuantities[product.id] || 1}
                   />
                   <button
-                    className="bg-gray-100 px-3 py-1 text-gray-700 hover:bg-gray-200"
+                    className="bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-200"
                     onClick={() =>
                       handleQuantityChange(
                         product.id,

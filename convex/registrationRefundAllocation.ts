@@ -1,3 +1,4 @@
+import { ConvexError } from "convex/values";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 
@@ -12,12 +13,14 @@ export async function allocateRefund(
     .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
     .take(1000);
   if (prior.length === 1000) {
-    throw new Error("Refund history requires reconciliation");
+    throw new ConvexError("Refund history requires reconciliation");
   }
   const consumed = new Map<string, number>();
   for (const refund of prior.filter((r) => r.state !== "failed")) {
     if (!refund.allocations) {
-      throw new Error("Legacy refund requires line allocation reconciliation");
+      throw new ConvexError(
+        "Legacy refund requires line allocation reconciliation"
+      );
     }
     for (const a of refund.allocations) {
       const key = `${a.email}:${a.lineId}`;
@@ -51,7 +54,7 @@ export async function allocateRefund(
     remaining -= taxValue;
   }
   if (remaining) {
-    throw new Error("Refund exceeds unrefunded purchased lines");
+    throw new ConvexError("Refund exceeds unrefunded purchased lines");
   }
   return allocations;
 }

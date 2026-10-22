@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, TextInput } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { errorText } from "./errors";
 
 const VARIABLE = /\{\{(\w+)\}\}/gu;
 
@@ -58,7 +59,7 @@ export function EmailPreview({
       });
       setMessage("Test email queued");
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -84,7 +85,13 @@ export function EmailPreview({
             materials are appended on delivery.
           </p>
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <form
+          className="flex flex-col gap-3 sm:flex-row sm:items-end"
+          onSubmit={(e) => {
+            e.preventDefault();
+            sendTest();
+          }}
+        >
           <Field
             className="flex-1"
             hint="Only the configured safe test recipient is accepted."
@@ -95,21 +102,16 @@ export function EmailPreview({
                 {...props}
                 onChange={(e) => setRecipient(e.target.value)}
                 placeholder="you@example.com"
+                required
                 type="email"
                 value={recipient}
               />
             )}
           </Field>
-          <Button
-            disabled={busy || !recipient}
-            onClick={sendTest}
-            size="sm"
-            type="button"
-            variant="secondary"
-          >
+          <Button disabled={busy} size="sm" type="submit" variant="secondary">
             {busy ? "Working…" : "Send test email"}
           </Button>
-        </div>
+        </form>
         <ResultNotice message={message} />
       </div>
     </details>

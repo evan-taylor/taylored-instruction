@@ -10,6 +10,16 @@ module.exports = {
       colors: {
         primary: {
           DEFAULT: "hsl(var(--primary))",
+          50: "#eef4fa",
+          100: "#d9e6f3",
+          200: "#b3cde7",
+          300: "#86aed6",
+          400: "#558bc0",
+          500: "#2f6aa3",
+          600: "#21538a",
+          700: "#1c4674",
+          800: "#163f69",
+          900: "#0f2d4b",
           dark: "#163f69",
           foreground: "hsl(var(--primary-foreground))",
         },
@@ -18,10 +28,13 @@ module.exports = {
           foreground: "hsl(var(--secondary-foreground))",
         },
         text: {
-          DEFAULT: "#1a202c",
-          light: "#2d3748",
+          DEFAULT: "#0f172a",
+          light: "#475569",
         },
-        background: "hsl(var(--background))",
+        background: {
+          DEFAULT: "hsl(var(--background))",
+          light: "#f8fafc",
+        },
         foreground: "hsl(var(--foreground))",
         card: {
           DEFAULT: "hsl(var(--card))",

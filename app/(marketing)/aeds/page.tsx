@@ -98,9 +98,9 @@ export default async function AedPage() {
         </div>
         <div className="absolute inset-0 z-10 bg-linear-to-r from-black/70 to-black/50" />
         <div className="container relative z-20 mx-auto px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-xs md:p-10">
+          <div className="mx-auto max-w-4xl">
             <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
-              AED Sales & Distribution
+              AED sales and distribution
             </h1>
             <p className="mx-auto max-w-3xl text-lg text-white/90 leading-relaxed md:text-xl">
               Equip your organization with life-saving AEDs. Taylored
@@ -115,7 +115,7 @@ export default async function AedPage() {
       <section className="bg-background py-16">
         <div className="container mx-auto max-w-4xl px-4">
           <h2 className="mb-6 text-center font-semibold text-2xl text-text md:text-3xl">
-            Why Choose Taylored Instruction for Your AED Needs?
+            Why buy your AED from Taylored Instruction?
           </h2>
 
           <div className="mb-12 grid items-center gap-8 md:grid-cols-2">
@@ -123,34 +123,34 @@ export default async function AedPage() {
               <ul className="list-inside list-disc space-y-3 text-lg text-text-light">
                 <li>
                   <span className="font-semibold text-text">
-                    Expert Guidance:
+                    Expert guidance:
                   </span>{" "}
                   We help you select the right AED model for your specific
                   environment and needs.
                 </li>
                 <li>
                   <span className="font-semibold text-text">
-                    Trusted Brands:
+                    Trusted brands:
                   </span>{" "}
                   Access to reliable and user-friendly AEDs from industry
                   leaders.
                 </li>
                 <li>
                   <span className="font-semibold text-text">
-                    Competitive Pricing:
+                    Competitive pricing:
                   </span>{" "}
                   Get affordable pricing on devices and accessories.
                 </li>
                 <li>
                   <span className="font-semibold text-text">
-                    Comprehensive Support:
+                    Comprehensive support:
                   </span>{" "}
                   We offer setup assistance and can integrate AED training with
                   our existing CPR and First Aid courses.
                 </li>
                 <li>
                   <span className="font-semibold text-text">
-                    Regulatory Compliance:
+                    Regulatory compliance:
                   </span>{" "}
                   Ensure your organization meets local and state requirements
                   for AED placement and maintenance.
@@ -169,7 +169,7 @@ export default async function AedPage() {
           </div>
 
           <h2 className="mb-8 text-center font-semibold text-2xl text-text md:text-3xl">
-            Ready to Enhance Safety with an AED?
+            Ready to add an AED?
           </h2>
           <p className="mx-auto mb-8 max-w-3xl text-center text-lg text-text-light">
             Investing in an AED is a critical step towards protecting your
@@ -179,9 +179,9 @@ export default async function AedPage() {
           </p>
 
           {/* Call to Action Section */}
-          <div className="rounded-lg bg-muted p-8 text-center shadow-sm">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
             <h3 className="mb-4 font-semibold text-text text-xl md:text-2xl">
-              Get a Quote or Place Your Order Today!
+              Get a quote or place an order
             </h3>
             <p className="mb-6 text-text-light">
               Our team is ready to assist you with product selection, pricing,
@@ -189,7 +189,7 @@ export default async function AedPage() {
               needs.
             </p>
             <Button href="/contact" size="lg" variant="primary">
-              Contact Us for AEDs
+              Contact us about AEDs
             </Button>
           </div>
         </div>

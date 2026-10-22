@@ -1,6 +1,7 @@
 "use client";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useId, useState } from "react";
+import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/dialog";
 import { Field, TextArea, TextInput, Toggle } from "@/components/ui/field";
@@ -68,6 +69,7 @@ export function OrganizationFields({
             {...p}
             onChange={(e) => set({ name: e.target.value })}
             placeholder="Acme Dental Group"
+            required
             value={value.name}
           />
         )}
@@ -160,6 +162,20 @@ export function OrganizationModal({
   );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const formId = useId();
+  async function submit() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const id = await save({ id: organization?._id, ...draft });
+      onSaved?.(id);
+      onClose();
+    } catch (error) {
+      setMessage(errorText(error));
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <Modal
       description="Organizations group orders and invoices for a company, school, or agency."
@@ -168,24 +184,7 @@ export function OrganizationModal({
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
-          <Button
-            disabled={busy || !draft.name.trim()}
-            onClick={async () => {
-              setBusy(true);
-              setMessage("");
-              try {
-                const id = await save({ id: organization?._id, ...draft });
-                onSaved?.(id);
-                onClose();
-              } catch (error) {
-                setMessage(String(error));
-              } finally {
-                setBusy(false);
-              }
-            }}
-            size="sm"
-            type="button"
-          >
+          <Button disabled={busy} form={formId} size="sm" type="submit">
             {busy ? "Saving…" : "Save organization"}
           </Button>
         </>
@@ -195,10 +194,17 @@ export function OrganizationModal({
       size="lg"
       title={organization ? "Edit organization" : "New organization"}
     >
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault();
+          submit();
+        }}
+      >
         <OrganizationFields onChange={setDraft} value={draft} />
         <ResultNotice message={message} />
-      </div>
+      </form>
     </Modal>
   );
 }

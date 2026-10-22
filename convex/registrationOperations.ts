@@ -3,7 +3,7 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { isAdminEmail } from "../shared/adminEmails";
 import {
@@ -17,7 +17,7 @@ import {
 } from "../shared/registration/domain";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import {
   assignCode,
@@ -70,14 +70,14 @@ export const saveMaterial = mutation({
     const actor = await staff(ctx);
     const previous = id ? await ctx.db.get(id) : null;
     if (!args.title.trim() || (previous && previous.kind !== args.kind)) {
-      throw new Error("A material needs a title and an immutable kind");
+      throw new ConvexError("A material needs a title and an immutable kind");
     }
     if (args.kind === "pdf") {
       const file = args.storageId
         ? await ctx.db.system.get(args.storageId)
         : null;
       if (file?.contentType !== "application/pdf") {
-        throw new Error("Upload a PDF");
+        throw new ConvexError("Upload a PDF");
       }
     }
     const value = {
@@ -162,7 +162,7 @@ export const addStock = mutation({
     const actor = await staff(ctx);
     const material = await ctx.db.get(args.materialId);
     if (material?.kind !== "keycode") {
-      throw new Error("Choose keycode inventory");
+      throw new ConvexError("Choose keycode inventory");
     }
     const parsed = inventoryPreview(args.input);
     const valid: string[] = [];
@@ -267,11 +267,11 @@ export const manageCode = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Reason required");
+      throw new ConvexError("Reason required");
     }
     const code = await ctx.db.get(args.codeId);
     if (code?.state !== "available") {
-      throw new Error("Only unused codes can be assigned or retired");
+      throw new ConvexError("Only unused codes can be assigned or retired");
     }
     if (args.entitlementId) {
       await assignCode(
@@ -307,7 +307,12 @@ export const roster = query({
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
-    page: v.array(doc(schema, "registrationSeats")),
+    page: v.array(
+      v.object({
+        ...doc(schema, "registrationSeats").fields,
+        completion: v.string(),
+      })
+    ),
     continueCursor: v.string(),
     isDone: v.boolean(),
     splitCursor: v.optional(v.union(v.string(), v.null())),
@@ -321,14 +326,57 @@ export const roster = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
-    return await ctx.db
+    const result = await ctx.db
       .query("registrationSeats")
       .withIndex("by_sessionId_and_state", (q) =>
         q.eq("sessionId", args.sessionId)
       )
       .paginate(args.paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (seat) => ({
+        ...seat,
+        completion: (await seatOutcomes(ctx, seat)).completion,
+      }))
+    );
+    return { ...result, page };
   },
 });
+/** Current outcome values, attendance, and completion for one seat. */
+async function seatOutcomes(ctx: QueryCtx, seat: Doc<"registrationSeats">) {
+  const current = await Promise.all(
+    seat.outcomeDefinitions.map((d) =>
+      ctx.db
+        .query("registrationOutcomes")
+        .withIndex("by_seatId_and_fieldId_and_version", (q) =>
+          q.eq("seatId", seat._id).eq("fieldId", d.id).eq("version", d.version)
+        )
+        .order("desc")
+        .first()
+    )
+  );
+  const values = current.filter(
+    (value): value is NonNullable<typeof value> => value !== null
+  );
+  const attendance = await ctx.db
+    .query("registrationAttendance")
+    .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
+    .take(BATCH);
+  const override = await ctx.db
+    .query("registrationOverrides")
+    .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
+    .order("desc")
+    .first();
+  const overridden = override?.complete
+    ? "complete (admin override)"
+    : "incomplete (admin override)";
+  return {
+    values,
+    attendance,
+    completion: override
+      ? overridden
+      : completion(seat.outcomeDefinitions, values),
+  };
+}
 export const outcomeState = query({
   args: { seatId: v.id("registrationSeats") },
   returns: v.object({
@@ -339,45 +387,10 @@ export const outcomeState = query({
   handler: async (ctx, args) => {
     const seat = await ctx.db.get(args.seatId);
     if (!seat) {
-      throw new Error("Registration not found");
+      throw new ConvexError("Registration not found");
     }
     await staff(ctx, seat.sessionId);
-    const current = await Promise.all(
-      seat.outcomeDefinitions.map((d) =>
-        ctx.db
-          .query("registrationOutcomes")
-          .withIndex("by_seatId_and_fieldId_and_version", (q) =>
-            q
-              .eq("seatId", seat._id)
-              .eq("fieldId", d.id)
-              .eq("version", d.version)
-          )
-          .order("desc")
-          .first()
-      )
-    );
-    const values = current.filter(
-      (value): value is NonNullable<typeof value> => value !== null
-    );
-    const attendance = await ctx.db
-      .query("registrationAttendance")
-      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-      .take(BATCH);
-    const override = await ctx.db
-      .query("registrationOverrides")
-      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-      .order("desc")
-      .first();
-    const overridden = override?.complete
-      ? "complete (admin override)"
-      : "incomplete (admin override)";
-    return {
-      values,
-      attendance,
-      completion: override
-        ? overridden
-        : completion(seat.outcomeDefinitions, values),
-    };
+    return await seatOutcomes(ctx, seat);
   },
 });
 export const recordOutcome = mutation({
@@ -390,7 +403,7 @@ export const recordOutcome = mutation({
   handler: async (ctx, args) => {
     const seat = await ctx.db.get(args.seatId);
     if (!seat) {
-      throw new Error("Registration not found");
+      throw new ConvexError("Registration not found");
     }
     const actor = await staff(ctx, seat.sessionId);
     const definition = seat.outcomeDefinitions.find(
@@ -403,7 +416,7 @@ export const recordOutcome = mutation({
         : typeof args.value !== "string" ||
           !definition.options.includes(args.value))
     ) {
-      throw new Error("Invalid outcome value");
+      throw new ConvexError("Invalid outcome value");
     }
     const previous = await ctx.db
       .query("registrationOutcomes")
@@ -455,12 +468,12 @@ export const attendance = mutation({
   handler: async (ctx, args) => {
     const seat = await ctx.db.get(args.seatId);
     if (!seat?.sessionId) {
-      throw new Error("Scheduled registration required");
+      throw new ConvexError("Scheduled registration required");
     }
     const actor = await staff(ctx, seat.sessionId);
     const session = await ctx.db.get(seat.sessionId);
     if (!session?.meetings.some((m) => m.id === args.meetingId)) {
-      throw new Error("Meeting not found");
+      throw new ConvexError("Meeting not found");
     }
     const rows = await ctx.db
       .query("registrationAttendance")
@@ -498,7 +511,7 @@ export const overrideCompletion = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Reason required");
+      throw new ConvexError("Reason required");
     }
     await ctx.db.insert("registrationOverrides", {
       ...args,
@@ -563,13 +576,13 @@ export const selectedEmail = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx, args.sessionId);
     if (args.seats.length > BATCH || !args.subject.trim()) {
-      throw new Error("Choose 1–50 recipients and a subject");
+      throw new ConvexError("Choose 1–50 recipients and a subject");
     }
     await Promise.all(
       args.seats.map(async (id) => {
         const seat = await ctx.db.get(id);
         if (seat?.sessionId !== args.sessionId) {
-          throw new Error("Recipient outside session");
+          throw new ConvexError("Recipient outside session");
         }
         await enqueue(ctx, {
           key: `staff:${args.requestKey}:${id}`,
@@ -607,18 +620,18 @@ export const recordPayment = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Reason required");
+      throw new ConvexError("Reason required");
     }
     const order = await ctx.db.get(args.orderId);
     if (order?.status !== "unpaid") {
-      throw new Error("Unpaid enrollment required");
+      throw new ConvexError("Unpaid enrollment required");
     }
     const invoices = await ctx.db
       .query("registrationInvoices")
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
       .collect();
     if (invoices.some((i) => i.status === "draft" || i.status === "open")) {
-      throw new Error(
+      throw new ConvexError(
         "Record payment on the invoice, or void it before recording an order payment"
       );
     }
@@ -634,7 +647,7 @@ export const restoreCoupon = mutation({
     const actor = await staff(ctx);
     const order = await ctx.db.get(args.orderId);
     if (!order?.couponId || order.status !== "settled" || !args.reason.trim()) {
-      throw new Error("Settled coupon use and reason required");
+      throw new ConvexError("Settled coupon use and reason required");
     }
     const uses = order.couponUses - order.restoredUses;
     const coupon = await ctx.db.get(order.couponId);
@@ -657,7 +670,7 @@ export const cancelSeat = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Reason required");
+      throw new ConvexError("Reason required");
     }
     const seat = await ctx.db.get(args.seatId);
     if (!seat || seat.state === "canceled" || seat.state === "transferred") {
@@ -666,7 +679,7 @@ export const cancelSeat = mutation({
     const order = await ctx.db.get(seat.orderId);
     if (order && (order.status === "hold" || order.status === "unpaid")) {
       if (order.seats.length > 1 && !args.cancelWholeOrder) {
-        throw new Error(
+        throw new ConvexError(
           "This unpaid group must be canceled as a whole order. Confirm cancellation of all attendees."
         );
       }
@@ -740,7 +753,7 @@ export const cancelSession = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     if (!args.reason.trim()) {
-      throw new Error("Reason required");
+      throw new ConvexError("Reason required");
     }
     const session = await ctx.db.get(args.sessionId);
     if (!session || session.state === "canceled") {
@@ -1104,7 +1117,7 @@ export const assignedSessions = query({
       (!isAdminEmail(user.email) &&
         (!profile?.isInstructor || Boolean(profile.deactivatedAt)))
     ) {
-      throw new Error("Active verified instructor required");
+      throw new ConvexError("Active verified instructor required");
     }
     const assignments = await ctx.db
       .query("registrationInstructorAssignments")
@@ -1159,7 +1172,7 @@ export const saveLocation = mutation({
   handler: async (ctx, { id, ...value }) => {
     const actor = await staff(ctx);
     if (!value.name.trim()) {
-      throw new Error("Location name required");
+      throw new ConvexError("Location name required");
     }
     const saved = id ?? (await ctx.db.insert("registrationLocations", value));
     if (id) {
@@ -1242,7 +1255,7 @@ export const resendMaterials = mutation({
     const actor = await staff(ctx);
     const seat = await ctx.db.get(args.seatId);
     if (!seat?.settledAt) {
-      throw new Error("Settled registration required");
+      throw new ConvexError("Settled registration required");
     }
     await enqueue(ctx, {
       key: `resend:${args.key}:${seat._id}`,
@@ -1277,7 +1290,7 @@ export const testEmail = mutation({
       !process.env.REGISTRATION_TEST_RECIPIENT ||
       args.recipient !== process.env.REGISTRATION_TEST_RECIPIENT
     ) {
-      throw new Error("Choose the configured safe test recipient");
+      throw new ConvexError("Choose the configured safe test recipient");
     }
     await enqueue(ctx, {
       key: `test:${args.key}`,
@@ -1298,7 +1311,9 @@ export const replaceCode = mutation({
     const actor = await staff(ctx);
     const entitlement = await ctx.db.get(args.entitlementId);
     if (entitlement?.kind !== "keycode" || !args.reason.trim()) {
-      throw new Error("Choose a keycode entitlement and provide a reason");
+      throw new ConvexError(
+        "Choose a keycode entitlement and provide a reason"
+      );
     }
     const code = await ctx.db
       .query("registrationCodes")
@@ -1307,7 +1322,7 @@ export const replaceCode = mutation({
       )
       .first();
     if (!code) {
-      throw new Error("Restock this inventory before replacing a code");
+      throw new ConvexError("Restock this inventory before replacing a code");
     }
     await assignCode(
       ctx,

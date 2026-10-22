@@ -17,7 +17,7 @@ export default function BlsPageContent() {
       )}
       title="American Heart Association Basic Life Support"
     >
-      <ClassPageSection title="Course Overview">
+      <ClassPageSection title="Course overview">
         <p>
           Our American Heart Association (AHA) Basic Life Support (BLS) course
           is designed for healthcare professionals and first responders, though
@@ -36,7 +36,7 @@ export default function BlsPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Learning Objectives">
+      <ClassPageSection title="Learning objectives">
         <p>By the end of this course, participants will be able to:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Perform high-quality CPR for adults, children, and infants.</li>
@@ -46,7 +46,7 @@ export default function BlsPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Certification Details">
+      <ClassPageSection title="Certification details">
         <p>
           Upon successful completion, participants will receive an AHA BLS
           Provider eCard, valid for two years. To pass, attendees must
@@ -54,24 +54,24 @@ export default function BlsPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Options">
+      <ClassPageSection title="Course options">
         <p>We offer:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>In-person Training:</strong> Complete all course components
+            <strong>In-person training:</strong> Complete all course components
             in one session.
           </li>
           <li>
-            <strong>Blended Learning:</strong> Complete part of the course
+            <strong>Blended learning:</strong> Complete part of the course
             online at your own pace, followed by an in-person skills session.
           </li>
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Frequently Asked Questions">
+      <ClassPageSection title="Frequently asked questions">
         <div className="space-y-5">
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               Who needs a BLS certification?
             </h3>
             <p>
@@ -81,7 +81,7 @@ export default function BlsPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               How long is the course?
             </h3>
             <p>
@@ -90,7 +90,7 @@ export default function BlsPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               Are there any prerequisites?
             </h3>
             <p>
@@ -99,7 +99,7 @@ export default function BlsPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               What do I need to bring?
             </h3>
             <p>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import type * as React from "react";
 import { useState } from "react";
+import { errorText } from "@/components/registration/errors";
 import {
   formatDate,
   formatDateTime,
@@ -176,7 +177,7 @@ function FailedEmailRow({ job }: { job: Doc<"registrationJobs"> }) {
               await retry({ id: job._id });
               setMessage("Retry queued.");
             } catch (error) {
-              setMessage(String(error));
+              setMessage(errorText(error));
             } finally {
               setBusy(false);
             }
@@ -572,15 +573,17 @@ function AuditPanel() {
         </div>
       </CardHeader>
       <CardContent className="p-0">{body}</CardContent>
-      {activity.status === "CanLoadMore" ? (
+      {activity.status === "CanLoadMore" ||
+      activity.status === "LoadingMore" ? (
         <div className="border-slate-100 border-t px-5 py-3">
           <Button
+            disabled={activity.status === "LoadingMore"}
             onClick={() => activity.loadMore(PAGE)}
             size="sm"
             type="button"
             variant="secondary"
           >
-            Load more
+            {activity.status === "LoadingMore" ? "Loading…" : "Load more"}
           </Button>
         </div>
       ) : null}

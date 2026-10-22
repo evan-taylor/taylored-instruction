@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { formatMoney, parseDollars } from "@/shared/registration/domain";
 
 export const controlClass =
-  "block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-slate-900 text-sm shadow-xs transition-colors placeholder:text-slate-400 focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
+  "block min-h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-base text-slate-900 shadow-xs md:text-sm transition-colors placeholder:text-slate-400 focus-visible:border-primary focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500";
 
 /** Label, control, hint, and error laid out consistently. */
 export function Field({
@@ -69,13 +69,13 @@ export function Field({
 export function TextInput({
   className,
   ...props
-}: React.InputHTMLAttributes<HTMLInputElement>) {
+}: React.ComponentProps<"input">) {
   return <input className={cn(controlClass, className)} {...props} />;
 }
 export function TextArea({
   className,
   ...props
-}: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: React.ComponentProps<"textarea">) {
   return (
     <textarea className={cn(controlClass, "min-h-20", className)} {...props} />
   );
@@ -84,7 +84,7 @@ export function Select({
   className,
   children,
   ...props
-}: React.SelectHTMLAttributes<HTMLSelectElement>) {
+}: React.ComponentProps<"select">) {
   return (
     <select className={cn(controlClass, "pr-8", className)} {...props}>
       {children}
@@ -159,10 +159,10 @@ export function Toggle({
 }) {
   const id = useId();
   return (
-    <div className={cn("flex items-start gap-3", className)}>
+    <div className={cn("flex items-start gap-3 py-0.5", className)}>
       <input
         checked={checked}
-        className="mt-0.5 h-4 w-4 shrink-0 rounded-sm border-slate-300 text-primary accent-primary focus-visible:ring-2 focus-visible:ring-primary/30"
+        className="mt-0.5 h-4 pointer-coarse:h-5 pointer-coarse:w-5 w-4 shrink-0 rounded-sm border-slate-300 text-primary accent-primary focus-visible:ring-2 focus-visible:ring-primary/30"
         disabled={disabled}
         id={id}
         onChange={(e) => onChange(e.target.checked)}

@@ -1,7 +1,8 @@
 "use client";
 import { useMutation, usePaginatedQuery } from "convex/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { errorText } from "@/components/registration/errors";
 import { pluralize } from "@/components/registration/format";
 import { InventoryManager } from "@/components/registration/inventory";
 import { Button } from "@/components/ui/Button";
@@ -148,7 +149,13 @@ function MaterialRow({
       </TD>
       <TD className="text-right">
         <div className="flex justify-end gap-1">
-          <Button onClick={onEdit} size="xs" type="button" variant="ghost">
+          <Button
+            aria-label={`Edit ${material.title}`}
+            onClick={onEdit}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
             Edit
           </Button>
           {keycode ? (
@@ -322,6 +329,7 @@ function MaterialEditor({
   const [archived, setArchived] = useState(material?.archived ?? false);
   const [taxCode, setTaxCode] = useState(material?.taxCode ?? "");
   const [uploading, setUploading] = useState(false);
+  const formId = useId();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -338,7 +346,7 @@ function MaterialEditor({
       setStorageId(data.storageId);
       setFileName(file.name);
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setUploading(false);
     }
@@ -359,7 +367,7 @@ function MaterialEditor({
       });
       onClose();
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -378,10 +386,10 @@ function MaterialEditor({
             Cancel
           </Button>
           <Button
-            disabled={busy || uploading || !title.trim()}
-            onClick={submit}
+            disabled={busy || uploading}
+            form={formId}
             size="sm"
-            type="button"
+            type="submit"
           >
             {busy ? "Working…" : "Save material"}
           </Button>
@@ -394,6 +402,7 @@ function MaterialEditor({
     >
       <form
         className="space-y-5"
+        id={formId}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
@@ -529,7 +538,7 @@ function RestockModal({
       invalid: parsed.invalid.length,
     };
   } catch (error) {
-    localError = String(error);
+    localError = errorText(error);
   }
 
   const run = async (dryRun: boolean) => {
@@ -555,7 +564,7 @@ function RestockModal({
         );
       }
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }

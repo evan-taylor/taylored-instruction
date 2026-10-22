@@ -18,7 +18,7 @@ export function workspaceLinks(
   if (!signedIn) {
     return [
       { label: "Become an instructor", href: "/alignment" },
-      { label: "Instructor sign in", href: "/login" },
+      { label: "Instructor sign-in", href: "/login" },
     ];
   }
   const links: WorkspaceLink[] = [];

@@ -17,7 +17,7 @@ export default function HeartsaverPageContent() {
       )}
       title="American Heart Association Heartsaver First Aid CPR AED"
     >
-      <ClassPageSection title="Course Overview">
+      <ClassPageSection title="Course overview">
         <p>
           The American Heart Association Heartsaver courses are designed for
           anyone with little or no medical training who needs CPR, AED, and
@@ -36,7 +36,7 @@ export default function HeartsaverPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Learning Objectives">
+      <ClassPageSection title="Learning objectives">
         <p>By the end of this course, participants will be able to:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>Perform high-quality CPR for adults, children, and infants.</li>
@@ -53,7 +53,7 @@ export default function HeartsaverPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Certification Details">
+      <ClassPageSection title="Certification details">
         <p>
           Upon successful completion of the course, participants will receive an
           AHA Heartsaver certification eCard, valid for two years. To pass,
@@ -62,25 +62,25 @@ export default function HeartsaverPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course Options">
+      <ClassPageSection title="Course options">
         <p>We offer the following formats:</p>
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>In-person Training:</strong> A single, comprehensive session
+            <strong>In-person training:</strong> A single, comprehensive session
             that includes all components of the course.
           </li>
           <li>
-            <strong>Blended Learning:</strong> Complete the knowledge portion
+            <strong>Blended learning:</strong> Complete the knowledge portion
             online at your own pace, followed by an in-person skills session to
             practice and demonstrate what you&apos;ve learned.
           </li>
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Frequently Asked Questions">
+      <ClassPageSection title="Frequently asked questions">
         <div className="space-y-5">
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               Who should take a Heartsaver course?
             </h3>
             <p>
@@ -90,7 +90,7 @@ export default function HeartsaverPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               How long does the course take?
             </h3>
             <p>
@@ -99,7 +99,7 @@ export default function HeartsaverPageContent() {
             </p>
           </div>
           <div>
-            <h3 className="mb-2 font-semibold text-gray-950 text-lg">
+            <h3 className="mb-2 font-semibold text-lg text-slate-950">
               Are there any prerequisites?
             </h3>
             <p>

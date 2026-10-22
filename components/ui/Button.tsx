@@ -4,6 +4,8 @@ import Link from "next/link";
 import type React from "react";
 import { twMerge } from "tailwind-merge";
 
+const EXTERNAL_HREF = /^https?:\/\//u;
+
 type ButtonProps = {
   children: React.ReactNode;
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
@@ -15,6 +17,8 @@ type ButtonProps = {
   onClick?: () => void;
   type?: "button" | "submit" | "reset";
   disabled?: boolean;
+  /** Associates a button placed outside its form (e.g. a modal footer). */
+  form?: string;
   title?: string;
   "aria-label"?: string;
   "aria-expanded"?: boolean;
@@ -33,6 +37,7 @@ export const Button = ({
   onClick,
   type = "button",
   disabled = false,
+  form,
   title,
   "aria-label": ariaLabel,
   "aria-expanded": ariaExpanded,
@@ -40,7 +45,7 @@ export const Button = ({
   "aria-pressed": ariaPressed,
 }: ButtonProps) => {
   const baseClasses =
-    "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 whitespace-nowrap";
+    "inline-flex items-center justify-center gap-2 font-medium rounded-md transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 whitespace-nowrap active:translate-y-px motion-reduce:active:translate-y-0";
 
   const variantClasses = {
     primary: "bg-primary text-white hover:bg-primary-dark focus:ring-primary",
@@ -56,13 +61,15 @@ export const Button = ({
   };
 
   const sizeClasses = {
-    xs: "text-xs px-2.5 py-1.5",
-    sm: "text-sm px-4 py-2",
-    md: "px-6 py-3",
-    lg: "text-lg px-8 py-4",
+    xs: "text-xs px-2.5 py-1.5 pointer-coarse:min-h-10",
+    sm: "text-sm px-4 py-2 pointer-coarse:min-h-11",
+    md: "px-6 py-3 min-h-11",
+    lg: "text-lg px-8 py-4 min-h-12",
   };
 
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
+  const disabledClasses = disabled
+    ? "opacity-50 cursor-not-allowed active:translate-y-0"
+    : "";
 
   const classes = twMerge(
     baseClasses,
@@ -73,6 +80,7 @@ export const Button = ({
   );
 
   if (href) {
+    const external = EXTERNAL_HREF.test(href);
     return (
       <Link
         aria-controls={ariaControls}
@@ -80,8 +88,12 @@ export const Button = ({
         aria-label={ariaLabel}
         className={classes}
         href={href}
-        rel={rel}
-        target={target}
+        onClick={onClick}
+        rel={
+          rel ??
+          (external && target === "_blank" ? "noopener noreferrer" : undefined)
+        }
+        target={external ? target : undefined}
         title={title}
       >
         {children}
@@ -97,6 +109,7 @@ export const Button = ({
       aria-pressed={ariaPressed}
       className={classes}
       disabled={disabled}
+      form={form}
       onClick={onClick}
       title={title}
       type={type}

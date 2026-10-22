@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,6 +60,7 @@ function LocationEditorModal({
   busy: boolean;
   message: string;
 }) {
+  const formId = useId();
   return (
     <Modal
       description="Saved locations fill in the venue and private instructions when you schedule meetings."
@@ -68,7 +69,7 @@ function LocationEditorModal({
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
-          <Button disabled={busy} onClick={onSubmit} size="sm" type="button">
+          <Button disabled={busy} form={formId} size="sm" type="submit">
             {busy ? "Working…" : "Save location"}
           </Button>
         </>
@@ -78,13 +79,21 @@ function LocationEditorModal({
       size="md"
       title={draft.id ? "Edit location" : "New location"}
     >
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
         <Field label="Name" required>
           {(props) => (
             <TextInput
               {...props}
               onChange={(e) => onChange({ ...draft, name: e.target.value })}
               placeholder="Vancouver training center"
+              required
               value={draft.name}
             />
           )}
@@ -98,6 +107,7 @@ function LocationEditorModal({
             <TextInput
               {...props}
               onChange={(e) => onChange({ ...draft, address: e.target.value })}
+              required
               value={draft.address}
             />
           )}
@@ -123,7 +133,7 @@ function LocationEditorModal({
           onChange={(archived) => onChange({ ...draft, archived })}
         />
         <ResultNotice message={message} />
-      </div>
+      </form>
     </Modal>
   );
 }
@@ -167,6 +177,7 @@ function LocationsTable({
             </TD>
             <TD className="text-right">
               <Button
+                aria-label={`Edit ${l.name}`}
                 onClick={() => onEdit(l)}
                 size="xs"
                 type="button"

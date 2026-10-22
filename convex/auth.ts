@@ -17,7 +17,8 @@ export const availableProviders = query({
 
 /** Test-only password provider for isolated fixture deployments; never set the flag elsewhere. */
 const testPassword =
-  process.env.REGISTRATION_ALLOW_TEST_FIXTURES === "true"
+  process.env.REGISTRATION_ALLOW_TEST_FIXTURES === "true" &&
+  process.env.REGISTRATION_MODE !== "live"
     ? [
         Password({
           profile(params) {

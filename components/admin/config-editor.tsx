@@ -17,7 +17,7 @@ import {
   TextInput,
   Toggle,
 } from "@/components/ui/field";
-import { EmptyState, Notice } from "@/components/ui/page-header";
+import { EmptyState, Notice, Skeleton } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TaxCodeSelect } from "@/components/ui/tax-code-select";
 import { api } from "@/convex/_generated/api";
@@ -208,7 +208,12 @@ function MaterialsTable({ value, onChange }: SectionProps) {
         description="Books, keycodes, and links delivered with each seat."
         title="Materials"
       />
-      {value.materials.length === 0 ? (
+      {value.materials.length === 0 &&
+      materials.status === "LoadingFirstPage" ? (
+        <Skeleton className="h-24" />
+      ) : null}
+      {value.materials.length === 0 &&
+      materials.status !== "LoadingFirstPage" ? (
         <EmptyState
           className="py-8"
           description={
@@ -218,7 +223,8 @@ function MaterialsTable({ value, onChange }: SectionProps) {
           }
           title="No materials attached"
         />
-      ) : (
+      ) : null}
+      {value.materials.length === 0 ? null : (
         <Table className="min-w-[560px]">
           <THead>
             <TR>
@@ -262,14 +268,18 @@ function MaterialsTable({ value, onChange }: SectionProps) {
           </TBody>
         </Table>
       )}
-      {materials.status === "CanLoadMore" ? (
+      {materials.status === "CanLoadMore" ||
+      materials.status === "LoadingMore" ? (
         <Button
+          disabled={materials.status === "LoadingMore"}
           onClick={() => materials.loadMore(50)}
           size="xs"
           type="button"
           variant="secondary"
         >
-          Load more materials
+          {materials.status === "LoadingMore"
+            ? "Loading…"
+            : "Load more materials"}
         </Button>
       ) : null}
     </div>
@@ -359,7 +369,10 @@ function QuestionCard({
           )}
         </Field>
         <div className="pt-6">
-          <RemoveButton label="Remove question" onClick={onRemove} />
+          <RemoveButton
+            label={`Remove question${question.title ? `: ${question.title}` : ""}`}
+            onClick={onRemove}
+          />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -551,7 +564,10 @@ function OutcomeCard({
           )}
         </Field>
         <div className="pt-6">
-          <RemoveButton label="Remove outcome" onClick={onRemove} />
+          <RemoveButton
+            label={`Remove outcome${outcome.title ? `: ${outcome.title}` : ""}`}
+            onClick={onRemove}
+          />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -588,7 +604,7 @@ function OutcomeCard({
         label="Required for completion"
         onChange={(required) => bump({ required })}
       />
-      <p className="m-0 text-slate-400 text-xs">
+      <p className="m-0 text-slate-500 text-xs">
         Rule version {outcome.version}. Grading changes start a new version.
       </p>
     </div>
@@ -772,7 +788,10 @@ function EmailStepCard({
           </Field>
         </div>
         <div className="pt-6">
-          <RemoveButton label="Remove email step" onClick={onRemove} />
+          <RemoveButton
+            label={`Remove email step${step.subject ? `: ${step.subject}` : ""}`}
+            onClick={onRemove}
+          />
         </div>
       </div>
       <Field label="Subject" required>

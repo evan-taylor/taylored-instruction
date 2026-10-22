@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { query } from "./_generated/server";
 import { auth } from "./auth";
 
@@ -7,7 +7,7 @@ export const getEcardProducts = query({
   handler: async (ctx) => {
     const userId = await auth.getUserId(ctx);
     if (!userId) {
-      throw new Error("Unauthorized");
+      throw new ConvexError("Unauthorized");
     }
 
     const profile = await ctx.db
@@ -16,7 +16,7 @@ export const getEcardProducts = query({
       .first();
 
     if (!profile?.isInstructor) {
-      throw new Error("Forbidden: Instructor access required");
+      throw new ConvexError("Forbidden: Instructor access required");
     }
 
     const products = await ctx.db

@@ -1,8 +1,10 @@
 "use client";
 import { X } from "lucide-react";
 import type * as React from "react";
-import { useEffect, useId, useRef } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
+import { Notice } from "@/components/ui/page-header";
 import { cn } from "@/lib/utils";
 
 /**
@@ -49,7 +51,7 @@ export function Modal({
     <dialog
       aria-labelledby={titleId}
       className={cn(
-        "open:fade-in-0 open:zoom-in-95 m-auto w-[calc(100%-2rem)] rounded-2xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-[2px] open:animate-in",
+        "open:fade-in-0 open:zoom-in-95 m-auto w-[calc(100%-2rem)] rounded-xl border border-slate-200 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-900/40 backdrop:backdrop-blur-[2px] open:animate-in motion-reduce:open:animate-none",
         widths[size]
       )}
       onClick={(e) => {
@@ -68,7 +70,7 @@ export function Modal({
       }}
       ref={ref}
     >
-      <div className="flex max-h-[85vh] flex-col">
+      <div className="flex max-h-[85dvh] flex-col">
         <div className="flex items-start justify-between gap-4 border-slate-100 border-b px-6 py-4">
           <div>
             <h2
@@ -83,7 +85,7 @@ export function Modal({
           </div>
           <button
             aria-label="Close dialog"
-            className="rounded-md p-1 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="-m-2 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
             onClick={onClose}
             type="button"
           >
@@ -123,6 +125,14 @@ export function ConfirmDialog({
   busy?: boolean;
   children?: React.ReactNode;
 }) {
+  const [failure, setFailure] = useState("");
+  const [pending, setPending] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setFailure("");
+    }
+  }, [open]);
+  const working = busy || pending;
   return (
     <Modal
       description={description}
@@ -132,15 +142,23 @@ export function ConfirmDialog({
             Cancel
           </Button>
           <Button
-            disabled={busy}
-            onClick={() => {
-              onConfirm();
+            disabled={working}
+            onClick={async () => {
+              setFailure("");
+              setPending(true);
+              try {
+                await onConfirm();
+              } catch (error) {
+                setFailure(errorText(error));
+              } finally {
+                setPending(false);
+              }
             }}
             size="sm"
             type="button"
             variant={danger ? "danger" : "primary"}
           >
-            {busy ? "Working…" : confirmLabel}
+            {working ? "Working…" : confirmLabel}
           </Button>
         </>
       }
@@ -150,6 +168,11 @@ export function ConfirmDialog({
       title={title}
     >
       {children}
+      {failure ? (
+        <Notice className="mt-4" tone="danger">
+          {failure}
+        </Notice>
+      ) : null}
     </Modal>
   );
 }

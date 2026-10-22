@@ -21,6 +21,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { errorText } from "./errors";
 
 type Code = Doc<"registrationCodes">;
 type Entitlement = Doc<"registrationEntitlements">;
@@ -250,14 +251,18 @@ function AssignDialog({
             </Select>
           )}
         </Field>
-        {missing.status === "CanLoadMore" ? (
+        {missing.status === "CanLoadMore" ||
+        missing.status === "LoadingMore" ? (
           <Button
+            disabled={missing.status === "LoadingMore"}
             onClick={() => missing.loadMore(20)}
             size="xs"
             type="button"
             variant="ghost"
           >
-            Load more waiting students
+            {missing.status === "LoadingMore"
+              ? "Loading…"
+              : "Load more waiting students"}
           </Button>
         ) : null}
         <ReasonField error={error} onChange={setReason} value={reason} />
@@ -385,6 +390,7 @@ function AvailableTable({
               <TD className="text-right">
                 <div className="flex justify-end gap-1">
                   <Button
+                    aria-label={`Assign code ${code.url}`}
                     onClick={() => onAssign(code)}
                     size="xs"
                     type="button"
@@ -393,6 +399,7 @@ function AvailableTable({
                     Assign
                   </Button>
                   <Button
+                    aria-label={`Retire code ${code.url}`}
                     onClick={() => onRetire(code)}
                     size="xs"
                     type="button"
@@ -594,7 +601,7 @@ export function InventoryManager({
       setMessage(success);
       return true;
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
       return false;
     }
   };
@@ -621,13 +628,26 @@ export function InventoryManager({
             {
               id: "available",
               label: "Available codes",
-              count: available.length,
+              count:
+                availableStock.status === "Exhausted"
+                  ? available.length
+                  : undefined,
             },
-            { id: "assigned", label: "Assigned", count: assigned.length },
+            {
+              id: "assigned",
+              label: "Assigned",
+              count:
+                assignedStock.status === "Exhausted"
+                  ? assigned.length
+                  : undefined,
+            },
             {
               id: "queue",
               label: "Missing-code queue",
-              count: missing.results.length,
+              count:
+                missing.status === "Exhausted"
+                  ? missing.results.length
+                  : undefined,
             },
           ]}
           value={tab}

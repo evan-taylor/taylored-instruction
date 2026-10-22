@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { trackVisitorsEvent } from "@/lib/analytics";
@@ -98,19 +99,12 @@ export function ContactForm() {
     <form className="space-y-6" onSubmit={handleSubmit}>
       {/* Status Messages - Moved to top */}
       {status.success === true && (
-        <p className="mb-4 rounded-sm border border-green-200 bg-green-100 p-3 text-center text-green-800">
-          Message sent successfully! We&apos;ll be in touch soon.
-        </p>
+        <Notice tone="success">
+          Message sent. We&apos;ll be in touch soon.
+        </Notice>
       )}
       {status.success === false && status.error && (
-        <p className="mb-4 rounded-sm border border-red-200 bg-red-100 p-3 text-center text-red-800">
-          Error: {status.error}
-        </p>
-      )}
-      {status.loading && (
-        <p className="mb-4 rounded-sm border border-blue-200 bg-blue-100 p-3 text-center text-blue-800">
-          Sending message...
-        </p>
+        <Notice tone="danger">{status.error}</Notice>
       )}
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -323,10 +317,10 @@ export function ContactForm() {
                   fill="currentColor"
                 />
               </svg>
-              Sending...
+              Sending…
             </>
           ) : (
-            "Send Message"
+            "Send message"
           )}
         </Button>
       </div>

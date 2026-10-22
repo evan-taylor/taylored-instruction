@@ -1,7 +1,7 @@
 "use client";
 import { useMutation } from "convex/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useCourses } from "@/components/registration/catalog";
 import { pluralize } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
@@ -80,16 +80,18 @@ function draftFrom(course: Course, duplicate: boolean): CourseDraft {
 function BasicsSection({
   draft,
   onChange,
+  errors,
 }: {
   draft: CourseDraft;
   onChange: (draft: CourseDraft) => void;
+  errors?: { title?: string; slug?: string };
 }) {
   const editing = draft.id !== undefined;
   const autoSlug = !(editing || draft.slugTouched);
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Title" required>
+        <Field error={errors?.title} label="Title" required>
           {(props) => (
             <TextInput
               {...props}
@@ -106,6 +108,7 @@ function BasicsSection({
           )}
         </Field>
         <Field
+          error={errors?.slug}
           hint={`Public page: /courses/${draft.slug || "…"}`}
           label="URL slug"
           required
@@ -205,6 +208,7 @@ function CourseEditorModal({
   onSubmit,
   busy,
   message,
+  errors,
 }: {
   draft: CourseDraft;
   onChange: (draft: CourseDraft) => void;
@@ -212,8 +216,10 @@ function CourseEditorModal({
   onSubmit: () => void;
   busy: boolean;
   message: string;
+  errors?: { title?: string; slug?: string };
 }) {
   const [tab, setTab] = useState<EditorTab>("basics");
+  const formId = useId();
   const setSettings = (settings: Settings) => onChange({ ...draft, settings });
   return (
     <Modal
@@ -223,7 +229,7 @@ function CourseEditorModal({
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
-          <Button disabled={busy} onClick={onSubmit} size="sm" type="button">
+          <Button disabled={busy} form={formId} size="sm" type="submit">
             {busy ? "Working…" : "Save template"}
           </Button>
         </>
@@ -233,7 +239,14 @@ function CourseEditorModal({
       size="xl"
       title={draft.id ? `Edit ${draft.title || "template"}` : "New template"}
     >
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit();
+        }}
+      >
         <ResultNotice message={message} />
         <Tabs
           label="Template sections"
@@ -242,7 +255,7 @@ function CourseEditorModal({
           value={tab}
         />
         <TabPanel active={tab === "basics"} id="basics">
-          <BasicsSection draft={draft} onChange={onChange} />
+          <BasicsSection draft={draft} errors={errors} onChange={onChange} />
         </TabPanel>
         <TabPanel active={tab === "pricing"} id="pricing">
           <ConfigEditor
@@ -272,7 +285,7 @@ function CourseEditorModal({
             value={draft.settings}
           />
         </TabPanel>
-      </div>
+      </form>
     </Modal>
   );
 }
@@ -318,10 +331,22 @@ function CourseRow({
       </TD>
       <TD className="text-right">
         <div className="flex justify-end gap-1">
-          <Button onClick={onEdit} size="xs" type="button" variant="secondary">
+          <Button
+            aria-label={`Edit ${course.title}`}
+            onClick={onEdit}
+            size="xs"
+            type="button"
+            variant="secondary"
+          >
             Edit
           </Button>
-          <Button onClick={onDuplicate} size="xs" type="button" variant="ghost">
+          <Button
+            aria-label={`Duplicate ${course.title}`}
+            onClick={onDuplicate}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
             Duplicate
           </Button>
           <Button
@@ -424,6 +449,10 @@ export function CourseAdmin() {
   const [draft, setDraft] = useState<CourseDraft | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{
+    title?: string;
+    slug?: string;
+  }>({});
   const [notice, setNotice] = useState("");
   useEffect(() => {
     if (params.get("new") === "1") {
@@ -439,8 +468,12 @@ export function CourseAdmin() {
     if (!draft) {
       return;
     }
-    if (!(draft.title.trim() && draft.slug.trim())) {
-      setError("Title and slug are required");
+    const missing = {
+      title: draft.title.trim() ? undefined : "Enter a title.",
+      slug: draft.slug.trim() ? undefined : "Enter a URL slug.",
+    };
+    setFieldErrors(missing);
+    if (missing.title || missing.slug) {
       return;
     }
     setError("");
@@ -493,6 +526,7 @@ export function CourseAdmin() {
         <CourseEditorModal
           busy={busy}
           draft={draft}
+          errors={fieldErrors}
           message={error}
           onChange={setDraft}
           onClose={() => setDraft(null)}

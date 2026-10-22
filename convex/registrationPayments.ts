@@ -1,4 +1,4 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { BATCH, cents, formatMoney } from "../shared/registration/domain";
 import { assertRegistrationPaymentMode } from "../shared/registration/environment";
@@ -23,10 +23,10 @@ export const checkoutOrder = internalQuery({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order || order.requestKey !== args.requestKey) {
-      throw new Error("Order not found");
+      throw new ConvexError("Order not found");
     }
     if (order.status !== "hold" || order.expires <= Date.now()) {
-      throw new Error("Checkout has expired or is already complete");
+      throw new ConvexError("Checkout has expired or is already complete");
     }
     const { course, session, config } = await offering(
       ctx,
@@ -42,7 +42,7 @@ export const checkoutOrder = internalQuery({
         (session.state !== "open" ||
           Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
     ) {
-      throw new Error(
+      throw new ConvexError(
         "This checkout is no longer eligible; contact us for help"
       );
     }
@@ -62,7 +62,7 @@ export const attachCheckout = internalMutation({
       !order ||
       (order.stripeSession && order.stripeSession !== args.session)
     ) {
-      throw new Error("Checkout mismatch");
+      throw new ConvexError("Checkout mismatch");
     }
     if (order.status !== "hold" || order.expires <= Date.now()) {
       await ctx.scheduler.runAfter(
@@ -124,7 +124,7 @@ export const paymentEvent = internalMutation({
       tax < 0 ||
       stored.total + tax !== args.amount
     ) {
-      throw new Error("Payment does not match the authoritative quote");
+      throw new ConvexError("Payment does not match the authoritative quote");
     }
     if (args.paid && tax !== (stored.tax ?? 0)) {
       await ctx.db.patch(stored._id, { tax });
@@ -191,7 +191,9 @@ export const requestRefund = mutation({
     const actor = await staff(ctx);
     cents(args.cents);
     if (!args.reason.trim() || args.cents <= 0 || args.key.length < 24) {
-      throw new Error("Refund amount, reason, and operation key required");
+      throw new ConvexError(
+        "Refund amount, reason, and operation key required"
+      );
     }
     const previous = await ctx.db
       .query("registrationRefunds")
@@ -207,7 +209,7 @@ export const requestRefund = mutation({
       args.cents >
         order.total + (order.tax ?? 0) - order.refunded - order.refundReserved
     ) {
-      throw new Error("Refund exceeds remaining Stripe payment");
+      throw new ConvexError("Refund exceeds remaining Stripe payment");
     }
     await ctx.db.patch(order._id, {
       refundReserved: order.refundReserved + args.cents,
@@ -238,7 +240,7 @@ export const refundData = internalQuery({
     const refund = await ctx.db.get(args.id);
     const order = refund ? await ctx.db.get(refund.orderId) : null;
     if (!(refund && order)) {
-      throw new Error("Refund not found");
+      throw new ConvexError("Refund not found");
     }
     return { refund, order };
   },
@@ -253,7 +255,7 @@ export const finishRefund = internalMutation({
     }
     const order = await ctx.db.get(refund.orderId);
     if (!order) {
-      throw new Error("Order not found");
+      throw new ConvexError("Order not found");
     }
     await ctx.db.patch(refund._id, {
       state: "succeeded",
@@ -293,7 +295,7 @@ async function validatePayment(
       (session.state !== "open" ||
         Date.now() >= session.firstStart - config.cutoffMinutes * 60_000))
   ) {
-    throw new Error(
+    throw new ConvexError(
       "Card checkout is closed for this offering. Use an invoice or record offline payment; the enrollment is unchanged."
     );
   }
@@ -302,7 +304,7 @@ async function validatePayment(
     .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
     .take(BATCH);
   if (invoices.some((i) => i.status === "open" || i.status === "draft")) {
-    throw new Error(
+    throw new ConvexError(
       "Void the open invoice before creating a card payment link"
     );
   }
@@ -327,10 +329,10 @@ export const requestPayment = mutation({
     const actor = await staff(ctx);
     const order = await ctx.db.get(args.orderId);
     if (!(order && ["unpaid", "hold"].includes(order.status))) {
-      throw new Error("An unpaid registration is required");
+      throw new ConvexError("An unpaid registration is required");
     }
     if (order.status === "hold" && order.expires <= Date.now()) {
-      throw new Error(
+      throw new ConvexError(
         "This reservation has expired. Enroll the student again before requesting payment."
       );
     }
@@ -368,13 +370,13 @@ export const beginRequestedPayment = mutation({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order || order.requestKey !== args.requestKey) {
-      throw new Error("Payment request not found");
+      throw new ConvexError("Payment request not found");
     }
     if (order.status === "hold" && order.expires > Date.now()) {
       return null;
     }
     if (order.status !== "unpaid") {
-      throw new Error(
+      throw new ConvexError(
         "This payment request is already paid, canceled, or expired. Contact us if you need help."
       );
     }
@@ -390,7 +392,7 @@ export const createPaymentLink = mutation({
     const actor = await staff(ctx);
     const order = await ctx.db.get(args.orderId);
     if (order?.status !== "unpaid" || args.requestKey.length < 24) {
-      throw new Error("Unpaid order required");
+      throw new ConvexError("Unpaid order required");
     }
     await preparePayment(ctx, order, args.requestKey);
     await audit(
@@ -465,7 +467,7 @@ export const refundEvent = internalMutation({
       refund.cents !== args.amount ||
       order.paymentIntent !== args.paymentIntent
     ) {
-      throw new Error("Refund event mismatch");
+      throw new ConvexError("Refund event mismatch");
     }
     if ((args.failed || args.succeeded) && refund.state === "pending") {
       await audit(

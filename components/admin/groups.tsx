@@ -3,12 +3,13 @@ import { useMutation, useQuery } from "convex/react";
 import { Building2, Inbox } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import {
   useGroupRequests,
   useOrganizationOrders,
   useOrganizations,
 } from "@/components/registration/catalog";
+import { errorText } from "@/components/registration/errors";
 import {
   formatDateTime,
   formatRelative,
@@ -63,6 +64,7 @@ function RequestModal({
   const [creatingOrganization, setCreatingOrganization] = useState(false);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const formId = useId();
   async function save() {
     setBusy(true);
     setMessage("");
@@ -76,7 +78,7 @@ function RequestModal({
       });
       setMessage("Request updated");
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
@@ -106,7 +108,7 @@ function RequestModal({
           >
             Start group enrollment
           </Button>
-          <Button disabled={busy} onClick={save} size="sm" type="button">
+          <Button disabled={busy} form={formId} size="sm" type="submit">
             {busy ? "Saving…" : "Save"}
           </Button>
         </>
@@ -116,7 +118,14 @@ function RequestModal({
       size="lg"
       title={request.organization}
     >
-      <div className="space-y-5">
+      <form
+        className="space-y-5"
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault();
+          save();
+        }}
+      >
         <DescriptionList
           items={[
             {
@@ -226,7 +235,7 @@ function RequestModal({
           )}
         </Field>
         <ResultNotice message={message} />
-      </div>
+      </form>
       {creatingOrganization ? (
         <OrganizationModal
           initial={{
@@ -525,6 +534,7 @@ function OrganizationsPanel() {
                 <TD>
                   <div className="flex justify-end gap-1.5">
                     <Button
+                      aria-label={`Orders for ${o.name}`}
                       onClick={() => setViewing(o)}
                       size="xs"
                       type="button"
@@ -533,6 +543,7 @@ function OrganizationsPanel() {
                       Orders
                     </Button>
                     <Button
+                      aria-label={`Edit ${o.name}`}
                       onClick={() => setEditing(o)}
                       size="xs"
                       type="button"

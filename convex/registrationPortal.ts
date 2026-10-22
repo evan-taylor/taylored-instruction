@@ -2,7 +2,7 @@ import {
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import { BATCH, email, HOLD_MS } from "../shared/registration/domain";
 import { calendar } from "../shared/registration/schedule";
 import { internalMutation, mutation, query } from "./_generated/server";
@@ -204,7 +204,7 @@ export const materialUrl = query({
     const entitlement = await ctx.db.get(args.id);
     const seat = entitlement ? await ctx.db.get(entitlement.seatId) : null;
     if (!entitlement || seat?.email !== identity || !seat.settledAt) {
-      throw new Error("Material access denied");
+      throw new ConvexError("Material access denied");
     }
     return entitlement.storageId
       ? await ctx.storage.getUrl(entitlement.storageId)
@@ -218,11 +218,11 @@ export const calendarFile = query({
     const identity = await portalEmail(ctx, args.grant);
     const seat = await ctx.db.get(args.seatId);
     if (!seat || seat.email !== identity || !seat.sessionId) {
-      throw new Error("Calendar access denied");
+      throw new ConvexError("Calendar access denied");
     }
     const session = await ctx.db.get(seat.sessionId);
     if (!session) {
-      throw new Error("Session not found");
+      throw new ConvexError("Session not found");
     }
     return calendar(session, Date.now());
   },
@@ -306,7 +306,7 @@ export const materials = query({
     const identity = await portalEmail(ctx, args.grant);
     const seat = await ctx.db.get(args.seatId);
     if (seat?.email !== identity || !seat.settledAt) {
-      throw new Error("Material access denied");
+      throw new ConvexError("Material access denied");
     }
     const result = await ctx.db
       .query("registrationEntitlements")

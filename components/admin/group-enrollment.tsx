@@ -8,6 +8,7 @@ import {
   useOrganizations,
   useSessions,
 } from "@/components/registration/catalog";
+import { errorText } from "@/components/registration/errors";
 import {
   formatMeeting,
   formatWeekday,
@@ -153,7 +154,8 @@ function OfferingStep({
     .sort((a, b) => a.firstStart - b.firstStart);
   return (
     <div className="space-y-5">
-      <div className="grid gap-3 sm:grid-cols-2">
+      <fieldset className="m-0 grid gap-3 border-0 p-0 sm:grid-cols-2">
+        <legend className="sr-only">What are you enrolling into?</legend>
         {(["session", "course"] as const).map((option) => (
           <label
             className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm transition-colors ${
@@ -184,7 +186,7 @@ function OfferingStep({
             </span>
           </label>
         ))}
-      </div>
+      </fieldset>
       {mode === "session" ? (
         <Field
           hint="Private or admin-only sessions work well for dedicated group classes."
@@ -778,7 +780,8 @@ function BillingStep({
           <CardTitle>Payment</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 sm:grid-cols-2">
+          <fieldset className="m-0 grid gap-3 border-0 p-0 sm:grid-cols-2">
+            <legend className="sr-only">Payment method</legend>
             {options.map((option) => (
               <label
                 className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm transition-colors ${
@@ -805,7 +808,7 @@ function BillingStep({
                 </span>
               </label>
             ))}
-          </div>
+          </fieldset>
           {payment === "invoice" ? (
             <InvoiceFields onChange={setInvoice} value={invoice} />
           ) : null}
@@ -1033,7 +1036,7 @@ function estimateTotal(pricing: Settings | null, attendees: Attendee[]) {
   } catch (error) {
     return {
       estimate: null,
-      estimateError: error instanceof Error ? error.message : String(error),
+      estimateError: errorText(error),
     };
   }
 }
@@ -1138,7 +1141,7 @@ async function attachInvoice(
     });
     outcome.invoiceUrl = await act.issue({ id: invoiceId });
   } catch (error) {
-    outcome.warning = `Enrollment saved, but the invoice could not be sent: ${String(error)}. Create it from the Invoices tab.`;
+    outcome.warning = `Enrollment saved, but the invoice could not be sent: ${errorText(error)}. Create it from the Invoices tab.`;
   }
 }
 async function performEnrollment(
@@ -1194,7 +1197,7 @@ async function performEnrollment(
         orderId: reserved.orderId,
       });
     } catch (error) {
-      outcome.warning = `Enrollment saved, but the group request could not be updated: ${String(error)}`;
+      outcome.warning = `Enrollment saved, but the group request could not be updated: ${errorText(error)}`;
     }
   }
   return outcome;
@@ -1548,7 +1551,7 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
         )
       );
     } catch (error) {
-      setMessage(String(error));
+      setMessage(errorText(error));
     } finally {
       setBusy(false);
     }

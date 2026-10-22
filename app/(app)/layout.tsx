@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 import { AuthEffects } from "@/components/auth-effects";
+import { ConnectionBanner } from "@/components/connection-banner";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { InstructorNavigation } from "@/components/layout/InstructorNavigation";
@@ -30,6 +31,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           <AuthEffects />
           <div className="flex min-h-screen flex-col">
             <Header />
+            <ConnectionBanner />
             <InstructorNavigation />
             <main className="grow">{children}</main>
             <Footer />

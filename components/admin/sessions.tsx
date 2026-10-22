@@ -2,7 +2,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { Plus, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useCourses, useSessions } from "@/components/registration/catalog";
 import {
   formatRelative,
@@ -219,10 +219,22 @@ function SessionRow({
       </TD>
       <TD className="text-right">
         <div className="flex flex-wrap justify-end gap-1">
-          <Button onClick={onEdit} size="xs" type="button" variant="secondary">
+          <Button
+            aria-label={`Edit ${session.title}`}
+            onClick={onEdit}
+            size="xs"
+            type="button"
+            variant="secondary"
+          >
             Edit
           </Button>
-          <Button onClick={onDuplicate} size="xs" type="button" variant="ghost">
+          <Button
+            aria-label={`Duplicate ${session.title}`}
+            onClick={onDuplicate}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
             Duplicate
           </Button>
           <CopyButton
@@ -1021,6 +1033,7 @@ function SessionEditorModal({
   const course = courses.find((c) => c._id === draft.courseId);
   const publish = !draft.id || draft.publication === "draft";
   const saveLabel = publish ? "Save and publish" : "Save session";
+  const formId = useId();
   return (
     <Modal
       description={
@@ -1051,12 +1064,7 @@ function SessionEditorModal({
               Save draft
             </Button>
           ) : null}
-          <Button
-            disabled={busy}
-            onClick={() => onSubmit(publish ? "published" : draft.publication)}
-            size="sm"
-            type="button"
-          >
+          <Button disabled={busy} form={formId} size="sm" type="submit">
             {busy ? "Working…" : saveLabel}
           </Button>
         </>
@@ -1066,7 +1074,14 @@ function SessionEditorModal({
       size="xl"
       title={draft.id ? `Edit ${draft.title || "session"}` : "New session"}
     >
-      <div className="space-y-4">
+      <form
+        className="space-y-4"
+        id={formId}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit(publish ? "published" : draft.publication);
+        }}
+      >
         <ResultNotice message={message} />
         {course && course.publication !== "published" ? (
           <Notice tone="warning">
@@ -1101,7 +1116,7 @@ function SessionEditorModal({
         <TabPanel active={tab === "settings"} id="settings">
           <SettingsSection course={course} draft={draft} onChange={onChange} />
         </TabPanel>
-      </div>
+      </form>
     </Modal>
   );
 }

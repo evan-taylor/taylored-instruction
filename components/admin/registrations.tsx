@@ -8,12 +8,13 @@ import {
 } from "convex/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type * as React from "react";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
   type BulkResult,
   BulkResults,
   BulkTransfer,
 } from "@/components/registration/bulk-transfer";
+import { errorText } from "@/components/registration/errors";
 import {
   formatDateTime,
   formatRelative,
@@ -148,6 +149,7 @@ function AttendeesTable({ order }: { order: Order }) {
                 <TD className="text-right">
                   <Button
                     aria-expanded={open}
+                    aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
                     onClick={() => setExpanded(open ? null : seat._id)}
                     size="xs"
                     type="button"
@@ -370,7 +372,7 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
             key: orderId,
             label: label(orderId),
             ok: false,
-            detail: String(error),
+            detail: errorText(error),
           };
         }
       })
@@ -407,7 +409,7 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
             key: orderId,
             label: label(orderId),
             ok: false,
-            detail: String(error),
+            detail: errorText(error),
           };
         }
       })
@@ -662,26 +664,42 @@ function useVisibleOrders(search: string, tab: StatusTab) {
   );
   const trimmed = search.trim();
   const byEmail = trimmed.includes("@");
+  const [debounced, setDebounced] = useState(trimmed);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(trimmed), 300);
+    return () => clearTimeout(timer);
+  }, [trimmed]);
   const lookup = useQuery(
     api.registrationDashboard.lookup,
-    byEmail ? { email: trimmed } : "skip"
+    byEmail && debounced.includes("@") ? { email: debounced } : "skip"
   );
+  const [lastLookup, setLastLookup] = useState<typeof lookup>();
+  useEffect(() => {
+    if (lookup !== undefined) {
+      setLastLookup(lookup);
+    }
+  }, [lookup]);
+  const emailOrders = (lookup ?? lastLookup)?.orders ?? [];
   const needle = trimmed.toLowerCase();
   const base = byEmail
-    ? (lookup?.orders ?? [])
+    ? emailOrders
     : paginated.results.filter((order) => matches(order, needle));
-  const counts = Object.fromEntries(
-    STATUS_TABS.map((t) => [
-      t.id,
-      t.id === "all"
-        ? base.length
-        : base.filter((o) => o.status === t.id).length,
-    ])
-  ) as Record<StatusTab, number>;
-  const visible = tab === "all" ? base : base.filter((o) => o.status === tab);
-  const known = [...paginated.results, ...(lookup?.orders ?? [])];
   const loading =
-    paginated.status === "LoadingFirstPage" || (byEmail && !lookup);
+    paginated.status === "LoadingFirstPage" ||
+    (byEmail && !(lookup ?? lastLookup));
+  const countFor = (id: StatusTab) => {
+    if (loading) {
+      return;
+    }
+    return id === "all"
+      ? base.length
+      : base.filter((o) => o.status === id).length;
+  };
+  const counts = Object.fromEntries(
+    STATUS_TABS.map((t) => [t.id, countFor(t.id)])
+  ) as Record<StatusTab, number | undefined>;
+  const visible = tab === "all" ? base : base.filter((o) => o.status === tab);
+  const known = [...paginated.results, ...emailOrders];
   return { paginated, byEmail, visible, counts, known, loading };
 }
 
@@ -829,15 +847,18 @@ export function OrderAdmin() {
             visible={visible}
           />
         </CardContent>
-        {!byEmail && paginated.status === "CanLoadMore" ? (
+        {!byEmail &&
+        (paginated.status === "CanLoadMore" ||
+          paginated.status === "LoadingMore") ? (
           <div className="border-slate-100 border-t px-5 py-3">
             <Button
+              disabled={paginated.status === "LoadingMore"}
               onClick={() => paginated.loadMore(PAGE)}
               size="sm"
               type="button"
               variant="secondary"
             >
-              Load more
+              {paginated.status === "LoadingMore" ? "Loading…" : "Load more"}
             </Button>
           </div>
         ) : null}

@@ -3,7 +3,6 @@
 import { Mail, Phone } from "lucide-react"; // Import icons
 import { cacheLife } from "next/cache";
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button"; // Import the Button component
 import { ChamberBadge } from "@/components/ui/ChamberBadge";
 import { buildPageMetadata } from "@/lib/seo";
@@ -84,7 +83,7 @@ export default async function AboutPage() {
         </div>
         <div className="absolute inset-0 z-10 bg-linear-to-r from-black/70 to-black/50" />
         <div className="container relative z-20 mx-auto px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl rounded-xl bg-black/30 p-8 backdrop-blur-xs md:p-10">
+          <div className="mx-auto max-w-4xl">
             <h1 className="mb-6 font-bold text-4xl text-white md:text-5xl">
               About Taylored Instruction
             </h1>
@@ -106,7 +105,7 @@ export default async function AboutPage() {
               {/* Where did we come from? Section */}
               <div className="mb-12 rounded-lg bg-white p-8">
                 <h2 className="mb-6 font-semibold text-3xl text-text">
-                  Where Did We Come From?
+                  Where we come from
                 </h2>
                 <p className="mb-6 text-text-light">
                   Taylored Instruction was founded in 2023 by Evan Taylor. We
@@ -120,12 +119,9 @@ export default async function AboutPage() {
                 <p className="text-text-light">
                   Evan goes to school in San Luis Obispo, CA, so we teach
                   classes seasonally on the Central Coast.{" "}
-                  <Link
-                    className="text-primary hover:underline"
-                    href="/contact"
-                  >
+                  <a className="text-primary hover:underline" href="/contact">
                     Get in touch
-                  </Link>{" "}
+                  </a>{" "}
                   with us to learn more!
                 </p>
               </div>
@@ -133,10 +129,10 @@ export default async function AboutPage() {
               {/* Meet Our Instructors Section */}
               <div className="mb-12 rounded-lg bg-white p-8">
                 <h2 className="mb-6 text-center font-semibold text-3xl text-text">
-                  Meet Our Instructors
+                  Meet our instructors
                 </h2>
                 <div className="text-center">
-                  <div className="relative mx-auto mb-4 h-40 w-40 overflow-hidden rounded-full border-4 border-primary shadow-lg">
+                  <div className="relative mx-auto mb-4 h-40 w-40 overflow-hidden rounded-full border-4 border-primary">
                     <Image
                       alt="Headshot of Evan Taylor, owner"
                       fill
@@ -154,14 +150,14 @@ export default async function AboutPage() {
                   <div className="flex justify-center space-x-4">
                     <a
                       aria-label="Email Evan Taylor"
-                      className="text-gray-500 transition-colors duration-200 hover:text-primary"
+                      className="text-slate-500 transition-colors duration-200 hover:text-primary"
                       href="mailto:evan@tayloredinstruction.com"
                     >
                       <Mail size={20} />
                     </a>
                     <a
                       aria-label="Call Evan Taylor"
-                      className="text-gray-500 transition-colors duration-200 hover:text-primary"
+                      className="text-slate-500 transition-colors duration-200 hover:text-primary"
                       href="tel:3606858199"
                     >
                       <Phone size={20} />
@@ -176,7 +172,7 @@ export default async function AboutPage() {
               {/* Our Mission Section */}
               <div className="mb-12 rounded-lg bg-white p-8">
                 <h2 className="mb-4 font-semibold text-3xl text-text">
-                  Our Mission
+                  Our mission
                 </h2>
                 <p className="text-lg text-text-light">
                   Our mission is to teach lifesaving skills to all, with the
@@ -190,7 +186,7 @@ export default async function AboutPage() {
               {/* What We Teach Section */}
               <div className="mb-12 rounded-lg bg-white p-8">
                 <h2 className="mb-6 font-semibold text-3xl text-text">
-                  What We Teach
+                  What we teach
                 </h2>
                 <p className="mb-4 text-text-light">
                   Our instructors hold the following certifications:
@@ -259,18 +255,16 @@ export default async function AboutPage() {
           </div>
 
           {/* Final CTA - Full Width */}
-          <div className="border-gray-200 border-t pt-12 text-center">
+          <div className="border-slate-200 border-t pt-12 text-center">
             <h3 className="mb-4 font-semibold text-2xl text-text">
               Interested in something else?
             </h3>
             <p className="mb-6 text-text-light">
               Let us know how we can help you by contacting us today!
             </p>
-            <Link href="/contact">
-              <Button size="lg" variant="primary">
-                Contact Us
-              </Button>
-            </Link>
+            <Button href="/contact" size="lg" variant="primary">
+              Contact us
+            </Button>
           </div>
         </div>
       </section>
