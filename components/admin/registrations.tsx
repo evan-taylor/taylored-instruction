@@ -450,8 +450,16 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
             api.registrationOperations.orderSeats,
             { orderId }
           );
+          const order = orders.find((o) => o._id === orderId);
+          const cancelable = seats.filter(
+            (seat) => seat.state === "held" || seat.state === "active"
+          );
+          // An unpaid group is released as a whole by its first cancel, so
+          // one call covers every seat; paid seats are independent.
+          const group = order?.status === "hold" || order?.status === "unpaid";
+          const targets = group ? cancelable.slice(0, 1) : cancelable;
           const outcomes = await Promise.allSettled(
-            seats.map((seat) =>
+            targets.map((seat) =>
               cancel({
                 seatId: seat._id,
                 reason,
@@ -461,11 +469,15 @@ function useBulkActions(orders: Order[], selected: OrderId[]) {
             )
           );
           const failed = outcomes.filter((r) => r.status === "rejected").length;
+          const succeeded = targets.length - failed;
+          // One successful group call releases every cancelable seat.
+          const canceled = group && succeeded ? cancelable.length : succeeded;
+          const skipped = seats.length - cancelable.length;
           return {
             key: orderId,
             label: label(orderId),
             ok: failed === 0,
-            detail: `${outcomes.length - failed} canceled, ${failed} failed`,
+            detail: `${canceled} canceled, ${failed} failed${skipped ? `, ${skipped} already canceled or transferred` : ""}`,
           };
         } catch (error) {
           return {
