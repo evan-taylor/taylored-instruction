@@ -61,7 +61,7 @@ Code lives in `lib/mcp`. Tools are grouped by file and carry MCP annotations
 | --- | --- |
 | `tools/overview.ts` | whoami, dashboard_summary, attention_queue, activity_log, email_queue, retry_email, send_test_email, get_record, offering_detail |
 | `tools/catalog.ts` | list/get/save/duplicate/delete course, list sessions, session_overview, plan_meetings, save_session, cancel_session, session_roster, export_roster_csv, email_attendees, session files, locations, search_offerings |
-| `tools/registrations.ts` | list_orders, get_order, lookup_customer, enroll, request_payment_email, record_offline_payment, restore_coupon, refund_order, cancel_seat, transfer_preview/transfer_seat, seat_materials, resend_materials, replace_keycode, fulfill_physical, keycode_history, seat_outcomes, record_attendance, record_outcome, override_completion, waitlist_add, send_portal_access_email |
+| `tools/registrations.ts` | list_orders, get_order, lookup_customer, enroll, request_payment_email, record_offline_payment, restore_coupon, refund_order, cancel_seat, transfer_preview/transfer_seat, seat_materials, resend_materials, replace_keycode, fulfill_physical, keycode_history, seat_outcomes, record_attendance, record_outcome, override_completion, waitlist_add |
 | `tools/sales.ts` | coupons, group requests, organizations, invoices (create/issue/record payment/void/remind), stripe_tax_codes |
 | `tools/fulfillment.ts` | materials (with PDF upload), keycode_stock, add_keycodes, missing_materials, manage_keycode |
 | `tools/people.ts` | staff_directory, list_instructor_profiles, list_users, set_instructor_approval, deactivate_user, delete_profile |

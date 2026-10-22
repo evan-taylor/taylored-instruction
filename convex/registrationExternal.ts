@@ -3,7 +3,7 @@ import { ConvexError, v } from "convex/values";
 import { Resend } from "resend";
 import Stripe from "stripe";
 import { SUPPORT_EMAIL } from "../shared/email";
-import { brandedEmail, registrationEmail } from "../shared/registration/email";
+import { registrationEmail } from "../shared/registration/email";
 import {
   assertRegistrationPaymentMode,
   registrationRecipient,
@@ -130,28 +130,6 @@ export const refund = action({
   },
 });
 
-/** Short, non-reversible tag for a sign-in link; safe to hand to a provider. */
-async function linkFingerprint(token: string) {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token)
-  );
-  return Array.from(new Uint8Array(digest).slice(0, 8), (b) =>
-    b.toString(16).padStart(2, "0")
-  ).join("");
-}
-/** A fresh portal token and the SHA-256 digest stored for it. */
-async function accessToken() {
-  const token = crypto.randomUUID() + crypto.randomUUID();
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(token)
-  );
-  const tokenHash = Array.from(new Uint8Array(digest), (b) =>
-    b.toString(16).padStart(2, "0")
-  ).join("");
-  return { token, tokenHash };
-}
 export const deliver = internalAction({
   args: {},
   returns: v.null(),
@@ -171,12 +149,7 @@ export const deliver = internalAction({
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
             throw new Error("Recipient, sender, and Resend key required");
           }
-          // The button signs the student in, so the email is the whole
-          // journey: no second "email me a link" step on the portal.
-          const portalUrl = job.portalToken
-            ? `${baseUrl()}/registrations/access#${job.portalToken}`
-            : undefined;
-          const rendered = registrationEmail(job, baseUrl(), portalUrl);
+          const rendered = registrationEmail(job, baseUrl());
           const response = await new Resend(
             process.env.RESEND_API_KEY
           ).emails.send(
@@ -197,15 +170,7 @@ export const deliver = internalAction({
                 : undefined,
               html: rendered.html,
             },
-            // A freshly minted sign-in link is new content, so it gets a
-            // new key; ordinary retries keep sharing the first one.
-            {
-              idempotencyKey: `registration-mail:${id}${
-                job.portalToken
-                  ? `:${await linkFingerprint(job.portalToken)}`
-                  : ""
-              }`,
-            }
+            { idempotencyKey: `registration-mail:${id}` }
           );
           if (response.error) {
             throw new Error(response.error.message);
@@ -224,46 +189,6 @@ export const deliver = internalAction({
         }
       })
     );
-    return null;
-  },
-});
-export const requestPortal = action({
-  args: { email: v.string() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const { token, tokenHash } = await accessToken();
-    await ctx.runMutation(internal.registrationPortal.issue, {
-      email: args.email,
-      tokenHash,
-    });
-    const recipient = registrationRecipient(args.email.trim().toLowerCase());
-    const from = process.env.AUTH_EMAIL_FROM;
-    if (!(recipient && from && process.env.RESEND_API_KEY)) {
-      throw new Error("Email configuration required");
-    }
-    const response = await new Resend(process.env.RESEND_API_KEY).emails.send({
-      from,
-      to: recipient,
-      subject: "Your secure registration access",
-      replyTo: SUPPORT_EMAIL,
-      ...brandedEmail({
-        title: "Access your registrations",
-        preview:
-          "Access your registrations, class details, materials, and payment records. Link expires in 30 minutes.",
-        paragraphs: [
-          "View your class schedule and joining instructions, open available course materials, or check your orders and payments.",
-          "Select the button below and you’re in. No password needed.",
-        ],
-        action: {
-          label: "Access my registrations",
-          url: `${baseUrl()}/registrations/access#${token}`,
-        },
-        note: "This one-time link expires in 30 minutes and keeps this device signed in for 24 hours. Keep it private. If you didn’t request it, you can ignore this email.",
-      }),
-    });
-    if (response.error) {
-      throw new ConvexError("Access email could not be sent. Try again later.");
-    }
     return null;
   },
 });

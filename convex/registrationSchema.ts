@@ -303,7 +303,7 @@ export const registrationTables = {
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
     link: v.optional(v.object({ label: v.string(), url: v.string() })),
-    /** One-time portal sign-in token, minted on first delivery so retries send the same email. */
+    /** @deprecated Legacy magic-link token; cleared by `registrationMigration.purgeLegacyPortalGrants`. Remove once no rows carry it. */
     portalToken: v.optional(v.string()),
   })
     .index("by_key", ["key"])
@@ -379,6 +379,7 @@ export const registrationTables = {
     .index("by_sessionId_and_email", ["sessionId", "email"])
     .index("by_sessionId_and_email_and_state", ["sessionId", "email", "state"])
     .index("by_tokenHash", ["tokenHash"]),
+  /** @deprecated Legacy portal magic links; the portal now uses Convex Auth. Emptied by `registrationMigration.purgeLegacyPortalGrants`, then this table can be removed. */
   registrationGrants: defineTable({
     hash: v.string(),
     email: v.string(),

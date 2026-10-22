@@ -83,29 +83,19 @@ test("free checkout completes without a card and the success page reads backend 
     )
   ).toBeVisible();
 });
-test("an emailed link signs in on arrival and a bad token falls back to the request form", async ({
+test("the portal asks visitors to sign in with the same code flow as staff", async ({
   page,
 }) => {
-  const requests: string[] = [];
-  page.on("request", (request) => {
-    if (
-      request.method() === "POST" &&
-      request.url().includes("/api/registration/portal")
-    ) {
-      requests.push(request.url());
-    }
-  });
-  await page.goto("/registrations/access#invalid-test-token");
-  await expect(
-    page.getByText(
-      "Unable to complete access. Request another link or try again later."
-    )
-  ).toBeVisible();
-  expect(requests).toHaveLength(1);
+  await page.goto("/registrations");
   await expect(page).toHaveURL(PORTAL_URL);
   await expect(
-    page.getByRole("button", { name: "Email me a secure link" })
+    page.getByRole("heading", { name: "Sign in to see your registrations" })
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Email me a sign-in code", exact: true })
+  ).toBeVisible();
+  await page.goto("/registrations/access");
+  await expect(page.getByText("404", { exact: true })).toBeVisible();
 });
 test("existing login and contact routes still render without sending email", async ({
   page,

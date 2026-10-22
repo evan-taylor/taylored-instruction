@@ -1347,7 +1347,7 @@ export const resendMaterials = mutation({
       kind: "email",
       recipient: seat.email,
       subject: "Your course materials",
-      body: "Your assigned materials are available in your secure portal. Request email access to view them.",
+      body: "Your assigned materials are available in your secure portal. Sign in with this email address to view them.",
       due: Date.now(),
       seatId: seat._id,
     });

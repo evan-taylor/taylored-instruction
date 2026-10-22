@@ -81,7 +81,7 @@ Vercel and `engines.node` both use `24.x` to avoid the old open-ended major over
 Partial prefetching explicitly retains the prior behavior during this dependency update.
 
 Configuration is not payment acceptance: run a test Checkout, invoice, signed webhook,
-refund, and portal-email flow before enabling native booking links. Stripe Tax must
+refund, and student sign-in flow before enabling native booking links. Stripe Tax must
 have the business address and appropriate tax registrations configured by the account
 owner. No live purchase, refund, or customer email is needed for build verification.
 Marketing pages and the header link to the in-house registration routes.
@@ -105,3 +105,21 @@ offering, Stripe sandbox cards, and the designated tester inbox:
   orders, including the refunded balance.
 
 These are sandbox acceptance results, not live-charge or Google OAuth validation.
+
+## Unified sign-in (October 22, 2026)
+
+The separate portal magic link was removed. Students, purchasers, instructors, and
+staff all sign in through Convex Auth: a six-digit code emailed to the address they
+registered with, or Google. `/registrations` shows that form inline and then lists
+whatever the signed-in account's verified email holds. Consequences for operators:
+
+- Sign-in code emails now follow `REGISTRATION_MODE`: outside live mode they go to
+  `REGISTRATION_TEST_RECIPIENT`, so that variable must be set on every non-production
+  Convex deployment or email sign-in fails there with a configuration error.
+- Every student who signs in gets a `users` row. Accounts carry no privileges; admin
+  and instructor access still come from the allowlist and `profiles.isInstructor`.
+- After deploying, run the internal mutation `registrationMigration:purgeLegacyPortalGrants`
+  from the dashboard until it reports zero grants and jobs, then remove the deprecated
+  `registrationGrants` table and `registrationJobs.portalToken` field from the schema.
+- Portal sessions last as long as any other Convex Auth session rather than 24 hours.
+  The portal page offers sign-out through the account menu.

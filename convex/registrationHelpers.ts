@@ -83,22 +83,12 @@ export async function hash(value: string) {
     b.toString(16).padStart(2, "0")
   ).join("");
 }
-export async function portalEmail(ctx: QueryCtx, grant?: string) {
-  if (grant) {
-    const digest = await hash(grant);
-    const row = await ctx.db
-      .query("registrationGrants")
-      .withIndex("by_hash", (q) => q.eq("hash", digest))
-      .unique();
-    if (
-      row?.purpose === "portal" &&
-      !row.consumed &&
-      row.expires > Date.now()
-    ) {
-      return row.email;
-    }
-    throw new ConvexError("Access expired. Request another access email.");
-  }
+/**
+ * The email the portal is scoped to: the signed-in account's verified
+ * address. Students, purchasers, and staff all arrive the same way, so this
+ * grants nothing beyond the registrations held under that email.
+ */
+export async function portalEmail(ctx: QueryCtx) {
   const id = await getAuthUserId(ctx);
   const user = id ? await ctx.db.get(id) : null;
   if (user?.email && user.emailVerificationTime !== undefined) {

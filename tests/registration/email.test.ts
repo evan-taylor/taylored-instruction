@@ -2,7 +2,6 @@ import { expect, it } from "vitest";
 import {
   brandedEmail,
   registrationEmail,
-  usesPortalAction,
 } from "../../shared/registration/email";
 
 it("escapes all customer content and rejects executable action URLs", () => {
@@ -24,8 +23,8 @@ it("escapes all customer content and rejects executable action URLs", () => {
   ).toThrow("HTTP");
 });
 
-it("keeps the access token and expiry in both HTML and plain text", () => {
-  const url = "https://example.com/registrations/access#one-time-token";
+it("keeps the action link and expiry in both HTML and plain text", () => {
+  const url = "https://example.com/registrations";
   const result = brandedEmail({
     title: "Your registrations",
     preview: "Expires in 30 minutes",
@@ -38,8 +37,7 @@ it("keeps the access token and expiry in both HTML and plain text", () => {
   expect(result.text).toContain("30 minutes");
 });
 
-it("uses the sign-in link as the portal button and explains how long it lasts", () => {
-  const magic = "https://example.com/registrations/access#signed-token";
+it("points the portal button at sign-in and explains the one-time code", () => {
   const job = {
     category: "Registration confirmed",
     subject: "You’re registered",
@@ -50,17 +48,11 @@ it("uses the sign-in link as the portal button and explains how long it lasts", 
     materials: [],
     details: [],
   };
-  expect(usesPortalAction(job)).toBe(true);
-  expect(
-    usesPortalAction({ ...job, link: { label: "Pay", url: "https://x.test" } })
-  ).toBe(false);
-  const result = registrationEmail(job, "https://example.com", magic);
-  expect(result.html).toContain(`href="${magic}"`);
-  expect(result.html).toContain("signs you in without a password");
-  expect(result.text).toContain(`see ${magic}`);
-  const plain = registrationEmail(job, "https://example.com");
-  expect(plain.html).toContain('href="https://example.com/registrations"');
-  expect(plain.html).not.toContain("signs you in");
+  const result = registrationEmail(job, "https://example.com");
+  expect(result.html).toContain('href="https://example.com/registrations"');
+  expect(result.html).toContain("one-time code");
+  expect(result.html).not.toContain("/registrations/access");
+  expect(result.text).toContain("see https://example.com/registrations");
 });
 
 it("renders billing details and preserves the invoice destination", () => {

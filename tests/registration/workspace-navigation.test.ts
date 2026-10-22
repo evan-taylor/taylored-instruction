@@ -18,5 +18,5 @@ it("keeps approved eCard access distinct from administrator access", () => {
   expect(admin).toContain("/admin/registrations");
   expect(admin).not.toContain("/ecards");
   const guest = workspaceLinks(false, false, false).map((item) => item.href);
-  expect(guest).toEqual(["/alignment", "/login"]);
+  expect(guest).toEqual(["/alignment", "/registrations", "/login"]);
 });

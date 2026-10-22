@@ -610,51 +610,42 @@ describe("Operational acceptance", () => {
       "accepted"
     );
   });
-  it("requires possession of a valid unconsumed portal token and scopes purchaser data", async () => {
+  it("scopes the portal to the signed-in verified email and refuses anyone else", async () => {
     const f = await fixture();
-    const token = "secure-test-challenge";
-    const digest = async (value: string) =>
-      Array.from(
-        new Uint8Array(
-          await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value))
-        ),
-        (b) => b.toString(16).padStart(2, "0")
-      ).join("");
     await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
-    await f.t.mutation(internal.registrationPortal.issue, {
-      email: "buyer@example.test",
-      tokenHash: await digest(token),
-    });
-    expect(
-      await f.t.mutation(api.registrationPortal.exchange, {
-        token: "wrong",
-        grantHash: await digest("grant"),
-      })
-    ).toBe(false);
-    expect(
-      await f.t.mutation(api.registrationPortal.exchange, {
-        token,
-        grantHash: await digest("grant"),
-      })
-    ).toBe(true);
-    expect(
-      await f.t.mutation(api.registrationPortal.exchange, {
-        token,
-        grantHash: await digest("other"),
-      })
-    ).toBe(false);
-    const orders = await f.t.query(api.registrationPortal.orders, {
-      grant: "grant",
-      paginationOpts: { cursor: null, numItems: 20 },
+    const { buyer, unverified } = await f.t.run(async (ctx) => ({
+      buyer: await ctx.db.insert("users", {
+        email: "Buyer@example.test",
+        emailVerificationTime: Date.now(),
+      }),
+      unverified: await ctx.db.insert("users", { email: "buyer@example.test" }),
+    }));
+    const paginationOpts = { cursor: null, numItems: 20 };
+    await expect(
+      f.t.query(api.registrationPortal.orders, { paginationOpts })
+    ).rejects.toThrow("Verified access required");
+    await expect(
+      f.t
+        .withIdentity({ subject: `${unverified}|session` })
+        .query(api.registrationPortal.orders, { paginationOpts })
+    ).rejects.toThrow("Verified access required");
+    const signedIn = f.t.withIdentity({ subject: `${buyer}|session` });
+    const orders = await signedIn.query(api.registrationPortal.orders, {
+      paginationOpts,
     });
     expect(orders.page).toHaveLength(1);
     expect(JSON.stringify(orders)).not.toContain("outcome");
     expect(JSON.stringify(orders)).not.toContain("answers");
-    const own = await f.t.query(api.registrationPortal.registrations, {
-      grant: "grant",
-      paginationOpts: { cursor: null, numItems: 20 },
+    const own = await signedIn.query(api.registrationPortal.registrations, {
+      paginationOpts,
     });
     expect(own.page).toHaveLength(0);
+    // Staff accounts see only their own registrations here, never the roster.
+    const staff = await f.adminClient.query(
+      api.registrationPortal.registrations,
+      { paginationOpts }
+    );
+    expect(staff.page).toHaveLength(0);
   });
   it("caps concurrent refund intents to remaining payment and leaves coupon usage unchanged", async () => {
     const f = await fixture();
@@ -1202,98 +1193,6 @@ describe("Operational regression coverage", () => {
       value: "$8.90",
     });
   });
-  it("mints one portal sign-in token per email job and reuses it on retry", async () => {
-    const f = await fixture();
-    const job = await f.t.run(
-      async (ctx) =>
-        await ctx.db.insert("registrationJobs", {
-          key: "test-magic",
-          kind: "email",
-          recipient: "Student@example.test",
-          subject: "Confirmed",
-          body: "See your portal",
-          due: Date.now(),
-          attempts: 0,
-          state: "pending",
-        })
-    );
-    const first = await f.t.mutation(internal.registrationMail.claim, {
-      id: job,
-    });
-    expect(first?.portalToken).toHaveLength(72);
-    await f.t.mutation(internal.registrationMail.result, {
-      id: job,
-      success: false,
-      error: "Timed out",
-    });
-    await f.t.run(async (ctx) => {
-      await ctx.db.patch(job, { due: Date.now() - 1 });
-    });
-    const retry = await f.t.mutation(internal.registrationMail.claim, {
-      id: job,
-    });
-    expect(retry?.portalToken).toBe(first?.portalToken);
-    const grants = await f.t.run((ctx) =>
-      ctx.db.query("registrationGrants").collect()
-    );
-    expect(grants).toHaveLength(1);
-    expect(grants[0]?.email).toBe("student@example.test");
-    expect(grants[0]?.expires).toBeGreaterThan(Date.now() + 6 * 86_400_000);
-    expect(
-      await f.t.mutation(api.registrationPortal.exchange, {
-        token: first?.portalToken ?? "",
-        grantHash: "a".repeat(64),
-      })
-    ).toBe(true);
-    // An automatic retry after the student already used the link (a send
-    // whose result was lost) must reuse it, or the student gets a duplicate.
-    await f.t.run(async (ctx) => {
-      await ctx.db.patch(job, { state: "pending", due: Date.now() - 1 });
-    });
-    const automatic = await f.t.mutation(internal.registrationMail.claim, {
-      id: job,
-    });
-    expect(automatic?.portalToken).toBe(first?.portalToken);
-    // A staff retry after the link has lapsed must not resend a dead button.
-    await f.t.run(async (ctx) => {
-      await ctx.db.patch(job, {
-        state: "pending",
-        due: Date.now() - 1,
-        attempts: 0,
-      });
-      await ctx.db.patch(grants[0]._id, { expires: Date.now() - 1 });
-    });
-    const late = await f.t.mutation(internal.registrationMail.claim, {
-      id: job,
-    });
-    expect(late?.portalToken).toHaveLength(72);
-    expect(late?.portalToken).not.toBe(first?.portalToken);
-    const challenges = await f.t.run(async (ctx) =>
-      (await ctx.db.query("registrationGrants").collect()).filter(
-        (g) => g.purpose === "challenge"
-      )
-    );
-    expect(challenges).toHaveLength(2);
-    // Invoice and payment-request emails keep their own button.
-    const linked = await f.t.run(
-      async (ctx) =>
-        await ctx.db.insert("registrationJobs", {
-          key: "test-linked",
-          kind: "email",
-          recipient: "student@example.test",
-          subject: "Pay",
-          body: "Pay now",
-          due: Date.now(),
-          attempts: 0,
-          state: "pending",
-          link: { label: "Pay", url: "https://pay.example.test" },
-        })
-    );
-    const claimed = await f.t.mutation(internal.registrationMail.claim, {
-      id: linked,
-    });
-    expect(claimed?.portalToken).toBeUndefined();
-  });
   it("email leases prevent parallel delivery and exhaust retries into attention", async () => {
     const f = await fixture();
     const job = await f.t.run(
@@ -1405,13 +1304,10 @@ describe("Shared development service settings", () => {
     ).rejects.toThrow("Configure STRIPE_SECRET_KEY with a test key");
   });
   it.each([false, true])(
-    "routes portal mail correctly with live=%s",
+    "routes the sign-in code email correctly with live=%s",
     async (live) => {
       vi.stubEnv("REGISTRATION_MODE", live ? "live" : "test");
-      const f = await fixture();
-      vi.stubEnv("SITE_URL", "https://preview.example.test");
       vi.stubEnv("AUTH_EMAIL_FROM", "Training <sender@example.test>");
-      vi.stubEnv("RESEND_API_KEY", "re_local_mock_only");
       vi.stubEnv("REGISTRATION_TEST_RECIPIENT", "safe@example.test");
       const send = vi.spyOn(globalThis, "fetch").mockResolvedValue(
         new Response(JSON.stringify({ id: "local-email" }), {
@@ -1420,18 +1316,23 @@ describe("Shared development service settings", () => {
         })
       );
       try {
-        await f.t.action(api.registrationExternal.requestPortal, {
-          email: "student@example.test",
+        const { ResendOTP } = await import("../../convex/ResendOTP");
+        await ResendOTP.sendVerificationRequest({
+          identifier: "student@example.test",
+          url: "",
+          expires: new Date(Date.now() + 600_000),
+          provider: { ...ResendOTP, apiKey: "re_local_mock_only" },
+          token: "123456",
+          theme: {},
+          request: new Request("https://example.test/api/auth"),
         });
         expect(send).toHaveBeenCalledTimes(1);
         const body = JSON.parse(String(send.mock.calls[0]?.[1]?.body));
-        expect(body.to).toBe(
-          live ? "student@example.test" : "safe@example.test"
-        );
+        expect(body.to).toEqual([
+          live ? "student@example.test" : "safe@example.test",
+        ]);
         expect(body.from).toBe("Training <sender@example.test>");
-        expect(body.text).toContain(
-          "https://preview.example.test/registrations/access#"
-        );
+        expect(body.text).toContain("123456");
       } finally {
         send.mockRestore();
       }

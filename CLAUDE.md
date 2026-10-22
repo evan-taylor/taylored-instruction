@@ -46,6 +46,12 @@ Test mode refuses live keys/events and redirects registration mail to
 intended recipients. Both payment finalizers validate amount, tax, and replay.
 Hosted builds reject `REGISTRATION_ALLOW_TEST_FIXTURES=true`.
 
+There is one sign-in for everyone. Students open `/registrations` and sign in with
+the same Convex Auth email code (or Google) that staff use; the portal is scoped to
+the signed-in account's verified email. Portal mail links to `/registrations`, never
+to a token. Legacy `registrationGrants` rows and job `portalToken` fields are cleared
+by `registrationMigration.purgeLegacyPortalGrants` before their schema entries go.
+
 Marketing pages link to the in-house flow: `/classes`, `/courses/[slug]`, and
 `/s/[code]`. Course pages embed live dates through `lib/course-catalog.ts`, which
 maps each page to its registration course templates by slug and title keywords.

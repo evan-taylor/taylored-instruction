@@ -565,22 +565,4 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
         return ok({ waitlisted: args.email });
       })
   );
-
-  server.registerTool(
-    "send_portal_access_email",
-    {
-      title: "Send portal access email",
-      description:
-        "Emails a customer a one-time link to their registration portal (schedule, materials, orders).",
-      inputSchema: { email },
-      annotations: EXTERNAL,
-    },
-    (args) =>
-      run(async () => {
-        await ctx.convex.action(api.registrationExternal.requestPortal, {
-          email: args.email,
-        });
-        return ok({ sent: args.email });
-      })
-  );
 }
