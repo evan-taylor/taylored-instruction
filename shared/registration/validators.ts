@@ -128,6 +128,8 @@ export const orderStatus = v.union(
   v.literal("exception")
 );
 export const courseFields = {
+  hovnId: v.optional(v.string()),
+  sourceData: v.optional(v.string()),
   slug: v.string(),
   title: v.string(),
   description: v.string(),

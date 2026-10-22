@@ -59,7 +59,13 @@ export const saveMaterial = mutation({
   args: {
     id: v.optional(v.id("registrationMaterials")),
     title: v.string(),
-    kind: v.union(v.literal("pdf"), v.literal("link"), v.literal("keycode")),
+    kind: v.union(
+      v.literal("pdf"),
+      v.literal("link"),
+      v.literal("keycode"),
+      v.literal("physical")
+    ),
+    instructions: v.optional(v.string()),
     url: v.optional(v.string()),
     storageId: v.optional(v.id("_storage")),
     archived: v.boolean(),
@@ -1517,6 +1523,41 @@ export const removeFile = mutation({
       "session-file-removed",
       file.sessionId,
       file.name
+    );
+    return null;
+  },
+});
+
+/** Record handoff of a paid physical material without allocating digital inventory. */
+export const fulfillPhysical = mutation({
+  args: { entitlementId: v.id("registrationEntitlements") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    const entitlement = await ctx.db.get(args.entitlementId);
+    const seat = entitlement ? await ctx.db.get(entitlement.seatId) : null;
+    if (
+      entitlement?.kind !== "physical" ||
+      !seat?.settledAt ||
+      seat.state !== "active"
+    ) {
+      throw new ConvexError(
+        "A physical material requires an active, paid registration"
+      );
+    }
+    if (entitlement.state === "fulfilled") {
+      return null;
+    }
+    if (entitlement.state !== "pending") {
+      throw new ConvexError("This material is not awaiting fulfillment");
+    }
+    await ctx.db.patch(entitlement._id, { state: "fulfilled" });
+    await audit(
+      ctx,
+      actor.userId,
+      "physical-material-fulfilled",
+      entitlement._id,
+      entitlement.title
     );
     return null;
   },

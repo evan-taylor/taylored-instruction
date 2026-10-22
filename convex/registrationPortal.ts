@@ -64,6 +64,8 @@ const portalSeat = v.object({
       id: v.id("registrationEntitlements"),
       title: v.string(),
       state: v.string(),
+      kind: v.optional(v.string()),
+      instructions: v.optional(v.string()),
     })
   ),
   meetings: v.array(
@@ -124,6 +126,8 @@ export const registrations = query({
             id: e._id,
             title: e.title,
             state: e.state,
+            kind: e.kind,
+            instructions: e.instructions,
           })),
           meetings: (session?.meetings ?? []).map(
             ({ id, start, end, location, onlineUrl, instructions }) => ({
@@ -300,6 +304,8 @@ export const materials = query({
       id: v.id("registrationEntitlements"),
       title: v.string(),
       state: v.string(),
+      kind: v.optional(v.string()),
+      instructions: v.optional(v.string()),
     })
   ),
   handler: async (ctx, args) => {
@@ -318,6 +324,8 @@ export const materials = query({
         id: e._id,
         title: e.title,
         state: e.state,
+        kind: e.kind,
+        instructions: e.instructions,
       })),
     };
   },

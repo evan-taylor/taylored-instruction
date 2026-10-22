@@ -253,12 +253,16 @@ export async function grantMaterial(
     title: material.title,
     version: material.version,
     kind: material.kind,
+    instructions: material.instructions,
     url: material.url,
     storageId: material.storageId,
     paidAt: seat.settledAt,
-    state: material.kind === "keycode" ? "pending" : "ready",
+    state:
+      material.kind === "keycode" || material.kind === "physical"
+        ? "pending"
+        : "ready",
   });
-  if (material.kind !== "keycode") {
+  if (material.kind !== "keycode" && material.kind !== "physical") {
     await enqueue(ctx, {
       key: `material:${id}`,
       kind: "email",
