@@ -83,7 +83,6 @@ const generateNavLinks = (
       {
         type: "divider",
         label: "American Heart Association courses",
-        href: "/classes?q=aha",
       },
       { label: "BLS", href: "/bls", indent: true },
       { label: "Heartsaver", href: "/heartsaver", indent: true },
@@ -95,7 +94,6 @@ const generateNavLinks = (
       {
         type: "divider",
         label: "American Red Cross courses",
-        href: "/classes?q=red%20cross",
       },
       {
         label: "Adult and Pediatric First Aid/CPR/AED",

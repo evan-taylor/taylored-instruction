@@ -3,6 +3,7 @@
 import { useQuery } from "convex/react";
 import { CalendarDays, MapPin } from "lucide-react";
 import Link from "next/link";
+import { usePostHog } from "posthog-js/react";
 import { Component, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +58,7 @@ function SeatsNote({ available }: { available: number }) {
 
 /** One meeting's date and time, with the rest of the schedule summarised. */
 function when(session: Session) {
-  const [first] = session.meetings;
+  const [first] = [...session.meetings].sort((a, b) => a.start - b.start);
   const zone = shortZone(session.timeZone, session.firstStart);
   if (!first) {
     return `${formatWeekday(session.firstStart, session.timeZone)} · ${formatTime(session.firstStart, session.timeZone)} ${zone}`;
@@ -66,8 +67,27 @@ function when(session: Session) {
   return `${formatMeeting(first, session.timeZone)} ${zone}${rest > 0 ? ` · +${pluralize(rest, "more session")}` : ""}`;
 }
 
-function SessionRow({ session }: { session: Session }) {
+/** Keeps the per-course click signal the old booking button reported. */
+function useRegistrationClick(courseName: string) {
+  const posthog = usePostHog();
+  return (registrationUrl: string, buttonText: string) =>
+    posthog.capture("course_registration_clicked", {
+      courseName,
+      registrationUrl,
+      buttonText,
+      variant: "primary",
+    });
+}
+
+function SessionRow({
+  session,
+  courseName,
+}: {
+  session: Session;
+  courseName: string;
+}) {
   const href = `/s/${session.code}`;
+  const track = useRegistrationClick(courseName);
   const places = [
     ...new Set(session.meetings.map((m) => parsePlace(m.location).name)),
   ];
@@ -102,12 +122,18 @@ function SessionRow({ session }: { session: Session }) {
           <Link
             className="font-medium text-primary text-sm underline-offset-2 hover:underline sm:hidden"
             href={href}
+            onClick={() => track(href, "View and register")}
           >
             View and register
           </Link>
         </div>
       </div>
-      <Button className="hidden sm:inline-flex" href={href} size="sm">
+      <Button
+        className="hidden sm:inline-flex"
+        href={href}
+        onClick={() => track(href, "Register")}
+        size="sm"
+      >
         Register
       </Button>
     </li>
@@ -157,25 +183,30 @@ class ScheduleBoundary extends Component<
  */
 export function UpcomingClasses({
   match,
+  courseName,
   browseHref = "/classes",
 }: {
   match: CourseMatch;
+  courseName: string;
   browseHref?: string;
 }) {
   return (
     <ScheduleBoundary browseHref={browseHref}>
-      <Schedule browseHref={browseHref} match={match} />
+      <Schedule browseHref={browseHref} courseName={courseName} match={match} />
     </ScheduleBoundary>
   );
 }
 
 function Schedule({
   match,
+  courseName,
   browseHref,
 }: {
   match: CourseMatch;
+  courseName: string;
   browseHref: string;
 }) {
+  const track = useRegistrationClick(courseName);
   const data = useQuery(api.registration.upcomingClasses, {
     slugs: [...match.slugs],
     keywords: [...match.keywords],
@@ -219,7 +250,11 @@ function Schedule({
       {visible.length ? (
         <ul className="list-none divide-y divide-slate-100 p-0">
           {visible.map((session) => (
-            <SessionRow key={session.code} session={session} />
+            <SessionRow
+              courseName={courseName}
+              key={session.code}
+              session={session}
+            />
           ))}
         </ul>
       ) : null}
@@ -237,7 +272,11 @@ function Schedule({
               <span className="tabular-nums">{formatMoney(course.price)}</span>
             </p>
           </div>
-          <Button href={`/courses/${course.slug}`} size="sm">
+          <Button
+            href={`/courses/${course.slug}`}
+            onClick={() => track(`/courses/${course.slug}`, "Register")}
+            size="sm"
+          >
             Register
           </Button>
         </div>

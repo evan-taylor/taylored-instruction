@@ -2,7 +2,7 @@ import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
 import { RegistrationDetail } from "@/components/registration/public";
 import { api } from "@/convex/_generated/api";
-import { courseSchemas, snippet } from "@/lib/registration-seo";
+import { courseSchemas, indexable, snippet } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import { generateJSONLD } from "@/lib/structuredData";
 
@@ -25,13 +25,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     offering.description,
     `${offering.title} with Taylored Instruction. See upcoming dates and full pricing, then register online.`
   );
-  return buildPageMetadata({
-    title: `${offering.title} | Classes & Registration | Taylored Instruction`,
-    description,
-    path: `/courses/${slug}`,
-    keywords: [offering.title],
-    image: { title: offering.title, description },
-  });
+  return indexable(
+    buildPageMetadata({
+      title: `${offering.title} | Classes & Registration | Taylored Instruction`,
+      description,
+      path: `/courses/${slug}`,
+      keywords: [offering.title],
+      image: { title: offering.title, description },
+    })
+  );
 }
 
 export default async function Page({ params }: Props) {

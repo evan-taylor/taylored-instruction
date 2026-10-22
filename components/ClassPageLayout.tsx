@@ -139,7 +139,10 @@ export default function ClassPageLayout({
           </div>
 
           <div className="mt-5 border-slate-200 border-t pt-5">
-            <UpcomingClasses match={COURSE_CATALOG[course]} />
+            <UpcomingClasses
+              courseName={courseName}
+              match={COURSE_CATALOG[course]}
+            />
           </div>
 
           {resources.length > 0 ? (

@@ -112,6 +112,17 @@ export const discover = query({
   handler: async (ctx, args) => {
     const needle = args.search?.trim().toLowerCase() ?? "";
     const from = Math.max(Date.now(), args.dayStart ?? 0);
+    const titles = new Map<string, Promise<string>>();
+    // A session titled "Saturday class" still matches a search for its
+    // course, so the course title joins the haystack.
+    const courseTitle = (id: Doc<"registrationSessions">["courseId"]) => {
+      let pending = titles.get(id);
+      if (!pending) {
+        pending = ctx.db.get(id).then((course) => course?.title ?? "");
+        titles.set(id, pending);
+      }
+      return pending;
+    };
     const result = await filter(
       ctx.db
         .query("registrationSessions")
@@ -121,10 +132,10 @@ export const discover = query({
             .eq("visibility", "public")
             .gte("firstStart", from)
         ),
-      (s) =>
+      async (s) =>
         (args.dayEnd === undefined || s.firstStart <= args.dayEnd) &&
         (needle === "" ||
-          `${s.title} ${s.meetings.map((m) => m.location).join(" ")}`
+          `${s.title} ${await courseTitle(s.courseId)} ${s.meetings.map((m) => m.location).join(" ")}`
             .toLowerCase()
             .includes(needle))
     ).paginate(args.paginationOpts);
@@ -978,44 +989,43 @@ const catalogCourse = v.object({
 /** Open, public, upcoming sessions of one published course, soonest first. */
 async function openSessions(ctx: QueryCtx, course: Doc<"registrationCourses">) {
   const now = Date.now();
-  const rows = await ctx.db
-    .query("registrationSessions")
-    .withIndex("by_courseId_and_firstStart", (q) =>
-      q.eq("courseId", course._id).gt("firstStart", now)
-    )
-    .take(BATCH);
-  return rows
-    .filter((s) => {
-      const config = effective(course.settings, s.overrides);
-      return (
-        s.publication === "published" &&
-        s.visibility === "public" &&
-        s.state === "open" &&
-        now < s.firstStart - config.cutoffMinutes * 60_000
-      );
-    })
-    .map((s) => ({
-      code: s.code,
-      title: s.title,
-      courseSlug: course.slug,
-      firstStart: s.firstStart,
-      lastEnd: s.lastEnd,
-      timeZone: s.timeZone,
-      available: Math.max(0, s.capacity - s.reserved),
-      price: seatPrice(effective(course.settings, s.overrides)),
-      meetings: s.meetings.map(({ start, end, location }) => ({
-        start,
-        end,
-        location,
-      })),
-    }));
+  // Filter before limiting: a backlog of past drafts or private sessions
+  // must never hide the next bookable date.
+  const rows = await filter(
+    ctx.db
+      .query("registrationSessions")
+      .withIndex("by_courseId_and_firstStart", (q) =>
+        q.eq("courseId", course._id).gt("firstStart", now)
+      ),
+    (s) =>
+      s.publication === "published" &&
+      s.visibility === "public" &&
+      s.state === "open" &&
+      now <
+        s.firstStart -
+          effective(course.settings, s.overrides).cutoffMinutes * 60_000
+  ).take(BATCH);
+  return rows.map((s) => ({
+    code: s.code,
+    title: s.title,
+    courseSlug: course.slug,
+    firstStart: s.firstStart,
+    lastEnd: s.lastEnd,
+    timeZone: s.timeZone,
+    available: Math.max(0, s.capacity - s.reserved),
+    price: seatPrice(effective(course.settings, s.overrides)),
+    meetings: [...s.meetings]
+      .sort((a, b) => a.start - b.start)
+      .map(({ start, end, location }) => ({ start, end, location })),
+  }));
 }
 async function openCourses(ctx: QueryCtx) {
-  const templates = await ctx.db
-    .query("registrationCourses")
-    .withIndex("by_publication", (q) => q.eq("publication", "published"))
-    .take(BATCH);
-  return templates.filter((c) => c.enrollmentOpen);
+  return await filter(
+    ctx.db
+      .query("registrationCourses")
+      .withIndex("by_publication", (q) => q.eq("publication", "published")),
+    (c) => c.enrollmentOpen
+  ).collect();
 }
 /**
  * The courses a marketing page is about and their upcoming classes, so the

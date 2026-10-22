@@ -40,7 +40,8 @@ export const metadata = buildPageMetadata({
 });
 
 export default async function HeartsaverPage() {
-  cacheLife("days");
+  // Live dates and prices are attached to the Course markup below.
+  cacheLife("hours");
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,

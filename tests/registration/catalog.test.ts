@@ -130,7 +130,7 @@ it("emits event, course, and breadcrumb markup for a scheduled class", async () 
   expect(breadcrumb?.["@type"]).toBe("BreadcrumbList");
   const metadata = sessionMetadata(offering);
   expect(metadata.title).toContain("Vancouver, WA");
-  expect(metadata.robots).toEqual({ index: true, follow: true });
+  expect(metadata.robots).toMatchObject({ index: true, follow: true });
   expect(
     sessionMetadata({ ...offering, unlisted: true, available: 0 }).robots
   ).toEqual({ index: false, follow: true });
@@ -139,4 +139,28 @@ it("emits event, course, and breadcrumb markup for a scheduled class", async () 
     available: 0,
   }) as unknown as Record<string, { availability: string }>[];
   expect(soldOut?.offers.availability).toBe("https://schema.org/SoldOut");
+  // Past the cutoff: seats remain but nothing is purchasable.
+  const [closed] = sessionSchemas({
+    ...offering,
+    state: "closed",
+  }) as unknown as Record<string, { availability: string }>[];
+  expect(closed?.offers.availability).toBe("https://schema.org/SoldOut");
+  // Staff entered the later day first; the schedule still reads in order.
+  const [reversed] = sessionSchemas({
+    ...offering,
+    meetings: [...offering.meetings].reverse(),
+  }) as unknown as Record<string, string>[];
+  expect(reversed?.startDate).toBe("2027-01-09T00:00:00.000Z");
+  // A fully online class is not advertised as in person.
+  const [online, onlineCourse] = sessionSchemas({
+    ...offering,
+    meetings: offering.meetings.map((m) => ({ ...m, location: "" })),
+  }) as unknown as Record<string, unknown>[];
+  expect(online?.eventAttendanceMode).toBe(
+    "https://schema.org/OnlineEventAttendanceMode"
+  );
+  expect(online?.location).toMatchObject({ "@type": "VirtualLocation" });
+  expect(onlineCourse?.hasCourseInstance).toMatchObject([
+    { courseMode: "Online" },
+  ]);
 });
