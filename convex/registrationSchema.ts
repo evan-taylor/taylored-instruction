@@ -81,6 +81,7 @@ export const registrationTables = {
     requestKey: v.string(),
     purchaser: v.string(),
     purchaserName: v.string(),
+    purchaserPhone: v.optional(v.string()),
     courseId: v.id("registrationCourses"),
     sessionId: v.optional(v.id("registrationSessions")),
     title: v.string(),

@@ -78,9 +78,15 @@ type Review = {
 const TAX_NOTE =
   "Sales tax is calculated at payment from your billing address.";
 
+const fullName = (first?: string, last?: string) =>
+  `${first?.trim() ?? ""} ${last?.trim() ?? ""}`.trim();
+
 const newAttendee = (): AttendeeRow => ({
   key: crypto.randomUUID(),
   name: "",
+  firstName: "",
+  lastName: "",
+  phone: "",
   email: "",
   selected: [],
   waived: [],
@@ -584,10 +590,15 @@ function useRegistrationForm(
   const attempt = useRef({ signature: "", key: "" });
   const submitting = useRef(false);
   const [purchaser, setPurchaser] = useState("");
-  const [name, setName] = useState("");
-  const attendees = registeringSelf
-    ? [{ ...self, name, email: purchaser }]
-    : otherAttendees;
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const name = fullName(firstName, lastName);
+  const attendees = (
+    registeringSelf
+      ? [{ ...self, firstName, lastName, phone, email: purchaser }]
+      : otherAttendees
+  ).map((row) => ({ ...row, name: fullName(row.firstName, row.lastName) }));
   const [coupon, setCoupon] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -624,7 +635,13 @@ function useRegistrationForm(
     setBusy(true);
     setError("");
     try {
-      const signature = JSON.stringify({ purchaser, name, attendees, coupon });
+      const signature = JSON.stringify({
+        purchaser,
+        name,
+        phone,
+        attendees,
+        coupon,
+      });
       if (attempt.current.signature !== signature) {
         attempt.current = { signature, key: crypto.randomUUID() };
       }
@@ -637,7 +654,11 @@ function useRegistrationForm(
         sessionId,
         purchaser,
         purchaserName: name,
-        attendees: attendees.map(({ key: _key, ...a }) => a),
+        purchaserPhone: phone || undefined,
+        attendees: attendees.map(({ key: _key, ...a }) => ({
+          ...a,
+          phone: a.phone || undefined,
+        })),
         coupon: coupon || undefined,
         requestKey,
         invitation,
@@ -680,7 +701,12 @@ function useRegistrationForm(
     purchaser,
     setPurchaser,
     name,
-    setName,
+    firstName,
+    setFirstName,
+    lastName,
+    setLastName,
+    phone,
+    setPhone,
     coupon,
     setCoupon,
     error,
@@ -957,14 +983,25 @@ function AttendeeCard({
         </CardHeader>
         <CardContent className="space-y-5">
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Full name" required>
+            <Field label="First name" required>
               {(props) => (
                 <TextInput
                   {...props}
                   autoComplete="off"
-                  onChange={(e) => onChange({ name: e.target.value })}
+                  onChange={(e) => onChange({ firstName: e.target.value })}
                   required
-                  value={attendee.name}
+                  value={attendee.firstName ?? ""}
+                />
+              )}
+            </Field>
+            <Field label="Last name" required>
+              {(props) => (
+                <TextInput
+                  {...props}
+                  autoComplete="off"
+                  onChange={(e) => onChange({ lastName: e.target.value })}
+                  required
+                  value={attendee.lastName ?? ""}
                 />
               )}
             </Field>
@@ -977,6 +1014,18 @@ function AttendeeCard({
                   required
                   type="email"
                   value={attendee.email}
+                />
+              )}
+            </Field>
+            <Field hint="Optional" label="Phone">
+              {(props) => (
+                <TextInput
+                  {...props}
+                  autoComplete="off"
+                  inputMode="tel"
+                  onChange={(e) => onChange({ phone: e.target.value })}
+                  type="tel"
+                  value={attendee.phone ?? ""}
                 />
               )}
             </Field>
@@ -1050,14 +1099,25 @@ function PurchaserCard({
           </div>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Field label="Your name" required>
+          <Field label="Your first name" required>
             {(props) => (
               <TextInput
                 {...props}
-                autoComplete="name"
-                onChange={(e) => form.setName(e.target.value)}
+                autoComplete="given-name"
+                onChange={(e) => form.setFirstName(e.target.value)}
                 required
-                value={form.name}
+                value={form.firstName}
+              />
+            )}
+          </Field>
+          <Field label="Your last name" required>
+            {(props) => (
+              <TextInput
+                {...props}
+                autoComplete="family-name"
+                onChange={(e) => form.setLastName(e.target.value)}
+                required
+                value={form.lastName}
               />
             )}
           </Field>
@@ -1070,6 +1130,18 @@ function PurchaserCard({
                 required
                 type="email"
                 value={form.purchaser}
+              />
+            )}
+          </Field>
+          <Field hint="Optional, for class-day questions." label="Phone">
+            {(props) => (
+              <TextInput
+                {...props}
+                autoComplete="tel"
+                inputMode="tel"
+                onChange={(e) => form.setPhone(e.target.value)}
+                type="tel"
+                value={form.phone}
               />
             )}
           </Field>

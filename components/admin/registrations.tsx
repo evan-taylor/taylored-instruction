@@ -134,7 +134,12 @@ function AttendeesTable({ order }: { order: Order }) {
               <TR>
                 <TD>
                   <div className="font-medium text-slate-900">{seat.name}</div>
-                  <div className="text-slate-500 text-xs">{seat.email}</div>
+                  <div className="text-slate-500 text-xs">
+                    {seat.email}
+                    {seat.snapshot.attendee.phone
+                      ? ` · ${seat.snapshot.attendee.phone}`
+                      : ""}
+                  </div>
                 </TD>
                 <TD>
                   <StatusBadge status={seat.state} />

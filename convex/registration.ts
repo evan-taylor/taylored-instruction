@@ -14,6 +14,7 @@ import {
   effective,
   email,
   MAX_SEATS,
+  normalizePhone,
   quote,
   safeUrl,
   validateSettings,
@@ -465,6 +466,7 @@ export const reserve = mutation({
     requestKey: v.string(),
     purchaser: v.string(),
     purchaserName: v.string(),
+    purchaserPhone: v.optional(v.string()),
     attendees: v.array(attendee),
     coupon: v.optional(v.string()),
     admin: v.optional(
@@ -551,6 +553,7 @@ export const reserve = mutation({
       requestKey: args.requestKey,
       purchaser,
       purchaserName: args.purchaserName,
+      purchaserPhone: normalizePhone(args.purchaserPhone),
       courseId: course._id,
       sessionId: session?._id,
       title: session?.title ?? course.title,

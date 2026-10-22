@@ -76,7 +76,11 @@ export const answer = v.object({
   value: v.union(v.string(), v.boolean()),
 });
 export const attendee = v.object({
+  /** Display name; composed from first and last name when those are given. */
   name: v.string(),
+  firstName: v.optional(v.string()),
+  lastName: v.optional(v.string()),
+  phone: v.optional(v.string()),
   email: v.string(),
   selected: v.array(v.string()),
   waived: v.array(v.string()),

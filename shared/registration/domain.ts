@@ -13,6 +13,18 @@ export type Quote = Infer<typeof quotedSeat>;
 export type Coupon = {
   [K in keyof typeof couponFields]: Infer<(typeof couponFields)[K]>;
 };
+const PHONE_CHARS = /^[+\d][\d\s().-]{5,24}$/u;
+/** Optional phone number: blank becomes undefined, anything else must look dialable. */
+export function normalizePhone(value: string | undefined) {
+  const trimmed = value?.trim() ?? "";
+  if (!trimmed) {
+    return;
+  }
+  if (!PHONE_CHARS.test(trimmed)) {
+    throw new Error("Enter a valid phone number or leave it blank");
+  }
+  return trimmed;
+}
 export const HOLD_MS = 30 * 60 * 1000;
 /** Seats and coupon uses stay reserved this long while a card payment is entered. */
 export const CHECKOUT_HOLD_MS = 15 * 60 * 1000;
@@ -169,6 +181,7 @@ export function quote(
     if (!input.name.trim() || input.name.length > 200 || seen.has(normalized)) {
       throw new Error("Every attendee needs a name and a distinct email");
     }
+    const phone = normalizePhone(input.phone);
     seen.add(normalized);
     validateAttendee(config, input);
     const materials = config.materials.filter((m) => {
@@ -214,7 +227,14 @@ export function quote(
     }
     allocateDiscount(eligible, subtotal, discount);
     return {
-      attendee: { ...input, name: input.name.trim(), email: normalized },
+      attendee: {
+        ...input,
+        name: input.name.trim(),
+        firstName: input.firstName?.trim() || undefined,
+        lastName: input.lastName?.trim() || undefined,
+        phone,
+        email: normalized,
+      },
       acceptedAt: Date.now(),
       lines,
       materials,
