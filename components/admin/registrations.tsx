@@ -1,4 +1,5 @@
 "use client";
+import { useClientMediaQuery } from "@silk-hq/components";
 import {
   useAction,
   useConvex,
@@ -21,6 +22,7 @@ import {
   pluralize,
 } from "@/components/registration/format";
 import {
+  CancelSeatButton,
   charged,
   ManualEnrollment,
   OrderInvoices,
@@ -105,6 +107,7 @@ function AttendeesTable({ order }: { order: Order }) {
   const [expanded, setExpanded] = useState<Id<"registrationSeats"> | null>(
     null
   );
+  const wide = useClientMediaQuery("(min-width: 640px)");
   if (!seats) {
     return <Skeleton className="h-24" />;
   }
@@ -117,10 +120,11 @@ function AttendeesTable({ order }: { order: Order }) {
   }
   const toggle = (seat: (typeof seats)[number]) =>
     setExpanded(expanded === seat._id ? null : seat._id);
-  return (
-    <>
-      {/* Phones: one card per attendee, nothing to scroll sideways. */}
-      <ul className="list-none space-y-3 p-0 sm:hidden">
+  // One layout at a time, so an expanded attendee's editing state is not
+  // duplicated into a hidden copy that would surface on rotation.
+  if (!wide) {
+    return (
+      <ul className="list-none space-y-3 p-0">
         {seats.map((seat) => {
           const open = expanded === seat._id;
           return (
@@ -130,7 +134,9 @@ function AttendeesTable({ order }: { order: Order }) {
             >
               <div className="flex flex-wrap items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-medium text-slate-900">{seat.name}</p>
+                  <p className="break-words font-medium text-slate-900">
+                    {seat.name}
+                  </p>
                   <p className="break-all text-slate-500 text-xs">
                     {seat.email}
                     {seat.snapshot.attendee.phone
@@ -159,16 +165,18 @@ function AttendeesTable({ order }: { order: Order }) {
                   </dd>
                 </div>
               </dl>
-              <Button
-                aria-expanded={open}
-                className="mt-3 w-full"
-                onClick={() => toggle(seat)}
-                size="sm"
-                type="button"
-                variant={open ? "secondary" : "outline"}
-              >
-                {open ? "Hide" : "Manage"}
-              </Button>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Button
+                  aria-expanded={open}
+                  onClick={() => toggle(seat)}
+                  size="sm"
+                  type="button"
+                  variant={open ? "secondary" : "outline"}
+                >
+                  {open ? "Hide" : "Manage"}
+                </Button>
+                <CancelSeatButton seat={seat} size="sm" variant="secondary" />
+              </div>
               {open ? (
                 <div className="mt-3 rounded-md bg-slate-50 p-3">
                   <SeatOperations seat={seat} />
@@ -178,44 +186,46 @@ function AttendeesTable({ order }: { order: Order }) {
           );
         })}
       </ul>
-      <Table wrapperClassName="hidden sm:block">
-        <THead>
-          <TR>
-            <TH>Attendee</TH>
-            <TH>State</TH>
-            <TH>Materials</TH>
-            <TH className="text-right">Seat total</TH>
-            <TH className="text-right">Actions</TH>
-          </TR>
-        </THead>
-        <TBody>
-          {seats.map((seat) => {
-            const open = expanded === seat._id;
-            return (
-              <Fragment key={seat._id}>
-                <TR>
-                  <TD>
-                    <div className="font-medium text-slate-900">
-                      {seat.name}
-                    </div>
-                    <div className="text-slate-500 text-xs">
-                      {seat.email}
-                      {seat.snapshot.attendee.phone
-                        ? ` · ${seat.snapshot.attendee.phone}`
-                        : ""}
-                    </div>
-                  </TD>
-                  <TD>
-                    <StatusBadge status={seat.state} />
-                  </TD>
-                  <TD className="tabular-nums">
-                    {seat.snapshot.materials.length}
-                  </TD>
-                  <TD className="text-right">
-                    <Money cents={seat.snapshot.total} />
-                    <TaxCodes lines={seat.snapshot.lines} />
-                  </TD>
-                  <TD className="text-right">
+    );
+  }
+  return (
+    <Table>
+      <THead>
+        <TR>
+          <TH>Attendee</TH>
+          <TH>State</TH>
+          <TH>Materials</TH>
+          <TH className="text-right">Seat total</TH>
+          <TH className="text-right">Actions</TH>
+        </TR>
+      </THead>
+      <TBody>
+        {seats.map((seat) => {
+          const open = expanded === seat._id;
+          return (
+            <Fragment key={seat._id}>
+              <TR>
+                <TD>
+                  <div className="font-medium text-slate-900">{seat.name}</div>
+                  <div className="text-slate-500 text-xs">
+                    {seat.email}
+                    {seat.snapshot.attendee.phone
+                      ? ` · ${seat.snapshot.attendee.phone}`
+                      : ""}
+                  </div>
+                </TD>
+                <TD>
+                  <StatusBadge status={seat.state} />
+                </TD>
+                <TD className="tabular-nums">
+                  {seat.snapshot.materials.length}
+                </TD>
+                <TD className="text-right">
+                  <Money cents={seat.snapshot.total} />
+                  <TaxCodes lines={seat.snapshot.lines} />
+                </TD>
+                <TD className="text-right">
+                  <div className="inline-flex items-center gap-1">
                     <Button
                       aria-expanded={open}
                       aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
@@ -226,21 +236,22 @@ function AttendeesTable({ order }: { order: Order }) {
                     >
                       {open ? "Hide" : "Manage"}
                     </Button>
+                    <CancelSeatButton seat={seat} variant="ghost" />
+                  </div>
+                </TD>
+              </TR>
+              {open ? (
+                <TR className="hover:bg-slate-50">
+                  <TD className="bg-slate-50 p-4" colSpan={5}>
+                    <SeatOperations seat={seat} />
                   </TD>
                 </TR>
-                {open ? (
-                  <TR className="hover:bg-slate-50">
-                    <TD className="bg-slate-50 p-4" colSpan={5}>
-                      <SeatOperations seat={seat} />
-                    </TD>
-                  </TR>
-                ) : null}
-              </Fragment>
-            );
-          })}
-        </TBody>
-      </Table>
-    </>
+              ) : null}
+            </Fragment>
+          );
+        })}
+      </TBody>
+    </Table>
   );
 }
 

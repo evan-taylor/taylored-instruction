@@ -194,7 +194,9 @@
 /* Silk sheet surfaces used by components/ui/dialog.tsx and the admin drawer. */
 .app-sheet-view {
   z-index: 60;
-  height: var(--silk-100-lvh-dvh-pct);
+  /* Track the visible viewport so the bottom sheet sits on the browser
+     toolbar instead of floating above it. */
+  height: 100dvh;
 }
 .app-sheet-view-center {
   height: 100vh;
@@ -205,9 +207,7 @@
   height: auto;
   padding-inline: 0;
   padding-right: env(safe-area-inset-right, 0px);
-  /* The view spans the large viewport; this lifts the panel above a
-     collapsed-but-present browser bar (large minus dynamic viewport). */
-  padding-bottom: calc(var(--silk-100-lvh-dvh-pct) - 100dvh);
+  padding-bottom: 0;
   padding-left: env(safe-area-inset-left, 0px);
   background-color: transparent;
 }

@@ -90,6 +90,7 @@ export function ReasonDialog({
   description,
   confirmLabel = "Confirm",
   danger = false,
+  presets = [],
   children,
 }: {
   open: boolean;
@@ -99,6 +100,8 @@ export function ReasonDialog({
   description?: React.ReactNode;
   confirmLabel?: string;
   danger?: boolean;
+  /** Common reasons offered as one-tap chips; the text stays editable. */
+  presets?: string[];
   children?: React.ReactNode;
 }) {
   const [reason, setReason] = useState("");
@@ -150,15 +153,44 @@ export function ReasonDialog({
           required
         >
           {(props) => (
-            <TextArea
-              {...props}
-              onChange={(e) => {
-                setReason(e.target.value);
-                setMissing(false);
-              }}
-              rows={3}
-              value={reason}
-            />
+            <div className="space-y-2">
+              {presets.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {presets.map((preset) => {
+                    const active = reason === preset;
+                    return (
+                      <button
+                        aria-pressed={active}
+                        className={cn(
+                          "min-h-9 rounded-full border px-3 py-1.5 font-medium text-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                        )}
+                        key={preset}
+                        onClick={() => {
+                          setReason(preset);
+                          setMissing(false);
+                        }}
+                        type="button"
+                      >
+                        {preset}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+              <TextArea
+                {...props}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  setMissing(false);
+                }}
+                placeholder={presets.length ? "Or write your own…" : undefined}
+                rows={presets.length ? 2 : 3}
+                value={reason}
+              />
+            </div>
           )}
         </Field>
         <ResultNotice message={failure} />
@@ -687,7 +719,32 @@ function SeatMaterials({ seat }: { seat: Seat }) {
   );
 }
 
-function SeatActions({ seat }: { seat: Seat }) {
+const CANCEL_REASONS = [
+  "Customer request",
+  "No-show",
+  "Duplicate registration",
+  "Moved to another class",
+  "Payment never completed",
+];
+
+/**
+ * Cancels one seat (or an unpaid group's whole order) behind an audited
+ * confirmation. Lives wherever a seat is listed, so staff never have to open
+ * the full management panel just to cancel.
+ */
+export function CancelSeatButton({
+  seat,
+  size = "xs",
+  variant = "secondary",
+  className,
+  onDone,
+}: {
+  seat: Seat;
+  size?: "xs" | "sm";
+  variant?: "secondary" | "ghost" | "outline";
+  className?: string;
+  onDone?: (message: string) => void;
+}) {
   const order = useQuery(api.registrationOperations.order, {
     orderId: seat.orderId,
   });
@@ -697,11 +754,66 @@ function SeatActions({ seat }: { seat: Seat }) {
       order.seats.length > 1
   );
   const cancel = useMutation(api.registrationOperations.cancelSeat);
-  const override = useMutation(api.registrationOperations.overrideCompletion);
-  const [dialog, setDialog] = useState<"cancel" | "override" | null>(null);
+  const [open, setOpen] = useState(false);
   const [notify, setNotify] = useState(true);
-  const [message, setMessage] = useState("");
   const cancelable = seat.state === "held" || seat.state === "active";
+  return (
+    <>
+      <Button
+        className={className}
+        disabled={!cancelable}
+        onClick={() => setOpen(true)}
+        size={size}
+        title={cancelable ? undefined : `Seat is already ${seat.state}`}
+        type="button"
+        variant={variant}
+      >
+        Cancel registration
+      </Button>
+      <ReasonDialog
+        confirmLabel="Cancel registration"
+        danger
+        description={
+          wholeOrder
+            ? `Cancels ALL ${order?.seats.length} attendees in this unpaid group and closes its payment links and invoices. This cannot cancel only one attendee.`
+            : "Releases this seat and cancels undelivered materials. Cancelling does not refund any payment; use the Payments section to refund."
+        }
+        onClose={() => setOpen(false)}
+        onConfirm={async (reason) => {
+          await cancel({
+            seatId: seat._id,
+            reason,
+            notify,
+            cancelWholeOrder: wholeOrder,
+          });
+          onDone?.(
+            "Registration canceled. Payment and delivered codes are unchanged."
+          );
+        }}
+        open={open}
+        presets={CANCEL_REASONS}
+        title={
+          wholeOrder ? "Cancel entire unpaid group" : `Cancel ${seat.name}`
+        }
+      >
+        <Toggle
+          checked={notify}
+          description="Sends a cancellation email explaining that refunds are handled separately."
+          label="Notify attendee"
+          onChange={setNotify}
+        />
+      </ReasonDialog>
+    </>
+  );
+}
+
+function SeatActions({ seat }: { seat: Seat }) {
+  const order = useQuery(api.registrationOperations.order, {
+    orderId: seat.orderId,
+  });
+  const override = useMutation(api.registrationOperations.overrideCompletion);
+  const [dialog, setDialog] = useState<"override" | null>(null);
+  const [message, setMessage] = useState("");
   return (
     <section className="space-y-3">
       <h4 className="font-semibold text-slate-900 text-sm">Registration</h4>
@@ -714,16 +826,7 @@ function SeatActions({ seat }: { seat: Seat }) {
         >
           Override completion
         </Button>
-        <Button
-          disabled={!cancelable}
-          onClick={() => setDialog("cancel")}
-          size="xs"
-          title={cancelable ? undefined : `Seat is already ${seat.state}`}
-          type="button"
-          variant="secondary"
-        >
-          Cancel registration
-        </Button>
+        <CancelSeatButton onDone={setMessage} seat={seat} />
       </div>
       <ResultNotice message={message} />
       {seat.state === "held" &&
@@ -731,38 +834,6 @@ function SeatActions({ seat }: { seat: Seat }) {
       (order.status === "unpaid" || order.status === "hold") ? (
         <RequestPayment order={order} />
       ) : null}
-      <ReasonDialog
-        confirmLabel="Cancel registration"
-        danger
-        description={
-          wholeOrder
-            ? `Cancels ALL ${order?.seats.length} attendees in this unpaid group and closes its payment links and invoices. This cannot cancel only one attendee.`
-            : "Releases this seat and cancels undelivered materials. Cancelling does not refund any payment; use the Payments section to refund."
-        }
-        onClose={() => setDialog(null)}
-        onConfirm={async (reason) => {
-          await cancel({
-            seatId: seat._id,
-            reason,
-            notify,
-            cancelWholeOrder: wholeOrder,
-          });
-          setMessage(
-            "Registration canceled. Payment and delivered codes are unchanged."
-          );
-        }}
-        open={dialog === "cancel"}
-        title={
-          wholeOrder ? "Cancel entire unpaid group" : `Cancel ${seat.name}`
-        }
-      >
-        <Toggle
-          checked={notify}
-          description="Sends a cancellation email explaining that refunds are handled separately."
-          label="Notify attendee"
-          onChange={setNotify}
-        />
-      </ReasonDialog>
       <ReasonDialog
         confirmLabel="Record override"
         description="Marks this attendee complete regardless of recorded outcomes. The override is audited with your reason."
