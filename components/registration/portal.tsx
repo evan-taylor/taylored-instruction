@@ -10,7 +10,7 @@ import {
   MapPin,
   Package,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -551,13 +551,21 @@ export function RegistrationPortal() {
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Bumped whenever the signed-in account changes, so a load that started
+  // under the previous account can never write its rows into this one.
+  const session = useRef(0);
+
   async function load(nextView: PortalView, nextCursor: string | null = null) {
+    const started = session.current;
     setLoading(true);
     try {
       const response = await fetch(
         `/api/registration/portal?view=${nextView}${nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ""}`
       );
       const data = await response.json();
+      if (started !== session.current) {
+        return;
+      }
       if (!response.ok) {
         setMessage({
           text:
@@ -573,28 +581,38 @@ export function RegistrationPortal() {
       setMore(!data.isDone);
       setLoaded(true);
     } catch {
-      setMessage({
-        text: "We couldn’t reach the portal. Check your connection and try again.",
-        tone: "danger",
-      });
+      if (started === session.current) {
+        setMessage({
+          text: "We couldn’t reach the portal. Check your connection and try again.",
+          tone: "danger",
+        });
+      }
     } finally {
-      setLoading(false);
+      if (started === session.current) {
+        setLoading(false);
+      }
     }
   }
   // The portal is whatever the signed-in email is registered for. Signing in
-  // loads it; signing out (in this or another tab) clears it.
+  // loads it; signing out (in this or another tab) clears it and retires any
+  // request still in flight.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reacts to auth state only
   useEffect(() => {
-    if (isAuthenticated) {
-      load("registrations");
-      return;
-    }
+    session.current += 1;
+    setMessage(null);
     setRows([]);
     setLoaded(false);
     setCursor(null);
     setMore(false);
+    setLoading(false);
+    if (isAuthenticated) {
+      load("registrations");
+    }
   }, [isAuthenticated]);
   const probing = checkingAuth || (isAuthenticated && !loaded && loading);
+  const ready = isAuthenticated && loaded;
+  const failed =
+    isAuthenticated && message !== null && !(loaded || loading || checkingAuth);
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -617,7 +635,19 @@ export function RegistrationPortal() {
             <SignInCard />
           </div>
         )}
-        {loaded ? (
+        {failed ? (
+          <div className="flex justify-center">
+            <Button
+              onClick={() => load("registrations")}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Try again
+            </Button>
+          </div>
+        ) : null}
+        {ready ? (
           <>
             <Tabs
               label="Portal sections"

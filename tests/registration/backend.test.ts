@@ -1303,6 +1303,53 @@ describe("Shared development service settings", () => {
       })
     ).rejects.toThrow("Configure STRIPE_SECRET_KEY with a test key");
   });
+  it("purges legacy portal grants and stored tokens in bounded batches", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.insert("registrationGrants", {
+        hash: "a".repeat(64),
+        email: "student@example.test",
+        purpose: "portal",
+        expires: Date.now(),
+        consumed: false,
+      });
+      const base = {
+        kind: "email" as const,
+        recipient: "student@example.test",
+        subject: "Confirmed",
+        body: "See your portal",
+        due: Date.now(),
+        attempts: 0,
+        state: "sent" as const,
+      };
+      await ctx.db.insert("registrationJobs", { ...base, key: "plain" });
+      await ctx.db.insert("registrationJobs", {
+        ...base,
+        key: "tokened",
+        portalToken: "legacy",
+      });
+    });
+    expect(
+      await f.t.mutation(
+        internal.registrationMigration.purgeLegacyPortalGrants,
+        {}
+      )
+    ).toEqual({ grants: 1, jobs: 1 });
+    expect(
+      await f.t.mutation(
+        internal.registrationMigration.purgeLegacyPortalGrants,
+        {}
+      )
+    ).toEqual({ grants: 0, jobs: 0 });
+    const leftovers = await f.t.run(async (ctx) => ({
+      grants: await ctx.db.query("registrationGrants").collect(),
+      tokens: (await ctx.db.query("registrationJobs").collect()).filter(
+        (job) => job.portalToken !== undefined
+      ),
+    }));
+    expect(leftovers.grants).toHaveLength(0);
+    expect(leftovers.tokens).toHaveLength(0);
+  });
   it.each([false, true])(
     "routes the sign-in code email correctly with live=%s",
     async (live) => {

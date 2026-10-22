@@ -204,9 +204,10 @@ export const purgeLegacyPortalGrants = internalMutation({
   handler: async (ctx) => {
     const grants = await ctx.db.query("registrationGrants").take(200);
     await Promise.all(grants.map((grant) => ctx.db.delete(grant._id)));
-    const jobs = (await ctx.db.query("registrationJobs").take(1000)).filter(
-      (job) => job.portalToken !== undefined
-    );
+    const jobs = await ctx.db
+      .query("registrationJobs")
+      .filter((q) => q.neq(q.field("portalToken"), undefined))
+      .take(200);
     await Promise.all(
       jobs.map((job) => ctx.db.patch(job._id, { portalToken: undefined }))
     );
