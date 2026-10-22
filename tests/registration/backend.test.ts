@@ -3193,19 +3193,24 @@ describe("Session files", () => {
         size: 13,
       }
     );
-    const listed = await f.adminClient.query(
-      api.registrationOperations.sessionFiles,
-      { sessionId: f.session }
-    );
+    const listed = (
+      await f.adminClient.query(api.registrationOperations.sessionFiles, {
+        sessionId: f.session,
+        paginationOpts: { numItems: 10, cursor: null },
+      })
+    ).page;
     expect(listed).toHaveLength(1);
     expect(listed[0]?.name).toBe("sign-in.txt");
     expect(listed[0]?.uploadedBy).toBe(ADMIN_EMAILS[0]);
     expect(listed[0]?.url).toBeTruthy();
     await f.adminClient.mutation(api.registrationOperations.removeFile, { id });
     expect(
-      await f.adminClient.query(api.registrationOperations.sessionFiles, {
-        sessionId: f.session,
-      })
+      (
+        await f.adminClient.query(api.registrationOperations.sessionFiles, {
+          sessionId: f.session,
+          paginationOpts: { numItems: 10, cursor: null },
+        })
+      ).page
     ).toHaveLength(0);
     expect(await f.t.run((ctx) => ctx.storage.getUrl(storageId))).toBeNull();
   });

@@ -1461,8 +1461,11 @@ export const attachFile = mutation({
   },
 });
 export const sessionFiles = query({
-  args: { sessionId: v.id("registrationSessions") },
-  returns: v.array(
+  args: {
+    sessionId: v.id("registrationSessions"),
+    paginationOpts: paginationOptsValidator,
+  },
+  returns: paginationResultValidator(
     v.object({
       _id: v.id("registrationSessionFiles"),
       name: v.string(),
@@ -1475,13 +1478,13 @@ export const sessionFiles = query({
   ),
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
-    const files = await ctx.db
+    const result = await ctx.db
       .query("registrationSessionFiles")
       .withIndex("by_sessionId", (q) => q.eq("sessionId", args.sessionId))
       .order("desc")
-      .take(BATCH);
-    return await Promise.all(
-      files.map(async (file) => {
+      .paginate(args.paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (file) => {
         const user = await ctx.db.get(file.uploadedBy);
         return {
           _id: file._id,
@@ -1494,6 +1497,7 @@ export const sessionFiles = query({
         };
       })
     );
+    return { ...result, page };
   },
 });
 export const removeFile = mutation({

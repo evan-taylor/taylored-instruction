@@ -8,6 +8,7 @@ import {
 import { ChevronDown, ChevronUp, Download, Mail, Search } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import { SessionFiles } from "@/components/admin/session-files";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -825,6 +826,14 @@ export function InstructorRoster({
           title={session?.title ?? "Session roster"}
         />
         {body}
+        <section className="space-y-4">
+          <h2 className="font-semibold text-slate-900 text-xl">Files</h2>
+          <p className="text-slate-500 text-sm">
+            Sign-in sheets, handouts, and paperwork shared by administrators for
+            this session. You can add files too.
+          </p>
+          <SessionFiles sessionId={sessionId} />
+        </section>
       </div>
     </div>
   );

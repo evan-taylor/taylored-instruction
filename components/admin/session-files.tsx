@@ -1,5 +1,5 @@
 "use client";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { Download, FileText, Trash2, Upload } from "lucide-react";
 import type React from "react";
 import { useId, useRef, useState } from "react";
@@ -31,9 +31,16 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-type SessionFile = NonNullable<
-  ReturnType<typeof useQuery<typeof api.registrationOperations.sessionFiles>>
->[number];
+type SessionFile = {
+  _id: Id<"registrationSessionFiles">;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: number;
+  uploadedBy: string;
+  url: string | null;
+};
+const PAGE = 50;
 
 /** Staff uploads for one session: sign-in sheets, handouts, completed paperwork. */
 export function SessionFiles({
@@ -41,9 +48,13 @@ export function SessionFiles({
 }: {
   sessionId: Id<"registrationSessions">;
 }) {
-  const files = useQuery(api.registrationOperations.sessionFiles, {
-    sessionId,
-  });
+  const paged = usePaginatedQuery(
+    api.registrationOperations.sessionFiles,
+    { sessionId },
+    { initialNumItems: PAGE }
+  );
+  const files: SessionFile[] | undefined =
+    paged.status === "LoadingFirstPage" ? undefined : paged.results;
   const uploadUrl = useMutation(api.registrationOperations.fileUploadUrl);
   const attach = useMutation(api.registrationOperations.attachFile);
   const remove = useMutation(api.registrationOperations.removeFile);
@@ -118,67 +129,84 @@ export function SessionFiles({
     );
   } else {
     list = (
-      <Table>
-        <THead>
-          <tr>
-            <TH>File</TH>
-            <TH>Size</TH>
-            <TH>Uploaded</TH>
-            <TH className="text-right">Actions</TH>
-          </tr>
-        </THead>
-        <TBody>
-          {files.map((file) => (
-            <TR key={file._id}>
-              <TD>
-                <div className="flex items-center gap-2">
-                  <FileText
-                    aria-hidden="true"
-                    className="h-4 w-4 shrink-0 text-slate-400"
-                  />
-                  <span className="font-medium text-slate-900">
-                    {file.name}
-                  </span>
-                </div>
-              </TD>
-              <TD className="whitespace-nowrap tabular-nums">
-                {formatSize(file.size)}
-              </TD>
-              <TD className="whitespace-nowrap">
-                <div>{formatDateTime(file.uploadedAt)}</div>
-                <div className="text-slate-500 text-xs">{file.uploadedBy}</div>
-              </TD>
-              <TD className="whitespace-nowrap text-right">
-                <div className="flex justify-end gap-1">
-                  {file.url ? (
+      <>
+        <Table>
+          <THead>
+            <tr>
+              <TH>File</TH>
+              <TH>Size</TH>
+              <TH>Uploaded</TH>
+              <TH className="text-right">Actions</TH>
+            </tr>
+          </THead>
+          <TBody>
+            {files.map((file) => (
+              <TR key={file._id}>
+                <TD>
+                  <div className="flex items-center gap-2">
+                    <FileText
+                      aria-hidden="true"
+                      className="h-4 w-4 shrink-0 text-slate-400"
+                    />
+                    <span className="font-medium text-slate-900">
+                      {file.name}
+                    </span>
+                  </div>
+                </TD>
+                <TD className="whitespace-nowrap tabular-nums">
+                  {formatSize(file.size)}
+                </TD>
+                <TD className="whitespace-nowrap">
+                  <div>{formatDateTime(file.uploadedAt)}</div>
+                  <div className="text-slate-500 text-xs">
+                    {file.uploadedBy}
+                  </div>
+                </TD>
+                <TD className="whitespace-nowrap text-right">
+                  <div className="flex justify-end gap-1">
+                    {file.url ? (
+                      <Button
+                        aria-label={`Download ${file.name}`}
+                        href={file.url}
+                        size="xs"
+                        target="_blank"
+                        variant="secondary"
+                      >
+                        <Download aria-hidden="true" className="h-3.5 w-3.5" />
+                        Download
+                      </Button>
+                    ) : null}
                     <Button
-                      aria-label={`Download ${file.name}`}
-                      href={file.url}
+                      aria-label={`Delete ${file.name}`}
+                      className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                      onClick={() => setRemoving(file)}
                       size="xs"
-                      target="_blank"
-                      variant="secondary"
+                      type="button"
+                      variant="ghost"
                     >
-                      <Download aria-hidden="true" className="h-3.5 w-3.5" />
-                      Download
+                      <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
+                      Delete
                     </Button>
-                  ) : null}
-                  <Button
-                    aria-label={`Delete ${file.name}`}
-                    className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                    onClick={() => setRemoving(file)}
-                    size="xs"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
-                    Delete
-                  </Button>
-                </div>
-              </TD>
-            </TR>
-          ))}
-        </TBody>
-      </Table>
+                  </div>
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
+        {paged.status === "CanLoadMore" || paged.status === "LoadingMore" ? (
+          <div className="flex justify-center">
+            <Button
+              disabled={paged.status === "LoadingMore"}
+              onClick={() => paged.loadMore(PAGE)}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              {paged.status === "LoadingMore" ? "Loading…" : "Load more files"}
+            </Button>
+          </div>
+        ) : null}
+      </>
     );
   }
   return (
