@@ -568,10 +568,17 @@ export function RegistrationPortal({ access = false }: { access?: boolean }) {
   const [token, setToken] = useState("");
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
   useEffect(() => {
-    setToken(access ? window.location.hash.slice(1) : "");
+    const emailed = access ? window.location.hash.slice(1) : "";
+    setToken(emailed);
+    if (emailed) {
+      // A fresh emailed link always gets its own confirmation, even when
+      // this browser already has access for another email.
+      setProbing(false);
+      return;
+    }
     load("registrations", null, true).finally(() => setProbing(false));
   }, []);
-  const confirming = access && token !== "" && !loaded;
+  const confirming = access && token !== "";
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-4xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
