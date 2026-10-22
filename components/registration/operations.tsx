@@ -89,6 +89,7 @@ export function ReasonDialog({
   title,
   description,
   confirmLabel = "Confirm",
+  cancelLabel,
   danger = false,
   presets = [],
   children,
@@ -99,6 +100,7 @@ export function ReasonDialog({
   title: React.ReactNode;
   description?: React.ReactNode;
   confirmLabel?: string;
+  cancelLabel?: string;
   danger?: boolean;
   /** Common reasons offered as one-tap chips; the text stays editable. */
   presets?: string[];
@@ -134,6 +136,7 @@ export function ReasonDialog({
   return (
     <ConfirmDialog
       busy={busy}
+      cancelLabel={cancelLabel}
       confirmLabel={confirmLabel}
       danger={danger}
       description={description}
@@ -771,6 +774,7 @@ export function CancelSeatButton({
         Cancel registration
       </Button>
       <ReasonDialog
+        cancelLabel="Keep registration"
         confirmLabel="Cancel registration"
         danger
         description={
@@ -787,7 +791,7 @@ export function CancelSeatButton({
             cancelWholeOrder: wholeOrder,
           });
           onDone?.(
-            "Registration canceled. Payment and delivered codes are unchanged."
+            `${seat.name}'s registration is canceled. Payment and delivered codes are unchanged.`
           );
         }}
         open={open}

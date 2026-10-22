@@ -681,8 +681,13 @@ export const cancelSeat = mutation({
       throw new ConvexError("Reason required");
     }
     const seat = await ctx.db.get(args.seatId);
-    if (!seat || seat.state === "canceled" || seat.state === "transferred") {
-      return null;
+    if (!seat) {
+      throw new ConvexError("This registration no longer exists.");
+    }
+    if (seat.state === "canceled" || seat.state === "transferred") {
+      throw new ConvexError(
+        `This registration is already ${seat.state}; nothing was changed.`
+      );
     }
     const order = await ctx.db.get(seat.orderId);
     if (order && (order.status === "hold" || order.status === "unpaid")) {

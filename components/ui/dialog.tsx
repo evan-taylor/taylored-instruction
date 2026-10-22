@@ -146,6 +146,7 @@ export function ConfirmDialog({
   title,
   description,
   confirmLabel = "Confirm",
+  cancelLabel = "Cancel",
   danger = false,
   busy = false,
   children,
@@ -156,6 +157,8 @@ export function ConfirmDialog({
   title: React.ReactNode;
   description?: React.ReactNode;
   confirmLabel?: string;
+  /** Dismiss label; a dialog about cancelling something must not also say "Cancel". */
+  cancelLabel?: string;
   danger?: boolean;
   busy?: boolean;
   children?: React.ReactNode;
@@ -174,7 +177,7 @@ export function ConfirmDialog({
       footer={
         <>
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
-            Cancel
+            {cancelLabel}
           </Button>
           <Button
             disabled={working}

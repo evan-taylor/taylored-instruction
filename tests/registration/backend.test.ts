@@ -1943,6 +1943,14 @@ describe("PR review regressions", () => {
         })
       ).every((s) => s.state === "canceled")
     ).toBe(true);
+    // A second cancel must say so instead of quietly succeeding.
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.cancelSeat, {
+        seatId: first._id,
+        reason: "Again",
+        notify: false,
+      })
+    ).rejects.toThrow("already canceled");
     expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(100);
   });
   it("retains invoice tax on offline settlement and blocks bypassing a payable invoice", async () => {
