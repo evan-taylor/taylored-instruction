@@ -107,7 +107,8 @@ export const registrationTables = {
       "materialId",
       "sessionId",
       "state",
-    ]),
+    ])
+    .index("by_sessionId", ["sessionId"]),
   registrationCoupons: defineTable(couponFields).index("by_code", ["code"]),
   registrationOrders: defineTable({
     requestKey: v.string(),
@@ -283,7 +284,8 @@ export const registrationTables = {
       "sessionId",
       "state",
       "paidAt",
-    ]),
+    ])
+    .index("by_sessionId", ["sessionId"]),
   registrationAssignments: defineTable({
     entitlementId: v.id("registrationEntitlements"),
     codeId: v.id("registrationCodes"),

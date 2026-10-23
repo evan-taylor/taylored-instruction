@@ -3705,8 +3705,10 @@ describe("Per-session keycode banks", () => {
     expect(banks).toEqual([
       expect.objectContaining({
         materialId: f.material,
+        attached: true,
         available: 0,
         assigned: 1,
+        inUse: 1,
         waiting: 0,
       }),
     ]);
@@ -3800,6 +3802,41 @@ describe("Per-session keycode banks", () => {
     expect(await f.urlFor("mover@example.test")).toBe(
       "https://agency.example.test/class-b/1"
     );
+    const [left] = await f.adminClient.query(
+      api.registrationOperations.sessionCodeBanks,
+      { sessionId: f.session }
+    );
+    // The mover keeps their old link, but it no longer fills a seat here.
+    expect(left).toEqual(
+      expect.objectContaining({ assigned: 1, inUse: 0, available: 0 })
+    );
+  });
+
+  it("keeps a detached bank visible while its students are still owed links", async () => {
+    const f = await perSessionFixture();
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "owed@example.test")
+    );
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.session, { overrides: { materials: [] } })
+    );
+    expect(
+      await f.adminClient.query(api.registrationOperations.sessionCodeBanks, {
+        sessionId: f.session,
+      })
+    ).toEqual([
+      expect.objectContaining({
+        materialId: f.material,
+        attached: false,
+        waiting: 1,
+      }),
+    ]);
+    expect(
+      await f.adminClient.query(api.registrationOperations.sessionCodeBanks, {
+        sessionId: f.other,
+      })
+    ).toEqual([expect.objectContaining({ attached: true, waiting: 0 })]);
   });
 
   it("keeps per-session banks off self-paced templates", async () => {

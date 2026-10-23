@@ -272,16 +272,25 @@ async function sessionBank(
   }
   return session;
 }
-/** Per-session keycode materials attached to a session, with its bank counts. */
+/**
+ * Per-session keycode banks for a session: every per-session material attached
+ * to it, plus any that still hold links or owe links to its students after
+ * being detached.
+ */
 export const sessionCodeBanks = query({
   args: { sessionId: v.id("registrationSessions") },
   returns: v.array(
     v.object({
       materialId: v.id("registrationMaterials"),
       title: v.string(),
+      attached: v.boolean(),
       available: v.number(),
+      /** Every link ever handed out, including transferred and replaced ones. */
       assigned: v.number(),
       retired: v.number(),
+      /** Links currently held by the session's active students. */
+      inUse: v.number(),
+      /** Active students still waiting for a link. */
       waiting: v.number(),
     })
   ),
@@ -292,47 +301,58 @@ export const sessionCodeBanks = query({
     if (!(session && course)) {
       return [];
     }
-    const attached = effective(course.settings, session.overrides).materials;
-    const docs = await Promise.all(
-      attached.map((a) => ctx.db.get(a.materialId))
+    // A session bank holds about one link per seat, so reading it whole stays small.
+    const [codes, entitlements] = await Promise.all([
+      ctx.db
+        .query("registrationCodes")
+        .withIndex("by_sessionId", (q) => q.eq("sessionId", session._id))
+        .collect(),
+      ctx.db
+        .query("registrationEntitlements")
+        .withIndex("by_sessionId", (q) => q.eq("sessionId", session._id))
+        .collect(),
+    ]);
+    const seats = await Promise.all(
+      [...new Set(entitlements.map((e) => e.seatId))].map((id) =>
+        ctx.db.get(id)
+      )
     );
-    // A session bank holds one link per seat, so reading it whole stays small.
-    return await Promise.all(
-      docs
-        .filter(
-          (m): m is Doc<"registrationMaterials"> =>
-            m?.kind === "keycode" && m.perSession === true
-        )
-        .map(async (material) => {
-          const codes = await ctx.db
-            .query("registrationCodes")
-            .withIndex("by_materialId_and_sessionId_and_state", (q) =>
-              q.eq("materialId", material._id).eq("sessionId", session._id)
-            )
-            .collect();
-          const waiting = await ctx.db
-            .query("registrationEntitlements")
-            .withIndex(
-              "by_materialId_and_sessionId_and_state_and_paidAt",
-              (q) =>
-                q
-                  .eq("materialId", material._id)
-                  .eq("sessionId", session._id)
-                  .eq("state", "pending")
-            )
-            .collect();
-          const count = (state: Doc<"registrationCodes">["state"]) =>
-            codes.filter((c) => c.state === state).length;
-          return {
-            materialId: material._id,
-            title: material.title,
-            available: count("available"),
-            assigned: count("assigned"),
-            retired: count("retired"),
-            waiting: waiting.length,
-          };
-        })
+    const active = new Set(
+      seats.filter((s) => s?.state === "active").map((s) => s?._id)
     );
+    const current = entitlements.filter((e) => active.has(e.seatId));
+    const attached = new Set<Id<"registrationMaterials">>(
+      effective(course.settings, session.overrides).materials.map(
+        (m) => m.materialId
+      )
+    );
+    const ids = new Set([
+      ...attached,
+      ...codes.map((c) => c.materialId),
+      ...entitlements.map((e) => e.materialId),
+    ]);
+    const docs = await Promise.all([...ids].map((id) => ctx.db.get(id)));
+    return docs
+      .filter(
+        (m): m is Doc<"registrationMaterials"> =>
+          m?.kind === "keycode" && m.perSession === true
+      )
+      .map((material) => {
+        const bank = codes.filter((c) => c.materialId === material._id);
+        const students = current.filter((e) => e.materialId === material._id);
+        const count = (state: Doc<"registrationCodes">["state"]) =>
+          bank.filter((c) => c.state === state).length;
+        return {
+          materialId: material._id,
+          title: material.title,
+          attached: attached.has(material._id),
+          available: count("available"),
+          assigned: count("assigned"),
+          retired: count("retired"),
+          inUse: students.filter((e) => e.state === "ready").length,
+          waiting: students.filter((e) => e.state === "pending").length,
+        };
+      });
   },
 });
 export const restock = internalMutation({

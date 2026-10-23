@@ -20,9 +20,11 @@ import { RestockModal } from "./materials";
 type Bank = {
   materialId: Id<"registrationMaterials">;
   title: string;
+  attached: boolean;
   available: number;
   assigned: number;
   retired: number;
+  inUse: number;
   waiting: number;
 };
 
@@ -34,12 +36,11 @@ function BankStatus({ bank, capacity }: { bank: Bank; capacity: number }) {
       </Badge>
     );
   }
-  if (bank.available + bank.assigned < capacity) {
-    return (
-      <Badge tone="warning">
-        {capacity - bank.available - bank.assigned} short of capacity
-      </Badge>
-    );
+  // Only links held by enrolled students fill seats; links kept by
+  // transferred or replaced registrations can't serve a reopened seat.
+  const short = capacity - bank.inUse - bank.available;
+  if (short > 0) {
+    return <Badge tone="warning">{short} short of capacity</Badge>;
   }
   return <Badge tone="success">Covers every seat</Badge>;
 }
@@ -58,10 +59,16 @@ function BankCard({
         <div className="space-y-1.5">
           <CardTitle>{bank.title}</CardTitle>
           <CardDescription className="tabular-nums">
-            {bank.available} unused · {bank.assigned} assigned · {bank.retired}{" "}
-            retired · {session.capacity} seats
+            {bank.available} unused · {bank.inUse} with enrolled students ·{" "}
+            {bank.assigned - bank.inUse} kept by transferred or replaced
+            registrations · {bank.retired} retired · {session.capacity} seats
           </CardDescription>
-          <BankStatus bank={bank} capacity={session.capacity} />
+          <div className="flex flex-wrap gap-1.5">
+            <BankStatus bank={bank} capacity={session.capacity} />
+            {bank.attached ? null : (
+              <Badge tone="neutral">No longer attached to this session</Badge>
+            )}
+          </div>
         </div>
         <Button onClick={() => setLoading(true)} size="xs" type="button">
           Add links
