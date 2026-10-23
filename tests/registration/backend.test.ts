@@ -3617,3 +3617,252 @@ it("keeps physical materials pending until authorized handoff and snapshots inst
     })
   ).rejects.toThrow("active, paid");
 });
+
+describe("Per-session keycode banks", () => {
+  async function perSessionFixture() {
+    const f = await fixture(5);
+    const other = await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.material, { perSession: true });
+      await ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          tuition: 0,
+          materials: [
+            {
+              id: "agency",
+              materialId: f.material,
+              title: "Agency course link",
+              policy: "included",
+              cents: 0,
+            },
+          ],
+        },
+      });
+      const original = await ctx.db.get(f.session);
+      if (!original) {
+        throw new Error("Missing session");
+      }
+      const { _id, _creationTime, ...value } = original;
+      return await ctx.db.insert("registrationSessions", {
+        ...value,
+        title: "Concurrent class",
+        code: "concurrent-class",
+      });
+    });
+    const load = (sessionId: typeof other, input: string) =>
+      f.adminClient.mutation(api.registrationOperations.addStock, {
+        materialId: f.material,
+        sessionId,
+        input,
+        preview: false,
+      });
+    const urlFor = (address: string) =>
+      f.t.run(async (ctx) => {
+        const seats = await ctx.db
+          .query("registrationSeats")
+          .withIndex("by_email", (q) => q.eq("email", address))
+          .collect();
+        const active = seats.find((s) => s.state === "active");
+        if (!active) {
+          return null;
+        }
+        const entitlement = await ctx.db
+          .query("registrationEntitlements")
+          .withIndex("by_seatId", (q) => q.eq("seatId", active._id))
+          .first();
+        return entitlement?.url ?? null;
+      });
+    return { ...f, other, load, urlFor };
+  }
+
+  it("gives each student a link from their own session's bank only", async () => {
+    const f = await perSessionFixture();
+    await f.load(f.session, "https://agency.example.test/class-a/1");
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.other, "b@example.test")
+    );
+    expect(await f.urlFor("b@example.test")).toBeNull();
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "a@example.test")
+    );
+    expect(await f.urlFor("a@example.test")).toBe(
+      "https://agency.example.test/class-a/1"
+    );
+    await f.load(f.other, "https://agency.example.test/class-b/1");
+    await f.t.mutation(internal.registrationOperations.restock, {
+      materialId: f.material,
+      sessionId: f.other,
+    });
+    expect(await f.urlFor("b@example.test")).toBe(
+      "https://agency.example.test/class-b/1"
+    );
+    const banks = await f.adminClient.query(
+      api.registrationOperations.sessionCodeBanks,
+      { sessionId: f.other }
+    );
+    expect(banks).toEqual([
+      expect.objectContaining({
+        materialId: f.material,
+        attached: true,
+        available: 0,
+        assigned: 1,
+        inUse: 1,
+        waiting: 0,
+      }),
+    ]);
+  });
+
+  it("requires a session for per-session links and refuses one for a shared pool", async () => {
+    const f = await perSessionFixture();
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.addStock, {
+        materialId: f.material,
+        input: "https://agency.example.test/nowhere",
+        preview: false,
+      })
+    ).rejects.toThrow("choose the session");
+    const shared = await f.t.run((ctx) =>
+      ctx.db.insert("registrationMaterials", {
+        title: "Shared pool",
+        kind: "keycode",
+        version: 1,
+        archived: false,
+      })
+    );
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.addStock, {
+        materialId: shared,
+        sessionId: f.session,
+        input: "https://codes.example.test/shared",
+        preview: false,
+      })
+    ).rejects.toThrow("shared pool");
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.saveMaterial, {
+        id: f.material,
+        title: "Online code",
+        kind: "keycode",
+        archived: false,
+        perSession: false,
+      })
+    ).rejects.toThrow("can't be switched");
+  });
+
+  it("refuses to hand one session's link to a student in another session", async () => {
+    const f = await perSessionFixture();
+    await f.load(f.session, "https://agency.example.test/class-a/1");
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.other, "b@example.test")
+    );
+    const { code, entitlement } = await f.t.run(async (ctx) => ({
+      code: await ctx.db.query("registrationCodes").first(),
+      entitlement: await ctx.db.query("registrationEntitlements").first(),
+    }));
+    if (!(code && entitlement)) {
+      throw new Error("Missing fixture rows");
+    }
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.manageCode, {
+        codeId: code._id,
+        entitlementId: entitlement._id,
+        reason: "Manual",
+      })
+    ).rejects.toThrow("different session");
+  });
+
+  it("draws a new link from the target session when a student transfers", async () => {
+    const f = await perSessionFixture();
+    await f.load(f.session, "https://agency.example.test/class-a/1");
+    await f.load(f.other, "https://agency.example.test/class-b/1");
+    const order = await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "mover@example.test")
+    );
+    expect(await f.urlFor("mover@example.test")).toBe(
+      "https://agency.example.test/class-a/1"
+    );
+    const source = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: order.orderId,
+      })
+    ).at(0);
+    if (!source) {
+      throw new Error("Missing seat");
+    }
+    await f.adminClient.mutation(api.registrationTransfers.transfer, {
+      seatId: source._id,
+      sessionId: f.other,
+      choice: "keep",
+      reason: "Moved classes",
+      requestKey: crypto.randomUUID(),
+    });
+    expect(await f.urlFor("mover@example.test")).toBe(
+      "https://agency.example.test/class-b/1"
+    );
+    const [left] = await f.adminClient.query(
+      api.registrationOperations.sessionCodeBanks,
+      { sessionId: f.session }
+    );
+    // The mover keeps their old link, but it no longer fills a seat here.
+    expect(left).toEqual(
+      expect.objectContaining({ assigned: 1, inUse: 0, available: 0 })
+    );
+  });
+
+  it("keeps a detached bank visible while its students are still owed links", async () => {
+    const f = await perSessionFixture();
+    await f.t.mutation(
+      api.registration.reserve,
+      attempt(f.course, f.session, "owed@example.test")
+    );
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.session, { overrides: { materials: [] } })
+    );
+    expect(
+      await f.adminClient.query(api.registrationOperations.sessionCodeBanks, {
+        sessionId: f.session,
+      })
+    ).toEqual([
+      expect.objectContaining({
+        materialId: f.material,
+        attached: false,
+        waiting: 1,
+      }),
+    ]);
+    expect(
+      await f.adminClient.query(api.registrationOperations.sessionCodeBanks, {
+        sessionId: f.other,
+      })
+    ).toEqual([expect.objectContaining({ attached: true, waiting: 0 })]);
+  });
+
+  it("keeps per-session banks off self-paced templates", async () => {
+    const f = await perSessionFixture();
+    await expect(
+      f.adminClient.mutation(api.registration.saveCourse, {
+        slug: "self-paced-agency",
+        title: "Self-paced",
+        description: "",
+        delivery: "self-paced",
+        publication: "draft",
+        enrollmentOpen: false,
+        revision: 0,
+        settings: {
+          ...config,
+          materials: [
+            {
+              id: "agency",
+              materialId: f.material,
+              title: "Agency course link",
+              policy: "included",
+              cents: 0,
+            },
+          ],
+        },
+      })
+    ).rejects.toThrow("Self-paced");
+  });
+});

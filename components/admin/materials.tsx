@@ -59,13 +59,29 @@ const KIND_TONES = {
   keycode: "primary",
 } as const;
 
-function KindBadge({ kind }: { kind: Kind }) {
-  return <Badge tone={KIND_TONES[kind]}>{KIND_LABELS[kind]}</Badge>;
+function KindBadge({ material }: { material: Material }) {
+  return (
+    <Badge tone={KIND_TONES[material.kind]}>
+      {material.perSession
+        ? "Per-session keycodes"
+        : KIND_LABELS[material.kind]}
+    </Badge>
+  );
 }
 
 function StockCell({ material }: { material: Material }) {
   if (material.kind !== "keycode") {
     return <span className="text-slate-400">—</span>;
+  }
+  if (material.perSession) {
+    return (
+      <div className="space-y-0.5 text-xs">
+        <div className="text-slate-700">Loaded on each session</div>
+        <div className="text-slate-500 tabular-nums">
+          {material.availableCount ?? 0} unused across sessions
+        </div>
+      </div>
+    );
   }
   const available = material.availableCount ?? 0;
   const assigned = material.assignedCount ?? 0;
@@ -130,7 +146,7 @@ function MaterialRow({
         ) : null}
       </TD>
       <TD>
-        <KindBadge kind={material.kind} />
+        <KindBadge material={material} />
       </TD>
       <TD className="tabular-nums">v{material.version}</TD>
       <TD>
@@ -170,14 +186,16 @@ function MaterialRow({
           </Button>
           {keycode ? (
             <>
-              <Button
-                onClick={onRestock}
-                size="xs"
-                type="button"
-                variant="secondary"
-              >
-                Restock
-              </Button>
+              {material.perSession ? null : (
+                <Button
+                  onClick={onRestock}
+                  size="xs"
+                  type="button"
+                  variant="secondary"
+                >
+                  Restock
+                </Button>
+              )}
               <Button
                 onClick={onInventory}
                 size="xs"
@@ -322,6 +340,37 @@ function PdfUpload({
   );
 }
 
+function KeycodeOptions({
+  perSession,
+  locked,
+  onChange,
+}: {
+  perSession: boolean;
+  locked: boolean;
+  onChange: (perSession: boolean) => void;
+}) {
+  return (
+    <>
+      <Toggle
+        checked={perSession}
+        description={
+          locked
+            ? "Fixed once the material exists. Create a new material to change it."
+            : "Use when an agency issues a set of links for each class. Each session gets its own bank, and students only receive a link from their session."
+        }
+        disabled={locked}
+        label="Separate links for each session"
+        onChange={onChange}
+      />
+      <Notice tone="info">
+        {perSession
+          ? "After saving, attach this material to a course template, then load each session's links from that session's Keycodes tab. Paid students in the session are fulfilled oldest-first as links arrive."
+          : "After saving, use Restock to paste unique links. Paid students are fulfilled oldest-first as stock arrives."}
+      </Notice>
+    </>
+  );
+}
+
 function MaterialEditor({
   material,
   onClose,
@@ -342,6 +391,7 @@ function MaterialEditor({
   const [fileName, setFileName] = useState("");
   const [archived, setArchived] = useState(material?.archived ?? false);
   const [taxCode, setTaxCode] = useState(material?.taxCode ?? "");
+  const [perSession, setPerSession] = useState(material?.perSession ?? false);
   const [uploading, setUploading] = useState(false);
   const formId = useId();
   const [busy, setBusy] = useState(false);
@@ -380,6 +430,7 @@ function MaterialEditor({
         storageId,
         archived,
         taxCode: taxCode || undefined,
+        perSession: kind === "keycode" && perSession,
       });
       onClose();
     } catch (error) {
@@ -506,10 +557,11 @@ function MaterialEditor({
           />
         ) : null}
         {kind === "keycode" ? (
-          <Notice tone="info">
-            After saving, use Restock to paste unique links. Paid students are
-            fulfilled oldest-first as stock arrives.
-          </Notice>
+          <KeycodeOptions
+            locked={material !== undefined}
+            onChange={setPerSession}
+            perSession={perSession}
+          />
         ) : null}
         <Field
           hint="Redemption steps or pickup instructions, shown in the secure portal after payment."
@@ -556,11 +608,14 @@ function CountBadge({
   );
 }
 
-function RestockModal({
+export function RestockModal({
   material,
+  session,
   onClose,
 }: {
-  material: Material;
+  material: Pick<Material, "_id" | "title">;
+  /** Loads the links into this session's bank (per-session materials). */
+  session?: Pick<Doc<"registrationSessions">, "_id" | "title">;
   onClose: () => void;
 }) {
   const addStock = useMutation(api.registrationOperations.addStock);
@@ -596,6 +651,7 @@ function RestockModal({
     try {
       const result = await addStock({
         materialId: material._id,
+        sessionId: session?._id,
         input: links,
         preview: dryRun,
       });
@@ -609,7 +665,9 @@ function RestockModal({
         setPreview(undefined);
         setLinks("");
         setMessage(
-          `${pluralize(result.added, "link")} added. Outstanding paid entitlements are fulfilled oldest-first automatically.`
+          session
+            ? `${pluralize(result.added, "link")} added to ${session.title}. Paid students in this session who are waiting get one oldest-first automatically.`
+            : `${pluralize(result.added, "link")} added. Outstanding paid entitlements are fulfilled oldest-first automatically.`
         );
       }
     } catch (error) {
@@ -621,7 +679,11 @@ function RestockModal({
 
   return (
     <Modal
-      description="Paste unique HTTPS links, one per line. Duplicates already in any inventory are skipped."
+      description={
+        session
+          ? "Paste the links issued for this session, one per line. Only students registered for this session receive them. Duplicates already in any inventory are skipped."
+          : "Paste unique HTTPS links, one per line. Duplicates already in any inventory are skipped."
+      }
       footer={
         <>
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
@@ -649,7 +711,11 @@ function RestockModal({
       onClose={onClose}
       open
       size="lg"
-      title={`Restock ${material.title}`}
+      title={
+        session
+          ? `Load ${material.title} links for ${session.title}`
+          : `Restock ${material.title}`
+      }
     >
       <div className="space-y-4">
         <Field
@@ -730,7 +796,7 @@ export function MaterialAdmin() {
             New material
           </Button>
         }
-        description="Three kinds: a PDF you upload, a shared link every student receives, or a keycode inventory that hands out one unique link per paid seat. Materials are reusable across course templates."
+        description="Three kinds: a PDF you upload, a shared link every student receives, or a keycode inventory that hands out one unique link per paid seat, from one shared pool or a separate bank for each session. Materials are reusable across course templates."
         title="Materials & keycodes"
       />
       <Card>
@@ -763,14 +829,16 @@ export function MaterialAdmin() {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                onClick={() => setRestocking(inventoryMaterial)}
-                size="xs"
-                type="button"
-                variant="secondary"
-              >
-                Restock
-              </Button>
+              {inventoryMaterial.perSession ? null : (
+                <Button
+                  onClick={() => setRestocking(inventoryMaterial)}
+                  size="xs"
+                  type="button"
+                  variant="secondary"
+                >
+                  Restock
+                </Button>
+              )}
               <Button
                 onClick={() => setInventoryId(undefined)}
                 size="xs"
@@ -782,6 +850,15 @@ export function MaterialAdmin() {
             </div>
           </CardHeader>
           <CardContent className="px-0 pt-4 pb-0">
+            {inventoryMaterial.perSession ? (
+              <div className="px-5 pb-4">
+                <Notice tone="info">
+                  These are every session's links together. Load new links and
+                  assign them from each session's Keycodes tab, so students only
+                  get a link from their own session.
+                </Notice>
+              </div>
+            ) : null}
             <InventoryManager
               key={inventoryMaterial._id}
               materialId={inventoryMaterial._id}

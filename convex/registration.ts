@@ -332,6 +332,16 @@ export const saveCourse = mutation({
     if (previous && previous.delivery !== value.delivery) {
       throw new ConvexError("Duplicate the template to change delivery type");
     }
+    if (value.delivery === "self-paced") {
+      const materials = await Promise.all(
+        value.settings.materials.map((m) => ctx.db.get(m.materialId))
+      );
+      if (materials.some((m) => m?.perSession)) {
+        throw new ConvexError(
+          "Self-paced courses have no sessions, so they can't use a per-session code bank"
+        );
+      }
+    }
     const revision = (previous?.revision ?? 0) + 1;
     const saved =
       id ??

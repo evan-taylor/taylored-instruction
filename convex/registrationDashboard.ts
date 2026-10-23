@@ -141,6 +141,7 @@ export const summary = query({
         .filter(
           (m) =>
             m.kind === "keycode" &&
+            !m.perSession &&
             !m.archived &&
             (m.availableCount ?? 0) <= LOW_STOCK
         )

@@ -211,6 +211,33 @@ export async function release(
     );
   }
 }
+/**
+ * The code bank a seat draws from: one session's links for a per-session
+ * material, otherwise the material's shared pool (no session).
+ */
+function bankSession(
+  material: Doc<"registrationMaterials">,
+  sessionId: Id<"registrationSessions"> | undefined
+) {
+  return material.kind === "keycode" && material.perSession
+    ? sessionId
+    : undefined;
+}
+export async function nextCode(
+  ctx: QueryCtx,
+  materialId: Id<"registrationMaterials">,
+  sessionId: Id<"registrationSessions"> | undefined
+) {
+  return await ctx.db
+    .query("registrationCodes")
+    .withIndex("by_materialId_and_sessionId_and_state", (q) =>
+      q
+        .eq("materialId", materialId)
+        .eq("sessionId", sessionId)
+        .eq("state", "available")
+    )
+    .first();
+}
 export async function grantMaterial(
   ctx: MutationCtx,
   seat: Doc<"registrationSeats">,
@@ -237,6 +264,7 @@ export async function grantMaterial(
   if (!(material && seat.settledAt)) {
     return;
   }
+  const sessionId = bankSession(material, seat.sessionId);
   const id = await ctx.db.insert("registrationEntitlements", {
     seatId: seat._id,
     materialId: material._id,
@@ -252,6 +280,7 @@ export async function grantMaterial(
       material.kind === "keycode" || material.kind === "physical"
         ? "pending"
         : "ready",
+    sessionId,
   });
   if (material.kind !== "keycode" && material.kind !== "physical") {
     await enqueue(ctx, {
@@ -265,50 +294,60 @@ export async function grantMaterial(
     });
   }
   if (material.kind === "keycode") {
-    const code = await ctx.db
-      .query("registrationCodes")
-      .withIndex("by_materialId_and_state", (q) =>
-        q.eq("materialId", material._id).eq("state", "available")
-      )
-      .first();
-    const firstPending = await ctx.db
-      .query("registrationEntitlements")
-      .withIndex("by_materialId_and_state_and_paidAt", (q) =>
-        q.eq("materialId", material._id).eq("state", "pending")
-      )
-      .first();
-    if (code && firstPending?._id === id) {
-      await assignCode(ctx, id, code, "system", "settlement");
-    } else {
-      if (code) {
-        await ctx.scheduler.runAfter(
-          0,
-          internal.registrationOperations.restock,
-          { materialId: material._id }
-        );
-      }
-      await enqueue(ctx, {
-        key: `shortage:${id}`,
-        kind: "shortage",
-        recipient: seat.email,
-        subject: `Material pending: ${material.title}`,
-        body: "Your registration is confirmed. Please contact Taylored Instruction for your missing keycode. Other available materials are in your portal.",
-        due: Date.now(),
-        seatId: seat._id,
-        entitlementId: id,
-      });
-      await enqueue(ctx, {
-        key: `admin-shortage:${id}`,
-        kind: "admin-shortage",
-        recipient: process.env.REGISTRATION_ADMIN_EMAIL ?? ADMIN_EMAILS[0],
-        subject: "Keycode inventory shortage",
-        body: `${seat.name} (${seat.email}), order ${seat.orderId}, material ${material.title} needs fulfillment.`,
-        due: Date.now(),
-        seatId: seat._id,
-        entitlementId: id,
-      });
-    }
+    await fulfillKeycode(ctx, seat, material, id, sessionId);
   }
+}
+/** Assigns a code now if this seat is next in its bank, else reports a shortage. */
+async function fulfillKeycode(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats">,
+  material: Doc<"registrationMaterials">,
+  id: Id<"registrationEntitlements">,
+  sessionId: Id<"registrationSessions"> | undefined
+) {
+  const code = await nextCode(ctx, material._id, sessionId);
+  const firstPending = await ctx.db
+    .query("registrationEntitlements")
+    .withIndex("by_materialId_and_sessionId_and_state_and_paidAt", (q) =>
+      q
+        .eq("materialId", material._id)
+        .eq("sessionId", sessionId)
+        .eq("state", "pending")
+    )
+    .first();
+  if (code && firstPending?._id === id) {
+    await assignCode(ctx, id, code, "system", "settlement");
+    return;
+  }
+  if (code) {
+    await ctx.scheduler.runAfter(0, internal.registrationOperations.restock, {
+      materialId: material._id,
+      sessionId,
+    });
+  }
+  const session = sessionId ? await ctx.db.get(sessionId) : null;
+  await enqueue(ctx, {
+    key: `shortage:${id}`,
+    kind: "shortage",
+    recipient: seat.email,
+    subject: `Material pending: ${material.title}`,
+    body: "Your registration is confirmed. Please contact Taylored Instruction for your missing keycode. Other available materials are in your portal.",
+    due: Date.now(),
+    seatId: seat._id,
+    entitlementId: id,
+  });
+  await enqueue(ctx, {
+    key: `admin-shortage:${id}`,
+    kind: "admin-shortage",
+    recipient: process.env.REGISTRATION_ADMIN_EMAIL ?? ADMIN_EMAILS[0],
+    subject: session
+      ? `Keycode links needed: ${session.title}`
+      : "Keycode inventory shortage",
+    body: `${seat.name} (${seat.email}), order ${seat.orderId}, material ${material.title} needs fulfillment.${session ? ` Load this session's links on its Keycodes tab (session ${session.code}).` : ""}`,
+    due: Date.now(),
+    seatId: seat._id,
+    entitlementId: id,
+  });
 }
 export async function assignCode(
   ctx: MutationCtx,
@@ -319,6 +358,11 @@ export async function assignCode(
   replace = false
 ) {
   const entitlement = await ctx.db.get(entitlementId);
+  if (entitlement && code.sessionId !== entitlement.sessionId) {
+    throw new ConvexError(
+      "This link belongs to a different session's bank than the student"
+    );
+  }
   if (
     !entitlement ||
     code.state !== "available" ||

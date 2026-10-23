@@ -85,6 +85,8 @@ export const registrationTables = {
     version: v.number(),
     archived: v.boolean(),
     taxCode: v.optional(v.string()),
+    /** Keycode materials only: every session loads its own bank of links. */
+    perSession: v.optional(v.boolean()),
   }).index("by_hovnId", ["hovnId"]),
   registrationCodes: defineTable({
     materialId: v.id("registrationMaterials"),
@@ -96,9 +98,17 @@ export const registrationTables = {
       v.literal("retired")
     ),
     entitlementId: v.optional(v.id("registrationEntitlements")),
+    /** Set for per-session materials; absent codes belong to the shared pool. */
+    sessionId: v.optional(v.id("registrationSessions")),
   })
     .index("by_fingerprint", ["fingerprint"])
-    .index("by_materialId_and_state", ["materialId", "state"]),
+    .index("by_materialId_and_state", ["materialId", "state"])
+    .index("by_materialId_and_sessionId_and_state", [
+      "materialId",
+      "sessionId",
+      "state",
+    ])
+    .index("by_sessionId", ["sessionId"]),
   registrationCoupons: defineTable(couponFields).index("by_code", ["code"]),
   registrationOrders: defineTable({
     requestKey: v.string(),
@@ -258,6 +268,8 @@ export const registrationTables = {
     ),
     paidAt: v.number(),
     codeId: v.optional(v.id("registrationCodes")),
+    /** The session bank a per-session keycode is drawn from. */
+    sessionId: v.optional(v.id("registrationSessions")),
   })
     .index("by_seatId", ["seatId"])
     .index("by_seatId_and_materialId", ["seatId", "materialId"])
@@ -266,7 +278,14 @@ export const registrationTables = {
       "materialId",
       "state",
       "paidAt",
-    ]),
+    ])
+    .index("by_materialId_and_sessionId_and_state_and_paidAt", [
+      "materialId",
+      "sessionId",
+      "state",
+      "paidAt",
+    ])
+    .index("by_sessionId", ["sessionId"]),
   registrationAssignments: defineTable({
     entitlementId: v.id("registrationEntitlements"),
     codeId: v.id("registrationCodes"),

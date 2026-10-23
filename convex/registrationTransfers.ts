@@ -230,6 +230,8 @@ export const transfer = mutation({
       }
     }
     // Preserve historical assignments, and reference matching already-delivered assets without consuming stock again.
+    // A per-session code is tied to the old session's agency record, so the
+    // new seat draws a fresh one from the target session's bank instead.
     const oldEntitlements = await ctx.db
       .query("registrationEntitlements")
       .withIndex("by_seatId", (q) => q.eq("seatId", source._id))
@@ -239,6 +241,7 @@ export const transfer = mutation({
         .filter(
           (e) =>
             e.state === "ready" &&
+            e.sessionId === undefined &&
             snapshot.materials.some((m) => m.materialId === e.materialId)
         )
         .map(({ _id, _creationTime, ...entitlement }) =>
