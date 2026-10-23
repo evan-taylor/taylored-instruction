@@ -178,3 +178,31 @@ it("shows a waived payment alongside a zero total", () => {
   expect(count(result.html, ">$170.00</td>")).toBe(2);
   expect(count(result.html, ">$0.00</td>")).toBe(2);
 });
+
+it("renders nested lists, emphasis, underline and safe links in workflow mail", () => {
+  const result = registrationEmail(
+    {
+      category: "Your training",
+      subject: "Preparation",
+      name: "<img src=x> **Sam**",
+      title: "BLS",
+      schedule: "Saturday",
+      materials: [],
+      details: [],
+      body: "Hello {{attendeeName}}\n\n- **Bring ID**\n    - ++Photo ID++\n    - *Arrive early*\n\n3. Review\n4. [Open portal]({{portalLink}})\n\n<script>alert(1)</script>\n\n[Unsafe](javascript:alert%281%29)",
+    },
+    "https://example.com"
+  );
+  expect(result.html.match(/<ul /gu)).toHaveLength(2);
+  expect(result.html).toContain('<ol start="3"');
+  expect(result.html).toContain("<strong>Bring ID</strong>");
+  expect(result.html).toContain("<u>Photo ID</u>");
+  expect(result.html).toContain("<em>Arrive early</em>");
+  expect(result.html).toContain("&lt;img src=x&gt; **Sam**");
+  expect(result.html).toContain("&lt;script&gt;");
+  expect(result.html).not.toContain('href="javascript:');
+  expect(result.html).toContain('href="https://example.com/registrations"');
+  expect(result.text).toContain("Photo ID");
+  expect(result.text).not.toContain("++Photo ID++");
+  expect(result.text).toContain("3. Review");
+});

@@ -3,6 +3,7 @@ import { usePaginatedQuery } from "convex/react";
 import { Plus, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { EmailBodyEditor } from "@/components/registration/email-body-editor";
 import {
   EmailPreview,
   MERGE_FIELDS,
@@ -22,6 +23,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TaxCodeSelect } from "@/components/ui/tax-code-select";
 import { api } from "@/convex/_generated/api";
 import type { Settings } from "@/shared/registration/domain";
+import { defaultConfirmation } from "@/shared/registration/email-defaults";
 import { patchById } from "./shared";
 
 export type ConfigSection = "pricing" | "questions" | "outcomes" | "emails";
@@ -30,6 +32,7 @@ type SectionProps = {
   onChange: (value: Settings) => void;
   /** Template tax code shown as the fallback when editing session overrides. */
   inheritedTaxCode?: string;
+  selfPaced?: boolean;
 };
 type Material = Settings["materials"][number];
 type Question = Settings["questions"][number];
@@ -803,26 +806,17 @@ function EmailStepCard({
           />
         )}
       </Field>
-      <Field
-        hint="Paragraphs are formatted safely; HTML is shown as plain text."
-        label="Body"
-        required
-      >
-        {(props) => (
-          <TextArea
-            {...props}
-            className="min-h-32"
-            onChange={(e) => onChange({ body: e.target.value })}
-            value={step.body}
-          />
-        )}
-      </Field>
+      <EmailBodyEditor
+        onChange={(body) => onChange({ body })}
+        value={step.body}
+      />
       <EmailPreview body={step.body} subject={step.subject} />
     </div>
   );
 }
 
-function EmailsSection({ value, onChange }: SectionProps) {
+function EmailsSection({ value, onChange, selfPaced = false }: SectionProps) {
+  const defaultEmail = defaultConfirmation(selfPaced);
   const add = () =>
     onChange({
       ...value,
@@ -860,6 +854,52 @@ function EmailsSection({ value, onChange }: SectionProps) {
           ))}
         </ul>
       </Notice>
+      <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4 shadow-xs">
+        <SectionHeading
+          description="Sent automatically when registration is confirmed. Schedule, materials, and the portal button are included automatically. Changes apply to future confirmations."
+          title="Registration confirmation"
+        />
+        <Field label="Confirmation subject" required>
+          {(props) => (
+            <TextInput
+              {...props}
+              onChange={(event) =>
+                onChange({
+                  ...value,
+                  confirmationEmail: {
+                    ...(value.confirmationEmail ?? defaultEmail),
+                    subject: event.target.value,
+                  },
+                })
+              }
+              value={(value.confirmationEmail ?? defaultEmail).subject}
+            />
+          )}
+        </Field>
+        <EmailBodyEditor
+          onChange={(body) =>
+            onChange({
+              ...value,
+              confirmationEmail: {
+                ...(value.confirmationEmail ?? defaultEmail),
+                body,
+              },
+            })
+          }
+          value={(value.confirmationEmail ?? defaultEmail).body}
+        />
+        <EmailPreview {...(value.confirmationEmail ?? defaultEmail)} />
+        <Button
+          onClick={() =>
+            onChange({ ...value, confirmationEmail: { ...defaultEmail } })
+          }
+          size="xs"
+          type="button"
+          variant="secondary"
+        >
+          Reset confirmation to default
+        </Button>
+      </div>
       {value.emails.length === 0 ? (
         <EmptyState
           className="py-8"
@@ -907,6 +947,7 @@ export function ConfigEditor({
   onChange,
   section,
   inheritedTaxCode,
+  selfPaced,
 }: SectionProps & { section?: ConfigSection }) {
   if (section) {
     const Section = SECTIONS[section];
@@ -914,6 +955,7 @@ export function ConfigEditor({
       <Section
         inheritedTaxCode={inheritedTaxCode}
         onChange={onChange}
+        selfPaced={selfPaced}
         value={value}
       />
     );
@@ -927,7 +969,7 @@ export function ConfigEditor({
       />
       <QuestionsSection onChange={onChange} value={value} />
       <OutcomesSection onChange={onChange} value={value} />
-      <EmailsSection onChange={onChange} value={value} />
+      <EmailsSection onChange={onChange} selfPaced={selfPaced} value={value} />
     </div>
   );
 }

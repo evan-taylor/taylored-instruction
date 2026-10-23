@@ -94,3 +94,35 @@ verification, revocation, and admin-only reads. `tests/registration/mcp-server.t
 drives the server over an in-memory transport with a scripted Convex client and
 checks the tool surface, argument mapping, error handling, and partial merges.
 Neither exercises a live Convex deployment, Stripe, or email.
+
+## Editing formatted emails
+
+Use `get_course` followed by `save_course` to update
+`settings.confirmationEmail` (both `subject` and `body`) or `settings.emails`
+(the complete scheduled-message array, retaining existing step IDs). Omitted
+settings are preserved. Confirmation changes affect future queued confirmations.
+
+For one session, use `save_session` with `overrides.confirmationEmail` or
+`overrides.emails`. To restore the course confirmation, pass
+`clearOverrides: ["confirmationEmail"]`.
+
+Bodies support Markdown: `**bold**`, `*italic*`, `++underline++`,
+`[label](https://example.com)`, bulleted and numbered lists, and nested lists
+indented four spaces. HTML is displayed as text. Supported merge fields are
+`{{attendeeName}}`, `{{courseTitle}}`, `{{meetingDates}}`, `{{materials}}`,
+and `{{portalLink}}`. The mailer appends schedule, materials, and portal access.
+
+Example `save_course` settings:
+
+```json
+{
+  "confirmationEmail": {
+    "subject": "You're registered for {{courseTitle}}",
+    "body": "Hi {{attendeeName}},\n\n- **Bring identification**\n    - ++Photo ID required++\n\n1. Review your materials\n2. Arrive early"
+  }
+}
+```
+
+`email_attendees` and `send_test_email` accept the same body formatting.
+For a standalone test email, replace merge fields with sample values;
+`send_test_email` only accepts the configured safe test recipient.

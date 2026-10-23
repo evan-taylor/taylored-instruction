@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Amounts,
   Code,
@@ -14,6 +15,7 @@ export type TransactionalEmailProps = {
   title: string;
   preview: string;
   paragraphs: string[];
+  body?: ReactNode;
   code?: string;
   amounts?: { rows: DetailRow[]; total?: DetailRow };
   action?: { label: string; url: string };
@@ -29,6 +31,7 @@ export default function TransactionalEmail({
   title,
   preview,
   paragraphs,
+  body,
   code,
   amounts,
   action,
@@ -38,6 +41,7 @@ export default function TransactionalEmail({
   return (
     <EmailLayout preview={preview}>
       <Title>{title}</Title>
+      {body}
       {paragraphs.map((paragraph) => (
         <Paragraph key={paragraph}>{paragraph}</Paragraph>
       ))}

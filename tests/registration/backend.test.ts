@@ -1148,6 +1148,50 @@ describe("Operational regression coverage", () => {
     ).toHaveLength(1);
     expect(jobs.some((j) => j.key.startsWith("schedule:"))).toBe(false);
   });
+  it("queues the configured confirmation once and preserves it at delivery", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      const course = await ctx.db.get(f.course);
+      if (!course) {
+        throw new Error("Missing course");
+      }
+      await ctx.db.patch(f.course, {
+        settings: {
+          ...course.settings,
+          confirmationEmail: {
+            subject: "Welcome to {{courseTitle}}",
+            body: "Hi {{attendeeName}}\n\n- ++Bring ID++",
+          },
+        },
+      });
+    });
+    await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      admin: {
+        overbook: false,
+        reason: "Custom confirmation test",
+        payment: "offline",
+      },
+    });
+    const jobs = await f.t.run(
+      async (ctx) => await ctx.db.query("registrationJobs").collect()
+    );
+    const confirmations = jobs.filter((job) =>
+      job.key.startsWith("confirmation:")
+    );
+    expect(confirmations).toHaveLength(1);
+    const confirmation = confirmations.at(0);
+    if (!confirmation) {
+      throw new Error("Missing confirmation");
+    }
+    const claimed = await f.t.mutation(internal.registrationMail.claim, {
+      id: confirmation._id,
+    });
+    expect(claimed?.subject).toBe("Welcome to {{courseTitle}}");
+    expect(claimed?.body).toBe("Hi {{attendeeName}}\n\n- ++Bring ID++");
+    expect(claimed?.schedule).toBeTruthy();
+    expect(claimed?.calendar).toBeTruthy();
+  });
   it("email context keeps self-paced course names and tax-inclusive receipts", async () => {
     const f = await fixture();
     await f.t.run(async (ctx) => {

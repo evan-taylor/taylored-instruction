@@ -2,6 +2,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import { ADMIN_EMAILS, isAdminEmail } from "../shared/adminEmails";
 import { effective, email, HOLD_MS } from "../shared/registration/domain";
+import { defaultConfirmation } from "../shared/registration/email-defaults";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -509,12 +510,14 @@ export async function settle(
       await before;
       await grantMaterial(ctx, paid, attachment);
     }, Promise.resolve());
+    const confirmation =
+      config.confirmationEmail ?? defaultConfirmation(!session);
     await enqueue(ctx, {
       key: `confirmation:${seat._id}`,
       kind: "email",
       recipient: seat.email,
-      subject: `Registration confirmed: ${order.title}`,
-      body: "Your registration is confirmed. Access your meetings and materials in your secure portal.",
+      subject: confirmation.subject,
+      body: confirmation.body,
       due: now,
       seatId: seat._id,
       sessionId: session?._id,

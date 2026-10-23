@@ -11,7 +11,7 @@ import {
   requestKey,
   run,
 } from "../context";
-import { email, id, pagination, paginationOpts } from "../shapes";
+import { email, emailBody, id, pagination, paginationOpts } from "../shapes";
 
 const TABLES = [
   "registrationCourses",
@@ -136,11 +136,11 @@ export function registerOverviewTools(server: McpServer, ctx: McpContext) {
     {
       title: "Send test email",
       description:
-        "Sends a plain-text email through the registration mailer to the configured safe test recipient only.",
+        "Sends a formatted Markdown email through the registration mailer to the configured safe test recipient only.",
       inputSchema: {
         recipient: email,
         subject: z.string().min(1),
-        body: z.string().min(1),
+        body: emailBody,
         operationKey,
       },
       annotations: EXTERNAL,

@@ -53,8 +53,6 @@ function billingDetails(
 function messageBody(
   job: Doc<"registrationJobs">,
   kind: string | undefined,
-  seat: Doc<"registrationSeats"> | null,
-  session: Doc<"registrationSessions"> | null,
   invoice: Doc<"registrationInvoices"> | null
 ) {
   const categories: Record<string, string> = {
@@ -69,9 +67,6 @@ function messageBody(
   if (kind === "receipt") {
     body =
       "Thank you for your payment. Keep this receipt for your records.\nClass details and materials are sent separately to each attendee.";
-  }
-  if (kind === "confirmation") {
-    body = `Hi ${seat?.name ?? "there"}, your place is confirmed.${session ? " Your class details are below. Please review your materials before class." : " This is a self-paced course. Open your registration to access the available course materials."}`;
   }
   if (kind === "invoice" && invoice) {
     body = `Hello ${invoice.billToName}, your training invoice is ready.\nView the itemized invoice, download a PDF, or pay securely online using the button below.${invoice.notes ? `\n${invoice.notes}` : ""}`;
@@ -121,7 +116,7 @@ async function messageContext(
       body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
     };
   }
-  return { title, details, ...messageBody(job, kind, seat, session, invoice) };
+  return { title, details, ...messageBody(job, kind, invoice) };
 }
 
 export const due = internalQuery({

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Field, TextInput } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { EmailBody } from "@/shared/registration/email-body";
 import { errorText } from "./errors";
 
 const VARIABLE = /\{\{(\w+)\}\}/gu;
@@ -77,9 +78,9 @@ export function EmailPreview({
           <p className="mt-0.5 font-semibold text-slate-900 text-sm">
             {previewMerge(subject) || "(no subject)"}
           </p>
-          <p className="mt-3 whitespace-pre-wrap text-slate-700 text-sm">
-            {previewMerge(body)}
-          </p>
+          <div className="mt-3">
+            <EmailBody body={body} variables={SAMPLE} />
+          </div>
           <p className="mt-3 text-slate-500 text-xs">
             Meeting details, secure portal access, and the recipient's entitled
             materials are appended on delivery.

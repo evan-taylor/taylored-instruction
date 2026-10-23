@@ -162,6 +162,7 @@ describe("MCP server", () => {
       enrollmentOpen: true,
       revision: 4,
       settings: {
+        confirmationEmail: { subject: "Welcome", body: "- ++Bring ID++" },
         tuition: 9000,
         materials: [],
         questions: [
@@ -197,6 +198,11 @@ describe("MCP server", () => {
       },
     });
     const save = calls.find((call) => call.name === "registration:saveCourse");
+    expect(save?.args).toMatchObject({
+      settings: {
+        confirmationEmail: { subject: "Welcome", body: "- ++Bring ID++" },
+      },
+    });
     expect(save?.args).toMatchObject({
       id: "course1",
       slug: "cpr",
@@ -322,7 +328,12 @@ describe("MCP server", () => {
           sequence: 3,
         },
       ],
-      overrides: { tuition: 5000, cutoffMinutes: 30, taxCode: "txcd_1" },
+      overrides: {
+        confirmationEmail: { subject: "Session", body: "**Welcome**" },
+        tuition: 5000,
+        cutoffMinutes: 30,
+        taxCode: "txcd_1",
+      },
     };
     const { client, calls } = await connect({
       "mcp:record": stored,
@@ -333,7 +344,7 @@ describe("MCP server", () => {
       arguments: {
         id: "session1",
         overrides: { cutoffMinutes: 45 },
-        clearOverrides: ["tuition"],
+        clearOverrides: ["tuition", "confirmationEmail"],
       },
     });
     const save = calls.find((call) => call.name === "registration:saveSession");
@@ -341,6 +352,7 @@ describe("MCP server", () => {
       overrides: Record<string, unknown>;
       meetings: { sequence: number }[];
     };
+    expect(args.overrides.confirmationEmail).toBeUndefined();
     expect(args.overrides.tuition).toBeUndefined();
     expect(args.overrides).toMatchObject({
       cutoffMinutes: 45,
@@ -504,4 +516,73 @@ describe("MCP server", () => {
       paymentWarning: "Cutoff passed",
     });
   });
+});
+
+it("accepts formatted confirmation and scheduled emails through MCP", async () => {
+  const body =
+    "Hi {{attendeeName}}\n\n- **Bring ID**\n    - ++Photo ID++\n\n1. Review\n2. Attend";
+  const confirmationEmail = { subject: "Welcome to {{courseTitle}}", body };
+  const { client, calls } = await connect({
+    "registration:saveCourse": "course1",
+  });
+  const result = await client.callTool({
+    name: "save_course",
+    arguments: {
+      slug: "cpr",
+      title: "CPR",
+      settings: {
+        confirmationEmail,
+        emails: [
+          {
+            id: "reminder",
+            anchor: "first",
+            offsetMinutes: -60,
+            subject: "Prepare",
+            body,
+          },
+        ],
+      },
+    },
+  });
+  expect(result.isError).toBeFalsy();
+  expect(
+    calls.find((call) => call.name === "registration:saveCourse")?.args
+  ).toMatchObject({
+    settings: { confirmationEmail, emails: [{ id: "reminder", body }] },
+  });
+  const listed = await client.listTools();
+  const schema = JSON.stringify(
+    listed.tools.find((tool) => tool.name === "save_course")?.inputSchema
+  );
+  expect(schema).toContain("confirmationEmail");
+  expect(schema).toContain("++underline++");
+  expect(schema).toContain("{{attendeeName}}");
+  expect(schema).not.toContain("{{name}}");
+});
+
+it("preserves formatting in MCP attendee and test email requests", async () => {
+  const { client, calls } = await connect({});
+  const body = "- **Prepare**\n    - ++Read first++\n\n1. Arrive\n2. Practice";
+  const sent = await client.callTool({
+    name: "email_attendees",
+    arguments: {
+      sessionId: "session1",
+      seatIds: ["seat1"],
+      subject: "Prepare",
+      body,
+    },
+  });
+  const tested = await client.callTool({
+    name: "send_test_email",
+    arguments: { recipient: "tester@example.test", subject: "Preview", body },
+  });
+  expect(sent.isError).toBeFalsy();
+  expect(tested.isError).toBeFalsy();
+  expect(
+    calls.find((call) => call.name === "registrationOperations:selectedEmail")
+      ?.args
+  ).toMatchObject({ body });
+  expect(
+    calls.find((call) => call.name === "registrationOperations:testEmail")?.args
+  ).toMatchObject({ body });
 });

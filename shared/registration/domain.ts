@@ -112,7 +112,20 @@ export function taxCode(value: string | undefined) {
   }
   return trimmed;
 }
+function validateConfirmation(config: Settings) {
+  if (
+    config.confirmationEmail &&
+    !(
+      config.confirmationEmail.subject.trim() &&
+      config.confirmationEmail.body.trim()
+    )
+  ) {
+    throw new Error("Confirmation email needs a subject and body");
+  }
+}
+
 export function validateSettings(config: Settings) {
+  validateConfirmation(config);
   cents(config.tuition);
   taxCode(config.taxCode);
   if (!Number.isFinite(config.cutoffMinutes) || config.cutoffMinutes < 0) {

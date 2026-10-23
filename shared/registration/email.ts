@@ -3,12 +3,15 @@ import { renderEmailHtml } from "../../emails/components/render";
 import { PHONE } from "../../emails/components/theme";
 import TransactionalEmail from "../../emails/TransactionalEmail";
 import { renderSubject } from "./domain";
+import { EmailBody, emailBodyText } from "./email-body";
 
 type EmailDetail = { label: string; value: string };
 type EmailContent = {
   title: string;
   preview: string;
   paragraphs: string[];
+  body?: string;
+  variables?: Record<string, string>;
   details?: EmailDetail[];
   action?: { label: string; url: string };
   note?: string;
@@ -46,6 +49,12 @@ export function brandedEmail(content: EmailContent) {
       title: content.title,
       preview: content.preview,
       paragraphs: content.paragraphs,
+      body: content.body
+        ? createElement(EmailBody, {
+            body: content.body,
+            variables: content.variables,
+          })
+        : undefined,
       code: content.code,
       amounts: total || amounts.length ? { rows: amounts, total } : undefined,
       action: content.action && {
@@ -61,6 +70,9 @@ export function brandedEmail(content: EmailContent) {
   const text = [
     content.title,
     ...content.paragraphs,
+    content.body
+      ? emailBodyText(content.body, content.variables ?? {})
+      : undefined,
     content.code,
     ...details.map(({ label, value }) => `${label}: ${value}`),
     content.action
@@ -134,7 +146,9 @@ export function registrationEmail(job: RenderableJob, origin: string) {
     ...brandedEmail({
       title: headlines[job.category] ?? subject,
       preview: `${job.title}. ${primaryAction.label}.`,
-      paragraphs: emailParagraphs(renderSubject(job.body, variables)),
+      paragraphs: [],
+      body: job.body,
+      variables,
       details,
       action: primaryAction,
       note: [

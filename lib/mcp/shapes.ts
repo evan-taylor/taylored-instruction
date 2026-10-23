@@ -88,6 +88,21 @@ export const outcome = z.object({
     ),
 });
 
+export const emailBody = z
+  .string()
+  .min(1)
+  .describe(
+    "Markdown email body: **bold**, *italic*, ++underline++, [label](https://...), bulleted lists (- item), numbered lists (1. item), and nested lists (indent four spaces). Raw HTML is displayed as text. Merge fields: {{attendeeName}}, {{courseTitle}}, {{meetingDates}}, {{materials}}, {{portalLink}}. Schedule, materials, and portal button are appended automatically."
+  );
+export const confirmationEmail = z
+  .object({
+    subject: z.string().trim().min(1),
+    body: emailBody,
+  })
+  .describe(
+    "Automatic registration confirmation, replacing the default subject and body for future confirmations. Supply both fields; omit to preserve the existing template."
+  );
+
 export const emailStep = z.object({
   id: z.string().optional(),
   anchor: z
@@ -100,15 +115,11 @@ export const emailStep = z.object({
     .int()
     .describe("Minutes relative to the anchor; negative sends before"),
   subject: z.string().min(1),
-  body: z
-    .string()
-    .min(1)
-    .describe(
-      "Plain text. Variables: {{name}}, {{title}}, {{start}}, {{location}}, {{instructions}}, {{code}}"
-    ),
+  body: emailBody,
 });
 
 export const settings = z.object({
+  confirmationEmail: confirmationEmail.optional(),
   tuition: z.number().int().min(0).describe("Tuition in cents"),
   taxCode: z
     .string()
@@ -127,6 +138,7 @@ export const settings = z.object({
 
 /** Partial settings for updates: omitted arrays keep the stored value. */
 export const settingsPatch = z.object({
+  confirmationEmail: confirmationEmail.optional(),
   tuition: z.number().int().min(0).optional(),
   taxCode: z.string().optional(),
   materials: z.array(materialAttachment).optional(),
@@ -137,6 +149,7 @@ export const settingsPatch = z.object({
 });
 
 export const overrideField = z.enum([
+  "confirmationEmail",
   "tuition",
   "taxCode",
   "materials",
@@ -148,6 +161,7 @@ export const overrideField = z.enum([
 
 export const overrides = z
   .object({
+    confirmationEmail: confirmationEmail.optional(),
     tuition: z.number().int().min(0).optional(),
     taxCode: z.string().optional(),
     materials: z.array(materialAttachment).optional(),

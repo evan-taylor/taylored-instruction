@@ -41,7 +41,12 @@ export const emailStep = v.object({
   subject: v.string(),
   body: v.string(),
 });
+export const confirmationEmail = v.object({
+  subject: v.string(),
+  body: v.string(),
+});
 export const settingsFields = {
+  confirmationEmail: v.optional(confirmationEmail),
   tuition: v.number(),
   /** Stripe tax code applied to tuition (for example txcd_20030000). */
   taxCode: v.optional(v.string()),
@@ -53,6 +58,7 @@ export const settingsFields = {
 };
 export const settings = v.object(settingsFields);
 export const overrides = v.object({
+  confirmationEmail: v.optional(confirmationEmail),
   tuition: v.optional(v.number()),
   taxCode: v.optional(v.string()),
   materials: v.optional(v.array(materialAttachment)),

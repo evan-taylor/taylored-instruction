@@ -31,6 +31,13 @@ export const GUIDE = `# Running Taylored Instruction from an agent
 4. Before class: session_overview, session_roster, export_roster_csv, email_attendees for reminders.
 5. After class: record_attendance, record_outcome, override_completion when needed.
 
+## Email editing
+- Read get_course first. Use save_course with settings.confirmationEmail (subject and body) to edit the automatic registration confirmation, or settings.emails to edit scheduled messages. Omitted fields are preserved; supplied email arrays replace the complete array, so retain other steps and their ids.
+- Use save_session with overrides.confirmationEmail or overrides.emails for one session. clearOverrides: ["confirmationEmail"] restores inheritance from the course.
+- Bodies use Markdown: **bold**, *italic*, ++underline++, [label](https://...), - bullets, and 1. numbered items. Indent nested list items four spaces. Raw HTML is displayed as text.
+- Merge fields: {{attendeeName}}, {{courseTitle}}, {{meetingDates}}, {{materials}}, {{portalLink}}. Schedule, materials, and portal access are appended automatically.
+- Confirmation edits apply to future queued confirmations, not already queued or sent mail. send_test_email accepts the same formatting; supply sample values in place of merge fields for standalone test messages.
+
 ## Money
 - Amounts are integer cents. Tuition is pre-tax; Stripe Tax adds tax at checkout and on invoices.
 - refund_order moves money; cancel_seat frees the seat. They are independent.

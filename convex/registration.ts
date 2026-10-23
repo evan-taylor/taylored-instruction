@@ -900,7 +900,8 @@ function validateMeetings(meetings: Doc<"registrationSessions">["meetings"]) {
 }
 
 function publicSettings(config: Settings): Settings {
-  return { ...config, outcomes: [], emails: [] };
+  const { confirmationEmail: _confirmation, ...visibleSettings } = config;
+  return { ...visibleSettings, outcomes: [], emails: [] };
 }
 /** Attaches each material's catalog summary and kind so checkout can explain it. */
 async function describeMaterials(ctx: QueryCtx, config: Settings) {

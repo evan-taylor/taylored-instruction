@@ -18,6 +18,7 @@ import {
   WRITE,
 } from "../context";
 import {
+  emailBody,
   id,
   instant,
   meeting,
@@ -56,6 +57,7 @@ function mergeSettings(
     return base;
   }
   return {
+    confirmationEmail: patch.confirmationEmail ?? base.confirmationEmail,
     tuition: patch.tuition ?? base.tuition,
     taxCode: patch.taxCode ?? base.taxCode,
     cutoffMinutes: patch.cutoffMinutes ?? base.cutoffMinutes,
@@ -93,6 +95,7 @@ function mergeOverrides(
     return base;
   }
   return {
+    confirmationEmail: patch.confirmationEmail ?? base.confirmationEmail,
     tuition: patch.tuition ?? base.tuition,
     taxCode: patch.taxCode ?? base.taxCode,
     cutoffMinutes: patch.cutoffMinutes ?? base.cutoffMinutes,
@@ -250,7 +253,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
     {
       title: "Create or update course template",
       description:
-        "Creates a template when id is omitted; otherwise merges the given fields into the existing template. Settings are merged field by field; arrays replace the stored array (keep item ids to preserve history). Saving bumps the revision, propagates settings to sessions, and advances waitlists. Delivery type cannot change after creation.",
+        "Creates a template when id is omitted; otherwise merges the given fields into the existing template. Edit the automatic confirmation with settings.confirmationEmail (subject and Markdown body), and scheduled messages with settings.emails. Settings are merged field by field; arrays replace the stored array (keep item ids to preserve history). Saving bumps the revision, propagates settings to sessions, and advances waitlists. Delivery type cannot change after creation.",
       inputSchema: {
         id: id.optional(),
         slug: z.string().optional().describe("URL slug, unique"),
@@ -613,12 +616,12 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
     {
       title: "Email attendees",
       description:
-        "Queues a plain-text email to selected seats of a session (default: every active seat, up to 50). Test mode redirects mail to the configured tester mailbox.",
+        "Queues a formatted Markdown email to selected seats of a session (default: every active seat, up to 50). Test mode redirects mail to the configured tester mailbox.",
       inputSchema: {
         sessionId: id,
         seatIds: z.array(id).max(50).optional(),
         subject: z.string().min(1),
-        body: z.string().min(1),
+        body: emailBody,
         operationKey,
       },
       annotations: EXTERNAL,
