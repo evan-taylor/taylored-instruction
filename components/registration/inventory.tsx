@@ -567,25 +567,30 @@ function QueueTable({
   );
 }
 
-/** Available, assigned, and waiting-queue views for one keycode inventory. */
+/**
+ * Available, assigned, and waiting-queue views for one keycode inventory, or
+ * for one session's bank when `sessionId` is given.
+ */
 export function InventoryManager({
   materialId,
+  sessionId,
 }: {
   materialId: Id<"registrationMaterials">;
+  sessionId?: Id<"registrationSessions">;
 }) {
   const availableStock = usePaginatedQuery(
     api.registrationOperations.stock,
-    { materialId, state: "available" },
+    { materialId, sessionId, state: "available" },
     { initialNumItems: 20 }
   );
   const assignedStock = usePaginatedQuery(
     api.registrationOperations.stock,
-    { materialId, state: "assigned" },
+    { materialId, sessionId, state: "assigned" },
     { initialNumItems: 20 }
   );
   const missing = usePaginatedQuery(
     api.registrationOperations.missingMaterials,
-    { materialId },
+    { materialId, sessionId },
     { initialNumItems: 20 }
   );
   const manage = useMutation(api.registrationOperations.manageCode);

@@ -25,6 +25,7 @@ import {
   enqueue,
   grantMaterial,
   hash,
+  nextCode,
   offering,
   release,
   scheduleEmails,
@@ -71,13 +72,20 @@ export const saveMaterial = mutation({
     storageId: v.optional(v.id("_storage")),
     archived: v.boolean(),
     taxCode: v.optional(v.string()),
+    perSession: v.optional(v.boolean()),
   },
   returns: v.id("registrationMaterials"),
   handler: async (ctx, { id, ...args }) => {
     const actor = await staff(ctx);
     const previous = id ? await ctx.db.get(id) : null;
+    const perSession = args.kind === "keycode" && args.perSession === true;
     if (!args.title.trim() || (previous && previous.kind !== args.kind)) {
       throw new ConvexError("A material needs a title and an immutable kind");
+    }
+    if (previous && (previous.perSession ?? false) !== perSession) {
+      throw new ConvexError(
+        "Per-session code banks can't be switched on or off after a material is created"
+      );
     }
     if (args.kind === "pdf") {
       const file = args.storageId
@@ -92,6 +100,7 @@ export const saveMaterial = mutation({
       summary: args.summary?.trim() || undefined,
       url: args.kind === "link" ? safeUrl(args.url ?? "") : undefined,
       taxCode: taxCode(args.taxCode),
+      perSession: perSession || undefined,
       version: (previous?.version ?? 0) + 1,
     };
     const result = id ?? (await ctx.db.insert("registrationMaterials", value));
@@ -119,6 +128,8 @@ export const uploadUrl = mutation({
 export const stock = query({
   args: {
     materialId: v.id("registrationMaterials"),
+    /** Limits a per-session material to one session's bank. */
+    sessionId: v.optional(v.id("registrationSessions")),
     state: v.optional(
       v.union(
         v.literal("available"),
@@ -143,7 +154,20 @@ export const stock = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx);
-    const { materialId, state } = args;
+    const { materialId, sessionId, state } = args;
+    if (sessionId) {
+      return await ctx.db
+        .query("registrationCodes")
+        .withIndex("by_materialId_and_sessionId_and_state", (q) =>
+          state
+            ? q
+                .eq("materialId", materialId)
+                .eq("sessionId", sessionId)
+                .eq("state", state)
+            : q.eq("materialId", materialId).eq("sessionId", sessionId)
+        )
+        .paginate(args.paginationOpts);
+    }
     return await ctx.db
       .query("registrationCodes")
       .withIndex("by_materialId_and_state", (q) =>
@@ -157,6 +181,8 @@ export const stock = query({
 export const addStock = mutation({
   args: {
     materialId: v.id("registrationMaterials"),
+    /** Required for per-session materials; the links belong to this session. */
+    sessionId: v.optional(v.id("registrationSessions")),
     input: v.string(),
     preview: v.boolean(),
   },
@@ -172,6 +198,7 @@ export const addStock = mutation({
     if (material?.kind !== "keycode") {
       throw new ConvexError("Choose keycode inventory");
     }
+    const session = await sessionBank(ctx, material, args.sessionId);
     const parsed = inventoryPreview(args.input);
     const valid: string[] = [];
     const duplicates = [...parsed.duplicates];
@@ -193,6 +220,7 @@ export const addStock = mutation({
           url,
           fingerprint,
           state: "available",
+          sessionId: session?._id,
         });
       }
     }, Promise.resolve());
@@ -205,10 +233,13 @@ export const addStock = mutation({
         actor.userId,
         "inventory-restocked",
         args.materialId,
-        `${valid.length} links`
+        session
+          ? `${valid.length} links for session ${session.code}`
+          : `${valid.length} links`
       );
       await ctx.scheduler.runAfter(0, internal.registrationOperations.restock, {
         materialId: args.materialId,
+        sessionId: session?._id,
       });
     }
     return {
@@ -219,20 +250,115 @@ export const addStock = mutation({
     };
   },
 });
+/** Resolves which session's bank new links join, rejecting a mismatch. */
+async function sessionBank(
+  ctx: QueryCtx,
+  material: Doc<"registrationMaterials">,
+  sessionId: Id<"registrationSessions"> | undefined
+) {
+  if (!material.perSession) {
+    if (sessionId) {
+      throw new ConvexError(
+        "This material uses one shared pool; add its links without a session"
+      );
+    }
+    return null;
+  }
+  const session = sessionId ? await ctx.db.get(sessionId) : null;
+  if (!session) {
+    throw new ConvexError(
+      "This material keeps a separate bank per session; choose the session these links belong to"
+    );
+  }
+  return session;
+}
+/** Per-session keycode materials attached to a session, with its bank counts. */
+export const sessionCodeBanks = query({
+  args: { sessionId: v.id("registrationSessions") },
+  returns: v.array(
+    v.object({
+      materialId: v.id("registrationMaterials"),
+      title: v.string(),
+      available: v.number(),
+      assigned: v.number(),
+      retired: v.number(),
+      waiting: v.number(),
+    })
+  ),
+  handler: async (ctx, args) => {
+    await staff(ctx);
+    const session = await ctx.db.get(args.sessionId);
+    const course = session ? await ctx.db.get(session.courseId) : null;
+    if (!(session && course)) {
+      return [];
+    }
+    const attached = effective(course.settings, session.overrides).materials;
+    const docs = await Promise.all(
+      attached.map((a) => ctx.db.get(a.materialId))
+    );
+    // A session bank holds one link per seat, so reading it whole stays small.
+    return await Promise.all(
+      docs
+        .filter(
+          (m): m is Doc<"registrationMaterials"> =>
+            m?.kind === "keycode" && m.perSession === true
+        )
+        .map(async (material) => {
+          const codes = await ctx.db
+            .query("registrationCodes")
+            .withIndex("by_materialId_and_sessionId_and_state", (q) =>
+              q.eq("materialId", material._id).eq("sessionId", session._id)
+            )
+            .collect();
+          const waiting = await ctx.db
+            .query("registrationEntitlements")
+            .withIndex(
+              "by_materialId_and_sessionId_and_state_and_paidAt",
+              (q) =>
+                q
+                  .eq("materialId", material._id)
+                  .eq("sessionId", session._id)
+                  .eq("state", "pending")
+            )
+            .collect();
+          const count = (state: Doc<"registrationCodes">["state"]) =>
+            codes.filter((c) => c.state === state).length;
+          return {
+            materialId: material._id,
+            title: material.title,
+            available: count("available"),
+            assigned: count("assigned"),
+            retired: count("retired"),
+            waiting: waiting.length,
+          };
+        })
+    );
+  },
+});
 export const restock = internalMutation({
-  args: { materialId: v.id("registrationMaterials") },
+  args: {
+    materialId: v.id("registrationMaterials"),
+    sessionId: v.optional(v.id("registrationSessions")),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const { materialId, sessionId } = args;
     const pending = await ctx.db
       .query("registrationEntitlements")
-      .withIndex("by_materialId_and_state_and_paidAt", (q) =>
-        q.eq("materialId", args.materialId).eq("state", "pending")
+      .withIndex("by_materialId_and_sessionId_and_state_and_paidAt", (q) =>
+        q
+          .eq("materialId", materialId)
+          .eq("sessionId", sessionId)
+          .eq("state", "pending")
       )
       .take(BATCH);
     const codes = await ctx.db
       .query("registrationCodes")
-      .withIndex("by_materialId_and_state", (q) =>
-        q.eq("materialId", args.materialId).eq("state", "available")
+      .withIndex("by_materialId_and_sessionId_and_state", (q) =>
+        q
+          .eq("materialId", materialId)
+          .eq("sessionId", sessionId)
+          .eq("state", "available")
       )
       .take(BATCH);
     let assigned = 0;
@@ -1308,6 +1434,7 @@ export const seatMaterials = query({
 export const missingMaterials = query({
   args: {
     materialId: v.id("registrationMaterials"),
+    sessionId: v.optional(v.id("registrationSessions")),
     paginationOpts: paginationOptsValidator,
   },
   returns: v.object({
@@ -1325,10 +1452,22 @@ export const missingMaterials = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx);
+    const { materialId, sessionId } = args;
+    if (sessionId) {
+      return await ctx.db
+        .query("registrationEntitlements")
+        .withIndex("by_materialId_and_sessionId_and_state_and_paidAt", (q) =>
+          q
+            .eq("materialId", materialId)
+            .eq("sessionId", sessionId)
+            .eq("state", "pending")
+        )
+        .paginate(args.paginationOpts);
+    }
     return await ctx.db
       .query("registrationEntitlements")
       .withIndex("by_materialId_and_state_and_paidAt", (q) =>
-        q.eq("materialId", args.materialId).eq("state", "pending")
+        q.eq("materialId", materialId).eq("state", "pending")
       )
       .paginate(args.paginationOpts);
   },
@@ -1400,14 +1539,17 @@ export const replaceCode = mutation({
         "Choose a keycode entitlement and provide a reason"
       );
     }
-    const code = await ctx.db
-      .query("registrationCodes")
-      .withIndex("by_materialId_and_state", (q) =>
-        q.eq("materialId", entitlement.materialId).eq("state", "available")
-      )
-      .first();
+    const code = await nextCode(
+      ctx,
+      entitlement.materialId,
+      entitlement.sessionId
+    );
     if (!code) {
-      throw new ConvexError("Restock this inventory before replacing a code");
+      throw new ConvexError(
+        entitlement.sessionId
+          ? "Load more links for this session before replacing a code"
+          : "Restock this inventory before replacing a code"
+      );
     }
     await assignCode(
       ctx,

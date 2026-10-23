@@ -26,11 +26,13 @@ import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { SessionFiles } from "./session-files";
+import { SessionKeycodes } from "./session-keycodes";
 
-type DetailTab = "overview" | "roster" | "files";
+type DetailTab = "overview" | "roster" | "keycodes" | "files";
 const TABS: { id: DetailTab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "roster", label: "Roster" },
+  { id: "keycodes", label: "Keycodes" },
   { id: "files", label: "Files" },
 ];
 
@@ -177,6 +179,9 @@ export function SessionDetail({
       </TabPanel>
       <TabPanel active={tab === "roster"} id="roster">
         <InstructorRoster embedded sessionId={sessionId} />
+      </TabPanel>
+      <TabPanel active={tab === "keycodes"} id="keycodes">
+        <SessionKeycodes session={session} />
       </TabPanel>
       <TabPanel active={tab === "files"} id="files">
         <SessionFiles sessionId={sessionId} />

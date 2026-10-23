@@ -22,6 +22,7 @@ export const GUIDE = `# Running Taylored Instruction from an agent
 - Order: one purchase holding one or more seats. Status hold → settled (card) or unpaid → settled (offline/invoice). expired and exception need attention.
 - Seat: one attendee in an order. States: held, active, canceled, transferred.
 - Entitlement: a material granted to a seat (pdf, link, keycode, physical).
+- Keycode bank: unique links handed out one per paid seat. A shared keycode material has one pool; a perSession keycode material keeps a separate bank for every session (for example agency links tied to one class record), loaded with add_keycodes and a sessionId. Students only receive links from their own session's bank, and a transfer draws a new link from the target session.
 - Invoice: a Stripe-hosted or offline invoice for an unpaid order, usually for organizations.
 
 ## Daily rhythm

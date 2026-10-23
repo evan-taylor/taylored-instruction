@@ -23,6 +23,7 @@ type MaterialArgs = {
   pdfBase64?: string;
   archived?: boolean;
   taxCode?: string;
+  perSession?: boolean;
 };
 
 /** Validates a create-or-update request before any file is uploaded. */
@@ -36,6 +37,7 @@ function materialInput(previous: MaterialDoc | null, args: MaterialArgs) {
       url: undefined as string | undefined,
       archived: false,
       taxCode: undefined as string | undefined,
+      perSession: undefined as boolean | undefined,
     },
     previous,
     args
@@ -98,7 +100,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
     {
       title: "Create or update material",
       description:
-        "Creates a material or merges fields into an existing one. kind: pdf (provide pdfBase64 to upload a new version), link (url), keycode (stock added with add_keycodes), physical (shipped by hand). Saving a changed PDF creates a new version; earlier recipients keep theirs.",
+        "Creates a material or merges fields into an existing one. kind: pdf (provide pdfBase64 to upload a new version), link (url), keycode (stock added with add_keycodes), physical (shipped by hand). perSession=true makes a keycode material keep a separate bank of links for every session (set at creation; cannot change later). Saving a changed PDF creates a new version; earlier recipients keep theirs.",
       inputSchema: {
         id: id.optional(),
         title: z.string().min(1).optional(),
@@ -109,6 +111,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
         pdfBase64: z.string().optional(),
         archived: z.boolean().optional(),
         taxCode: z.string().optional(),
+        perSession: z.boolean().optional(),
       },
       annotations: UPSERT,
     },
@@ -142,9 +145,11 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
     "keycode_stock",
     {
       title: "Keycode stock",
-      description: "Codes in a keycode material's pool, filterable by state.",
+      description:
+        "Codes in a keycode material's pool, filterable by state. For a per-session material, pass sessionId to see one session's bank.",
       inputSchema: {
         materialId: id,
+        sessionId: id.optional(),
         state: z.enum(["available", "assigned", "retired"]).optional(),
         ...pagination,
       },
@@ -155,6 +160,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
         ok(
           await ctx.convex.query(api.registrationOperations.stock, {
             materialId: args.materialId as Id<"registrationMaterials">,
+            sessionId: args.sessionId as Id<"registrationSessions"> | undefined,
             state: args.state,
             paginationOpts: paginationOpts(args),
           })
@@ -167,9 +173,10 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
     {
       title: "Add keycodes to stock",
       description:
-        "Adds code URLs (one per line, up to 200) to a keycode material. preview=true validates without saving and reports invalid lines and duplicates. New stock automatically fills waiting entitlements.",
+        "Adds code URLs (one per line, up to 200) to a keycode material. Per-session materials require sessionId: the links go only to students in that session. preview=true validates without saving and reports invalid lines and duplicates. New stock automatically fills waiting entitlements.",
       inputSchema: {
         materialId: id,
+        sessionId: id.optional(),
         input: z.string().min(1),
         preview: z.boolean().default(false),
       },
@@ -180,6 +187,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
         ok(
           await ctx.convex.mutation(api.registrationOperations.addStock, {
             materialId: args.materialId as Id<"registrationMaterials">,
+            sessionId: args.sessionId as Id<"registrationSessions"> | undefined,
             input: args.input,
             preview: args.preview,
           })
@@ -193,7 +201,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
       title: "Entitlements waiting on stock",
       description:
         "Paid entitlements for a material that could not be fulfilled yet (for example an empty keycode pool).",
-      inputSchema: { materialId: id, ...pagination },
+      inputSchema: { materialId: id, sessionId: id.optional(), ...pagination },
       annotations: READ,
     },
     (args) =>
@@ -201,6 +209,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
         ok(
           await ctx.convex.query(api.registrationOperations.missingMaterials, {
             materialId: args.materialId as Id<"registrationMaterials">,
+            sessionId: args.sessionId as Id<"registrationSessions"> | undefined,
             paginationOpts: paginationOpts(args),
           })
         )
