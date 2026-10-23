@@ -68,6 +68,7 @@
         "baseline-browser-mapping": "^2.11.30",
         "convex-test": "^0.0.63",
         "dotenv": "^18.0.8",
+        "esbuild": "0.28.0",
         "lefthook": "^2.2.2",
         "papaparse": "^5.7.0",
         "postcss": "^8.5.31",
@@ -78,6 +79,9 @@
         "vitest": "^5.0.5",
       },
     },
+  },
+  "patchedDependencies": {
+    "decode-named-character-reference@1.2.0": "patches/decode-named-character-reference@1.2.0.patch",
   },
   "packages": {
     "@acemir/cssom": ["@acemir/cssom@0.9.31", "", {}, "sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA=="],

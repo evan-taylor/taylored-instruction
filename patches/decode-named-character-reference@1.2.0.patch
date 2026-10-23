@@ -1,0 +1,12 @@
+diff --git a/package.json b/package.json
+index 7d47ba1314fbbf205dd622a550c0759751a81398..52f0c3cb6fc67c4d2368fc4e6027107268d9d6b9 100644
+--- a/package.json
++++ b/package.json
+@@ -19,6 +19,7 @@
+     "xo": "^1.0.0"
+   },
+   "exports": {
++    "convex": "./index.js",
+     "deno": "./index.js",
+     "edge-light": "./index.js",
+     "react-native": "./index.js",
