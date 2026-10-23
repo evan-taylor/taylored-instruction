@@ -36,6 +36,11 @@ function BankStatus({ bank, capacity }: { bank: Bank; capacity: number }) {
       </Badge>
     );
   }
+  // A detached material isn't granted to new registrations, so it only
+  // needs links for students who are already waiting.
+  if (!bank.attached) {
+    return <Badge tone="success">No links owed</Badge>;
+  }
   // Only links held by enrolled students fill seats; links kept by
   // transferred or replaced registrations can't serve a reopened seat.
   const short = capacity - bank.inUse - bank.available;
