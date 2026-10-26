@@ -1,0 +1,14 @@
+components/registration/portal.tsx
+  h_83bc5aaa251b9b 170,178-179,195-200
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "60428e8c34ddd4a4e583e1d65790aad95e809e2a",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
