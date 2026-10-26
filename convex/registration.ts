@@ -39,9 +39,11 @@ import {
   audit,
   enqueue,
   hash,
+  newSessionCode,
   offering,
   rate,
   release,
+  sessionByCode,
   settle,
   staff,
 } from "./registrationHelpers";
@@ -181,12 +183,7 @@ export const detail = query({
   args: { code: v.optional(v.string()), slug: v.optional(v.string()) },
   returns: v.union(publicOffering, v.null()),
   handler: async (ctx, args) => {
-    const session = args.code
-      ? await ctx.db
-          .query("registrationSessions")
-          .withIndex("by_code", (q) => q.eq("code", args.code ?? ""))
-          .unique()
-      : null;
+    const session = args.code ? await sessionByCode(ctx, args.code) : null;
     const course = session
       ? await ctx.db.get(session.courseId)
       : await ctx.db
@@ -415,16 +412,7 @@ export const saveSession = mutation({
         "Cannot change course or reduce capacity below reservations"
       );
     }
-    const code = previous?.code ?? crypto.randomUUID().replaceAll("-", "");
-    if (
-      !previous &&
-      (await ctx.db
-        .query("registrationSessions")
-        .withIndex("by_code", (q) => q.eq("code", code))
-        .unique())
-    ) {
-      throw new ConvexError("Please retry creating the session");
-    }
+    const code = previous?.code ?? (await newSessionCode(ctx));
     const revision = (previous?.revision ?? 0) + 1;
     const values = {
       ...value,

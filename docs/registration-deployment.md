@@ -123,3 +123,17 @@ whatever the signed-in account's verified email holds. Consequences for operator
   `registrationGrants` table and `registrationJobs.portalToken` field from the schema.
 - Portal sessions last as long as any other Convex Auth session rather than 24 hours.
   The portal page offers sign-out through the account menu.
+
+## Short session share links
+
+New sessions use 10-character codes at `/s/<code>`. After deploying the schema
+and backend, run the internal mutation `registrationMigration:shortenSessionLinks`
+with `{"cursor":null}`. If `isDone` is false, run it again with the returned
+`cursor`, repeating until `isDone` is true. Each call processes at most 100
+sessions; restarting from null is safe.
+
+The migration stores the original code as `legacyCode`, so previously shared
+URLs keep resolving to the same session with the same publication and visibility
+checks. Admin copy buttons, MCP responses, and public listings use the shortened
+code automatically. Session edits retain both codes. This migration does not
+send notifications or change meeting, enrollment, or payment data.

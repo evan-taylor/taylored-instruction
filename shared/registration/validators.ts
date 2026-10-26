@@ -146,6 +146,7 @@ export const courseFields = {
   revision: v.number(),
 };
 export const sessionFields = {
+  legacyCode: v.optional(v.string()),
   courseId: v.id("registrationCourses"),
   title: v.string(),
   code: v.string(),

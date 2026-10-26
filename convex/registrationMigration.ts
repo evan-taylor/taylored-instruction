@@ -7,7 +7,7 @@ import {
 } from "../shared/registration/domain";
 import { outcome } from "../shared/registration/validators";
 import { internalMutation } from "./_generated/server";
-import { audit } from "./registrationHelpers";
+import { audit, newSessionCode } from "./registrationHelpers";
 
 const materialInput = v.object({
   hovnId: v.string(),
@@ -212,5 +212,31 @@ export const purgeLegacyPortalGrants = internalMutation({
       jobs.map((job) => ctx.db.patch(job._id, { portalToken: undefined }))
     );
     return { grants: grants.length, jobs: jobs.length };
+  },
+});
+
+/** Run each returned cursor until isDone; old URLs remain valid. Safe to rerun. */
+export const shortenSessionLinks = internalMutation({
+  args: { cursor: v.union(v.string(), v.null()) },
+  returns: v.object({
+    cursor: v.string(),
+    isDone: v.boolean(),
+    updated: v.number(),
+  }),
+  handler: async (ctx, { cursor }) => {
+    const result = await ctx.db.query("registrationSessions").paginate({
+      cursor,
+      numItems: 100,
+    });
+    let updated = 0;
+    for (const session of result.page) {
+      if (session.code.length > 10 && !session.legacyCode) {
+        // biome-ignore lint/performance/noAwaitInLoops: serialize collision checks and writes within this transaction
+        const code = await newSessionCode(ctx);
+        await ctx.db.patch(session._id, { code, legacyCode: session.code });
+        updated += 1;
+      }
+    }
+    return { cursor: result.continueCursor, isDone: result.isDone, updated };
   },
 });

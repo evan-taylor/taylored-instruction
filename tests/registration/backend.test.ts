@@ -5293,3 +5293,83 @@ it.each(["scheduled", "self-paced"] as const)(
     );
   }
 );
+
+describe("short session share links", () => {
+  it("shortens existing links once, retaining old URLs and publication checks", async () => {
+    const f = await fixture();
+    const first = await f.t.mutation(
+      internal.registrationMigration.shortenSessionLinks,
+      { cursor: null }
+    );
+    expect(first.updated).toBe(1);
+    expect(first.isDone).toBe(true);
+    const session = await f.t.run((ctx) => ctx.db.get(f.session));
+    expect(session?.code).toHaveLength(10);
+    expect(session?.legacyCode).toBe("test-stable-code");
+    const current = await f.t.query(api.registration.detail, {
+      code: session?.code,
+    });
+    const legacy = await f.t.query(api.registration.detail, {
+      code: "test-stable-code",
+    });
+    expect(current).not.toBeNull();
+    expect(legacy).toEqual(current);
+    expect(current?.code).toBe(session?.code);
+    expect(
+      (
+        await f.t.mutation(internal.registrationMigration.shortenSessionLinks, {
+          cursor: null,
+        })
+      ).updated
+    ).toBe(0);
+    await f.t.run((ctx) => ctx.db.patch(f.session, { publication: "draft" }));
+    expect(
+      await f.t.query(api.registration.detail, { code: "test-stable-code" })
+    ).toBeNull();
+    expect(
+      await f.t.query(api.registration.detail, { code: session?.code })
+    ).toBeNull();
+  });
+
+  it("creates short links for new sessions and preserves them on edits", async () => {
+    const f = await fixture();
+    const values = {
+      courseId: f.course,
+      title: "Short link class",
+      publication: "published" as const,
+      visibility: "private" as const,
+      capacity: 3,
+      timeZone: "America/Los_Angeles",
+      meetings: [
+        {
+          id: "first",
+          start: Date.now() + 86_400_000,
+          end: Date.now() + 90_000_000,
+          location: "Pool",
+          instructions: "",
+          sequence: 0,
+        },
+      ],
+      overrides: {},
+      instructors: [],
+      offerMinutes: 60,
+      notify: false,
+    };
+    const id = await f.adminClient.mutation(
+      api.registration.saveSession,
+      values
+    );
+    const original = await f.t.run((ctx) => ctx.db.get(id));
+    expect(original?.code).toHaveLength(10);
+    expect(
+      (await f.t.query(api.registration.detail, { code: original?.code }))
+        ?.unlisted
+    ).toBe(true);
+    await f.adminClient.mutation(api.registration.saveSession, {
+      ...values,
+      id,
+      title: "Updated",
+    });
+    expect((await f.t.run((ctx) => ctx.db.get(id)))?.code).toBe(original?.code);
+  });
+});

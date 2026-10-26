@@ -716,3 +716,26 @@ async function settleMaterialOrder(
   });
   await audit(ctx, "system", "materials-settled", parent._id, order._id);
 }
+
+/** Resolve both current share links and links distributed before shortening. */
+export async function sessionByCode(ctx: QueryCtx, code: string) {
+  const current = await ctx.db
+    .query("registrationSessions")
+    .withIndex("by_code", (q) => q.eq("code", code))
+    .unique();
+  return (
+    current ??
+    (await ctx.db
+      .query("registrationSessions")
+      .withIndex("by_legacyCode", (q) => q.eq("legacyCode", code))
+      .unique())
+  );
+}
+
+export async function newSessionCode(ctx: MutationCtx) {
+  const code = crypto.randomUUID().replaceAll("-", "").slice(0, 10);
+  if (await sessionByCode(ctx, code)) {
+    throw new ConvexError("Please retry creating the session link");
+  }
+  return code;
+}
