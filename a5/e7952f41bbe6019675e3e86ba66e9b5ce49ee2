@@ -1,0 +1,20 @@
+bun.lock
+  h_83bc5aaa251b9b 71,83-85
+package.json
+  h_83bc5aaa251b9b 80,93-95
+patches/decode-named-character-reference@1.2.0.patch
+  h_83bc5aaa251b9b 1-12
+tests/registration/email-bundle.test.ts
+  h_83bc5aaa251b9b 1-47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a5e7952f41bbe6019675e3e86ba66e9b5ce49ee2",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
