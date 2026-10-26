@@ -1,8 +1,12 @@
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import type { ConvexHttpClient } from "convex/browser";
 import { convexTest } from "convex-test";
 import Stripe from "stripe";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
+import { createMcpServer } from "../../lib/mcp/server";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
 import {
   completion,
@@ -4906,4 +4910,267 @@ it("shows linked material balances in MCP order details and rejects unauthorized
       reason: "Unauthorized",
     })
   ).rejects.toThrow("Forbidden");
+});
+
+it("uses the destination's replacement when a same-course transfer reuses an attachment ID", async () => {
+  const f = await materialOrderFixture();
+  const target = await materialTarget(f);
+  await f.t.run((ctx) =>
+    ctx.db.patch(target, {
+      overrides: {
+        materials: [
+          {
+            id: "included",
+            materialId: f.extra,
+            title: "Replacement workbook",
+            policy: "included",
+            cents: 2500,
+          },
+        ],
+      },
+    })
+  );
+  expect(
+    await f.adminClient.query(api.registrationTransfers.preview, {
+      seatId: f.enrolled._id,
+      sessionId: target,
+    })
+  ).toMatchObject({ original: 11_500, destination: 12_500, difference: 1000 });
+  const moved = await f.adminClient.mutation(
+    api.registrationTransfers.transfer,
+    {
+      seatId: f.enrolled._id,
+      sessionId: target,
+      choice: "collect",
+      reason: "Use destination workbook",
+      requestKey: crypto.randomUUID(),
+    }
+  );
+  expect(moved.adjustment).toBe(1000);
+  expect(
+    (await f.t.run((ctx) => ctx.db.get(moved.seatId)))?.snapshot.materials
+  ).toEqual([
+    {
+      id: "included",
+      materialId: f.extra,
+      title: "Replacement workbook",
+      policy: "included",
+      cents: 2500,
+    },
+  ]);
+  await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+    orderId: moved.orderId,
+    source: "offline",
+    reason: "Paid difference",
+  });
+  const delivered = await f.adminClient.query(
+    api.registrationOperations.seatMaterials,
+    { seatId: moved.seatId }
+  );
+  expect(delivered.map((item) => item.materialId)).toEqual([f.extra]);
+});
+
+it.each(["unpaid", "offline"] as const)(
+  "replays %s material edits without undoing later edits or duplicating side effects",
+  async (payment) => {
+    const f = await materialOrderFixture(payment);
+    const args = {
+      seatId: f.enrolled._id,
+      materialIds: [],
+      revision: 0,
+      reason: "Remove included guide",
+      requestKey: crypto.randomUUID(),
+    };
+    expect(
+      await f.adminClient.mutation(api.registrationMaterialOrders.edit, args)
+    ).toBeNull();
+    expect(
+      await f.adminClient.mutation(api.registrationMaterialOrders.edit, args)
+    ).toBeNull();
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(f.order.orderId)))?.materialRevision
+    ).toBe(1);
+    await f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+      ...args,
+      materialIds: [f.extra],
+      revision: 1,
+      reason: "Add workbook",
+      requestKey: crypto.randomUUID(),
+    });
+    const state = () =>
+      f.t.run(async (ctx) => ({
+        order: await ctx.db.get(f.order.orderId),
+        seat: await ctx.db.get(f.enrolled._id),
+        balances: await ctx.db.query("registrationOrders").collect(),
+        jobs: await ctx.db.query("registrationJobs").collect(),
+        activity: await ctx.db.query("registrationActivity").collect(),
+        edits: await ctx.db.query("registrationMaterialEdits").collect(),
+      }));
+    const before = await state();
+    expect(
+      await f.adminClient.mutation(api.registrationMaterialOrders.edit, args)
+    ).toBeNull();
+    expect(await state()).toEqual(before);
+    await expect(
+      f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+        ...args,
+        materialIds: [f.material],
+      })
+    ).rejects.toThrow("Operation key already used for a different edit");
+    await expect(
+      f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+        ...args,
+        requestKey: crypto.randomUUID(),
+      })
+    ).rejects.toThrow("order changed");
+    expect(await state()).toEqual(before);
+  }
+);
+
+it("replays a paid addition after settlement and rejects changing its operation input", async () => {
+  const f = await materialOrderFixture();
+  const args = {
+    seatId: f.enrolled._id,
+    materialIds: [f.material, f.extra],
+    revision: 0,
+    reason: "Add workbook",
+    requestKey: crypto.randomUUID(),
+  };
+  const balance = await f.adminClient.mutation(
+    api.registrationMaterialOrders.edit,
+    args
+  );
+  if (!balance) {
+    throw new Error("Missing balance");
+  }
+  await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+    orderId: balance,
+    source: "offline",
+    reason: "Paid",
+  });
+  expect(
+    await f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+      ...args,
+      materialIds: [f.extra, f.material],
+    })
+  ).toBe(balance);
+  await expect(
+    f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+      ...args,
+      reason: "Different purpose",
+    })
+  ).rejects.toThrow("Operation key already used for a different edit");
+  const edits = await f.t.run((ctx) =>
+    ctx.db.query("registrationMaterialEdits").collect()
+  );
+  expect(edits).toHaveLength(1);
+  expect(edits[0]?.balanceId).toBe(balance);
+  expect(
+    await f.adminClient.query(api.registrationMaterialOrders.additions, {
+      orderId: f.order.orderId,
+    })
+  ).toHaveLength(1);
+});
+
+it("applies MCP complete-selection overrides despite stale choices and replays saved edits through the real backend", async () => {
+  const f = await materialOrderFixture("unpaid");
+  await f.t.run(async (ctx) => {
+    const course = await ctx.db.get(f.course);
+    if (!course) {
+      throw new Error("Missing course");
+    }
+    await ctx.db.patch(f.course, {
+      settings: {
+        ...course.settings,
+        materials: [
+          {
+            id: "waivable-row",
+            materialId: f.material,
+            title: "Guide",
+            policy: "waivable",
+            cents: 1500,
+          },
+          {
+            id: "optional-row",
+            materialId: f.extra,
+            title: "Workbook",
+            policy: "optional",
+            cents: 2500,
+          },
+        ],
+      },
+    });
+  });
+  const server = createMcpServer({
+    convex: f.adminClient as unknown as ConvexHttpClient,
+    actor: { userId: f.admin, email: ADMIN_EMAILS[0], label: "MCP test" },
+    siteUrl: "https://example.test",
+  });
+  const client = new Client({ name: "material-review-test", version: "1" });
+  const [clientTransport, serverTransport] =
+    InMemoryTransport.createLinkedPair();
+  await server.connect(serverTransport);
+  await client.connect(clientTransport);
+  try {
+    const base = {
+      courseId: f.course,
+      sessionId: f.session,
+      purchaser: "buyer@example.test",
+      purchaserName: "Buyer",
+      payment: "unpaid",
+      reason: "Complete selection",
+    };
+    const enroll = async (address: string, materialIds?: string[]) => {
+      const result = await client.callTool({
+        name: "enroll",
+        arguments: {
+          ...base,
+          materialIds,
+          attendees: [
+            {
+              name: "MCP student",
+              email: address,
+              selected: ["optional-row"],
+              waived: ["waivable-row"],
+            },
+          ],
+        },
+      });
+      expect(result.isError).toBeFalsy();
+      return result.structuredContent;
+    };
+    expect(await enroll("empty@example.test", [])).toMatchObject({
+      total: 10_000,
+    });
+    expect(await enroll("included@example.test", [f.material])).toMatchObject({
+      total: 11_500,
+    });
+    // No override keeps the customer's optional selection and waiver intact.
+    await f.t.run((ctx) => ctx.db.patch(f.session, { capacity: 4 }));
+    expect(await enroll("default@example.test")).toMatchObject({
+      total: 12_500,
+    });
+    const edit = {
+      name: "edit_order_materials",
+      arguments: {
+        seatId: f.enrolled._id,
+        materialIds: [],
+        revision: 0,
+        reason: "Own guide",
+        operationKey: crypto.randomUUID(),
+      },
+    };
+    const first = await client.callTool(edit);
+    const retry = await client.callTool(edit);
+    expect(first.isError).toBeFalsy();
+    expect(retry.isError).toBeFalsy();
+    expect(first.structuredContent).toEqual({ balanceId: null });
+    expect(retry.structuredContent).toEqual(first.structuredContent);
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(f.order.orderId)))?.materialRevision
+    ).toBe(1);
+  } finally {
+    await client.close();
+    await server.close();
+  }
 });

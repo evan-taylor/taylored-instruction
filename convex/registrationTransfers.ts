@@ -143,7 +143,9 @@ function destinationSelection(
           .filter(
             (item) =>
               !config.materials.some(
-                (attached) => attached.materialId === item.materialId
+                (attached) =>
+                  attached.materialId === item.materialId ||
+                  attached.id === item.id
               )
           )
           .map((item) => ({ ...item, policy: "included" as const })),

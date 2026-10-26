@@ -625,7 +625,13 @@ export const reserve = mutation({
       pricing,
       quote(
         pricing,
-        args.attendees,
+        args.admin?.materialIds === undefined
+          ? args.attendees
+          : args.attendees.map((person) => ({
+              ...person,
+              selected: [],
+              waived: [],
+            })),
         coupon,
         coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0,
         actor ? ADMIN_MAX_SEATS : MAX_SEATS

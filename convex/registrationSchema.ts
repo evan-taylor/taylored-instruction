@@ -152,6 +152,12 @@ export const registrationTables = {
     .index("by_sessionId", ["sessionId"])
     .index("by_stripeSession", ["stripeSession"])
     .index("by_organizationId", ["organizationId"]),
+  registrationMaterialEdits: defineTable({
+    requestKey: v.string(),
+    input: v.string(),
+    seatId: v.id("registrationSeats"),
+    balanceId: v.union(v.id("registrationOrders"), v.null()),
+  }).index("by_requestKey", ["requestKey"]),
   registrationOrganizations: defineTable({
     name: v.string(),
     contactName: v.string(),

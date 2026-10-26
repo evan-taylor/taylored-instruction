@@ -28,7 +28,11 @@ For existing registrations, open the order, expand an attendee, and choose
   an explicit waiver. Canceling an unpaid material balance leaves the registration
   active. Late payments for canceled or transferred attendees enter reconciliation.
 
-`materialRevision` rejects stale edits. Pending balances block further edits to
+`materialRevision` rejects stale edits. Each successful edit also records its
+operation key, normalized input, and result in `registrationMaterialEdits`.
+Identical retries return that result (including no balance) without repeating
+side effects, even after later edits. Reusing a key with different input fails.
+Pending balances block further edits to
 the same attendee until settled or canceled. `excludedMaterialIds` preserves
 staff exclusions through course-template propagation and prevents propagation
 from delivering an addition before it is paid. Canceled entitlements remain in
@@ -48,6 +52,8 @@ and their allocated refunds while preserving original payment records. Payments
 received after session cancellation are recorded for reconciliation rather than
 delivering materials. Course propagation advances the order material revision so
 an already-open editor cannot silently remove newly added materials.
+When a destination replaces a material under an existing attachment ID, its row
+takes precedence; the source material is not carried as a duplicate row.
 
 MCP exposes the same workflows through `enroll.materialIds`,
 `order_material_selection`, `edit_order_materials`, `order_material_balances`,

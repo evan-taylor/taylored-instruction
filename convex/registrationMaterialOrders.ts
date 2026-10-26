@@ -222,8 +222,30 @@ export const edit = mutation({
   returns: v.union(v.id("registrationOrders"), v.null()),
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
-    if (!args.reason.trim() || args.requestKey.length < 24) {
+    if (
+      !args.reason.trim() ||
+      args.requestKey.length < 24 ||
+      args.requestKey.length > 100
+    ) {
       throw new ConvexError("A reason and operation key are required");
+    }
+    const input = JSON.stringify({
+      seatId: args.seatId,
+      materialIds: [...args.materialIds].sort(),
+      revision: args.revision,
+      reason: args.reason.trim(),
+    });
+    const savedEdit = await ctx.db
+      .query("registrationMaterialEdits")
+      .withIndex("by_requestKey", (q) => q.eq("requestKey", args.requestKey))
+      .unique();
+    if (savedEdit) {
+      if (savedEdit.input !== input) {
+        throw new ConvexError(
+          "Operation key already used for a different edit"
+        );
+      }
+      return savedEdit.balanceId;
     }
     const storedSeat = await ctx.db.get(args.seatId);
     if (!storedSeat) {
@@ -365,6 +387,12 @@ export const edit = mutation({
         reason: args.reason,
       })
     );
+    await ctx.db.insert("registrationMaterialEdits", {
+      requestKey: args.requestKey,
+      input,
+      seatId: seat._id,
+      balanceId,
+    });
     return balanceId;
   },
 });

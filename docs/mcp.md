@@ -133,11 +133,14 @@ For a standalone test email, replace merge fields with sample values;
 `enroll` accepts a sessionId to register directly into that session. Its optional
 `materialIds` is the complete catalog selection for every attendee: pass `[]`
 to remove all included materials, or omit it to retain course/attendee policies.
-Prices are resolved by the same backend used by the admin form.
+Prices are resolved by the same backend used by the admin form. A complete
+override clears old attendee `selected` and `waived` choices before pricing.
 
 For an existing attendee, read `order_material_selection`, then pass the full
 selection, returned `revision`, a reason, and a stable `operationKey` to
 `edit_order_materials`. This saves only: it never sends an invoice or refunds money.
+Retry with the same key and input to recover the original result, including
+unpaid and removal-only edits. Use a new key for a different edit.
 Paid additions return a `balanceId`; `get_order` includes linked `materialBalances`,
 and `order_material_balances` lists them separately. Call `get_order` on a balance
 for its invoices/refunds. Added materials are withheld until payment or waiver.
