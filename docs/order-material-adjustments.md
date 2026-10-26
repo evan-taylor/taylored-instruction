@@ -8,7 +8,8 @@ session's **+ Registration** button opens this form with that session selected.
 For existing registrations, open the order, expand an attendee, and choose
 **Add or remove materials**. Changes require a reason and a review step.
 
-- Unpaid orders update their material lines and subtotal. An open invoice must
+- Unpaid transfer balances must be settled before material edits to preserve
+  transfer credit. Other unpaid orders update their material lines and subtotal. An open invoice must
   be voided first. Orders already attached to card checkout and unpaid orders
   using coupons require cancellation and re-enrollment rather than changing an
   existing payment quote or discount allocation.
@@ -40,3 +41,15 @@ capacity, canceled access and delivery, re-adding materials, template propagatio
 and late-payment reconciliation. The browser acceptance scenario in
 `tests/e2e/admin.spec.ts` uses an isolated fixture backend and saves a draft
 invoice; it does not send customer mail or call live payment services.
+
+Same-course transfers use the current material selection and preserve staff
+exclusions. Transfer credit and refunds include separately paid material balances
+and their allocated refunds while preserving original payment records. Payments
+received after session cancellation are recorded for reconciliation rather than
+delivering materials. Course propagation advances the order material revision so
+an already-open editor cannot silently remove newly added materials.
+
+MCP exposes the same workflows through `enroll.materialIds`,
+`order_material_selection`, `edit_order_materials`, `order_material_balances`,
+and `cancel_material_balance`. Invoice creation defaults to a draft; sending,
+payment/waiver, and partial refunds remain explicit separate actions.

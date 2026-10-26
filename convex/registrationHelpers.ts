@@ -261,6 +261,20 @@ export async function activeSeatMaterials(
   return pages.flat();
 }
 
+/** Older material mail jobs recorded their entitlement only in the dedupe key. */
+export function materialJobEntitlementId(
+  ctx: QueryCtx,
+  job: Doc<"registrationJobs">
+) {
+  if (job.entitlementId) {
+    return job.entitlementId;
+  }
+  const [kind, id] = job.key.split(":");
+  return id && (kind === "assigned" || kind === "material")
+    ? ctx.db.normalizeId("registrationEntitlements", id)
+    : null;
+}
+
 export async function grantMaterial(
   ctx: MutationCtx,
   seat: Doc<"registrationSeats">,
@@ -437,6 +451,7 @@ export async function assignCode(
     body: "Your course code is available in your secure registration portal.",
     due: Date.now(),
     seatId: seat._id,
+    entitlementId,
   });
   await ctx.db.insert("registrationAssignments", {
     entitlementId,
@@ -627,13 +642,15 @@ async function settleMaterialOrder(
     ? await ctx.db.get(order.parentOrderId)
     : null;
   const [purchase] = order.seats;
+  const session = seat?.sessionId ? await ctx.db.get(seat.sessionId) : null;
   const now = Date.now();
   if (
     seat?.state !== "active" ||
     !seat.settledAt ||
     !parent ||
     !purchase ||
-    seat.orderId !== parent._id
+    seat.orderId !== parent._id ||
+    (seat.sessionId && (!session || session.state === "canceled"))
   ) {
     await ctx.db.patch(order._id, {
       status: "exception",

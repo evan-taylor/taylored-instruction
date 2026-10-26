@@ -8,6 +8,7 @@ import { mutation, query } from "./_generated/server";
 import {
   activeSeatMaterials,
   audit,
+  materialJobEntitlementId,
   offering,
   release,
   staff,
@@ -61,6 +62,29 @@ export const additions = query({
   },
 });
 
+/** Read selection and revision together so agent edits cannot use a mixed snapshot. */
+export const selectionState = query({
+  args: { seatId: v.id("registrationSeats") },
+  returns: v.object({
+    orderId: v.id("registrationOrders"),
+    revision: v.number(),
+    materials: v.array(materialAttachment),
+  }),
+  handler: async (ctx, args) => {
+    await staff(ctx);
+    const seat = await ctx.db.get(args.seatId);
+    const order = seat ? await ctx.db.get(seat.orderId) : null;
+    if (!(seat && order)) {
+      throw new ConvexError("Registration not found");
+    }
+    return {
+      orderId: order._id,
+      revision: order.materialRevision ?? 0,
+      materials: await currentSelection(ctx, seat),
+    };
+  },
+});
+
 async function editableOrder(
   ctx: MutationCtx,
   seat: Doc<"registrationSeats">,
@@ -99,6 +123,11 @@ async function editableOrder(
     );
   }
   if (order.status === "unpaid") {
+    if (seat.transferredFrom) {
+      throw new ConvexError(
+        "Settle the transfer balance before editing materials so the transfer credit is preserved"
+      );
+    }
     const invoices = await ctx.db
       .query("registrationInvoices")
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
@@ -155,7 +184,10 @@ async function cancelMaterials(
   );
   await Promise.all(
     jobs
-      .filter((job) => job.entitlementId && canceled.has(job.entitlementId))
+      .filter((job) => {
+        const entitlementId = materialJobEntitlementId(ctx, job);
+        return entitlementId && canceled.has(entitlementId);
+      })
       .map((job) => ctx.db.patch(job._id, { state: "canceled" }))
   );
 }

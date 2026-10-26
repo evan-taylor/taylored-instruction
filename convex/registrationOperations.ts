@@ -1145,6 +1145,18 @@ export const reschedule = internalMutation({
     return null;
   },
 });
+async function advanceMaterialRevision(
+  ctx: MutationCtx,
+  orderId: Id<"registrationOrders">
+) {
+  const order = await ctx.db.get(orderId);
+  if (order) {
+    await ctx.db.patch(orderId, {
+      materialRevision: (order.materialRevision ?? 0) + 1,
+    });
+  }
+}
+
 export const propagate = internalMutation({
   args: {
     courseId: v.id("registrationCourses"),
@@ -1209,6 +1221,7 @@ export const propagate = internalMutation({
           )
       );
       if (added.length) {
+        await advanceMaterialRevision(ctx, seat.orderId);
         await ctx.db.patch(seat._id, {
           snapshot: {
             ...seat.snapshot,

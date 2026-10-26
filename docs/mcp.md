@@ -62,6 +62,7 @@ Code lives in `lib/mcp`. Tools are grouped by file and carry MCP annotations
 | `tools/overview.ts` | whoami, dashboard_summary, attention_queue, activity_log, email_queue, retry_email, send_test_email, get_record, offering_detail |
 | `tools/catalog.ts` | list/get/save/duplicate/delete course, list sessions, session_overview, plan_meetings, save_session, cancel_session, session_roster, export_roster_csv, email_attendees, session files, locations, search_offerings |
 | `tools/registrations.ts` | list_orders, get_order, lookup_customer, enroll, request_payment_email, record_offline_payment, restore_coupon, refund_order, cancel_seat, transfer_preview/transfer_seat, seat_materials, resend_materials, replace_keycode, fulfill_physical, keycode_history, seat_outcomes, record_attendance, record_outcome, override_completion, waitlist_add |
+| `tools/order-materials.ts` | order_material_selection, order_material_balances, edit_order_materials, cancel_material_balance |
 | `tools/sales.ts` | coupons, group requests, organizations, invoices (create/issue/record payment/void/remind), stripe_tax_codes |
 | `tools/fulfillment.ts` | materials (with PDF upload), keycode_stock, add_keycodes, missing_materials, manage_keycode |
 | `tools/people.ts` | invite_instructor, list_instructor_invitations, revoke_instructor_invitation, staff_directory, list_instructor_profiles, list_users, set_instructor_approval, deactivate_user, delete_profile |
@@ -126,3 +127,27 @@ Example `save_course` settings:
 `email_attendees` and `send_test_email` accept the same body formatting.
 For a standalone test email, replace merge fields with sample values;
 `send_test_email` only accepts the configured safe test recipient.
+
+## Registration materials
+
+`enroll` accepts a sessionId to register directly into that session. Its optional
+`materialIds` is the complete catalog selection for every attendee: pass `[]`
+to remove all included materials, or omit it to retain course/attendee policies.
+Prices are resolved by the same backend used by the admin form.
+
+For an existing attendee, read `order_material_selection`, then pass the full
+selection, returned `revision`, a reason, and a stable `operationKey` to
+`edit_order_materials`. This saves only: it never sends an invoice or refunds money.
+Paid additions return a `balanceId`; `get_order` includes linked `materialBalances`,
+and `order_material_balances` lists them separately. Call `get_order` on a balance
+for its invoices/refunds. Added materials are withheld until payment or waiver.
+
+`create_invoice` now defaults to a **draft** (`send=false`). Explicitly choose
+`send=true` or call `issue_invoice` when the user wants it sent. Payment requests,
+offline payments/waivers, and partial refunds use the existing tools on the
+appropriate order or balance. `cancel_material_balance` closes an unpaid addition
+without canceling the registration. Removing materials does not itself refund.
+
+Unpaid transfer balances must settle before editing materials. Unpaid orders with
+coupons or card checkouts require re-enrollment; draft/open invoices must be voided
+first. Pending additions must settle or be canceled before another edit.

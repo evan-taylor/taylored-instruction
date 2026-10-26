@@ -4,7 +4,10 @@ import { calendar } from "../shared/registration/schedule";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
-import { activeSeatMaterials } from "./registrationHelpers";
+import {
+  activeSeatMaterials,
+  materialJobEntitlementId,
+} from "./registrationHelpers";
 
 function billingDetails(
   order: Doc<"registrationOrders"> | null,
@@ -262,9 +265,8 @@ export const claim = internalMutation({
     }
     const seat = job.seatId ? await ctx.db.get(job.seatId) : null;
     const session = job.sessionId ? await ctx.db.get(job.sessionId) : null;
-    const entitlement = job.entitlementId
-      ? await ctx.db.get(job.entitlementId)
-      : null;
+    const entitlementId = materialJobEntitlementId(ctx, job);
+    const entitlement = entitlementId ? await ctx.db.get(entitlementId) : null;
     const explicit =
       job.key.startsWith("staff:") || job.key.startsWith("schedule:");
     const invoiceOpen = await invoiceStillOpen(ctx, job);

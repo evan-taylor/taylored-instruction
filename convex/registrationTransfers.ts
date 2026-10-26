@@ -29,6 +29,55 @@ async function retainedCredit(
   if (!order) {
     throw new ConvexError("Original order missing");
   }
+  const additions = await paidMaterialOrders(ctx, seat);
+  const payments = await Promise.all(
+    [order, ...additions].map((payment) =>
+      paymentCredit(ctx, payment, seat.email)
+    )
+  );
+  const materialTotal = additions.reduce(
+    (sum, payment) => sum + (payment.source === "waived" ? 0 : payment.total),
+    0
+  );
+  const previous = seat.transferredFrom
+    ? await ctx.db.get(seat.transferredFrom)
+    : null;
+  const inherited = previous
+    ? await retainedCredit(ctx, previous, depth + 1)
+    : 0;
+  return Math.max(
+    0,
+    Math.min(
+      seat.snapshot.total + materialTotal,
+      payments.reduce((sum, credit) => sum + credit, 0) + inherited
+    )
+  );
+}
+
+async function paidMaterialOrders(
+  ctx: QueryCtx,
+  seat: Doc<"registrationSeats">
+) {
+  const orders = await ctx.db
+    .query("registrationOrders")
+    .withIndex("by_parentOrderId", (q) => q.eq("parentOrderId", seat.orderId))
+    .take(101);
+  if (orders.length > 100) {
+    throw new ConvexError("Material order history requires reconciliation");
+  }
+  return orders.filter(
+    (order) =>
+      order.materialSeatId === seat._id &&
+      order.settledAt &&
+      (order.status === "settled" || order.source === "invoice-extra-payment")
+  );
+}
+
+async function paymentCredit(
+  ctx: QueryCtx,
+  order: Doc<"registrationOrders">,
+  email: string
+) {
   // This source marks a separate card payment received after offline settlement.
   // Returning that duplicate does not return the original offline tuition.
   const refunds =
@@ -51,7 +100,7 @@ async function retainedCredit(
       // not change this attendee's credit.
       if (
         !refund.allocations ||
-        refund.allocations.some((allocation) => allocation.email === seat.email)
+        refund.allocations.some((allocation) => allocation.email === email)
       ) {
         throw new ConvexError(PENDING_REFUND);
       }
@@ -63,25 +112,64 @@ async function retainedCredit(
       );
     }
     refunded += refund.allocations
-      .filter((allocation) => allocation.email === seat.email)
+      .filter((allocation) => allocation.email === email)
       .reduce((sum, allocation) => sum + allocation.cents, 0);
   }
   const purchased =
     order.source === "waived"
       ? 0
       : order.seats
-          .filter((item) => item.attendee.email === seat.email)
+          .filter((item) => item.attendee.email === email)
           .reduce((sum, item) => sum + item.total, 0);
-  const previous = seat.transferredFrom
-    ? await ctx.db.get(seat.transferredFrom)
-    : null;
-  const inherited = previous
-    ? await retainedCredit(ctx, previous, depth + 1)
-    : 0;
-  return Math.max(
-    0,
-    Math.min(seat.snapshot.total, purchased - refunded + inherited)
+  return Math.max(0, purchased - refunded);
+}
+
+/** Use the current selection and staff exclusions when moving within a course. */
+function destinationSelection(
+  config: Settings,
+  seat: Doc<"registrationSeats">,
+  courseId: Id<"registrationCourses">
+) {
+  const sameCourse = seat.courseId === courseId;
+  const current = new Set(
+    seat.snapshot.materials.map((item) => item.materialId)
   );
+  const materials = sameCourse
+    ? [
+        ...config.materials.filter(
+          (item) => !seat.excludedMaterialIds?.includes(item.materialId)
+        ),
+        ...seat.snapshot.materials
+          .filter(
+            (item) =>
+              !config.materials.some(
+                (attached) => attached.materialId === item.materialId
+              )
+          )
+          .map((item) => ({ ...item, policy: "included" as const })),
+      ]
+    : config.materials;
+  const allowed = new Set(materials.map((item) => item.id));
+  return {
+    config: { ...config, materials },
+    attendee: {
+      ...seat.snapshot.attendee,
+      selected: sameCourse
+        ? materials
+            .filter((item) => current.has(item.materialId))
+            .map((item) => item.id)
+        : seat.snapshot.attendee.selected.filter((id) => allowed.has(id)),
+      waived: sameCourse
+        ? materials
+            .filter(
+              (item) =>
+                item.policy === "waivable" && !current.has(item.materialId)
+            )
+            .map((item) => item.id)
+        : seat.snapshot.attendee.waived.filter((id) => allowed.has(id)),
+    },
+    excludedMaterialIds: sameCourse ? seat.excludedMaterialIds : undefined,
+  };
 }
 
 export const transfer = mutation({
@@ -140,22 +228,16 @@ export const transfer = mutation({
       throw new ConvexError("Attendee already registered in destination");
     }
     await rejectOfferedSeat(ctx, target._id, source.email);
-    const selections = new Set(config.materials.map((m) => m.id));
+    const selection = destinationSelection(config, source, target.courseId);
     const [snapshot] = quote(
-      config,
+      selection.config,
       [
         {
-          ...source.snapshot.attendee,
+          ...selection.attendee,
           answers: destinationAnswers(
             config,
             source.snapshot.attendee,
             args.answers
-          ),
-          selected: source.snapshot.attendee.selected.filter((id) =>
-            selections.has(id)
-          ),
-          waived: source.snapshot.attendee.waived.filter((id) =>
-            selections.has(id)
           ),
         },
       ],
@@ -217,6 +299,7 @@ export const transfer = mutation({
       },
       outcomeDefinitions: config.outcomes,
       transferredFrom: source._id,
+      excludedMaterialIds: selection.excludedMaterialIds,
     });
     await ctx.db.patch(target._id, { reserved: target.reserved + 1 });
     await ctx.db.patch(source._id, { state: "transferred" });
@@ -377,54 +460,26 @@ async function refundLineage(
     throw new ConvexError("Transfer history requires reconciliation");
   }
   const order = await ctx.db.get(seat.orderId);
-  let remaining = amount;
-  if (order?.paymentIntent && order.source !== "invoice-extra-payment") {
-    const history = await ctx.db
-      .query("registrationRefunds")
-      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-      .collect();
-    const spent = history
-      .filter((r) => r.state !== "failed")
-      .reduce(
-        (sum, r) =>
-          sum +
-          (r.allocations ?? [])
-            .filter((a) => a.email === seat.email)
-            .reduce((n, a) => n + a.cents, 0),
-        0
-      );
-    const purchased = order.seats.filter(
-      (s) => s.attendee.email === seat.email
-    );
-    const balance = purchased.reduce((sum, s) => sum + s.total, 0) - spent;
-    const cents = Math.max(
-      0,
-      Math.min(
-        remaining,
-        balance,
-        order.total - order.refunded - order.refundReserved
-      )
-    );
-    if (cents > 0) {
-      await ctx.db.patch(order._id, {
-        refundReserved: order.refundReserved + cents,
-      });
-      await ctx.db.insert("registrationRefunds", {
-        orderId: order._id,
-        key: `transfer:${requestKey}:${order._id}`,
-        cents,
-        allocations: await allocateRefund(
-          ctx,
-          { ...order, seats: purchased, tax: 0 },
-          cents
-        ),
-        reason,
-        actor,
-        state: "pending",
-      });
-      remaining -= cents;
+  const additions = await paidMaterialOrders(ctx, seat);
+  const payments = order ? [order, ...additions] : additions;
+  const remaining = await payments.reduce(async (prior, payment) => {
+    const available = await prior;
+    if (
+      !(available && payment.paymentIntent) ||
+      payment.source === "invoice-extra-payment"
+    ) {
+      return available;
     }
-  }
+    return await refundPayment(
+      ctx,
+      payment,
+      seat.email,
+      available,
+      requestKey,
+      reason,
+      actor
+    );
+  }, Promise.resolve(amount));
   if (remaining === 0) {
     return;
   }
@@ -447,6 +502,61 @@ async function refundLineage(
   );
 }
 
+async function refundPayment(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">,
+  email: string,
+  available: number,
+  requestKey: string,
+  reason: string,
+  actor: Id<"users">
+) {
+  const history = await ctx.db
+    .query("registrationRefunds")
+    .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+    .collect();
+  const spent = history
+    .filter((r) => r.state !== "failed")
+    .reduce(
+      (sum, r) =>
+        sum +
+        (r.allocations ?? [])
+          .filter((a) => a.email === email)
+          .reduce((n, a) => n + a.cents, 0),
+      0
+    );
+  const purchased = order.seats.filter((s) => s.attendee.email === email);
+  const balance = purchased.reduce((sum, s) => sum + s.total, 0) - spent;
+  const cents = Math.max(
+    0,
+    Math.min(
+      available,
+      balance,
+      order.total - order.refunded - order.refundReserved
+    )
+  );
+  if (cents > 0) {
+    await ctx.db.patch(order._id, {
+      refundReserved: order.refundReserved + cents,
+    });
+    await ctx.db.insert("registrationRefunds", {
+      orderId: order._id,
+      key: `transfer:${requestKey}:${order._id}`,
+      cents,
+      allocations: await allocateRefund(
+        ctx,
+        { ...order, seats: purchased, tax: 0 },
+        cents
+      ),
+      reason,
+      actor,
+      state: "pending",
+    });
+    return available - cents;
+  }
+  return available;
+}
+
 export const preview = query({
   args: {
     seatId: v.id("registrationSeats"),
@@ -466,19 +576,10 @@ export const preview = query({
       throw new ConvexError("Registration or session missing");
     }
     const { config } = await offering(ctx, target.courseId, target._id);
-    const allowed = new Set(config.materials.map((m) => m.id));
+    const selection = destinationSelection(config, seat, target.courseId);
     const [priced] = quote(
-      { ...config, questions: [] },
-      [
-        {
-          ...seat.snapshot.attendee,
-          answers: [],
-          selected: seat.snapshot.attendee.selected.filter((id) =>
-            allowed.has(id)
-          ),
-          waived: seat.snapshot.attendee.waived.filter((id) => allowed.has(id)),
-        },
-      ],
+      { ...selection.config, questions: [] },
+      [{ ...selection.attendee, answers: [] }],
       null,
       0
     );

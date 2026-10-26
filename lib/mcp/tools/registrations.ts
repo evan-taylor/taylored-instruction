@@ -50,7 +50,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
     {
       title: "Get order",
       description:
-        "An order with its seats, invoices, refunds, organization, session, course, and the emails queued for its attendees.",
+        "An order with its seats, linked material balances, invoices, refunds, organization, session, course, and attendee emails. A material balance references its parentOrderId and materialSeatId; get_order on that balance shows its own payment records.",
       inputSchema: { orderId: id },
       annotations: READ,
     },
@@ -88,7 +88,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
     {
       title: "Enroll attendees (staff)",
       description:
-        "Creates a staff enrollment order, the same as the admin 'Enroll' and group enrollment forms. Offline and waived payments send confirmation emails immediately. payment=unpaid creates an order awaiting payment (then use request_payment_email or create_invoice); offline records payment received outside Stripe; waived grants free seats. Material ids come from the course settings (get_course); included materials are always charged, optional ones only when listed in selected, waivable ones unless listed in waived. Required course questions must be answered. Up to 100 attendees; overbook=true ignores capacity.",
+        "Creates a staff enrollment order, the same as the admin 'Enroll' and group enrollment forms. Offline and waived payments send confirmation emails immediately. payment=unpaid creates an order awaiting payment (then use request_payment_email or create_invoice); offline records payment received outside Stripe; waived grants free seats. Material ids come from the course settings (get_course); when materialIds is omitted, course policies and attendee selected/waived attachment IDs apply. Supply materialIds to override the complete selection for every attendee, including removing included items or adding catalog items. An empty array provides no materials. Prices come from the server. Required course questions must be answered. Up to 100 attendees; overbook=true ignores capacity.",
       inputSchema: {
         courseId: id,
         sessionId: id.optional().describe("Omit for self-paced courses"),
@@ -96,6 +96,13 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
         purchaserName: z.string().min(1),
         purchaserPhone: z.string().optional(),
         attendees: z.array(attendee).min(1).max(100),
+        materialIds: z
+          .array(id)
+          .max(50)
+          .optional()
+          .describe(
+            "Complete catalog material IDs for every attendee; overrides course policies. [] removes all materials; omit to use attendee selected/waived defaults."
+          ),
         coupon: z.string().optional().describe("Coupon code"),
         payment: z.enum(["unpaid", "offline", "waived"]),
         reason: z
@@ -135,6 +142,9 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
               | Id<"registrationOrganizations">
               | undefined,
             pricingNote: args.pricingNote,
+            materialIds: args.materialIds as
+              | Id<"registrationMaterials">[]
+              | undefined,
           },
         });
         return ok(

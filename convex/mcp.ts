@@ -314,9 +314,15 @@ export const orderDetail = query({
           )
         ),
       ]);
+    const materialBalances = await ctx.db
+      .query("registrationOrders")
+      .withIndex("by_parentOrderId", (q) => q.eq("parentOrderId", order._id))
+      .order("desc")
+      .take(100);
     return {
       order,
       seats,
+      materialBalances,
       invoices,
       refunds,
       organization,
