@@ -1,6 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  skipTrailingSlashRedirect: true,
+  rewrites() {
+    const host =
+      process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com";
+    const assets = host.includes("eu.")
+      ? "https://eu-assets.i.posthog.com"
+      : "https://us-assets.i.posthog.com";
+    return [
+      {
+        source: "/ingest/static/:path*",
+        destination: `${assets}/static/:path*`,
+      },
+      { source: "/ingest/:path*", destination: `${host}/:path*` },
+    ];
+  },
   poweredByHeader: false, // Remove X-Powered-By header for security
   compress: true, // Enable gzip compression
   cacheComponents: true, // Enable Cache Components (PPR) for Next.js 16

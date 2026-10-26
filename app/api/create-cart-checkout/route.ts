@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import PostHogClient from "@/lib/posthog";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -67,7 +68,13 @@ export async function POST(req: NextRequest) {
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
       customer_email: email,
       line_items: lineItems,
-      metadata,
+      metadata: {
+        ...metadata,
+        posthog_distinct_id:
+          req.headers.get("x-posthog-distinct-id")?.slice(0, 200) ?? "",
+        posthog_session_id:
+          req.headers.get("x-posthog-session-id")?.slice(0, 200) ?? "",
+      },
       automatic_tax: {
         enabled: true,
       },
@@ -77,6 +84,21 @@ export async function POST(req: NextRequest) {
       allow_promotion_codes: true,
     });
 
+    const distinctId = req.headers.get("x-posthog-distinct-id");
+    if (distinctId) {
+      const posthog = PostHogClient();
+      posthog?.capture({
+        distinctId,
+        event: "ecard_checkout_created",
+        properties: {
+          $session_id: req.headers.get("x-posthog-session-id"),
+          item_count: lineItems.length,
+        },
+      });
+      await posthog?.shutdown().catch(() => {
+        /* Analytics must not fail checkout. */
+      });
+    }
     if (session.url) {
       return NextResponse.json({ url: session.url });
     }

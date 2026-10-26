@@ -1,8 +1,11 @@
 "use node";
 import { ConvexError, v } from "convex/values";
+import { PostHog } from "posthog-node";
 import { Resend } from "resend";
 import Stripe from "stripe";
 import { SUPPORT_EMAIL } from "../shared/email";
+import { registrationProperties } from "../shared/registration/analytics";
+import { analyticsContext } from "../shared/registration/analytics-validator";
 import { registrationEmail } from "../shared/registration/email";
 import {
   assertRegistrationPaymentMode,
@@ -270,6 +273,50 @@ export const expireCheckout = internalAction({
         { ...args, attempt: args.attempt + 1 }
       );
     }
+    return null;
+  },
+});
+
+/** Network delivery runs outside payment transactions and cannot fail checkout. */
+export const captureAnalytics = internalAction({
+  args: {
+    event: v.string(),
+    analytics: analyticsContext,
+    properties: v.record(
+      v.string(),
+      v.union(v.string(), v.number(), v.boolean())
+    ),
+  },
+  returns: v.null(),
+  handler: async (_ctx, args) => {
+    const token =
+      process.env.POSTHOG_PROJECT_TOKEN ||
+      process.env.NEXT_PUBLIC_POSTHOG_KEY ||
+      process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+    if (!token) {
+      return null;
+    }
+    const client = new PostHog(token, {
+      host:
+        process.env.POSTHOG_HOST ||
+        process.env.NEXT_PUBLIC_POSTHOG_HOST ||
+        "https://us.i.posthog.com",
+      flushAt: 1,
+      flushInterval: 0,
+    });
+    client.capture({
+      distinctId: args.analytics.distinctId,
+      event: args.event,
+      properties: {
+        ...registrationProperties(args.properties),
+        $session_id: args.analytics.sessionId,
+        $process_person_profile: false,
+        source: "server",
+        schema_version: 1,
+        environment: process.env.REGISTRATION_MODE ?? "test",
+      },
+    });
+    await client.shutdown();
     return null;
   },
 });

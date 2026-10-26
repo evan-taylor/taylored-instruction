@@ -5,6 +5,7 @@ import {
 import { ConvexError, v } from "convex/values";
 import { filter } from "convex-helpers/server/filter";
 import { doc } from "convex-helpers/validators";
+import { analyticsContext } from "../shared/registration/analytics-validator";
 import { matchesCourse } from "../shared/registration/catalog";
 import type { Quote, Settings } from "../shared/registration/domain";
 import {
@@ -46,6 +47,7 @@ import {
   sessionByCode,
   settle,
   staff,
+  trackRegistrationOrder,
 } from "./registrationHelpers";
 import { selectedMaterials } from "./registrationMaterialSelection";
 import schema from "./schema";
@@ -565,6 +567,7 @@ export const coupons = query({
 });
 export const reserve = mutation({
   args: {
+    analytics: v.optional(analyticsContext),
     courseId: v.id("registrationCourses"),
     sessionId: v.optional(v.id("registrationSessions")),
     requestKey: v.string(),
@@ -669,6 +672,13 @@ export const reserve = mutation({
     const total = seats.reduce((sum, seat) => sum + seat.total, 0);
     const expires = now + CHECKOUT_HOLD_MS;
     const id = await ctx.db.insert("registrationOrders", {
+      analytics:
+        !args.admin &&
+        args.analytics?.distinctId.length &&
+        args.analytics.distinctId.length <= 200 &&
+        (args.analytics.sessionId?.length ?? 0) <= 200
+          ? args.analytics
+          : undefined,
       requestKey: args.requestKey,
       purchaser,
       purchaserName: args.purchaserName,
@@ -714,6 +724,7 @@ export const reserve = mutation({
     if (!order) {
       throw new ConvexError("Order insert failed");
     }
+    await trackRegistrationOrder(ctx, order, "registration_reserved");
     const status = await settleReservation(ctx, order, args.admin);
     await audit(
       ctx,

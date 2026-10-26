@@ -1,5 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { SeverityNumber } from "@opentelemetry/api-logs";
+import { after, type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { flushPostHogLogs, getPostHogLogLogger } from "@/instrumentation";
 import PostHogClient from "@/lib/posthog";
 
 // Lazy Stripe initialization to avoid build-time errors
@@ -15,6 +17,9 @@ function getStripeClient(): Stripe {
 
 export async function POST(req: NextRequest) {
   const { priceId, email, quantity, metadata } = await req.json();
+  const distinctId =
+    req.headers.get("x-posthog-distinct-id") ?? crypto.randomUUID();
+  const sessionId = req.headers.get("x-posthog-session-id");
 
   if (!(priceId && email && quantity)) {
     return NextResponse.json(
@@ -46,16 +51,25 @@ export async function POST(req: NextRequest) {
   };
 
   try {
+    const posthogLog = getPostHogLogLogger();
+    posthogLog?.emit({
+      body: "Ecard checkout session creation started",
+      severityNumber: SeverityNumber.INFO,
+      attributes: {
+        checkout_type: "ecard",
+        quantity: numQuantity,
+      },
+    });
+
     // Track checkout session creation
     const posthog = PostHogClient();
     await posthog?.capture({
-      distinctId: email,
+      distinctId,
       event: "checkout_session_created",
       properties: {
-        priceId,
+        $session_id: sessionId ?? undefined,
+        price_id: priceId,
         quantity: numQuantity,
-        email,
-        metadata,
       },
     });
 
@@ -88,42 +102,72 @@ export async function POST(req: NextRequest) {
     if (session.url) {
       // Track successful checkout session creation
       await posthog?.capture({
-        distinctId: email,
+        distinctId,
         event: "checkout_session_created_success",
         properties: {
-          priceId,
+          $session_id: sessionId ?? undefined,
+          price_id: priceId,
           quantity: numQuantity,
-          email,
-          sessionId: session.id,
-          metadata,
         },
       });
-      await posthog?.shutdown();
+      posthogLog?.emit({
+        body: "Ecard checkout session is ready for redirect",
+        severityNumber: SeverityNumber.INFO,
+        attributes: {
+          checkout_type: "ecard",
+          quantity: numQuantity,
+        },
+      });
+      after(flushPostHogLogs);
+      await posthog?.shutdown().catch(() => {
+        /* Analytics must not fail commerce. */
+      });
 
       return NextResponse.json({ url: session.url });
     }
 
-    await posthog?.shutdown();
+    posthogLog?.emit({
+      body: "Ecard checkout session did not provide a redirect URL",
+      severityNumber: SeverityNumber.WARN,
+      attributes: {
+        checkout_type: "ecard",
+      },
+    });
+    after(flushPostHogLogs);
+    await posthog?.shutdown().catch(() => {
+      /* Analytics must not fail commerce. */
+    });
     return NextResponse.json(
       { error: "Checkout session created, but no redirect URL was provided." },
       { status: 500 }
     );
   } catch (err: unknown) {
     const errorMessage = getErrorMessage(err);
+    const posthogLog = getPostHogLogLogger();
+    posthogLog?.emit({
+      body: "Ecard checkout session creation failed",
+      severityNumber: SeverityNumber.ERROR,
+      attributes: {
+        checkout_type: "ecard",
+      },
+    });
+    after(flushPostHogLogs);
 
     // Track checkout session creation error
     const posthog = PostHogClient();
     await posthog?.capture({
-      distinctId: email,
+      distinctId,
       event: "checkout_session_error",
       properties: {
-        error: errorMessage,
-        priceId,
+        $session_id: sessionId ?? undefined,
+        error_type: "checkout_session_creation_failed",
+        price_id: priceId,
         quantity: numQuantity,
-        email,
       },
     });
-    await posthog?.shutdown();
+    await posthog?.shutdown().catch(() => {
+      /* Analytics must not fail commerce. */
+    });
 
     return NextResponse.json({ error: errorMessage }, { status: 500 });
   }

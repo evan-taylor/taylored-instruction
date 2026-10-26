@@ -124,6 +124,49 @@ function attempt(
 }
 
 describe("Registration transactions", () => {
+  it("schedules reservation and settlement analytics once with browser identity and no purchaser data", async () => {
+    const f = await fixture();
+    const args = {
+      ...attempt(f.course, f.session),
+      analytics: { distinctId: "browser-id", sessionId: "session-id" },
+    };
+    const order = await f.t.mutation(api.registration.reserve, args);
+    await f.t.mutation(api.registration.reserve, args);
+    await f.t.mutation(internal.registrationPayments.attachCheckout, {
+      orderId: order.orderId,
+      session: "cs_analytics",
+      secret: "secret",
+    });
+    const event = {
+      orderId: order.orderId,
+      session: "cs_analytics",
+      eventId: "evt_analytics",
+      amount: order.total,
+      currency: "usd",
+      paid: true,
+      live: false,
+      type: "checkout.session.completed",
+    };
+    await f.t.mutation(internal.registrationPayments.paymentEvent, event);
+    await f.t.mutation(internal.registrationPayments.paymentEvent, event);
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.system.query("_scheduled_functions").collect()
+    );
+    const analytics = jobs.filter((job) =>
+      job.name.includes("captureAnalytics")
+    );
+    expect(analytics).toHaveLength(2);
+    expect(analytics.map((job) => job.args[0].event)).toEqual([
+      "registration_reserved",
+      "registration_settled",
+    ]);
+    for (const job of analytics) {
+      expect(job.args[0].analytics).toEqual(args.analytics);
+      expect(job.args[0].properties.order_id).toBe(order.orderId);
+      expect(JSON.stringify(job.args)).not.toContain("@example.test");
+      expect(JSON.stringify(job.args)).not.toContain(args.requestKey);
+    }
+  });
   it("allows only staff to delete unused templates and preserves materials with an audit record", async () => {
     const f = await fixture();
     await f.t.run((ctx) => ctx.db.delete(f.session));

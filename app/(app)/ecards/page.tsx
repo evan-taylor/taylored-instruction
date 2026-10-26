@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
 import { trackVisitorsEvent } from "@/lib/analytics";
+import { postHogHeaders } from "@/lib/posthog-context";
 
 type Product = {
   id: string;
@@ -118,7 +119,7 @@ export default function ECardsPage() {
   const fetchStripePrices = useCallback(async (priceIds: string[]) => {
     const priceResponse = await fetch("/api/get-stripe-prices", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...postHogHeaders() },
       body: JSON.stringify({ priceIds }),
     });
 

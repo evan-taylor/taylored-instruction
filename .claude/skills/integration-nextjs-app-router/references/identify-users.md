@@ -1,20 +1,24 @@
 > AI agents: this is one page from PostHog's docs. Full index of Markdown docs for LLMs: https://posthog.com/llms.txt
 
-# Identify users - Docs
+# Identify users
 
-Copy page
+Canonical URL: https://posthog.com/docs/getting-started/identify-users
 
-# Identify users - Docs
+> **Cloud region:** This page uses US Cloud hosts. For an EU Cloud project, use `https://eu.i.posthog.com` instead of `https://us.i.posthog.com` (ingestion host).
+
+## On this page
+
+- [How identify works](#how-identify-works)
+- [Best practices when using identify](#best-practices-when-using-identify)
+- [Further reading](#further-reading)
 
 Linking events to specific users enables you to build a full picture of how they're using your product across different sessions, devices, and platforms.
 
-This is straightforward to do when [capturing backend events](/docs/product-analytics/capture-events?tab=Node.js.md), as you associate events to a specific user using a `distinct_id`, which is a required argument.
+This is straightforward to do when [capturing backend events](https://posthog.com/docs/product-analytics/capture-events?tab=Node.js.md), as you associate events to a specific user using a `distinct_id`, which is a required argument.
 
-However, in the frontend of a [web](/docs/libraries/js/usage.md#capturing-events) or [mobile app](/docs/libraries/ios.md#capturing-events), a `distinct_id` is not a required argument — PostHog's SDKs will generate an anonymous `distinct_id` for you automatically and you can capture events anonymously, provided you use the appropriate [configuration](/docs/libraries/js/usage.md#capturing-anonymous-events).
+However, in the frontend of a [web](https://posthog.com/docs/libraries/js/usage.md#capturing-events) or [mobile app](https://posthog.com/docs/libraries/ios.md#capturing-events), a `distinct_id` is not a required argument — PostHog's SDKs will generate an anonymous `distinct_id` for you automatically and you can capture events anonymously, provided you use the appropriate [configuration](https://posthog.com/docs/libraries/js/usage.md#capturing-anonymous-events).
 
 To link events to specific users, call `identify`:
-
-PostHog AI
 
 ### Web
 
@@ -74,7 +78,7 @@ Due to the cost of processing them, anonymous events can be up to 4x cheaper tha
 
 When a user starts browsing your website or app, PostHog automatically assigns them an **anonymous ID**, which is stored locally.
 
-Provided you've [configured persistence](/docs/libraries/js/persistence.md) to use cookies or `localStorage`, this enables us to track anonymous users – even across different sessions.
+Provided you've [configured persistence](https://posthog.com/docs/libraries/js/persistence.md) to use cookies or `localStorage`, this enables us to track anonymous users – even across different sessions.
 
 By calling `identify` with a `distinct_id` of your choice (usually the user's ID in your database, or their email), you link the anonymous ID and distinct ID together.
 
@@ -82,7 +86,7 @@ Thus, all past and future events made with that anonymous ID are now associated 
 
 This enables you to do things like associate events with a user from before they log in for the first time, or associate their events across different devices or platforms.
 
-Using identify in the backend
+**Using identify in the backend**
 
 Although you can call `identify` using our backend SDKs, it is used most in frontends. This is because there is no concept of anonymous sessions in the backend SDKs, so calling `identify` only updates person profiles.
 
@@ -102,11 +106,7 @@ If you call `identify` multiple times with the same data without reloading the p
 
 #### Identify users when the web SDK loads
 
-If your app already knows the signed-in user when you initialize the JavaScript web SDK, the [`loaded` callback](/docs/libraries/js/config.md) is a convenient place to call `identify`. This identifies the user as soon as the SDK has loaded:
-
-Web
-
-PostHog AI
+If your app already knows the signed-in user when you initialize the JavaScript web SDK, the [`loaded` callback](https://posthog.com/docs/libraries/js/config.md) is a convenient place to call `identify`. This identifies the user as soon as the SDK has loaded:
 
 ```javascript
 posthog.init('<ph_project_token>', {
@@ -144,8 +144,6 @@ This is important if your users are sharing a computer, as otherwise all of thos
 
 You can do that like so:
 
-PostHog AI
-
 ### Web
 
 ```javascript
@@ -178,10 +176,6 @@ await Posthog().reset();
 
 If you *also* want to reset the `device_id` so that the device will be considered a new device in future events, you can pass `true` as an argument:
 
-Web
-
-PostHog AI
-
 ```javascript
 posthog.reset(true)
 ```
@@ -190,17 +184,17 @@ posthog.reset(true)
 
 You'll notice that one of the parameters in the `identify` method is a `properties` object.
 
-This enables you to set [person properties](/docs/product-analytics/person-properties.md).
+This enables you to set [person properties](https://posthog.com/docs/product-analytics/person-properties.md).
 
 Whenever possible, we recommend passing in all person properties you have available each time you call identify, as this ensures their person profile on PostHog is up to date.
 
 Person properties can also be set being adding a `$set` property to a event `capture` call.
 
-**\`$set\` and \`$set\_once\` aren't stored on events**
+**`$set` and `$set_once` aren't stored on events**
 
-These properties only tell PostHog how to update person data during ingestion — they aren't kept on the stored event, so you can't filter, break down, or query events by them. To query the values you set, use [person properties](/docs/product-analytics/person-properties.md) instead.
+These properties only tell PostHog how to update person data during ingestion — they aren't kept on the stored event, so you can't filter, break down, or query events by them. To query the values you set, use [person properties](https://posthog.com/docs/product-analytics/person-properties.md) instead.
 
-See our [person properties docs](/docs/product-analytics/person-properties.md) for more details on how to work with them and best practices.
+See our [person properties docs](https://posthog.com/docs/product-analytics/person-properties.md) for more details on how to work with them and best practices.
 
 ### 5\. Use deep links between platforms
 
@@ -218,27 +212,29 @@ In these cases, you can use a [deep link](https://developer.android.com/training
 2.  Add the distinct ID to the deep link as query parameters, along with other properties like UTM parameters.
 3.  When the user is redirected to the app, parse the deep link and handle the following cases:
 
--   The mobile app is already authenticated. In this case, call [`posthog.alias()`](/docs/libraries/js/usage.md#alias) with the distinct ID from the web. This associates the two distinct IDs as a single person.
--   The mobile app is unauthenticated. In this case, call [`posthog.identify()`](/docs/libraries/js/usage.md#identifying-users) with the distinct ID from the web so pre-login mobile events stay connected to the web session. When the user later logs in on mobile, call `identify()` again with your canonical user ID.
+-   The mobile app is already authenticated. In this case, call [`posthog.alias()`](https://posthog.com/docs/libraries/js/usage.md#alias) with the distinct ID from the web. This associates the two distinct IDs as a single person.
+-   The mobile app is unauthenticated. In this case, call [`posthog.identify()`](https://posthog.com/docs/libraries/js/usage.md#identifying-users) with the distinct ID from the web so pre-login mobile events stay connected to the web session. When the user later logs in on mobile, call `identify()` again with your canonical user ID.
 
 As long as you associate the distinct IDs with `posthog.identify()` or `posthog.alias()`, you can track events generated across platforms.
 
 Here's an example implementation for handling deep links from web to mobile:
 
-PostHog AI
-
 ### iOS
 
 ```swift
 import PostHog
+
 class DeepLinkIdentityManager {
     static let shared = DeepLinkIdentityManager()
+
     // MARK: - Deep Link Received
+
     func handleDeepLink(_ url: URL, isAuthenticatedOnMobile: Bool) {
         guard let webDistinctId = URLComponents(url: url, resolvingAgainstBaseURL: true)?
             .queryItems?.first(where: { $0.name == "ph_distinct_id" })?.value else {
             return
         }
+
         if isAuthenticatedOnMobile {
             // The mobile app already knows the current user.
             // Alias the incoming web distinct ID to that user.
@@ -248,13 +244,16 @@ class DeepLinkIdentityManager {
             PostHogSDK.shared.identify(webDistinctId)
         }
     }
+
     // MARK: - Login/Signup
+
     func handleLogin(canonicalUserId: String) {
         // Switch from the web distinct ID (or a mobile anon ID)
         // to your canonical user ID.
         PostHogSDK.shared.identify(canonicalUserId)
         // Set user properties, track signup event, etc.
     }
+
     func handleLogout() {
         PostHogSDK.shared.reset()
     }
@@ -266,10 +265,14 @@ class DeepLinkIdentityManager {
 ```kotlin
 import android.net.Uri
 import com.posthog.PostHog
+
 object DeepLinkIdentityManager {
+
     // Deep Link Received
+
     fun handleDeepLink(uri: Uri, isAuthenticatedOnMobile: Boolean) {
         val webDistinctId = uri.getQueryParameter("ph_distinct_id") ?: return
+
         if (isAuthenticatedOnMobile) {
             // The mobile app already knows the current user.
             // Alias the incoming web distinct ID to that user.
@@ -279,13 +282,16 @@ object DeepLinkIdentityManager {
             PostHog.identify(webDistinctId)
         }
     }
+
     // Login/Signup
+
     fun handleLogin(canonicalUserId: String) {
         // Switch from the web distinct ID (or a mobile anon ID)
         // to your canonical user ID.
         PostHog.identify(canonicalUserId)
         // Set user properties, track signup event, etc.
     }
+
     fun handleLogout() {
         PostHog.reset()
     }
@@ -294,14 +300,6 @@ object DeepLinkIdentityManager {
 
 ## Further reading
 
--   [Identifying users docs](/docs/product-analytics/identify.md)
--   [How person processing works](/docs/how-posthog-works/ingestion-pipeline.md#2-person-processing)
--   [An introductory guide to identifying users in PostHog](/tutorials/identifying-users-guide.md)
-
-### Still have questions?
-
-Ask PostHog AI
-
-### Was this page useful?
-
-HelpfulCould be better
+-   [Identifying users docs](https://posthog.com/docs/product-analytics/identify.md)
+-   [How person processing works](https://posthog.com/docs/how-posthog-works/ingestion-pipeline.md#2-person-processing)
+-   [An introductory guide to identifying users in PostHog](https://posthog.com/tutorials/identifying-users-guide.md)
