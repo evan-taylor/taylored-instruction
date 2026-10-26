@@ -1,0 +1,21 @@
+convex/registration.ts
+  s_bef988dbe92d8b::t_269021b6705c1d 48,563,605-611,669-675,771
+tests/registration/backend.test.ts
+  s_bef988dbe92d8b::t_60cd9aa326df39 3620-4098
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3a02e06bff490c60ebb3be59659192ea6aa386f0",
+  "prompts": {},
+  "sessions": {
+    "s_bef988dbe92d8b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1791e-e658-7012-9f96-aaacd235eb7d",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
