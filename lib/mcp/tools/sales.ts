@@ -315,7 +315,7 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
     {
       title: "Create invoice",
       description:
-        "Creates an invoice for an unpaid order. With send=true (default) it is also issued through Stripe, which emails the hosted invoice and returns its payment URL. Sales tax is computed by Stripe Tax from the billing address.",
+        "Creates a draft invoice for an unpaid registration order or linked material balance. With explicit send=true it is also issued through Stripe, which emails the hosted invoice and returns its payment URL. Sales tax is computed by Stripe Tax from the billing address.",
       inputSchema: {
         orderId: id,
         billToName: z.string().min(1),
@@ -326,7 +326,7 @@ export function registerSalesTools(server: McpServer, ctx: McpContext) {
         notes: z.string().default(""),
         dueDays: z.number().int().min(1).default(INVOICE_TERMS_DAYS),
         organizationId: id.optional(),
-        send: z.boolean().default(true),
+        send: z.boolean().default(false),
       },
       annotations: EXTERNAL,
     },

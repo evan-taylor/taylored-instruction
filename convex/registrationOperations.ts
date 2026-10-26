@@ -20,6 +20,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import {
+  activeSeatMaterials,
   assignCode,
   audit,
   enqueue,
@@ -1144,6 +1145,18 @@ export const reschedule = internalMutation({
     return null;
   },
 });
+async function advanceMaterialRevision(
+  ctx: MutationCtx,
+  orderId: Id<"registrationOrders">
+) {
+  const order = await ctx.db.get(orderId);
+  if (order) {
+    await ctx.db.patch(orderId, {
+      materialRevision: (order.materialRevision ?? 0) + 1,
+    });
+  }
+}
+
 export const propagate = internalMutation({
   args: {
     courseId: v.id("registrationCourses"),
@@ -1192,12 +1205,33 @@ export const propagate = internalMutation({
       ) {
         return;
       }
-      await course.settings.materials
-        .filter((m) => m.policy === "included")
-        .reduce(async (before, material) => {
-          await before;
-          await grantMaterial(ctx, seat, material);
-        }, Promise.resolve());
+      const included = course.settings.materials.filter(
+        (m) =>
+          m.policy === "included" &&
+          !seat.excludedMaterialIds?.includes(m.materialId)
+      );
+      await included.reduce(async (before, material) => {
+        await before;
+        await grantMaterial(ctx, seat, material);
+      }, Promise.resolve());
+      const added = included.filter(
+        (item) =>
+          !seat.snapshot.materials.some(
+            (current) => current.materialId === item.materialId
+          )
+      );
+      if (added.length) {
+        await advanceMaterialRevision(ctx, seat.orderId);
+        await ctx.db.patch(seat._id, {
+          snapshot: {
+            ...seat.snapshot,
+            materials: [
+              ...seat.snapshot.materials,
+              ...added.map((item) => ({ ...item, cents: 0 })),
+            ],
+          },
+        });
+      }
     }, Promise.resolve());
     if (!page.isDone) {
       await ctx.scheduler.runAfter(
@@ -1445,10 +1479,7 @@ export const seatMaterials = query({
   returns: v.array(doc(schema, "registrationEntitlements")),
   handler: async (ctx, args) => {
     await staff(ctx);
-    return await ctx.db
-      .query("registrationEntitlements")
-      .withIndex("by_seatId", (q) => q.eq("seatId", args.seatId))
-      .take(BATCH);
+    return await activeSeatMaterials(ctx, args.seatId);
   },
 });
 export const missingMaterials = query({

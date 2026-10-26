@@ -5,6 +5,7 @@ import { registerResources } from "./resources";
 import { registerCatalogTools } from "./tools/catalog";
 import { registerContentTools } from "./tools/content";
 import { registerFulfillmentTools } from "./tools/fulfillment";
+import { registerOrderMaterialTools } from "./tools/order-materials";
 import { registerOverviewTools } from "./tools/overview";
 import { registerPeopleTools } from "./tools/people";
 import { registerRegistrationTools } from "./tools/registrations";
@@ -25,6 +26,7 @@ export function createMcpServer(ctx: McpContext) {
   registerOverviewTools(server, ctx);
   registerCatalogTools(server, ctx);
   registerRegistrationTools(server, ctx);
+  registerOrderMaterialTools(server, ctx);
   registerSalesTools(server, ctx);
   registerFulfillmentTools(server, ctx);
   registerPeopleTools(server, ctx);

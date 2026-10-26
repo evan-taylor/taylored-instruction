@@ -111,6 +111,9 @@ export const registrationTables = {
     .index("by_sessionId", ["sessionId"]),
   registrationCoupons: defineTable(couponFields).index("by_code", ["code"]),
   registrationOrders: defineTable({
+    parentOrderId: v.optional(v.id("registrationOrders")),
+    materialSeatId: v.optional(v.id("registrationSeats")),
+    materialRevision: v.optional(v.number()),
     requestKey: v.string(),
     purchaser: v.string(),
     purchaserName: v.string(),
@@ -142,12 +145,19 @@ export const registrationTables = {
     tax: v.optional(v.number()),
   })
     .index("by_requestKey", ["requestKey"])
+    .index("by_parentOrderId", ["parentOrderId"])
     .index("by_courseId", ["courseId"])
     .index("by_purchaser", ["purchaser"])
     .index("by_status_and_expires", ["status", "expires"])
     .index("by_sessionId", ["sessionId"])
     .index("by_stripeSession", ["stripeSession"])
     .index("by_organizationId", ["organizationId"]),
+  registrationMaterialEdits: defineTable({
+    requestKey: v.string(),
+    input: v.string(),
+    seatId: v.id("registrationSeats"),
+    balanceId: v.union(v.id("registrationOrders"), v.null()),
+  }).index("by_requestKey", ["requestKey"]),
   registrationOrganizations: defineTable({
     name: v.string(),
     contactName: v.string(),
@@ -224,6 +234,7 @@ export const registrationTables = {
     value: v.number(),
   }).index("by_key", ["key"]),
   registrationSeats: defineTable({
+    excludedMaterialIds: v.optional(v.array(v.id("registrationMaterials"))),
     orderId: v.id("registrationOrders"),
     courseId: v.id("registrationCourses"),
     sessionId: v.optional(v.id("registrationSessions")),
@@ -272,6 +283,7 @@ export const registrationTables = {
     sessionId: v.optional(v.id("registrationSessions")),
   })
     .index("by_seatId", ["seatId"])
+    .index("by_seatId_and_state", ["seatId", "state"])
     .index("by_seatId_and_materialId", ["seatId", "materialId"])
     .index("by_seatId_and_attachmentId", ["seatId", "attachmentId"])
     .index("by_materialId_and_state_and_paidAt", [

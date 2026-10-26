@@ -471,6 +471,7 @@ describe("MCP server", () => {
         orderId: "order1",
         billToName: "Acme",
         billToEmail: "ap@acme.test",
+        send: true,
       },
     });
     expect(result.isError).toBeFalsy();
@@ -585,4 +586,185 @@ it("preserves formatting in MCP attendee and test email requests", async () => {
   expect(
     calls.find((call) => call.name === "registrationOperations:testEmail")?.args
   ).toMatchObject({ body });
+});
+
+it("passes complete manual material selections to the enrollment backend, including an empty selection", async () => {
+  const { client, calls } = await connect({
+    "registration:reserve": {
+      orderId: "order1",
+      total: 10_000,
+      status: "unpaid",
+      expires: 1,
+    },
+  });
+  await [["material1", "material2"], []].reduce(
+    async (previous, materialIds) => {
+      await previous;
+      const result = await client.callTool({
+        name: "enroll",
+        arguments: {
+          courseId: "course1",
+          sessionId: "session1",
+          purchaser: "buyer@example.test",
+          purchaserName: "Buyer",
+          attendees: [{ name: "Ann", email: "ann@example.test" }],
+          payment: "unpaid",
+          reason: "Custom selection",
+          materialIds,
+        },
+      });
+      expect(result.isError).toBeFalsy();
+      expect(calls.at(-1)?.args).toMatchObject({
+        sessionId: "session1",
+        admin: { materialIds },
+      });
+    },
+    Promise.resolve()
+  );
+  expect(calls.map((call) => call.name)).toEqual([
+    "registration:reserve",
+    "registration:reserve",
+  ]);
+});
+
+it("exposes material selection, revision, linked balances, and separate payment controls through MCP", async () => {
+  const selection = {
+    orderId: "order1",
+    revision: 7,
+    materials: [{ materialId: "material1" }],
+  };
+  const { client, calls } = await connect({
+    "registrationMaterialOrders:selectionState": selection,
+    "registrationMaterialOrders:edit": "balance1",
+    "registrationMaterialOrders:additions": [
+      { _id: "balance1", parentOrderId: "order1" },
+    ],
+    "registrationGroups:createInvoice": "invoice1",
+    "registrationInvoiceActions:issue": "https://invoice.stripe.com/test",
+    "registrationPayments:requestRefund": "refund1",
+  });
+  const read = await client.callTool({
+    name: "order_material_selection",
+    arguments: { seatId: "seat1" },
+  });
+  expect(read.structuredContent).toEqual(selection);
+  const args = {
+    seatId: "seat1",
+    materialIds: ["material2"],
+    revision: 7,
+    reason: "Swap",
+    operationKey: "material-edit-retry-key-0001",
+  };
+  const request = { name: "edit_order_materials", arguments: args };
+  const responses = [
+    await client.callTool(request),
+    await client.callTool(request),
+  ];
+  for (const saved of responses) {
+    expect(saved.isError).toBeFalsy();
+    expect(saved.structuredContent).toEqual({ balanceId: "balance1" });
+  }
+  expect(calls.filter((call) => call.kind !== "query")).toEqual(
+    [1, 2].map(() => ({
+      kind: "mutation",
+      name: "registrationMaterialOrders:edit",
+      args: {
+        seatId: "seat1",
+        materialIds: ["material2"],
+        revision: 7,
+        reason: "Swap",
+        requestKey: args.operationKey,
+      },
+    }))
+  );
+  const balances = await client.callTool({
+    name: "order_material_balances",
+    arguments: { orderId: "order1" },
+  });
+  expect(balances.structuredContent).toEqual({
+    result: [{ _id: "balance1", parentOrderId: "order1" }],
+  });
+  const draft = await client.callTool({
+    name: "create_invoice",
+    arguments: {
+      orderId: "balance1",
+      billToName: "Buyer",
+      billToEmail: "buyer@example.test",
+    },
+  });
+  expect(draft.structuredContent).toEqual({
+    invoiceId: "invoice1",
+    status: "draft",
+  });
+  expect(calls.some((call) => call.kind === "action")).toBe(false);
+  await client.callTool({
+    name: "issue_invoice",
+    arguments: { invoiceId: "invoice1" },
+  });
+  expect(calls.at(-1)).toMatchObject({
+    name: "registrationInvoiceActions:issue",
+    args: { id: "invoice1" },
+  });
+  await client.callTool({
+    name: "refund_order",
+    arguments: {
+      orderId: "balance1",
+      cents: 500,
+      reason: "Partial material refund",
+    },
+  });
+  expect(
+    calls.find((call) => call.name === "registrationPayments:requestRefund")
+      ?.args
+  ).toMatchObject({ orderId: "balance1", cents: 500 });
+  await client.callTool({
+    name: "cancel_material_balance",
+    arguments: { orderId: "balance2", reason: "No longer needed" },
+  });
+  expect(calls.at(-1)).toMatchObject({
+    name: "registrationMaterialOrders:cancelAddition",
+    args: { orderId: "balance2", reason: "No longer needed" },
+  });
+});
+
+it("documents material edit annotations, input validation, and stale-edit errors in MCP", async () => {
+  const { client, calls } = await connect({
+    "registrationMaterialOrders:edit": new ConvexError(
+      "This order changed. Reopen the material editor."
+    ),
+  });
+  const { tools } = await client.listTools();
+  expect(
+    tools.find((tool) => tool.name === "order_material_selection")?.annotations
+      ?.readOnlyHint
+  ).toBe(true);
+  expect(
+    tools.find((tool) => tool.name === "edit_order_materials")?.annotations
+  ).toMatchObject({ destructiveHint: true, openWorldHint: false });
+  expect(
+    tools.find((tool) => tool.name === "cancel_material_balance")?.annotations
+  ).toMatchObject({ destructiveHint: true, openWorldHint: true });
+  const args = {
+    seatId: "seat1",
+    materialIds: [],
+    reason: "Remove all",
+    revision: -1,
+  };
+  expect(
+    (await client.callTool({ name: "edit_order_materials", arguments: args }))
+      .isError
+  ).toBe(true);
+  expect(calls).toHaveLength(0);
+  const result = await client.callTool({
+    name: "edit_order_materials",
+    arguments: { ...args, revision: 2 },
+  });
+  expect(result.isError).toBe(true);
+  expect(result.content).toEqual([
+    { type: "text", text: "This order changed. Reopen the material editor." },
+  ]);
+  const guide = await client.readResource({ uri: "taylored://guide" });
+  expect(JSON.stringify(guide)).toContain(
+    "Saving never sends an invoice or issues a refund"
+  );
 });

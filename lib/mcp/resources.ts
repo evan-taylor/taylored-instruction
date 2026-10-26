@@ -39,6 +39,15 @@ export const GUIDE = `# Running Taylored Instruction from an agent
 - Merge fields: {{attendeeName}}, {{courseTitle}}, {{meetingDates}}, {{materials}}, {{portalLink}}. Schedule, materials, and portal access are appended automatically.
 - Confirmation edits apply to future queued confirmations, not already queued or sent mail. send_test_email accepts the same formatting; supply sample values in place of merge fields for standalone test messages.
 
+## Enrollment and material edits
+- Register into a session with enroll using its sessionId and courseId. Read session_overview for the course and get_course/list_materials for the selection.
+- enroll.materialIds overrides the full material selection for every attendee. [] removes all materials; omit to preserve course policies and attendee selected/waived choices. Prices are resolved on the server.
+- Read order_material_selection for the attendee's current materials and revision. Call edit_order_materials with the complete desired materialIds, revision, reason, and a stable operationKey. A stale revision requires rereading and reviewing the change.
+- Saving never sends an invoice or issues a refund. Paid additions return a balanceId; order_material_balances and get_order show linked balances. They reserve no seats and deliver only after payment or an explicit waiver.
+- create_invoice defaults to a draft (send=false). Use issue_invoice or explicit send=true only when instructed to send. Use record_offline_payment to settle or waive, or cancel_material_balance to close an unpaid addition without canceling the attendee.
+- Removal cancels access and pending delivery. For a partial refund, call refund_order separately on the original order or balance that received the payment. Already-delivered goods/codes cannot be recalled.
+- Settle an unpaid transfer before editing materials. Void draft/open invoices first; unpaid coupons or an attached card checkout require cancellation and re-enrollment. Resolve pending balances before another edit.
+
 ## Money
 - Amounts are integer cents. Tuition is pre-tax; Stripe Tax adds tax at checkout and on invoices.
 - refund_order moves money; cancel_seat frees the seat. They are independent.

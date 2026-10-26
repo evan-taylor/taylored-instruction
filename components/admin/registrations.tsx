@@ -54,6 +54,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { formatMoney } from "@/shared/registration/domain";
+import { MaterialBalances, OrderMaterialEditor } from "./order-materials";
 
 type Order = Doc<"registrationOrders">;
 type OrderId = Id<"registrationOrders">;
@@ -187,6 +188,7 @@ function AttendeesTable({ order }: { order: Order }) {
                 </div>
                 {open ? (
                   <div className="mt-3 rounded-md bg-slate-50 p-3">
+                    <OrderMaterialEditor order={order} seat={seat} />
                     <SeatOperations seat={seat} />
                   </div>
                 ) : null}
@@ -260,6 +262,7 @@ function AttendeesTable({ order }: { order: Order }) {
                 {open ? (
                   <TR className="hover:bg-slate-50">
                     <TD className="bg-slate-50 p-4" colSpan={5}>
+                      <OrderMaterialEditor order={order} seat={seat} />
                       <SeatOperations seat={seat} />
                     </TD>
                   </TR>
@@ -364,6 +367,7 @@ function OrderDetail({ order }: { order: Order }) {
       >
         <AttendeesTable order={order} />
       </Section>
+      <MaterialBalances order={order} />
       <Section title="Payments">
         <OrderPayments order={order} />
       </Section>

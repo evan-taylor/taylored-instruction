@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 
 /**
  * Staff browser acceptance against an isolated fixture deployment. Requires
@@ -9,6 +9,7 @@ import { expect, type Page, test } from "@playwright/test";
 const ADMIN_EMAIL = "admin@tayloredinstruction.com";
 const SHOTS = ".context/shots";
 const enabled = process.env.ADMIN_QA === "true";
+const RE_MANAGE_MATERIAL_ATTENDEE = /^Manage(?: Material Edit Test)?$/u;
 const RE_COURSE_U = /Course/u;
 const RE_OVERBOOK_U = /Overbook/u;
 const RE_ENROLL_3_ATTENDEES_U = /Enroll 3 attendees/u;
@@ -233,4 +234,181 @@ test("group request page submits and appears in the admin queue", async ({
   await signIn(page);
   await page.goto("/admin/groups");
   await expect(page.getByText("Browser QA Org").first()).toBeVisible();
+});
+
+/** Touch scrolling keeps Silk's outer sheet track in place. */
+async function revealWithTouch(
+  page: Page,
+  target: Locator,
+  attempt = 0
+): Promise<void> {
+  const box = await target.boundingBox();
+  const viewport = page.viewportSize();
+  if (!(viewport && box) || attempt >= 10) {
+    return;
+  }
+  if (box.y >= 110 && box.y + box.height <= viewport.height - 25) {
+    return;
+  }
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.synthesizeScrollGesture", {
+    x: Math.round(viewport.width / 2),
+    y: Math.round(viewport.height * 0.65),
+    yDistance: box.y < 110 ? 220 : -220,
+    speed: 600,
+    gestureSourceType: "touch",
+  });
+  await cdp.detach();
+  await revealWithTouch(page, target, attempt + 1);
+}
+
+function materialInteractions(page: Page, touch: boolean) {
+  const press = async (target: Locator) => {
+    if (touch) {
+      await revealWithTouch(page, target);
+      await target.tap();
+    } else {
+      await target.click();
+    }
+  };
+  const fill = async (target: Locator, value: string) => {
+    if (touch) {
+      await revealWithTouch(page, target);
+    }
+    await target.fill(value);
+  };
+  const choose = async (target: Locator, checked: boolean) => {
+    if (touch) {
+      await revealWithTouch(page, target);
+      if ((await target.isChecked()) !== checked) {
+        await target.tap();
+      }
+    } else {
+      await target.setChecked(checked);
+    }
+  };
+  return { press, fill, choose };
+}
+
+test("session registration selects materials and paid order additions stay under staff control", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(120_000);
+  const { press, fill, choose } = materialInteractions(
+    page,
+    testInfo.project.name === "mobile"
+  );
+  await signIn(page);
+  await page.goto("/admin/sessions");
+  const sessionLink = page.getByRole("link", {
+    name: "Blended CPR public test session",
+    exact: true,
+  });
+  await expect(sessionLink).toBeVisible();
+  const sessionUrl = await sessionLink.getAttribute("href");
+  if (!sessionUrl) {
+    throw new Error("Missing session detail link");
+  }
+  await page.goto(sessionUrl);
+  await press(
+    page.getByRole("button", { name: "+ Registration", exact: true })
+  );
+  const enrollment = page.getByRole("dialog", {
+    name: "Manual enrollment",
+    exact: true,
+  });
+  await expect(enrollment.getByLabel(RE_SESSION_U)).not.toHaveValue("");
+  await expect(
+    enrollment.getByLabel("Online prerequisite", { exact: false })
+  ).toBeChecked();
+  await choose(
+    enrollment.getByLabel("Online prerequisite", { exact: false }),
+    false
+  );
+  await choose(enrollment.getByLabel("Practice guide", { exact: false }), true);
+  const address = `materials-${testInfo.project.name}-${Date.now()}@example.test`;
+  await fill(
+    enrollment.getByLabel("Attendee name", { exact: false }),
+    "Material Edit Test"
+  );
+  await fill(
+    enrollment.getByLabel("Attendee email", { exact: false }),
+    address
+  );
+  await choose(
+    enrollment.getByLabel("I accept the course participation policy", {
+      exact: false,
+    }),
+    true
+  );
+  await enrollment
+    .getByLabel("Payment handling", { exact: false })
+    .selectOption("offline");
+  await fill(
+    enrollment.getByLabel(RE_REASON_U),
+    "Local material workflow test"
+  );
+  await press(
+    enrollment.getByRole("button", { name: "Create enrollment", exact: true })
+  );
+  await expect(
+    enrollment.getByText(
+      "Enrollment created for Material Edit Test ($135.00, settled).",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.goto("/admin/registrations");
+  await fill(page.getByRole("searchbox", { name: "Search orders" }), address);
+  await press(page.getByRole("button", { name: "Open", exact: true }));
+  await press(page.getByRole("button", { name: RE_MANAGE_MATERIAL_ATTENDEE }));
+  await press(
+    page.getByRole("button", { name: "Add or remove materials", exact: true })
+  );
+  await choose(page.getByLabel("Online prerequisite", { exact: false }), true);
+  await choose(page.getByLabel("Practice guide", { exact: false }), false);
+  await press(
+    page.getByRole("button", { name: "Review material changes", exact: true })
+  );
+  const review = page.getByRole("dialog", {
+    name: "Review material changes",
+    exact: true,
+  });
+  await fill(
+    review.getByLabel(RE_REASON_U),
+    "Swap practice guide for online prerequisite"
+  );
+  await press(
+    review.getByRole("button", { name: "Save material changes", exact: true })
+  );
+  await expect(
+    page.getByRole("heading", { name: "Material balances", exact: true })
+  ).toBeVisible();
+  await press(
+    page.getByRole("button", { name: "Create invoice", exact: true })
+  );
+  const invoice = page.getByRole("dialog", {
+    name: "Create invoice",
+    exact: true,
+  });
+  await fill(invoice.getByLabel(RE_STREET_ADDRESS_U), "1 Main Street");
+  await fill(invoice.getByLabel(RE_CITY_U), "Portland");
+  await fill(invoice.getByLabel(RE_STATE_U), "OR");
+  await fill(invoice.getByLabel(RE_ZIP_U), "97201");
+  await choose(
+    invoice.getByLabel("Send the invoice email now with a hosted pay link"),
+    false
+  );
+  await press(
+    invoice.getByRole("button", { name: "Create draft", exact: true })
+  );
+  await expect(
+    invoice.getByText("Invoice created as a draft.", { exact: true })
+  ).toBeVisible();
+  await press(invoice.getByRole("button", { name: "Done", exact: true }));
+  await expect(page.getByText("draft", { exact: true })).toBeVisible();
+  await page.screenshot({
+    path: `${SHOTS}/material-order-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
 });

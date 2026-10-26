@@ -45,6 +45,7 @@ import {
   settle,
   staff,
 } from "./registrationHelpers";
+import { selectedMaterials } from "./registrationMaterialSelection";
 import schema from "./schema";
 
 /** A course material as shown to the public: the attachment plus the catalog blurb. */
@@ -569,6 +570,7 @@ export const reserve = mutation({
         tuition: v.optional(v.number()),
         organizationId: v.optional(v.id("registrationOrganizations")),
         pricingNote: v.optional(v.string()),
+        materialIds: v.optional(v.array(v.id("registrationMaterials"))),
       })
     ),
     invitation: v.optional(v.string()),
@@ -610,12 +612,26 @@ export const reserve = mutation({
     requireOpen(course, session, config, Boolean(actor));
     const coupon = await validCoupon(ctx, args.coupon, course._id);
     const pricing = adminPricing(config, args.admin);
+    if (args.admin?.materialIds) {
+      pricing.materials = await selectedMaterials(
+        ctx,
+        config,
+        args.admin.materialIds,
+        session?._id
+      );
+    }
     const seats = await withTaxCodes(
       ctx,
       pricing,
       quote(
         pricing,
-        args.attendees,
+        args.admin?.materialIds === undefined
+          ? args.attendees
+          : args.attendees.map((person) => ({
+              ...person,
+              selected: [],
+              waived: [],
+            })),
         coupon,
         coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0,
         actor ? ADMIN_MAX_SEATS : MAX_SEATS
@@ -667,6 +683,13 @@ export const reserve = mutation({
           name: seat.attendee.name,
           state: "held",
           snapshot: seat,
+          excludedMaterialIds: args.admin?.materialIds
+            ? config.materials
+                .filter(
+                  (item) => !args.admin?.materialIds?.includes(item.materialId)
+                )
+                .map((item) => item.materialId)
+            : undefined,
           outcomeDefinitions: config.outcomes,
         })
       )
@@ -762,7 +785,7 @@ type AdminReservation = {
 /** Applies negotiated group tuition for staff enrollments; public checkout keeps template pricing. */
 function adminPricing(config: Settings, admin?: AdminReservation): Settings {
   if (admin?.tuition === undefined) {
-    return config;
+    return { ...config };
   }
   if (!admin.pricingNote?.trim()) {
     throw new ConvexError("Explain the custom group price");
