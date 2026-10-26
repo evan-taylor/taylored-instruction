@@ -1,0 +1,106 @@
+.claude/skills/integration-nextjs-app-router/SKILL.md
+  h_83bc5aaa251b9b 1-81
+.claude/skills/integration-nextjs-app-router/references/1-begin.md
+  h_83bc5aaa251b9b 1-56
+.claude/skills/integration-nextjs-app-router/references/2-edit.md
+  h_83bc5aaa251b9b 1-83
+.claude/skills/integration-nextjs-app-router/references/3-revise.md
+  h_83bc5aaa251b9b 1-34
+.claude/skills/integration-nextjs-app-router/references/4-conclude.md
+  h_83bc5aaa251b9b 1-164
+.claude/skills/integration-nextjs-app-router/references/COMMANDMENTS.md
+  h_83bc5aaa251b9b 1-35
+.claude/skills/integration-nextjs-app-router/references/EXAMPLE.md
+  h_83bc5aaa251b9b 1-712
+.claude/skills/integration-nextjs-app-router/references/identify-users.md
+  h_83bc5aaa251b9b 3,5,7-13,17,19,81,89,109,187,193,195,197,215-216,226,229,231,237,247,249,256,268,270,272,275,285,287,294,303-305
+.claude/skills/integration-nextjs-app-router/references/next-js.md
+  h_83bc5aaa251b9b 3,5,7-19,23,29,35,40,82,103,114,121,132,136,142,162,164,166,168,170,172,176,178,188,197,209,214,217,224,226-227,229,233,272,293,295,301,326,329,335,348,350,354,362,365,374,377,430,434-436
+.env.example
+  h_83bc5aaa251b9b 36
+app/(app)/ecards/page.tsx
+  h_83bc5aaa251b9b 13,122
+app/(app)/ecards/success/page.tsx
+  h_83bc5aaa251b9b 6,32
+app/(marketing)/layout.tsx
+  h_83bc5aaa251b9b 4,18
+app/actions/send-contact-email.ts
+  h_83bc5aaa251b9b 49-50,91,94-100,103-105
+app/api/create-cart-checkout/route.ts
+  h_83bc5aaa251b9b 3,71-77,87-101
+app/api/create-checkout-session/route.ts
+  h_83bc5aaa251b9b 1-2,4,20-22,54-63,67,70-71,105,108-117,121-124,129-139,146-154,159,162-164,168-170
+app/api/send-ecard-emails/route.ts
+  h_83bc5aaa251b9b 1,50-80,183,226-228,244-261
+bun.lock
+  h_83bc5aaa251b9b 19-22,48-49,775-794,893,895,897,901-918,2135-2136,2435,2437,2463-2464,2847,3219-3228,3233-3236
+components/ContactForm.tsx
+  h_83bc5aaa251b9b 14,44-47
+components/auth-effects.tsx
+  h_83bc5aaa251b9b 9,53
+components/auth/sign-in-form.tsx
+  h_83bc5aaa251b9b 12,114-115,120,133,136,141-142,161,166
+components/registration/group-request.tsx
+  h_83bc5aaa251b9b 16,301-303,315-317,320
+components/registration/invitation.tsx
+  h_83bc5aaa251b9b 8,53,55,61
+components/registration/payment-step.tsx
+  h_83bc5aaa251b9b 15,87,91,98-110,134-161,181-189,193-201,292,319-321,329-332,336-338,344-347,361-367,409-412,438
+components/registration/portal.tsx
+  h_83bc5aaa251b9b 32,304-306,314-316,319-321,325-327,594-597,606-610,618-621
+components/registration/public.tsx
+  h_83bc5aaa251b9b 45-48,504-513,544-550,552-557,582-585,629,650-659,671,675,684-690,710,724-729,740-743,746-751,760-762,774-779,787-796,1594-1596,1598-1600,1603-1605,1932-1945,1985-1990,2093-2106
+components/registration/requested-payment.tsx
+  h_83bc5aaa251b9b 11-14,43-52,56-58
+convex/registration.ts
+  h_83bc5aaa251b9b 8,50,570,675-681,727
+convex/registrationExternal.ts
+  h_83bc5aaa251b9b 3,7-8,280-323
+convex/registrationHelpers.ts
+  h_83bc5aaa251b9b 15-45,242-247,585-588,623-626,680-682,765-767
+convex/registrationPayments.ts
+  h_83bc5aaa251b9b 3,379-383,390-397
+convex/registrationSchema.ts
+  h_83bc5aaa251b9b 3,116
+docs/registration-analytics.md
+  h_83bc5aaa251b9b 1-103
+instrumentation-client.ts
+  h_83bc5aaa251b9b 11-12,20-23,26-31,34
+instrumentation.ts
+  h_83bc5aaa251b9b 1,3-55,60
+lib/posthog-auth.ts
+  h_83bc5aaa251b9b 1-14
+lib/posthog-context.ts
+  h_83bc5aaa251b9b 1-12
+lib/posthog.ts
+  h_83bc5aaa251b9b 2
+lib/registration-analytics.ts
+  h_83bc5aaa251b9b 1-36
+next.config.js
+  h_83bc5aaa251b9b 4-18
+package.json
+  h_83bc5aaa251b9b 28-31,57-58
+posthog-audit-report.md
+  h_83bc5aaa251b9b 1-136
+posthog-self-driving-report.md
+  h_83bc5aaa251b9b 1-125
+shared/registration/analytics-validator.ts
+  h_83bc5aaa251b9b 1-5
+shared/registration/analytics.ts
+  h_83bc5aaa251b9b 1-141
+tests/registration/analytics.test.ts
+  h_83bc5aaa251b9b 1-122
+tests/registration/backend.test.ts
+  h_83bc5aaa251b9b 128-170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "68fa56c092bbc7d064e4e42c27fdb3c3de92e3e2",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
