@@ -113,6 +113,11 @@ export function privateAnalyticsProperties(
   }
   const safe = registrationProperties(properties);
   for (const key of [
+    // The browser batch transport reads the project token from event properties.
+    "token",
+    "$lib",
+    "$lib_version",
+    "$lib_custom_api_host",
     "distinct_id",
     "$device_id",
     "$session_id",

@@ -120,3 +120,24 @@ it("removes top-level person mutation fields from the SDK envelope", () => {
   expect(event).not.toHaveProperty("$set_once");
   expect(event).not.toHaveProperty("$unset");
 });
+
+it("preserves the SDK transport token and version metadata while removing private context", () => {
+  const event = privateAnalyticsEvent({
+    uuid: "event-id",
+    event: "registration_offering_viewed",
+    properties: {
+      token: "phc_public-project-token",
+      $lib: "web",
+      $lib_version: "1.438.23",
+      $lib_custom_api_host: "/ingest",
+      $current_url: "https://example.test?key=secret",
+    },
+  });
+  expect(event?.properties).toMatchObject({
+    token: "phc_public-project-token",
+    $lib: "web",
+    $lib_version: "1.438.23",
+    $lib_custom_api_host: "/ingest",
+  });
+  expect(event?.properties).not.toHaveProperty("$current_url");
+});
