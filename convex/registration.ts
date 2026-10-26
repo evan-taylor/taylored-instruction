@@ -258,13 +258,15 @@ export const sessions = query({
     return args.courseId
       ? await ctx.db
           .query("registrationSessions")
-          .withIndex("by_courseId", (q) =>
+          .withIndex("by_courseId_and_firstStart", (q) =>
             q.eq("courseId", args.courseId as Doc<"registrationCourses">["_id"])
           )
+          .order("asc")
           .paginate(args.paginationOpts)
       : await ctx.db
           .query("registrationSessions")
-          .order("desc")
+          .withIndex("by_firstStart")
+          .order("asc")
           .paginate(args.paginationOpts);
   },
 });

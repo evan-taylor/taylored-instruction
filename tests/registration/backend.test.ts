@@ -5373,3 +5373,60 @@ describe("short session share links", () => {
     expect((await f.t.run((ctx) => ctx.db.get(id)))?.code).toBe(original?.code);
   });
 });
+
+describe("admin session chronology", () => {
+  it.each([false, true])(
+    "orders by start time across pages and rescheduling (course filter: %s)",
+    async (filterByCourse) => {
+      const f = await fixture();
+      const now = Date.now();
+      const earlyId = await f.t.run(async (ctx) => {
+        const original = await ctx.db.get(f.session);
+        if (!original) {
+          throw new Error("Missing session");
+        }
+        const { _id, _creationTime, ...value } = original;
+        await ctx.db.patch(_id, { firstStart: now + 2 * 86_400_000 });
+        await ctx.db.insert("registrationSessions", {
+          ...value,
+          code: "later-created-first",
+          firstStart: now + 3 * 86_400_000,
+        });
+        return await ctx.db.insert("registrationSessions", {
+          ...value,
+          code: "earlier-created-last",
+          firstStart: now + 86_400_000,
+        });
+      });
+      const scope = filterByCourse ? { courseId: f.course } : {};
+      const first = await f.adminClient.query(api.registration.sessions, {
+        ...scope,
+        paginationOpts: { cursor: null, numItems: 2 },
+      });
+      expect(first.page.map((session) => session.code)).toEqual([
+        "earlier-created-last",
+        "test-stable-code",
+      ]);
+      expect(first.isDone).toBe(false);
+      const second = await f.adminClient.query(api.registration.sessions, {
+        ...scope,
+        paginationOpts: { cursor: first.continueCursor, numItems: 2 },
+      });
+      expect(second.page.map((session) => session.code)).toEqual([
+        "later-created-first",
+      ]);
+      await f.t.run((ctx) =>
+        ctx.db.patch(earlyId, { firstStart: now + 4 * 86_400_000 })
+      );
+      const rescheduled = await f.adminClient.query(api.registration.sessions, {
+        ...scope,
+        paginationOpts: { cursor: null, numItems: 10 },
+      });
+      expect(rescheduled.page.map((session) => session.code)).toEqual([
+        "test-stable-code",
+        "later-created-first",
+        "earlier-created-last",
+      ]);
+    }
+  );
+});
