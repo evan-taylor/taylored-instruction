@@ -167,6 +167,7 @@ type MaterialKind = keyof typeof KIND_ICON;
 const ACCESS_CODE = /^(?=[A-Z0-9-]*\d)[A-Z0-9][A-Z0-9-]{7,}$/u;
 const MENTIONS_CODE = /\bcode\b/iu;
 const LINE_BREAKS = /\n+/u;
+const STEP_NUMBER = /^\d+[.)]\s+/u;
 
 function materialKind(kind?: string): MaterialKind | null {
   return kind && kind in KIND_ICON ? (kind as MaterialKind) : null;
@@ -174,7 +175,8 @@ function materialKind(kind?: string): MaterialKind | null {
 /**
  * Splits instructions into steps. For a keycode material, a bare code that
  * directly follows a line introducing it ("Copy your access code:") is lifted
- * out so it can be copied; everything else is left as written.
+ * out so it can be copied. Typed step numbers are removed because the portal
+ * renders the steps in an ordered list.
  */
 function parseInstructions(text: string, kind: MaterialKind | null) {
   const lines = text
@@ -190,7 +192,12 @@ function parseInstructions(text: string, kind: MaterialKind | null) {
             MENTIONS_CODE.test(lines.at(index - 1) ?? "")
         )
       : undefined;
-  return { code, steps: lines.filter((line) => line !== code) };
+  return {
+    code,
+    steps: lines
+      .filter((line) => line !== code)
+      .map((line) => line.replace(STEP_NUMBER, "")),
+  };
 }
 function openLabel(kind: MaterialKind | null) {
   if (kind === "pdf") {
