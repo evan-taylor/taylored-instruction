@@ -626,7 +626,7 @@ async function settleMaterialOrder(
   const parent = order.parentOrderId
     ? await ctx.db.get(order.parentOrderId)
     : null;
-  const purchase = order.seats.at(0);
+  const [purchase] = order.seats;
   const now = Date.now();
   if (
     seat?.state !== "active" ||
