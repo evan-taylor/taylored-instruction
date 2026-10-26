@@ -1,0 +1,29 @@
+shared/registration/analytics.ts
+  s_79680365aa1168::t_0d7c3991b43759 116-120
+tests/registration/analytics.test.ts
+  s_3cc21c4336f7b3::t_e82f1aa7a618d8 123-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4d07c529a22e14c3ffa690379d09ca053d0b2804",
+  "prompts": {},
+  "sessions": {
+    "s_3cc21c4336f7b3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a08-f335-7b13-96b5-bd25eed6ce9a",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_79680365aa1168": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a0a-f624-7be3-82b1-d6968817ff68",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
