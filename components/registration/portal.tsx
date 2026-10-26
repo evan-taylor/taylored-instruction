@@ -300,15 +300,19 @@ function MaterialRow({
             onClick={async () => {
               setBusy(true);
               try {
-                const response = await fetch(
-                  `/api/registration/portal?material=${encodeURIComponent(material.id)}`
-                );
+                const response = await fetch("/api/registration/portal", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ material: material.id }),
+                });
                 const data = await response.json();
                 if (response.ok && data.url) {
                   window.location.assign(data.url);
                 } else {
                   onUnavailable();
                 }
+              } catch {
+                onUnavailable();
               } finally {
                 setBusy(false);
               }

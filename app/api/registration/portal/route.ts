@@ -78,3 +78,31 @@ export async function GET(request: Request) {
     );
   }
 }
+
+/** Only an explicit material-open action records access; GETs remain read-only. */
+export async function POST(request: Request) {
+  const token = await convexAuthNextjsToken();
+  if (!token) {
+    return NextResponse.json(
+      { error: "Sign in required" },
+      { status: 401, headers }
+    );
+  }
+  const backend = client();
+  backend.setAuth(token);
+  try {
+    const { material } = await request.json();
+    const target = await backend.mutation(
+      api.registrationPortal.accessMaterial,
+      {
+        id: material as Id<"registrationEntitlements">,
+      }
+    );
+    return NextResponse.json({ url: target }, { headers });
+  } catch {
+    return NextResponse.json(
+      { error: "Material unavailable" },
+      { status: 403, headers }
+    );
+  }
+}

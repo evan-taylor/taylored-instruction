@@ -331,6 +331,7 @@ export const result = internalMutation({
     success: v.boolean(),
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
+    deliveredTo: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -344,6 +345,8 @@ export const result = internalMutation({
       due: Date.now() + 60_000 * 2 ** job.attempts,
       error: args.error,
       providerId: args.providerId,
+      sentAt: args.success ? Date.now() : job.sentAt,
+      deliveredTo: args.deliveredTo ?? job.deliveredTo,
     });
     return null;
   },

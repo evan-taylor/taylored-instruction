@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import type { ConvexHttpClient } from "convex/browser";
@@ -5429,4 +5430,181 @@ describe("admin session chronology", () => {
       ]);
     }
   );
+});
+
+describe("Registration engagement", () => {
+  it("deduplicates provider events and preserves first/latest activity when events arrive out of order", async () => {
+    const f = await fixture();
+    const event = {
+      eventId: "open-1",
+      providerId: "mail-1",
+      type: "email.opened",
+      at: 2000,
+    };
+    await f.t.mutation(internal.registrationEngagement.recordEmailEvent, event);
+    await f.t.mutation(internal.registrationEngagement.recordEmailEvent, event);
+    await f.t.mutation(internal.registrationEngagement.recordEmailEvent, {
+      ...event,
+      eventId: "open-2",
+      at: 1000,
+    });
+    await f.t.mutation(internal.registrationEngagement.recordEmailEvent, {
+      ...event,
+      eventId: "bounce",
+      type: "email.bounced",
+      at: 3000,
+    });
+    await f.t.mutation(internal.registrationEngagement.recordEmailEvent, {
+      ...event,
+      eventId: "delivery",
+      type: "email.delivered",
+      at: 500,
+    });
+    const tracking = await f.t.run((ctx) =>
+      ctx.db.query("registrationEmailTracking").unique()
+    );
+    expect(tracking).toMatchObject({
+      opens: 2,
+      clicks: 0,
+      openedAt: 1000,
+      lastOpenedAt: 2000,
+      deliveredAt: 500,
+      status: "email.bounced",
+    });
+  });
+
+  it("records explicit material access only for its verified attendee and exposes history only to admins", async () => {
+    const f = await materialOrderFixture();
+    const material = await f.t.run((ctx) =>
+      ctx.db.query("registrationEntitlements").first()
+    );
+    if (!material) {
+      throw new Error("Expected entitlement");
+    }
+    const user = await f.t.run((ctx) =>
+      ctx.db.insert("users", {
+        email: f.enrolled.email,
+        emailVerificationTime: Date.now(),
+      })
+    );
+    const attendee = f.t.withIdentity({ subject: `${user}|session` });
+    await expect(
+      f.outsiderClient.mutation(api.registrationPortal.accessMaterial, {
+        id: material._id,
+      })
+    ).rejects.toThrow();
+    await attendee.query(api.registrationPortal.materialUrl, {
+      id: material._id,
+    });
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(material._id)))?.accessCount
+    ).toBeUndefined();
+    expect(
+      await attendee.mutation(api.registrationPortal.accessMaterial, {
+        id: material._id,
+      })
+    ).toBeTruthy();
+    await attendee.mutation(api.registrationPortal.accessMaterial, {
+      id: material._id,
+    });
+    const activity = await f.adminClient.query(
+      api.registrationEngagement.history,
+      { seatId: f.enrolled._id }
+    );
+    expect(activity.materials.at(0)).toMatchObject({ accessCount: 2 });
+    expect(activity.materials.at(0)?.firstAccessedAt).toBeDefined();
+    expect(
+      activity.emails.some(
+        ({ job }) => job.key === `receipt:${f.order.orderId}`
+      )
+    ).toBe(true);
+    expect(
+      activity.emails.some(({ job }) => job.seatId === f.enrolled._id)
+    ).toBe(true);
+    await expect(
+      attendee.query(api.registrationEngagement.history, {
+        seatId: f.enrolled._id,
+      })
+    ).rejects.toThrow();
+    await expect(
+      f.instructorClient.query(api.registrationEngagement.history, {
+        seatId: f.enrolled._id,
+      })
+    ).rejects.toThrow();
+    await f.t.run((ctx) => ctx.db.patch(material._id, { state: "canceled" }));
+    await expect(
+      attendee.mutation(api.registrationPortal.accessMaterial, {
+        id: material._id,
+      })
+    ).rejects.toThrow();
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(material._id)))?.accessCount
+    ).toBe(2);
+  });
+
+  it("rejects unsigned and invalid Resend webhook payloads", async () => {
+    vi.stubEnv("RESEND_WEBHOOK_SECRET", "whsec_dGVzdA==");
+    vi.stubEnv("RESEND_API_KEY", "re_test");
+    const f = await fixture();
+    const response = await f.t.fetch("/registration/resend", {
+      method: "POST",
+      body: "{}",
+    });
+    expect(response.status).toBe(400);
+    const invalid = await f.t.fetch("/registration/resend", {
+      method: "POST",
+      body: "{}",
+      headers: {
+        "svix-id": "bad",
+        "svix-timestamp": "123",
+        "svix-signature": "bad",
+      },
+    });
+    expect(invalid.status).toBe(400);
+    expect(
+      await f.t.run((ctx) => ctx.db.query("registrationEmailEvents").collect())
+    ).toHaveLength(0);
+  });
+});
+
+it("accepts a signed Resend event before the send result is recorded and ignores replay", async () => {
+  vi.stubEnv("RESEND_WEBHOOK_SECRET", "whsec_dGVzdA==");
+  vi.stubEnv("RESEND_API_KEY", "re_test");
+  const t = convexTest(schema, modules);
+  const timestamp = String(Math.floor(Date.now() / 1000));
+  const payload = JSON.stringify({
+    type: "email.clicked",
+    created_at: new Date().toISOString(),
+    data: {
+      email_id: "provider-early",
+      from: "sender@example.test",
+      to: ["student@example.test"],
+      subject: "Materials",
+      click: {
+        link: "https://example.test/private-code",
+        timestamp: new Date().toISOString(),
+        ipAddress: "127.0.0.1",
+        userAgent: "test",
+      },
+    },
+  });
+  const signature = createHmac("sha256", Buffer.from("test"))
+    .update(`message-1.${timestamp}.${payload}`)
+    .digest("base64");
+  const request = {
+    method: "POST",
+    body: payload,
+    headers: {
+      "svix-id": "message-1",
+      "svix-timestamp": timestamp,
+      "svix-signature": `v1,${signature}`,
+    },
+  };
+  expect((await t.fetch("/registration/resend", request)).status).toBe(200);
+  expect((await t.fetch("/registration/resend", request)).status).toBe(200);
+  const tracked = await t.run((ctx) =>
+    ctx.db.query("registrationEmailTracking").unique()
+  );
+  expect(tracked).toMatchObject({ providerId: "provider-early", clicks: 1 });
+  expect(JSON.stringify(tracked)).not.toContain("private-code");
 });

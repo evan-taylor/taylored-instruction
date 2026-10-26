@@ -179,6 +179,7 @@ export const deliver = internalAction({
             id,
             success: true,
             providerId: response.data?.id,
+            deliveredTo: recipient,
           });
         } catch (error) {
           await ctx.runMutation(internal.registrationMail.result, {

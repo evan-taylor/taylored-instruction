@@ -23,6 +23,8 @@ import type * as products from "../products.js";
 import type * as profiles from "../profiles.js";
 import type * as registration from "../registration.js";
 import type * as registrationDashboard from "../registrationDashboard.js";
+import type * as registrationEmailWebhook from "../registrationEmailWebhook.js";
+import type * as registrationEngagement from "../registrationEngagement.js";
 import type * as registrationExternal from "../registrationExternal.js";
 import type * as registrationFixtures from "../registrationFixtures.js";
 import type * as registrationGroups from "../registrationGroups.js";
@@ -64,6 +66,8 @@ declare const fullApi: ApiFromModules<{
   profiles: typeof profiles;
   registration: typeof registration;
   registrationDashboard: typeof registrationDashboard;
+  registrationEmailWebhook: typeof registrationEmailWebhook;
+  registrationEngagement: typeof registrationEngagement;
   registrationExternal: typeof registrationExternal;
   registrationFixtures: typeof registrationFixtures;
   registrationGroups: typeof registrationGroups;
