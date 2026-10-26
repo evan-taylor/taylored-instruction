@@ -1,0 +1,16 @@
+convex/registrationHelpers.ts
+  h_83bc5aaa251b9b 629
+package.json
+  h_83bc5aaa251b9b 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e2d5b867fdf3b63fd9c1613b587ecd4dadafd89c",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
