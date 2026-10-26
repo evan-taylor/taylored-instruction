@@ -1,7 +1,12 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { ConvexError } from "convex/values";
 import { ADMIN_EMAILS, isAdminEmail } from "../shared/adminEmails";
-import { effective, email, HOLD_MS } from "../shared/registration/domain";
+import {
+  BATCH,
+  effective,
+  email,
+  HOLD_MS,
+} from "../shared/registration/domain";
 import { defaultConfirmation } from "../shared/registration/email-defaults";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -238,6 +243,24 @@ export async function nextCode(
     )
     .first();
 }
+/** Current fulfillment only; removed materials remain in audit history. */
+export async function activeSeatMaterials(
+  ctx: QueryCtx,
+  seatId: Id<"registrationSeats">
+) {
+  const pages = await Promise.all(
+    (["pending", "ready", "fulfilled"] as const).map((state) =>
+      ctx.db
+        .query("registrationEntitlements")
+        .withIndex("by_seatId_and_state", (q) =>
+          q.eq("seatId", seatId).eq("state", state)
+        )
+        .take(BATCH)
+    )
+  );
+  return pages.flat();
+}
+
 export async function grantMaterial(
   ctx: MutationCtx,
   seat: Doc<"registrationSeats">,
@@ -249,15 +272,22 @@ export async function grantMaterial(
       .withIndex("by_seatId_and_materialId", (q) =>
         q.eq("seatId", seat._id).eq("materialId", attachment.materialId)
       )
-      .first(),
+      .take(100),
     ctx.db
       .query("registrationEntitlements")
       .withIndex("by_seatId_and_attachmentId", (q) =>
         q.eq("seatId", seat._id).eq("attachmentId", attachment.id)
       )
-      .first(),
+      .take(100),
   ]);
-  if (sameMaterial || sameAttachment) {
+  if (sameMaterial.length === 100 || sameAttachment.length === 100) {
+    throw new ConvexError("Material history requires reconciliation");
+  }
+  if (
+    [...sameMaterial, ...sameAttachment].some(
+      (item) => item.state !== "canceled"
+    )
+  ) {
     return;
   }
   const material = await ctx.db.get(attachment.materialId);
@@ -291,6 +321,7 @@ export async function grantMaterial(
       body: "Your course material is available in your secure portal.",
       due: Date.now(),
       seatId: seat._id,
+      entitlementId: id,
     });
   }
   if (material.kind === "keycode") {
@@ -496,6 +527,10 @@ export async function settle(
     });
     return;
   }
+  if (order.materialSeatId) {
+    await settleMaterialOrder(ctx, order, source, paymentIntent);
+    return;
+  }
   const { course, session, config } = await offering(
     ctx,
     order.courseId,
@@ -577,4 +612,84 @@ export async function settle(
     due: now,
   });
   await audit(ctx, "system", "settled", order._id, source);
+}
+
+async function settleMaterialOrder(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">,
+  source: string,
+  paymentIntent?: string
+) {
+  const seat = order.materialSeatId
+    ? await ctx.db.get(order.materialSeatId)
+    : null;
+  const parent = order.parentOrderId
+    ? await ctx.db.get(order.parentOrderId)
+    : null;
+  const purchase = order.seats.at(0);
+  const now = Date.now();
+  if (
+    seat?.state !== "active" ||
+    !seat.settledAt ||
+    !parent ||
+    !purchase ||
+    seat.orderId !== parent._id
+  ) {
+    await ctx.db.patch(order._id, {
+      status: "exception",
+      settledAt: now,
+      source,
+      paymentIntent,
+      error:
+        "Material payment received after the registration changed; reconcile or refund this payment",
+    });
+    return;
+  }
+  if (
+    purchase.materials.some((item) =>
+      seat.snapshot.materials.some(
+        (current) => current.materialId === item.materialId
+      )
+    )
+  ) {
+    await ctx.db.patch(order._id, {
+      status: "exception",
+      settledAt: now,
+      source,
+      paymentIntent,
+      error: "Material already present; reconcile or refund duplicate payment",
+    });
+    return;
+  }
+  await ctx.db.patch(order._id, {
+    status: "settled",
+    settledAt: now,
+    source,
+    paymentIntent,
+  });
+  await ctx.db.patch(seat._id, {
+    snapshot: {
+      ...seat.snapshot,
+      materials: [...seat.snapshot.materials, ...purchase.materials],
+    },
+    excludedMaterialIds: (seat.excludedMaterialIds ?? []).filter(
+      (id) => !purchase.materials.some((item) => item.materialId === id)
+    ),
+  });
+  await ctx.db.patch(parent._id, {
+    materialRevision: (parent.materialRevision ?? 0) + 1,
+  });
+  await purchase.materials.reduce(async (previous, attachment) => {
+    await previous;
+    await grantMaterial(ctx, { ...seat, settledAt: now }, attachment);
+  }, Promise.resolve());
+  await enqueue(ctx, {
+    key: `receipt:${order._id}`,
+    kind: "email",
+    recipient: order.purchaser,
+    subject: `Receipt: ${order.title}`,
+    body: `Material balance settled: USD ${((order.total + (order.tax ?? 0)) / 100).toFixed(2)}. View materials in your registration portal.`,
+    due: now,
+  });
+  await audit(ctx, "system", "materials-settled", parent._id, order._id);
 }

@@ -4,6 +4,7 @@ import { calendar } from "../shared/registration/schedule";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { activeSeatMaterials } from "./registrationHelpers";
 
 function billingDetails(
   order: Doc<"registrationOrders"> | null,
@@ -275,6 +276,7 @@ export const claim = internalMutation({
       (session &&
         ((session.state === "canceled" && !explicit) ||
           (job.stepId && job.scheduleRevision !== session.revision))) ||
+      entitlement?.state === "canceled" ||
       (entitlement && job.kind !== "email" && entitlement.state !== "pending")
     ) {
       await ctx.db.patch(job._id, { state: "canceled" });
@@ -297,10 +299,7 @@ export const claim = internalMutation({
       due: Date.now(),
     });
     const entitlements = seat?.settledAt
-      ? await ctx.db
-          .query("registrationEntitlements")
-          .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-          .take(BATCH)
+      ? await activeSeatMaterials(ctx, seat._id)
       : [];
     const materials = await Promise.all(
       entitlements

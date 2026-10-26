@@ -3,10 +3,9 @@ import {
   paginationResultValidator,
 } from "convex/server";
 import { ConvexError, v } from "convex/values";
-import { BATCH } from "../shared/registration/domain";
 import { calendar } from "../shared/registration/schedule";
 import { query } from "./_generated/server";
-import { portalEmail } from "./registrationHelpers";
+import { activeSeatMaterials, portalEmail } from "./registrationHelpers";
 
 const portalSeat = v.object({
   id: v.id("registrationSeats"),
@@ -65,10 +64,7 @@ export const registrations = query({
           : null;
         const course = await ctx.db.get(seat.courseId);
         const entitlements = seat.settledAt
-          ? await ctx.db
-              .query("registrationEntitlements")
-              .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-              .take(BATCH)
+          ? await activeSeatMaterials(ctx, seat._id)
           : [];
         return {
           id: seat._id,
@@ -161,7 +157,12 @@ export const materialUrl = query({
     const identity = await portalEmail(ctx);
     const entitlement = await ctx.db.get(args.id);
     const seat = entitlement ? await ctx.db.get(entitlement.seatId) : null;
-    if (!entitlement || seat?.email !== identity || !seat.settledAt) {
+    if (
+      !entitlement ||
+      entitlement.state === "canceled" ||
+      seat?.email !== identity ||
+      !seat.settledAt
+    ) {
       throw new ConvexError("Material access denied");
     }
     return entitlement.storageId

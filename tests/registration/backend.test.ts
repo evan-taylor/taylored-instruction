@@ -3866,3 +3866,559 @@ describe("Per-session keycode banks", () => {
     ).rejects.toThrow("Self-paced");
   });
 });
+
+async function materialOrderFixture(payment: "unpaid" | "offline" = "offline") {
+  const f = await fixture();
+  const extra = await f.t.run(async (ctx) => {
+    await ctx.db.patch(f.material, {
+      kind: "link",
+      url: "https://example.test/included",
+    });
+    await ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        materials: [
+          {
+            id: "included",
+            materialId: f.material,
+            title: "Included guide",
+            policy: "included",
+            cents: 1500,
+          },
+        ],
+      },
+    });
+    return await ctx.db.insert("registrationMaterials", {
+      title: "Optional workbook",
+      kind: "link",
+      url: "https://example.test/extra",
+      version: 1,
+      archived: false,
+      defaultPrice: 2500,
+      taxCode: "txcd_99999999",
+    });
+  });
+  const order = await f.adminClient.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    admin: { payment, overbook: false, reason: "Manual enrollment" },
+  });
+  const seats = await f.adminClient.query(
+    api.registrationOperations.orderSeats,
+    { orderId: order.orderId }
+  );
+  const enrolled = seats.at(0);
+  if (!enrolled) {
+    throw new Error("Expected enrolled attendee");
+  }
+  return { ...f, extra, order, enrolled };
+}
+
+describe("Staff material editing", () => {
+  it("fulfills paid additions from the attendee's session keycode bank", async () => {
+    const f = await materialOrderFixture();
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.extra, {
+        kind: "keycode",
+        perSession: true,
+        url: undefined,
+      })
+    );
+    await f.adminClient.mutation(api.registrationOperations.addStock, {
+      materialId: f.extra,
+      sessionId: f.session,
+      input: "https://example.test/session-keycode",
+      preview: false,
+    });
+    const balance = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      {
+        seatId: f.enrolled._id,
+        materialIds: [f.material, f.extra],
+        revision: 0,
+        reason: "Add session prerequisite",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    if (!balance) {
+      throw new Error("Expected material balance");
+    }
+    expect(
+      (
+        await f.adminClient.query(api.registrationOperations.seatMaterials, {
+          seatId: f.enrolled._id,
+        })
+      ).some((item) => item.materialId === f.extra)
+    ).toBe(false);
+    await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+      orderId: balance,
+      source: "offline",
+      reason: "Paid for prerequisite",
+    });
+    const materials = await f.adminClient.query(
+      api.registrationOperations.seatMaterials,
+      { seatId: f.enrolled._id }
+    );
+    expect(materials.find((item) => item.materialId === f.extra)).toMatchObject(
+      {
+        sessionId: f.session,
+        url: "https://example.test/session-keycode",
+        state: "ready",
+      }
+    );
+    const selfPaced = await f.t.run((ctx) =>
+      ctx.db.insert("registrationCourses", {
+        slug: "self-paced-material-test",
+        title: "Self-paced course",
+        description: "Test",
+        delivery: "self-paced",
+        publication: "published",
+        settings: config,
+        enrollmentOpen: true,
+        revision: 1,
+      })
+    );
+    await expect(
+      f.adminClient.mutation(api.registration.reserve, {
+        ...attempt(selfPaced, f.session, "self-paced@example.test"),
+        sessionId: undefined,
+        admin: {
+          payment: "unpaid",
+          reason: "No session bank",
+          overbook: false,
+          materialIds: [f.extra],
+        },
+      })
+    ).rejects.toThrow("Session-specific keycodes require");
+  });
+
+  it("preserves staff exclusions and withholds pending additions through template propagation", async () => {
+    const f = await materialOrderFixture();
+    const balance = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      {
+        seatId: f.enrolled._id,
+        materialIds: [f.extra],
+        revision: 0,
+        reason: "Replace guide",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    if (!balance) {
+      throw new Error("Expected material balance");
+    }
+    await f.t.run(async (ctx) => {
+      const course = await ctx.db.get(f.course);
+      if (!course) {
+        throw new Error("Expected course");
+      }
+      await ctx.db.patch(f.course, {
+        settings: {
+          ...course.settings,
+          materials: [
+            ...course.settings.materials,
+            {
+              id: "extra",
+              materialId: f.extra,
+              title: "New included workbook",
+              policy: "included",
+              cents: 2500,
+            },
+          ],
+        },
+      });
+    });
+    await f.t.mutation(internal.registrationOperations.propagate, {
+      courseId: f.course,
+      cursor: null,
+    });
+    expect(
+      await f.adminClient.query(api.registrationOperations.seatMaterials, {
+        seatId: f.enrolled._id,
+      })
+    ).toHaveLength(0);
+    await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+      orderId: balance,
+      source: "offline",
+      reason: "Workbook paid",
+    });
+    await f.t.mutation(internal.registrationOperations.propagate, {
+      courseId: f.course,
+      cursor: null,
+    });
+    const materials = await f.adminClient.query(
+      api.registrationOperations.seatMaterials,
+      { seatId: f.enrolled._id }
+    );
+    expect(materials.map((item) => item.materialId)).toEqual([f.extra]);
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
+  });
+
+  it("keeps a material omitted during manual enrollment excluded after course updates", async () => {
+    const f = await materialOrderFixture("unpaid");
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session, "excluded@example.test"),
+      admin: {
+        payment: "offline",
+        overbook: false,
+        reason: "Owns guide",
+        materialIds: [],
+      },
+    });
+    await f.t.mutation(internal.registrationOperations.propagate, {
+      courseId: f.course,
+      cursor: null,
+    });
+    const enrolled = (
+      await f.adminClient.query(api.registrationOperations.orderSeats, {
+        orderId: result.orderId,
+      })
+    ).at(0);
+    if (!enrolled) {
+      throw new Error("Expected attendee");
+    }
+    expect(
+      await f.adminClient.query(api.registrationOperations.seatMaterials, {
+        seatId: enrolled._id,
+      })
+    ).toHaveLength(0);
+    expect(enrolled.snapshot.materials).toHaveLength(0);
+  });
+
+  it("lets staff remove included materials and add catalog materials at authoritative prices during enrollment", async () => {
+    const f = await materialOrderFixture("unpaid");
+    const result = await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session, "second@example.test"),
+      admin: {
+        payment: "unpaid",
+        overbook: false,
+        reason: "Already owns guide",
+        materialIds: [f.extra],
+      },
+    });
+    const order = await f.t.run((ctx) => ctx.db.get(result.orderId));
+    expect(order?.total).toBe(12_500);
+    expect(
+      order?.seats.at(0)?.materials.map((item) => item.materialId)
+    ).toEqual([f.extra]);
+    expect(order?.seats.at(0)?.lines.at(1)?.taxCode).toBe("txcd_99999999");
+    await expect(
+      f.outsiderClient.mutation(api.registration.reserve, {
+        ...attempt(f.course, f.session, "outsider@example.test"),
+        admin: {
+          payment: "waived",
+          overbook: true,
+          reason: "Not authorized",
+          materialIds: [],
+        },
+      })
+    ).rejects.toThrow("Forbidden");
+    await expect(
+      f.t.mutation(api.registration.reserve, {
+        ...attempt(f.course, f.session, "public@example.test"),
+        attendees: [{ ...seat("public@example.test"), waived: ["included"] }],
+      })
+    ).rejects.toThrow("Only required-waivable");
+  });
+
+  it("recalculates an unpaid order without sending mail, changing capacity, or granting materials", async () => {
+    const f = await materialOrderFixture("unpaid");
+    const result = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      {
+        seatId: f.enrolled._id,
+        materialIds: [f.extra],
+        revision: 0,
+        reason: "Swap materials",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    expect(result).toBeNull();
+    const saved = await f.t.run(async (ctx) => ({
+      order: await ctx.db.get(f.order.orderId),
+      seat: await ctx.db.get(f.enrolled._id),
+      session: await ctx.db.get(f.session),
+      entitlements: await ctx.db.query("registrationEntitlements").collect(),
+      jobs: await ctx.db.query("registrationJobs").collect(),
+    }));
+    expect(saved.order?.total).toBe(12_500);
+    expect(saved.seat?.snapshot.total).toBe(12_500);
+    expect(saved.session?.reserved).toBe(1);
+    expect(saved.entitlements).toHaveLength(0);
+    expect(saved.jobs).toHaveLength(0);
+    await expect(
+      f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+        seatId: f.enrolled._id,
+        materialIds: [],
+        revision: 0,
+        reason: "Stale edit",
+        requestKey: crypto.randomUUID(),
+      })
+    ).rejects.toThrow("order changed");
+  });
+
+  it("blocks edits covered by an invoice and permits them after voiding the draft", async () => {
+    const f = await materialOrderFixture("unpaid");
+    const invoice = await f.adminClient.mutation(
+      api.registrationGroups.createInvoice,
+      {
+        orderId: f.order.orderId,
+        billToName: "Buyer",
+        billToEmail: "buyer@example.test",
+        billToAddress: "1 Main St",
+        city: "Portland",
+        state: "OR",
+        postalCode: "97201",
+        poNumber: "",
+        notes: "",
+        dueDays: 30,
+      }
+    );
+    const args = {
+      seatId: f.enrolled._id,
+      materialIds: [],
+      revision: 0,
+      reason: "Owns materials",
+      requestKey: crypto.randomUUID(),
+    };
+    await expect(
+      f.adminClient.mutation(api.registrationMaterialOrders.edit, args)
+    ).rejects.toThrow("Void the invoice");
+    await f.adminClient.mutation(api.registrationGroups.voidInvoice, {
+      id: invoice,
+      reason: "Revise order",
+    });
+    await f.adminClient.mutation(api.registrationMaterialOrders.edit, args);
+    expect((await f.t.run((ctx) => ctx.db.get(f.order.orderId)))?.total).toBe(
+      10_000
+    );
+  });
+
+  it("saves paid additions as an unpaid balance and fulfills exactly once after invoice payment", async () => {
+    vi.stubEnv("REGISTRATION_MODE", "test");
+    const f = await materialOrderFixture();
+    const args = {
+      seatId: f.enrolled._id,
+      materialIds: [f.material, f.extra],
+      revision: 0,
+      reason: "Add workbook",
+      requestKey: crypto.randomUUID(),
+    };
+    const balance = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      args
+    );
+    if (!balance) {
+      throw new Error("Expected material balance");
+    }
+    expect(
+      await f.adminClient.mutation(api.registrationMaterialOrders.edit, args)
+    ).toBe(balance);
+    expect((await f.t.run((ctx) => ctx.db.get(balance)))?.total).toBe(2500);
+    expect(
+      await f.t.run((ctx) => ctx.db.query("registrationEntitlements").collect())
+    ).toHaveLength(1);
+    expect(
+      await f.t.run((ctx) => ctx.db.query("registrationInvoices").collect())
+    ).toHaveLength(0);
+    await expect(
+      f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+        ...args,
+        revision: 1,
+        requestKey: crypto.randomUUID(),
+      })
+    ).rejects.toThrow("pending material balance");
+    const invoice = await f.adminClient.mutation(
+      api.registrationGroups.createInvoice,
+      {
+        orderId: balance,
+        billToName: "Buyer",
+        billToEmail: "buyer@example.test",
+        billToAddress: "1 Main St",
+        city: "Portland",
+        state: "OR",
+        postalCode: "97201",
+        poNumber: "",
+        notes: "Workbook",
+        dueDays: 30,
+      }
+    );
+    await f.t.mutation(internal.registrationGroups.attachStripeInvoice, {
+      id: invoice,
+      stripeInvoiceId: "in_materials",
+      stripeCustomerId: "cus_test",
+      hostedUrl: "https://invoice.stripe.com/test",
+      tax: 200,
+    });
+    const event = {
+      eventId: "evt_materials",
+      stripeInvoiceId: "in_materials",
+      amount: 2700,
+      tax: 200,
+      currency: "usd",
+      paymentIntent: "pi_materials",
+      live: false,
+    };
+    await f.t.mutation(internal.registrationGroups.invoicePaid, event);
+    await f.t.mutation(internal.registrationGroups.invoicePaid, event);
+    const saved = await f.t.run(async (ctx) => ({
+      balance: await ctx.db.get(balance),
+      order: await ctx.db.get(f.order.orderId),
+      seat: await ctx.db.get(f.enrolled._id),
+      session: await ctx.db.get(f.session),
+      seats: await ctx.db.query("registrationSeats").collect(),
+      entitlements: await ctx.db.query("registrationEntitlements").collect(),
+    }));
+    expect(saved.balance?.status).toBe("settled");
+    expect(saved.balance?.paymentIntent).toBe("pi_materials");
+    expect(saved.order?.total).toBe(11_500);
+    expect(saved.seat?.snapshot.materials).toHaveLength(2);
+    expect(saved.entitlements).toHaveLength(2);
+    expect(saved.seats).toHaveLength(1);
+    expect(saved.session?.reserved).toBe(1);
+    const refund = await f.adminClient.mutation(
+      api.registrationPayments.requestRefund,
+      {
+        orderId: balance,
+        cents: 1000,
+        reason: "Partial material refund",
+        key: crypto.randomUUID(),
+      }
+    );
+    await f.t.mutation(internal.registrationPayments.finishRefund, {
+      id: refund,
+      stripeId: "re_materials",
+    });
+    expect((await f.t.run((ctx) => ctx.db.get(balance)))?.refunded).toBe(1000);
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(f.order.orderId)))?.refunded
+    ).toBe(0);
+  });
+
+  it("removes access without issuing a refund or changing the original purchase and supports re-adding", async () => {
+    const f = await materialOrderFixture();
+    await f.adminClient.mutation(api.registrationMaterialOrders.edit, {
+      seatId: f.enrolled._id,
+      materialIds: [],
+      revision: 0,
+      reason: "Return guide",
+      requestKey: crypto.randomUUID(),
+    });
+    const saved = await f.t.run(async (ctx) => ({
+      order: await ctx.db.get(f.order.orderId),
+      seat: await ctx.db.get(f.enrolled._id),
+      entitlements: await ctx.db.query("registrationEntitlements").collect(),
+      refunds: await ctx.db.query("registrationRefunds").collect(),
+    }));
+    expect(saved.order?.total).toBe(11_500);
+    expect(saved.order?.seats.at(0)?.lines).toHaveLength(2);
+    expect(saved.seat?.snapshot.materials).toHaveLength(0);
+    expect(saved.entitlements.at(0)?.state).toBe("canceled");
+    expect(saved.refunds).toHaveLength(0);
+    const attendeeUser = await f.t.run((ctx) =>
+      ctx.db.insert("users", {
+        email: f.enrolled.email,
+        emailVerificationTime: Date.now(),
+      })
+    );
+    const entitlement = saved.entitlements.at(0);
+    if (!entitlement) {
+      throw new Error("Expected removed entitlement");
+    }
+    await expect(
+      f.t
+        .withIdentity({ subject: `${attendeeUser}|session` })
+        .query(api.registrationPortal.materialUrl, { id: entitlement._id })
+    ).rejects.toThrow("Material access denied");
+    const canceledDelivery = await f.t.run((ctx) =>
+      ctx.db
+        .query("registrationJobs")
+        .withIndex("by_key", (q) => q.eq("key", `material:${entitlement._id}`))
+        .unique()
+    );
+    expect(canceledDelivery?.state).toBe("canceled");
+    const balance = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      {
+        seatId: f.enrolled._id,
+        materialIds: [f.material],
+        revision: 1,
+        reason: "Restore guide",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    if (!balance) {
+      throw new Error("Expected balance");
+    }
+    await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+      orderId: balance,
+      source: "waived",
+      reason: "Replacement provided free",
+    });
+    const entitlements = await f.t.run((ctx) =>
+      ctx.db.query("registrationEntitlements").collect()
+    );
+    expect(entitlements.filter((item) => item.state === "ready")).toHaveLength(
+      1
+    );
+    expect(
+      entitlements.filter((item) => item.state === "canceled")
+    ).toHaveLength(1);
+  });
+
+  it("cancels a pending material balance without canceling the registration or freeing a seat", async () => {
+    const f = await materialOrderFixture();
+    const balance = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      {
+        seatId: f.enrolled._id,
+        materialIds: [f.material, f.extra],
+        revision: 0,
+        reason: "Add guide",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    if (!balance) {
+      throw new Error("Expected balance");
+    }
+    await f.adminClient.mutation(
+      api.registrationMaterialOrders.cancelAddition,
+      { orderId: balance, reason: "No longer needed" }
+    );
+    expect((await f.t.run((ctx) => ctx.db.get(balance)))?.status).toBe(
+      "expired"
+    );
+    expect((await f.t.run((ctx) => ctx.db.get(f.enrolled._id)))?.state).toBe(
+      "active"
+    );
+    expect((await f.t.run((ctx) => ctx.db.get(f.session)))?.reserved).toBe(1);
+  });
+
+  it("sends late material payments to reconciliation if the attendee was canceled", async () => {
+    const f = await materialOrderFixture();
+    const balance = await f.adminClient.mutation(
+      api.registrationMaterialOrders.edit,
+      {
+        seatId: f.enrolled._id,
+        materialIds: [f.material, f.extra],
+        revision: 0,
+        reason: "Add guide",
+        requestKey: crypto.randomUUID(),
+      }
+    );
+    if (!balance) {
+      throw new Error("Expected balance");
+    }
+    await f.t.run((ctx) => ctx.db.patch(f.enrolled._id, { state: "canceled" }));
+    await f.adminClient.mutation(api.registrationOperations.recordPayment, {
+      orderId: balance,
+      source: "offline",
+      reason: "Late payment",
+    });
+    expect((await f.t.run((ctx) => ctx.db.get(balance)))?.status).toBe(
+      "exception"
+    );
+    expect(
+      await f.t.run((ctx) => ctx.db.query("registrationEntitlements").collect())
+    ).toHaveLength(1);
+  });
+});

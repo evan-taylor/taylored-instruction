@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import { ArrowLeft, CalendarDays, MapPin } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 import { useCourses } from "@/components/registration/catalog";
 import {
   formatDateTime,
@@ -11,10 +12,12 @@ import {
   shortZone,
 } from "@/components/registration/format";
 import { InstructorRoster } from "@/components/registration/instructor";
+import { ManualEnrollment } from "@/components/registration/operations";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { Modal } from "@/components/ui/dialog";
 import {
   DescriptionList,
   EmptyState,
@@ -46,6 +49,7 @@ export function SessionDetail({
 }: {
   sessionId: Id<"registrationSessions">;
 }) {
+  const [enrollOpen, setEnrollOpen] = useState(false);
   const session = useQuery(api.registrationOperations.sessionForStaff, {
     sessionId,
   });
@@ -99,6 +103,9 @@ export function SessionDetail({
       <PageHeader
         actions={
           <>
+            <Button onClick={() => setEnrollOpen(true)} size="sm" type="button">
+              + Registration
+            </Button>
             <CopyButton
               label="Share link"
               value={`${origin}/s/${session.code}`}
@@ -117,6 +124,15 @@ export function SessionDetail({
         <StatusBadge status={session.publication} />
         <StatusBadge status={session.visibility} />
       </div>
+      <Modal
+        description={`Register an attendee for ${session.title}.`}
+        onClose={() => setEnrollOpen(false)}
+        open={enrollOpen}
+        size="lg"
+        title="Manual enrollment"
+      >
+        {enrollOpen ? <ManualEnrollment initialSessionId={sessionId} /> : null}
+      </Modal>
       <Tabs label="Session sections" onChange={go} tabs={TABS} value={tab} />
       <TabPanel active={tab === "overview"} id="overview">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">

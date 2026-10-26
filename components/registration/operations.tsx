@@ -3,6 +3,7 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import type * as React from "react";
 import { useEffect, useId, useRef, useState } from "react";
+import { CreateInvoiceModal } from "@/components/admin/invoices";
 import { useCourses, useSessions } from "@/components/registration/catalog";
 import { Button } from "@/components/ui/Button";
 import { Badge, StatusBadge } from "@/components/ui/badge";
@@ -30,6 +31,7 @@ import {
 import { AssignmentHistory } from "./assignment-history";
 import { errorText } from "./errors";
 import { formatDate, formatDateTime, pluralize } from "./format";
+import { defaultMaterialIds, MaterialPicker } from "./material-picker";
 
 type Order = Doc<"registrationOrders">;
 type Seat = Doc<"registrationSeats">;
@@ -370,13 +372,17 @@ const EMPTY_ENROLLMENT = {
   payment: "unpaid" as PaymentHandling,
   reason: "",
   overbook: false,
+  materialIds: undefined as Id<"registrationMaterials">[] | undefined,
 };
 
-function useManualEnrollment() {
+function useManualEnrollment(initialSessionId?: Id<"registrationSessions">) {
   const courses = useCourses();
   const sessions = useSessions();
   const reserve = useMutation(api.registration.reserve);
-  const [form, setForm] = useState(EMPTY_ENROLLMENT);
+  const [form, setForm] = useState({
+    ...EMPTY_ENROLLMENT,
+    sessionId: initialSessionId ?? "",
+  });
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const session = sessions?.find((s) => s._id === form.sessionId);
@@ -415,6 +421,8 @@ function useManualEnrollment() {
           payment: form.payment,
           overbook: form.overbook,
           reason: form.reason,
+          materialIds:
+            form.materialIds ?? defaultMaterialIds(config?.materials ?? []),
         },
       });
       setMessage(
@@ -431,9 +439,13 @@ function useManualEnrollment() {
 }
 
 /** Staff-created single-seat enrollment with explicit payment handling. */
-export function ManualEnrollment() {
+export function ManualEnrollment({
+  initialSessionId,
+}: {
+  initialSessionId?: Id<"registrationSessions">;
+}) {
   const { sessions, session, config, form, update, submit, message, busy } =
-    useManualEnrollment();
+    useManualEnrollment(initialSessionId);
   const full = session ? session.reserved >= session.capacity : false;
   const payment = PAYMENT_OPTIONS.find((p) => p.id === form.payment);
   return (
@@ -444,136 +456,155 @@ export function ManualEnrollment() {
         submit();
       }}
     >
-      <Field
-        hint={
-          session
-            ? `${session.reserved} of ${session.capacity} seats reserved · ${formatDateTime(session.firstStart, session.timeZone)}`
-            : "Seat counts show reserved/capacity."
-        }
-        label="Session"
-        required
-      >
-        {(props) => (
-          <Select
-            {...props}
-            onChange={(e) => update({ sessionId: e.target.value, answers: {} })}
-            required
-            value={form.sessionId}
-          >
-            <option value="">Choose a session</option>
-            {sessions?.map((s) => (
-              <option key={s._id} value={s._id}>
-                {sessionLabel(s)}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Attendee name" required>
+      <fieldset className="space-y-5" disabled={busy}>
+        <Field
+          hint={
+            session
+              ? `${session.reserved} of ${session.capacity} seats reserved · ${formatDateTime(session.firstStart, session.timeZone)}`
+              : "Seat counts show reserved/capacity."
+          }
+          label="Session"
+          required
+        >
           {(props) => (
-            <TextInput
+            <Select
               {...props}
-              autoComplete="off"
-              onChange={(e) => update({ name: e.target.value })}
+              onChange={(e) =>
+                update({
+                  sessionId: e.target.value,
+                  answers: {},
+                  materialIds: undefined,
+                })
+              }
               required
-              value={form.name}
-            />
+              value={form.sessionId}
+            >
+              <option value="">Choose a session</option>
+              {sessions?.map((s) => (
+                <option key={s._id} value={s._id}>
+                  {sessionLabel(s)}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Attendee name" required>
+            {(props) => (
+              <TextInput
+                {...props}
+                autoComplete="off"
+                onChange={(e) => update({ name: e.target.value })}
+                required
+                value={form.name}
+              />
+            )}
+          </Field>
+          <Field
+            hint="Also used as the purchaser for receipts and portal access."
+            label="Attendee email"
+            required
+          >
+            {(props) => (
+              <TextInput
+                {...props}
+                autoComplete="off"
+                onChange={(e) => update({ email: e.target.value })}
+                required
+                type="email"
+                value={form.email}
+              />
+            )}
+          </Field>
+        </div>
+        {config ? (
+          <MaterialPicker
+            disabled={busy}
+            key={form.sessionId}
+            materials={config.materials}
+            onChange={(materialIds) => update({ materialIds })}
+            tuition={config.tuition}
+            value={form.materialIds ?? defaultMaterialIds(config.materials)}
+          />
+        ) : null}
+        {config?.questions.length ? (
+          <div className="space-y-4 rounded-lg border border-slate-200 p-4">
+            <p className="font-medium text-slate-700 text-sm">
+              Registration questions
+            </p>
+            {config.questions.map((q) => (
+              <QuestionInput
+                key={q.id}
+                onChange={(value) =>
+                  update({ answers: { ...form.answers, [q.id]: value } })
+                }
+                question={q}
+                value={form.answers[q.id]}
+              />
+            ))}
+          </div>
+        ) : null}
+        <Notice tone="info">
+          Card payments and invoices add sales tax at payment time based on the
+          billing address; offline and waived enrollments record the pre-tax
+          total only.
+        </Notice>
+        <Field hint={payment?.hint} label="Payment handling" required>
+          {(props) => (
+            <Select
+              {...props}
+              onChange={(e) =>
+                update({ payment: e.target.value as PaymentHandling })
+              }
+              value={form.payment}
+            >
+              {PAYMENT_OPTIONS.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.label}
+                </option>
+              ))}
+            </Select>
           )}
         </Field>
         <Field
-          hint="Also used as the purchaser for receipts and portal access."
-          label="Attendee email"
+          hint="Why this enrollment is being created by staff. Recorded in the audit log."
+          label="Reason"
           required
         >
           {(props) => (
             <TextInput
               {...props}
-              autoComplete="off"
-              onChange={(e) => update({ email: e.target.value })}
+              onChange={(e) => update({ reason: e.target.value })}
               required
-              type="email"
-              value={form.email}
+              value={form.reason}
             />
           )}
         </Field>
-      </div>
-      {config?.questions.length ? (
-        <div className="space-y-4 rounded-lg border border-slate-200 p-4">
-          <p className="font-medium text-slate-700 text-sm">
-            Registration questions
-          </p>
-          {config.questions.map((q) => (
-            <QuestionInput
-              key={q.id}
-              onChange={(value) =>
-                update({ answers: { ...form.answers, [q.id]: value } })
-              }
-              question={q}
-              value={form.answers[q.id]}
-            />
-          ))}
+        <Toggle
+          checked={form.overbook}
+          description="Lets this enrollment exceed the session's capacity."
+          label="Allow overbooking"
+          onChange={(overbook) => update({ overbook })}
+        />
+        {form.overbook ? (
+          <Notice tone="warning">
+            Overbooking may exceed the safe capacity of the room or equipment.
+            {full ? " This session is already full." : ""}
+          </Notice>
+        ) : null}
+        {!form.overbook && full ? (
+          <Notice tone="info">
+            This session is full. Enable overbooking to add this attendee
+            anyway.
+          </Notice>
+        ) : null}
+        <ResultNotice message={message} />
+        <div className="flex justify-end">
+          <Button disabled={busy} size="sm" type="submit">
+            {busy ? "Working…" : "Create enrollment"}
+          </Button>
         </div>
-      ) : null}
-      <Notice tone="info">
-        Card payments and invoices add sales tax at payment time based on the
-        billing address; offline and waived enrollments record the pre-tax total
-        only.
-      </Notice>
-      <Field hint={payment?.hint} label="Payment handling" required>
-        {(props) => (
-          <Select
-            {...props}
-            onChange={(e) =>
-              update({ payment: e.target.value as PaymentHandling })
-            }
-            value={form.payment}
-          >
-            {PAYMENT_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </Select>
-        )}
-      </Field>
-      <Field
-        hint="Why this enrollment is being created by staff. Recorded in the audit log."
-        label="Reason"
-        required
-      >
-        {(props) => (
-          <TextInput
-            {...props}
-            onChange={(e) => update({ reason: e.target.value })}
-            required
-            value={form.reason}
-          />
-        )}
-      </Field>
-      <Toggle
-        checked={form.overbook}
-        description="Lets this enrollment exceed the session's capacity."
-        label="Allow overbooking"
-        onChange={(overbook) => update({ overbook })}
-      />
-      {form.overbook ? (
-        <Notice tone="warning">
-          Overbooking may exceed the safe capacity of the room or equipment.
-          {full ? " This session is already full." : ""}
-        </Notice>
-      ) : null}
-      {!form.overbook && full ? (
-        <Notice tone="info">
-          This session is full. Enable overbooking to add this attendee anyway.
-        </Notice>
-      ) : null}
-      <ResultNotice message={message} />
-      <div className="flex justify-end">
-        <Button disabled={busy} size="sm" type="submit">
-          {busy ? "Working…" : "Create enrollment"}
-        </Button>
-      </div>
+      </fieldset>
     </form>
   );
 }
@@ -1106,7 +1137,7 @@ function UnpaidActions({ order }: { order: Order }) {
           Waive payment
         </Button>
       </div>
-      <RequestPayment order={order} />
+      {order.total > 0 ? <RequestPayment order={order} /> : null}
       <ResultNotice message={message} />
       <ReasonDialog
         confirmLabel="Record payment"
@@ -1268,6 +1299,7 @@ export function OrderPayments({ order }: { order: Order }) {
 
 /** Read-only invoice list for an order; actions live on the Groups page. */
 export function OrderInvoices({ order }: { order: Order }) {
+  const [createOpen, setCreateOpen] = useState(false);
   const invoices = useQuery(api.registrationGroups.orderInvoices, {
     orderId: order._id,
   });
@@ -1277,7 +1309,7 @@ export function OrderInvoices({ order }: { order: Order }) {
   const hasOpen = invoices.some(
     (i) => i.status === "open" || i.status === "draft"
   );
-  const canCreate = order.status === "unpaid" && !hasOpen;
+  const canCreate = order.status === "unpaid" && order.total > 0 && !hasOpen;
   return (
     <div className="space-y-3">
       {invoices.length ? (
@@ -1334,12 +1366,16 @@ export function OrderInvoices({ order }: { order: Order }) {
       )}
       <div className="flex flex-wrap gap-2">
         {canCreate ? (
-          <Button
-            href={`/admin/groups?tab=invoices&order=${order._id}`}
-            size="xs"
-          >
+          <Button onClick={() => setCreateOpen(true)} size="xs" type="button">
             Create invoice
           </Button>
+        ) : null}
+        {createOpen ? (
+          <CreateInvoiceModal
+            onClose={() => setCreateOpen(false)}
+            open
+            orderId={order._id}
+          />
         ) : null}
         <Button href="/admin/groups?tab=invoices" size="xs" variant="ghost">
           Manage invoices
