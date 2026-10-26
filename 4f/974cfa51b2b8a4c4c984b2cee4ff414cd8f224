@@ -1,0 +1,19 @@
+scripts/vercel-build.ts
+  s_ad5204f0da8008::t_36e31dd31cf854 2,126-137,145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4f974cfa51b2b8a4c4c984b2cee4ff414cd8f224",
+  "prompts": {},
+  "sessions": {
+    "s_ad5204f0da8008": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a179d9-53d2-7aa0-b18c-aaffe1f8adf4",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
