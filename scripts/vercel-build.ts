@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import Stripe from "stripe";
 
 // `convex deploy --cmd` supplies the URLs for this exact deployment.
@@ -122,6 +123,18 @@ if (endpoint) {
     enabled_events: enabledEvents,
   });
 } else {
+  // Stripe caches failed create responses too. Freeing a preview webhook slot
+  // must change the retry key, while retries against the same catalog stay
+  // idempotent. Otherwise a cached quota error blocks builds for up to 24 hours.
+  const endpointCatalog = createHash("sha256")
+    .update(
+      endpoints.data
+        .map((entry) => entry.id)
+        .sort()
+        .join(",")
+    )
+    .digest("hex")
+    .slice(0, 16);
   const created = await stripe.webhookEndpoints.create(
     {
       url,
@@ -129,7 +142,7 @@ if (endpoint) {
       api_version: "2026-09-30.endive",
       description: `Taylored Instruction registration (${deployment})`,
     },
-    { idempotencyKey: `registration-webhook:${deployment}` }
+    { idempotencyKey: `registration-webhook:${deployment}:${endpointCatalog}` }
   );
   if (!created.secret) {
     throw new Error("Stripe did not return a webhook signing secret");
