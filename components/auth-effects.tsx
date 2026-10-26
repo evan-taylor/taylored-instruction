@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { api } from "@/convex/_generated/api";
 import { useMigrationAttachment } from "@/hooks/useMigrationAttachment";
 import { useProfile } from "@/hooks/useProfile";
+import { captureVerifiedOtp } from "@/lib/posthog-auth";
 
 export function AuthEffects() {
   const { isAuthenticated } = useConvexAuth();
@@ -49,6 +50,7 @@ export function AuthEffects() {
       email: profile.email ?? undefined,
       is_instructor: profile.is_instructor,
     });
+    captureVerifiedOtp(profile.userId);
     identifiedUserId.current = profile.userId;
   }, [isAuthenticated, profile, updateLastLogin]);
 

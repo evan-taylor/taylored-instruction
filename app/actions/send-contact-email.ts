@@ -46,7 +46,8 @@ type SendEmailResult = {
 };
 
 export async function sendContactEmail(
-  formData: FormData
+  formData: FormData,
+  analytics?: { distinctId: string; sessionId?: string }
 ): Promise<SendEmailResult> {
   const rawFormDataEntries = Object.fromEntries(formData.entries());
 
@@ -87,22 +88,21 @@ export async function sendContactEmail(
     // Track contact form submission on server side
     const posthog = PostHogClient();
     await posthog?.capture({
-      distinctId: email, // Use email as distinct ID for anonymous users
+      distinctId: analytics?.distinctId?.slice(0, 200) || crypto.randomUUID(),
       event: "contact_form_server_submitted",
       properties: {
-        firstName,
-        lastName,
-        email,
-        phone: phone || null,
-        location: location || otherLocation || null,
-        hasMessage: message.length > 0,
-        smsOptIn,
-        smsOptOut,
-        contactMethods: contactMethodList,
-        contactMethodCount: contactMethodList.length,
+        $session_id: analytics?.sessionId?.slice(0, 200),
+        $process_person_profile: false,
+        has_message: message.length > 0,
+        sms_opt_in: smsOptIn,
+        sms_opt_out: smsOptOut,
+        contact_methods: contactMethodList,
+        contact_method_count: contactMethodList.length,
       },
     });
-    await posthog?.shutdown();
+    await posthog?.shutdown().catch(() => {
+      /* Email delivery does not depend on analytics. */
+    });
 
     // Send email to admin
     const adminEmailData = await getResendClient().emails.send({

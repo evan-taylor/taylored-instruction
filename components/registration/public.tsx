@@ -42,6 +42,10 @@ import {
 } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import {
+  registrationAnalyticsContext,
+  trackRegistration,
+} from "@/lib/registration-analytics";
 import { cn } from "@/lib/utils";
 import {
   type Attendee,
@@ -497,6 +501,16 @@ export function ClassDiscovery() {
   const [date, setDate] = useState("");
   const [calendar, setCalendar] = useState(false);
   const needle = useDebounced(search.trim().toLowerCase(), 300);
+  const previousNeedle = useRef(needle);
+  useEffect(() => {
+    if (previousNeedle.current === needle) {
+      return;
+    }
+    previousNeedle.current = needle;
+    trackRegistration("registration_discovery_filtered", {
+      has_search: Boolean(needle),
+    });
+  }, [needle]);
   const { results, status, loadMore } = usePaginatedQuery(
     api.registration.discover,
     { search: needle || undefined, ...dayWindow(date) },
@@ -527,9 +541,20 @@ export function ClassDiscovery() {
           <FilterBar
             calendar={calendar}
             date={date}
-            onDate={setDate}
+            onDate={(value) => {
+              setDate(value);
+              trackRegistration("registration_discovery_filtered", {
+                has_date: Boolean(value),
+                has_search: Boolean(needle),
+              });
+            }}
             onSearch={setSearch}
-            onView={setCalendar}
+            onView={(value) => {
+              setCalendar(value);
+              trackRegistration("registration_discovery_view_changed", {
+                view: value ? "calendar" : "list",
+              });
+            }}
             search={search}
           />
         </div>
@@ -554,7 +579,10 @@ export function ClassDiscovery() {
         {status === "CanLoadMore" ? (
           <div className="flex justify-center">
             <Button
-              onClick={() => loadMore(20)}
+              onClick={() => {
+                trackRegistration("registration_discovery_more_requested");
+                loadMore(20);
+              }}
               size="sm"
               type="button"
               variant="secondary"
@@ -598,6 +626,7 @@ function useRegistrationForm(
   ]);
   const attempt = useRef({ signature: "", key: "" });
   const submitting = useRef(false);
+  const started = useRef(false);
   const [purchaser, setPurchaser] = useState("");
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -618,6 +647,16 @@ function useRegistrationForm(
   );
   const change = useCallback(
     (key: string, patch: Partial<Attendee>) => {
+      if (patch.selected) {
+        trackRegistration("registration_material_selection_changed", {
+          selected_count: patch.selected.length,
+        });
+      }
+      if (patch.waived) {
+        trackRegistration("registration_material_waiver_changed", {
+          waived_count: patch.waived.length,
+        });
+      }
       if (registeringSelf) {
         setSelf((current) => ({ ...current, ...patch }));
         return;
@@ -629,9 +668,11 @@ function useRegistrationForm(
     [registeringSelf]
   );
   const remove = useCallback((key: string) => {
+    trackRegistration("registration_attendee_removed");
     setAttendees((rows) => rows.filter((row) => row.key !== key));
   }, []);
   const add = useCallback(() => {
+    trackRegistration("registration_attendee_added");
     setAttendees((rows) =>
       rows.length >= MAX_SEATS ? rows : [...rows, newAttendee()]
     );
@@ -640,6 +681,13 @@ function useRegistrationForm(
     if (submitting.current || review) {
       return;
     }
+    trackRegistration("registration_submitted", {
+      course_id: offering.courseId,
+      class_session_id: sessionId,
+      attendee_count: attendees.length,
+      registering_self: registeringSelf,
+      has_coupon: Boolean(coupon),
+    });
     submitting.current = true;
     setBusy(true);
     setError("");
@@ -659,6 +707,7 @@ function useRegistrationForm(
         new URLSearchParams(window.location.hash.slice(1)).get("invitation") ??
         undefined;
       const result = await reserve({
+        analytics: registrationAnalyticsContext(),
         courseId: offering.courseId,
         sessionId,
         purchaser,
@@ -672,6 +721,12 @@ function useRegistrationForm(
         requestKey,
         invitation,
       });
+      trackRegistration("registration_reservation_succeeded", {
+        order_id: result.orderId,
+        total_cents: result.total,
+        status: result.status,
+        attendee_count: attendees.length,
+      });
       sessionStorage.setItem(
         "registration-order",
         JSON.stringify({ ...result, requestKey })
@@ -682,8 +737,18 @@ function useRegistrationForm(
         window.location.assign("/registration/success");
         return;
       }
+      trackRegistration("registration_review_opened", {
+        order_id: order.orderId,
+        total_cents: order.total,
+      });
       setReview(order);
     } catch (e) {
+      trackRegistration("registration_reservation_failed", {
+        course_id: offering.courseId,
+        has_coupon: Boolean(coupon),
+        attendee_count: attendees.length,
+        error_stage: "reserve",
+      });
       setError(errorText(e, "Unable to reserve seats. Please try again."));
     } finally {
       submitting.current = false;
@@ -692,6 +757,9 @@ function useRegistrationForm(
   }
   /** Drops an expired reservation so the next submit reserves fresh seats. */
   function reset() {
+    trackRegistration("registration_restarted", {
+      course_id: offering.courseId,
+    });
     attempt.current = { signature: "", key: "" };
     setReview(null);
     setError("");
@@ -703,7 +771,12 @@ function useRegistrationForm(
   return {
     attendees,
     registeringSelf,
-    setRegisteringSelf,
+    setRegisteringSelf: (value: boolean) => {
+      trackRegistration("registration_mode_changed", {
+        registering_self: value,
+      });
+      setRegisteringSelf(value);
+    },
     add,
     remove,
     change,
@@ -711,7 +784,16 @@ function useRegistrationForm(
     setPurchaser,
     name,
     firstName,
-    setFirstName,
+    setFirstName: (value: string) => {
+      if (!started.current) {
+        started.current = true;
+        trackRegistration("registration_form_started", {
+          course_id: offering.courseId,
+          class_session_id: sessionId,
+        });
+      }
+      setFirstName(value);
+    },
     lastName,
     setLastName,
     phone,
@@ -1509,9 +1591,18 @@ function WaitlistAction({
           setBusy(true);
           form.setError("");
           try {
+            trackRegistration("registration_waitlist_submitted", {
+              class_session_id: sessionId,
+            });
             await join({ sessionId, name: form.name, email: form.purchaser });
+            trackRegistration("registration_waitlist_joined", {
+              class_session_id: sessionId,
+            });
             setJoined(true);
           } catch (e) {
+            trackRegistration("registration_waitlist_failed", {
+              class_session_id: sessionId,
+            });
             form.setError(errorText(e));
           } finally {
             setBusy(false);
@@ -1838,6 +1929,20 @@ function OfferingPage({
   sessionId?: Id<"registrationSessions">;
 }) {
   const form = useRegistrationForm(offering, sessionId);
+  const viewed = useRef("");
+  useEffect(() => {
+    const key = `${offering.courseId}:${sessionId ?? ""}`;
+    if (viewed.current === key) {
+      return;
+    }
+    viewed.current = key;
+    trackRegistration("registration_offering_viewed", {
+      course_id: offering.courseId,
+      class_session_id: sessionId,
+      offering_state: offering.state,
+      delivery_mode: sessionId ? "scheduled" : "self_paced",
+    });
+  }, [offering.courseId, offering.state, sessionId]);
   const open = offering.state === "open";
   return (
     <div className="bg-slate-50">
@@ -1877,6 +1982,12 @@ function OfferingPage({
         ) : (
           <form
             className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]"
+            onInvalid={() =>
+              trackRegistration("registration_validation_failed", {
+                course_id: offering.courseId,
+                error_stage: "browser_validation",
+              })
+            }
             onSubmit={(e) => {
               e.preventDefault();
               form.submit();
@@ -1979,6 +2090,20 @@ export function RegistrationSuccess() {
   const status = useQuery(api.registrationPortal.status, order ?? "skip");
   const settled = status?.status === "settled";
   const checking = order !== null && status === undefined;
+  const reported = useRef("");
+  useEffect(() => {
+    if (
+      !(order && status) ||
+      reported.current === `${order.orderId}:${status.status}`
+    ) {
+      return;
+    }
+    reported.current = `${order.orderId}:${status.status}`;
+    trackRegistration("registration_success_viewed", {
+      order_id: order.orderId,
+      status: status.status,
+    });
+  }, [order, status]);
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:py-16">

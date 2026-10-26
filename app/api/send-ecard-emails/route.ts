@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { type NextRequest, NextResponse } from "next/server";
 import React from "react";
 import Stripe from "stripe";
@@ -45,6 +46,37 @@ const parseCartItems = (cartItemsJson: string): CartItem[] | null => {
     return null;
   }
 };
+
+async function capturePurchase(session: Stripe.Checkout.Session) {
+  if (
+    session.payment_status === "paid" ||
+    session.payment_status === "no_payment_required"
+  ) {
+    const distinctId =
+      session.metadata?.posthog_distinct_id || session.metadata?.userId;
+    if (distinctId) {
+      const hash = createHash("sha256")
+        .update(`ecard_purchase_completed:${session.id}`)
+        .digest("hex");
+      const uuid = `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+      const posthog = PostHogClient();
+      posthog?.capture({
+        distinctId,
+        event: "ecard_purchase_completed",
+        uuid,
+        properties: {
+          $session_id: session.metadata?.posthog_session_id || undefined,
+          total_cents: session.amount_total,
+          currency: session.currency,
+          payment_status: session.payment_status,
+        },
+      });
+      await posthog?.shutdown().catch(() => {
+        /* Email delivery does not depend on analytics. */
+      });
+    }
+  }
+}
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
@@ -148,6 +180,7 @@ export async function POST(req: NextRequest) {
     const session =
       await getStripeClient().checkout.sessions.retrieve(sessionId);
     const customerEmail = session.customer_email;
+    await capturePurchase(session);
 
     if (!customerEmail) {
       return NextResponse.json(
@@ -190,7 +223,9 @@ export async function POST(req: NextRequest) {
             fulfillment_type: "cart",
           },
         });
-        await posthog?.shutdown();
+        await posthog?.shutdown().catch(() => {
+          /* Analytics must not fail commerce. */
+        });
       }
 
       return NextResponse.json({ success: true });
@@ -206,6 +241,24 @@ export async function POST(req: NextRequest) {
         totalPrice,
         customerEmail
       );
+
+      const { userId } = session.metadata;
+      if (userId) {
+        const posthog = PostHogClient();
+        await posthog?.capture({
+          distinctId: userId,
+          event: "ecard_purchase_completed",
+          properties: {
+            item_count: Number(session.metadata.quantity),
+            order_total: Number(totalPrice),
+            fulfillment_type: "single_product",
+          },
+        });
+        await posthog?.shutdown().catch(() => {
+          /* Analytics must not fail commerce. */
+        });
+      }
+
       return NextResponse.json({ success: true });
     }
 

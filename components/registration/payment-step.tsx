@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Notice, Skeleton } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { trackRegistration } from "@/lib/registration-analytics";
 import { getStripe } from "@/lib/stripe-client";
 import { cn } from "@/lib/utils";
 import { CHECKOUT_HOLD_MINUTES } from "@/shared/registration/domain";
@@ -83,15 +84,30 @@ export function HoldTimer({
 
 function PaymentForm({
   expired,
+  orderId,
   onPaying,
 }: {
   expired: boolean;
+  orderId: string;
   /** Fires before Stripe takes over so leaving the page is not read as abandoning. */
   onPaying: (paying: boolean) => void;
 }) {
   const state = useCheckoutElements();
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const reportedState = useRef("");
+  useEffect(() => {
+    if (state.type === "loading" || reportedState.current === state.type) {
+      return;
+    }
+    reportedState.current = state.type;
+    trackRegistration(
+      state.type === "error"
+        ? "registration_payment_form_failed"
+        : "registration_payment_form_ready",
+      { order_id: orderId }
+    );
+  }, [state.type, orderId]);
   if (state.type === "loading") {
     return (
       <div aria-busy="true" className="space-y-4" role="status">
@@ -115,11 +131,34 @@ function PaymentForm({
     setBusy(true);
     setMessage("");
     onPaying(true);
-    const result = await checkout.confirm();
-    // On success Stripe sends the customer to the return URL; only an
-    // immediate failure lands here.
-    if (result.type === "error") {
-      setMessage(result.error.message);
+    trackRegistration("registration_payment_submitted", {
+      order_id: orderId,
+      total_cents: checkout.total.total.minorUnitsAmount,
+      tax_cents: tax,
+    });
+    try {
+      const result = await checkout.confirm();
+      if (result.type === "error") {
+        trackRegistration("registration_payment_failed", {
+          order_id: orderId,
+          error_stage: "confirmation",
+        });
+        setMessage(result.error.message);
+        setBusy(false);
+        onPaying(false);
+      } else {
+        trackRegistration("registration_payment_returned", {
+          order_id: orderId,
+        });
+      }
+    } catch {
+      trackRegistration("registration_payment_failed", {
+        order_id: orderId,
+        error_stage: "network",
+      });
+      setMessage(
+        "Unable to confirm payment. Check your connection and try again."
+      );
       setBusy(false);
       onPaying(false);
     }
@@ -139,11 +178,27 @@ function PaymentForm({
         <p className="text-slate-500 text-sm">
           Sales tax is calculated from this address.
         </p>
-        <BillingAddressElement />
+        <BillingAddressElement
+          onChange={(event) => {
+            if (event.complete) {
+              trackRegistration("registration_billing_completed", {
+                order_id: orderId,
+              });
+            }
+          }}
+        />
       </fieldset>
       <fieldset className="min-w-0 space-y-2 border-0 p-0" disabled={busy}>
         <legend className="mb-2 font-semibold text-slate-900">Payment</legend>
-        <PaymentElement />
+        <PaymentElement
+          onChange={(event) => {
+            if (event.complete) {
+              trackRegistration("registration_payment_details_completed", {
+                order_id: orderId,
+              });
+            }
+          }}
+        />
       </fieldset>
       <dl className="space-y-1.5 border-slate-200 border-t pt-4 text-sm">
         <div className="flex items-center justify-between gap-3 text-slate-600">
@@ -234,6 +289,7 @@ export function PaymentStep({
         return;
       }
       released.current = true;
+      trackRegistration("registration_checkout_left", { order_id: orderId });
       navigator.sendBeacon(
         "/api/registration/abandon",
         JSON.stringify({ orderId, requestKey })
@@ -260,22 +316,35 @@ export function PaymentStep({
     released.current = true;
     try {
       await abandon({ orderId, requestKey });
+      trackRegistration("registration_checkout_canceled", {
+        order_id: orderId,
+      });
     } catch {
       // The hold still lapses on its own; the purchaser is leaving either way.
     }
     onStartOver();
   };
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `attempt` re-runs the request on retry
   useEffect(() => {
     let cancelled = false;
+    trackRegistration("registration_checkout_started", {
+      order_id: orderId,
+      attempt,
+    });
     checkout({ orderId, requestKey })
       .then((value) => {
         if (!cancelled) {
+          trackRegistration("registration_checkout_ready", {
+            order_id: orderId,
+          });
           setSecret(value);
         }
       })
       .catch((error) => {
         if (!cancelled) {
+          trackRegistration("registration_checkout_failed", {
+            order_id: orderId,
+            error_stage: "checkout",
+          });
           setFailure(
             errorText(
               error,
@@ -289,6 +358,13 @@ export function PaymentStep({
     };
   }, [checkout, orderId, requestKey, attempt]);
   const expired = expires <= now;
+  const expiryReported = useRef(false);
+  useEffect(() => {
+    if (expired && !expiryReported.current) {
+      expiryReported.current = true;
+      trackRegistration("registration_hold_expired", { order_id: orderId });
+    }
+  }, [expired, orderId]);
   if (!process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
     return (
       <Notice tone="danger">
@@ -330,6 +406,10 @@ export function PaymentStep({
               onClick={() => {
                 // Same order and request key, so the held seats are reused.
                 setFailure("");
+                trackRegistration("registration_checkout_retried", {
+                  order_id: orderId,
+                  attempt: attempt + 1,
+                });
                 setAttempt((n) => n + 1);
               }}
               size="sm"
@@ -355,6 +435,7 @@ export function PaymentStep({
               payingRef.current = value;
               setPaying(value);
             }}
+            orderId={orderId}
           />
         </CheckoutElementsProvider>
       ) : null}

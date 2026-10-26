@@ -13,6 +13,7 @@ import {
 import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { trackRegistration } from "@/lib/registration-analytics";
 import { errorText } from "./errors";
 
 const COURSES = [
@@ -297,6 +298,9 @@ export function GroupTrainingRequest() {
     setBusy(true);
     setError("");
     try {
+      trackRegistration("registration_group_request_submitted", {
+        attendee_count: Number(form.headcount),
+      });
       await submit({
         organization: form.organization,
         contactName: form.contactName,
@@ -308,8 +312,12 @@ export function GroupTrainingRequest() {
         location: form.location,
         notes: form.notes,
       });
+      trackRegistration("registration_group_request_succeeded", {
+        attendee_count: Number(form.headcount),
+      });
       setDone(true);
     } catch (e) {
+      trackRegistration("registration_group_request_failed");
       setError(errorText(e));
     } finally {
       setBusy(false);

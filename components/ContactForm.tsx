@@ -11,6 +11,7 @@ import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { trackVisitorsEvent } from "@/lib/analytics";
+import { registrationAnalyticsContext } from "@/lib/registration-analytics";
 
 export function ContactForm() {
   const posthog = usePostHog();
@@ -40,7 +41,10 @@ export function ContactForm() {
 
     try {
       // --- Call the server action ---
-      const result = await sendContactEmail(formData);
+      const result = await sendContactEmail(
+        formData,
+        registrationAnalyticsContext()
+      );
       // --------------------------------
 
       if (result.success) {

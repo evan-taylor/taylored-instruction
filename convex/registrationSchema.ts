@@ -1,5 +1,6 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
+import { analyticsContext } from "../shared/registration/analytics-validator";
 import {
   couponFields,
   courseFields,
@@ -112,6 +113,7 @@ export const registrationTables = {
     .index("by_sessionId", ["sessionId"]),
   registrationCoupons: defineTable(couponFields).index("by_code", ["code"]),
   registrationOrders: defineTable({
+    analytics: v.optional(analyticsContext),
     parentOrderId: v.optional(v.id("registrationOrders")),
     materialSeatId: v.optional(v.id("registrationSeats")),
     materialRevision: v.optional(v.number()),

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { postHogHeaders } from "@/lib/posthog-context";
 
 function EcardSuccessContent() {
   const _router = useRouter();
@@ -28,7 +29,7 @@ function EcardSuccessContent() {
     // Call API to send eCard purchase emails
     fetch("/api/send-ecard-emails", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...postHogHeaders() },
       body: JSON.stringify({ sessionId }),
     })
       .then((res) => res.json())

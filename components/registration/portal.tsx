@@ -29,6 +29,7 @@ import {
   Skeleton,
 } from "@/components/ui/page-header";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
+import { trackRegistration } from "@/lib/registration-analytics";
 import { formatMoney } from "@/shared/registration/domain";
 import { formatMeeting, formatTime, shortZone } from "./format";
 
@@ -300,6 +301,9 @@ function MaterialRow({
             onClick={async () => {
               setBusy(true);
               try {
+                trackRegistration("registration_material_open_requested", {
+                  material_kind: kind,
+                });
                 const response = await fetch("/api/registration/portal", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -307,11 +311,20 @@ function MaterialRow({
                 });
                 const data = await response.json();
                 if (response.ok && data.url) {
+                  trackRegistration("registration_material_opened", {
+                    material_kind: kind,
+                  });
                   window.location.assign(data.url);
                 } else {
+                  trackRegistration("registration_material_open_failed", {
+                    material_kind: kind,
+                  });
                   onUnavailable();
                 }
               } catch {
+                trackRegistration("registration_material_open_failed", {
+                  material_kind: kind,
+                });
                 onUnavailable();
               } finally {
                 setBusy(false);
@@ -578,6 +591,10 @@ export function RegistrationPortal() {
         return;
       }
       if (!response.ok) {
+        trackRegistration("registration_portal_failed", {
+          view: nextView,
+          error_stage: "response",
+        });
         setMessage({
           text:
             data.error ??
@@ -586,6 +603,11 @@ export function RegistrationPortal() {
         });
         return;
       }
+      trackRegistration("registration_portal_loaded", {
+        view: nextView,
+        result_count: data.page.length,
+        is_more: Boolean(nextCursor),
+      });
       setRows(nextCursor ? [...rows, ...data.page] : data.page);
       setView(nextView);
       setCursor(data.continueCursor);
@@ -593,6 +615,10 @@ export function RegistrationPortal() {
       setLoaded(true);
     } catch {
       if (started === session.current) {
+        trackRegistration("registration_portal_failed", {
+          view: nextView,
+          error_stage: "network",
+        });
         setMessage({
           text: "We couldn’t reach the portal. Check your connection and try again.",
           tone: "danger",

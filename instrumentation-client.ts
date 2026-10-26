@@ -8,7 +8,8 @@ import {
   replayIntegration,
 } from "@sentry/nextjs";
 import posthog from "posthog-js";
-import { getMissingPostHogEnvVariable, getPostHogEnv } from "@/lib/posthog-env";
+import { getPostHogEnv } from "@/lib/posthog-env";
+import { privateAnalyticsEvent } from "@/shared/registration/analytics";
 import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
 
 const { host: posthogHost, projectToken: posthogProjectToken } =
@@ -16,22 +17,24 @@ const { host: posthogHost, projectToken: posthogProjectToken } =
 
 if (posthogProjectToken && posthogHost) {
   posthog.init(posthogProjectToken, {
-    api_host: posthogHost,
+    api_host: "/ingest",
+    ui_host: posthogHost.includes("eu.")
+      ? "https://eu.posthog.com"
+      : "https://us.posthog.com",
     person_profiles: "identified_only",
     capture_pageview: false,
-    before_send: (event) =>
-      isPrivateRegistrationPath(window.location.pathname) ? null : event,
+    before_send: (event) => {
+      if (!(event && isPrivateRegistrationPath(window.location.pathname))) {
+        return event;
+      }
+      return privateAnalyticsEvent(event);
+    },
     capture_pageleave: true,
     capture_exceptions: true,
+    tracing_headers: [window.location.hostname],
     defaults: "2025-05-24",
     debug: process.env.NODE_ENV === "development",
   });
-} else if (process.env.NODE_ENV !== "production") {
-  const missingVariable = getMissingPostHogEnvVariable();
-
-  throw new Error(
-    `${missingVariable} variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once ${missingVariable} is configured`
-  );
 }
 
 export const onRouterTransitionStart = captureRouterTransitionStart;

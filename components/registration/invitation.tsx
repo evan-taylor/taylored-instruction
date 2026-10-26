@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { trackRegistration } from "@/lib/registration-analytics";
 import { errorText } from "./errors";
 
 /** Shown when the URL hash carries a waitlist invitation token. */
@@ -49,12 +50,15 @@ export function InvitationActions() {
             setBusy(true);
             setMessage("");
             try {
+              trackRegistration("registration_invitation_decline_submitted");
               await decline({ token });
+              trackRegistration("registration_invitation_declined");
               setDeclined(true);
               setMessage(
                 "Invitation declined. The next person can be offered the opening."
               );
             } catch (error) {
+              trackRegistration("registration_invitation_decline_failed");
               setMessage(errorText(error));
             } finally {
               setBusy(false);

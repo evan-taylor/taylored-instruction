@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { doc } from "convex-helpers/validators";
+import { analyticsContext } from "../shared/registration/analytics-validator";
 import {
   BATCH,
   CHECKOUT_HOLD_MINUTES,
@@ -375,12 +376,24 @@ export const requestPayment = mutation({
 });
 
 export const beginRequestedPayment = mutation({
-  args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
+  args: {
+    orderId: v.id("registrationOrders"),
+    requestKey: v.string(),
+    analytics: v.optional(analyticsContext),
+  },
   returns: v.object({ expires: v.number() }),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order || order.requestKey !== args.requestKey) {
       throw new ConvexError("Payment request not found");
+    }
+    if (
+      args.analytics?.distinctId.length &&
+      args.analytics.distinctId.length <= 200 &&
+      (args.analytics.sessionId?.length ?? 0) <= 200 &&
+      (order.status === "unpaid" || order.status === "hold")
+    ) {
+      await ctx.db.patch(order._id, { analytics: args.analytics });
     }
     if (order.status === "hold" && order.expires > Date.now()) {
       return { expires: order.expires };

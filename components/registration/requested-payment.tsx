@@ -9,6 +9,10 @@ import { Notice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import {
+  registrationAnalyticsContext,
+  trackRegistration,
+} from "@/lib/registration-analytics";
+import {
   CHECKOUT_HOLD_MINUTES,
   formatMoney,
 } from "@/shared/registration/domain";
@@ -36,10 +40,22 @@ export function RequestedPayment() {
     setError("");
     try {
       const args = { orderId, requestKey };
-      const result = await begin(args);
+      trackRegistration("registration_requested_payment_started", {
+        order_id: orderId,
+      });
+      const result = await begin({
+        ...args,
+        analytics: registrationAnalyticsContext(),
+      });
+      trackRegistration("registration_requested_payment_ready", {
+        order_id: orderId,
+      });
       sessionStorage.setItem("registration-order", JSON.stringify(args));
       setExpires(result.expires);
     } catch (cause) {
+      trackRegistration("registration_requested_payment_failed", {
+        order_id: orderId,
+      });
       setError(errorText(cause, "Unable to open payment. Please try again."));
     } finally {
       setBusy(false);

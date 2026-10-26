@@ -12,6 +12,37 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 
+/** Scheduled with the business transaction; retries of settlement do not create new events. */
+export async function trackRegistrationOrder(
+  ctx: MutationCtx,
+  order: Doc<"registrationOrders">,
+  event: string,
+  properties: { payment_source?: string; reason?: string } = {}
+) {
+  if (!order.analytics) {
+    return;
+  }
+  await ctx.scheduler.runAfter(
+    0,
+    internal.registrationExternal.captureAnalytics,
+    {
+      event,
+      analytics: order.analytics,
+      properties: {
+        order_id: order._id,
+        course_id: order.courseId,
+        ...(order.sessionId ? { class_session_id: order.sessionId } : {}),
+        attendee_count: order.seats.length,
+        total_cents: order.total,
+        tax_cents: order.tax ?? 0,
+        currency: order.currency,
+        has_coupon: Boolean(order.couponId),
+        ...properties,
+      },
+    }
+  );
+}
+
 export async function staff(
   ctx: QueryCtx,
   sessionId?: Id<"registrationSessions">
@@ -208,6 +239,12 @@ export async function release(
       })
   );
   await ctx.db.patch(order._id, { status: "expired", error: reason });
+  await trackRegistrationOrder(ctx, order, "registration_released", {
+    reason:
+      reason === "Checkout abandoned by purchaser"
+        ? "abandoned"
+        : "expired_or_released",
+  });
   if (order.stripeSession) {
     await ctx.scheduler.runAfter(
       0,
@@ -545,6 +582,10 @@ export async function settle(
       error:
         "Payment arrived after reservation release; reconcile or refund without overbooking",
     });
+    await trackRegistrationOrder(ctx, order, "registration_payment_exception", {
+      reason: "reservation_released",
+      payment_source: source,
+    });
     return;
   }
   if (order.materialSeatId) {
@@ -578,6 +619,10 @@ export async function settle(
       settledAt: Date.now(),
       error:
         "Payment for canceled or disabled offering/coupon requires reconciliation",
+    });
+    await trackRegistrationOrder(ctx, order, "registration_payment_exception", {
+      reason: "offering_unavailable",
+      payment_source: source,
     });
     return;
   }
@@ -631,6 +676,9 @@ export async function settle(
     subject: `Receipt: ${order.title}`,
     body: `Payment recorded: USD ${((order.total + (order.tax ?? 0)) / 100).toFixed(2)}${order.tax ? ` (includes USD ${(order.tax / 100).toFixed(2)} sales tax)` : ""}. Attendees: ${order.seats.map((s) => s.attendee.name).join(", ")}. Request secure purchaser access to view your order.`,
     due: now,
+  });
+  await trackRegistrationOrder(ctx, order, "registration_settled", {
+    payment_source: source,
   });
   await audit(ctx, "system", "settled", order._id, source);
 }
@@ -713,6 +761,9 @@ async function settleMaterialOrder(
     subject: `Receipt: ${order.title}`,
     body: `Material balance settled: USD ${((order.total + (order.tax ?? 0)) / 100).toFixed(2)}. View materials in your registration portal.`,
     due: now,
+  });
+  await trackRegistrationOrder(ctx, order, "registration_settled", {
+    payment_source: source,
   });
   await audit(ctx, "system", "materials-settled", parent._id, order._id);
 }

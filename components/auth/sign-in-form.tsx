@@ -9,6 +9,7 @@ import { Field, TextInput } from "@/components/ui/field";
 import { Notice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
 import { trackVisitorsEvent } from "@/lib/analytics";
+import { markOtpVerification } from "@/lib/posthog-auth";
 
 type Step = "email" | "code";
 type Message = { text: string; tone: "success" | "danger" } | null;
@@ -110,13 +111,13 @@ export function SignInForm({
       setStep("code");
       setExpiryTime(Date.now() + OTP_EXPIRY_MS);
       setNow(Date.now());
-      posthog.capture("otp_requested", { email: normalizedEmail });
-    } catch (error) {
+      posthog.capture("otp_requested");
+    } catch {
       setMessage({
         text: "We couldn’t send a code to that address. Check it and try again.",
         tone: "danger",
       });
-      posthog.capture("otp_request_error", { error: String(error) });
+      posthog.capture("otp_request_error");
     } finally {
       setIsLoading(false);
     }
@@ -129,18 +130,16 @@ export function SignInForm({
       const formData = new FormData();
       formData.append("email", normalizedEmail);
       formData.append("code", code.trim());
+      markOtpVerification(true);
       await signIn("resend-otp", formData);
-      posthog.capture("otp_verified", { email: normalizedEmail });
       trackVisitorsEvent("Login Success", { method: "email_otp" });
-    } catch (error) {
+    } catch {
       setMessage({
         text: "That code is invalid or has expired. Try again or request a new one.",
         tone: "danger",
       });
-      posthog.capture("otp_verification_failed", {
-        email: normalizedEmail,
-        error: String(error),
-      });
+      markOtpVerification(false);
+      posthog.capture("otp_verification_failed");
     } finally {
       setIsLoading(false);
     }
@@ -159,12 +158,12 @@ export function SignInForm({
       await signIn("google");
       posthog.capture("google_signin_initiated");
       trackVisitorsEvent("Google Sign-in Initiated", { method: "google" });
-    } catch (error) {
+    } catch {
       setMessage({
         text: "Google sign-in didn’t complete. Please try again.",
         tone: "danger",
       });
-      posthog.capture("google_signin_error", { error: String(error) });
+      posthog.capture("google_signin_error");
       setIsLoading(false);
     }
   };
