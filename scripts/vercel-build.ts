@@ -122,9 +122,6 @@ if (endpoint) {
     enabled_events: enabledEvents,
   });
 } else {
-  // v2 retires the key that cached the exhausted preview quota. Keep this
-  // namespace fixed: overlapping builds for one deployment must share a key,
-  // regardless of other previews adding or removing their endpoints.
   const created = await stripe.webhookEndpoints.create(
     {
       url,
@@ -132,7 +129,7 @@ if (endpoint) {
       api_version: "2026-09-30.endive",
       description: `Taylored Instruction registration (${deployment})`,
     },
-    { idempotencyKey: `registration-webhook:v2:${deployment}` }
+    { idempotencyKey: `registration-webhook:${deployment}` }
   );
   if (!created.secret) {
     throw new Error("Stripe did not return a webhook signing secret");
