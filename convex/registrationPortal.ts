@@ -180,7 +180,6 @@ export const accessMaterial = mutation({
     if (
       entitlement?.state !== "ready" ||
       seat?.email !== identity ||
-      seat.state !== "active" ||
       !seat.settledAt
     ) {
       throw new ConvexError("Material access denied");

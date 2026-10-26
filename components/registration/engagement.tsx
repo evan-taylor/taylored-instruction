@@ -102,7 +102,10 @@ export function RegistrationEngagement({
           <ul className="space-y-2 text-sm">
             {history.materials.map((material) => (
               <li key={material.id}>
-                <p className="font-medium">{material.title}</p>
+                <p className="font-medium">
+                  {material.title} ·{" "}
+                  {material.state === "canceled" ? "Removed" : material.state}
+                </p>
                 <p className="text-slate-500 text-xs">
                   {material.accessCount
                     ? `First access: ${time(material.firstAccessedAt)} · Last access: ${time(material.lastAccessedAt)} · ${material.accessCount} requests`

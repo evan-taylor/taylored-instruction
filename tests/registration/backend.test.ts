@@ -5608,3 +5608,108 @@ it("accepts a signed Resend event before the send result is recorded and ignores
   expect(tracked).toMatchObject({ providerId: "provider-early", clicks: 1 });
   expect(JSON.stringify(tracked)).not.toContain("private-code");
 });
+
+it.each(["canceled", "transferred"] as const)(
+  "preserves access to retained ready materials on %s seats",
+  async (state) => {
+    const f = await materialOrderFixture();
+    const material = await f.t.run((ctx) =>
+      ctx.db.query("registrationEntitlements").first()
+    );
+    if (!material) {
+      throw new Error("Expected entitlement");
+    }
+    const user = await f.t.run((ctx) =>
+      ctx.db.insert("users", {
+        email: f.enrolled.email,
+        emailVerificationTime: Date.now(),
+      })
+    );
+    await f.t.run((ctx) => ctx.db.patch(f.enrolled._id, { state }));
+    const attendee = f.t.withIdentity({ subject: `${user}|session` });
+    const previousUrl = await attendee.query(
+      api.registrationPortal.materialUrl,
+      { id: material._id }
+    );
+    expect(
+      await attendee.mutation(api.registrationPortal.accessMaterial, {
+        id: material._id,
+      })
+    ).toBe(previousUrl);
+    expect(
+      (await f.t.run((ctx) => ctx.db.get(material._id)))?.accessCount
+    ).toBe(1);
+  }
+);
+
+it("includes retained cancellation emails and distinguishes removed material history", async () => {
+  const f = await materialOrderFixture();
+  await f.adminClient.mutation(api.registrationOperations.cancelSeat, {
+    seatId: f.enrolled._id,
+    reason: "Requested",
+    notify: true,
+  });
+  const cancellation = await f.t.run((ctx) =>
+    ctx.db
+      .query("registrationJobs")
+      .withIndex("by_key", (q) => q.eq("key", `cancel:${f.enrolled._id}`))
+      .unique()
+  );
+  if (!cancellation) {
+    throw new Error("Expected cancellation");
+  }
+  expect(
+    await f.t.mutation(internal.registrationMail.claim, {
+      id: cancellation._id,
+    })
+  ).not.toBeNull();
+  await f.t.run(async (ctx) => {
+    await ctx.db.patch(cancellation._id, { providerId: "cancellation-mail" });
+    const material = await ctx.db.query("registrationEntitlements").first();
+    if (!material) {
+      throw new Error("Expected entitlement");
+    }
+    await ctx.db.patch(material._id, { state: "canceled" });
+    await ctx.db.insert("registrationJobs", {
+      key: `cancel-order:${f.enrolled.orderId}:${f.enrolled.email}`,
+      recipient: f.enrolled.email,
+      subject: "Group canceled",
+      body: "Canceled",
+      kind: "email",
+      due: Date.now(),
+      state: "sent",
+      attempts: 1,
+    });
+    await ctx.db.insert("registrationJobs", {
+      key: `cancel-order:${f.enrolled.orderId}:another@example.test`,
+      recipient: "another@example.test",
+      subject: "Another attendee",
+      body: "Canceled",
+      kind: "email",
+      due: Date.now(),
+      state: "sent",
+      attempts: 1,
+    });
+  });
+  await f.t.mutation(internal.registrationEngagement.recordEmailEvent, {
+    eventId: "cancel-opened",
+    providerId: "cancellation-mail",
+    type: "email.opened",
+    at: Date.now(),
+  });
+  const history = await f.adminClient.query(
+    api.registrationEngagement.history,
+    { seatId: f.enrolled._id }
+  );
+  expect(
+    history.emails.find(({ job }) => job._id === cancellation._id)?.tracking
+      ?.opens
+  ).toBe(1);
+  expect(
+    history.emails.some(({ job }) => job.subject === "Group canceled")
+  ).toBe(true);
+  expect(
+    history.emails.some(({ job }) => job.subject === "Another attendee")
+  ).toBe(false);
+  expect(history.materials.at(0)?.state).toBe("canceled");
+});

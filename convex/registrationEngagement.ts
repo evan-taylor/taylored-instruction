@@ -73,6 +73,7 @@ export const history = query({
       v.object({
         id: v.id("registrationEntitlements"),
         title: v.string(),
+        state: v.string(),
         firstAccessedAt: v.optional(v.number()),
         lastAccessedAt: v.optional(v.number()),
         accessCount: v.number(),
@@ -117,6 +118,18 @@ export const history = query({
           `invoice-reminder:${invoice._id}:`,
         ]),
     ];
+    const cancellationKeys = [
+      `cancel:${seat._id}`,
+      `cancel-order:${seat.orderId}:${seat.email}`,
+    ];
+    const cancellationJobs = await Promise.all(
+      cancellationKeys.map((key) =>
+        ctx.db
+          .query("registrationJobs")
+          .withIndex("by_key", (q) => q.eq("key", key))
+          .unique()
+      )
+    );
     const [seatJobs, billingJobs, materials] = await Promise.all([
       ctx.db
         .query("registrationJobs")
@@ -140,7 +153,11 @@ export const history = query({
     ]);
     const jobs = [
       ...new Map(
-        [...seatJobs, ...billingJobs.flat()].map((job) => [job._id, job])
+        [
+          ...seatJobs,
+          ...billingJobs.flat(),
+          ...cancellationJobs.filter((job) => job !== null),
+        ].map((job) => [job._id, job])
       ).values(),
     ].sort((a, b) => b._creationTime - a._creationTime);
     return {
@@ -160,6 +177,7 @@ export const history = query({
       materials: materials.map((material) => ({
         id: material._id,
         title: material.title,
+        state: material.state,
         firstAccessedAt: material.firstAccessedAt,
         lastAccessedAt: material.lastAccessedAt,
         accessCount: material.accessCount ?? 0,
