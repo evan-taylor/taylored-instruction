@@ -1,0 +1,31 @@
+docs/registration-analytics.md
+  s_3cc21c4336f7b3::t_126b1d9addfd5a 1-103
+lib/posthog-auth.ts
+  s_3cc21c4336f7b3::t_c09219c2e7dd99 1-14
+lib/posthog-context.ts
+  s_3cc21c4336f7b3::t_401c82694308c8 1-12
+lib/registration-analytics.ts
+  s_3cc21c4336f7b3::t_b6d29f38a25348 1-36
+shared/registration/analytics-validator.ts
+  s_3cc21c4336f7b3::t_fba0d362b648a8 1-5
+shared/registration/analytics.ts
+  s_3cc21c4336f7b3::t_7bdd04f4a89523 1-141
+tests/registration/analytics.test.ts
+  s_3cc21c4336f7b3::t_6dbf0fbe388d41 1-122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1e6591610d38daba9437c396d00409e26557a278",
+  "prompts": {},
+  "sessions": {
+    "s_3cc21c4336f7b3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17a08-f335-7b13-96b5-bd25eed6ce9a",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
