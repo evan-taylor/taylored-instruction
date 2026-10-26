@@ -1,0 +1,57 @@
+app/api/registration/portal/route.ts
+  s_da0a181db1c116::t_83c87ba11f57a9 81-108
+components/registration/engagement.tsx
+  s_ad5204f0da8008::t_95fa7a9c7ac0d0 1-120
+components/registration/operations.tsx
+  s_da0a181db1c116::t_3aaf1b40254aac 2,33,1045
+components/registration/portal.tsx
+  s_da0a181db1c116::t_7fb66cc04e840a 303-307,314-315
+convex/_generated/api.d.ts
+  s_da0a181db1c116::t_24f96ac5b65144 26-27,69-70
+convex/http.ts
+  s_da0a181db1c116::t_53eb7c669303c4 4,16-21
+convex/registrationEmailWebhook.ts
+  s_da0a181db1c116::t_0d7b091c88a5aa 1-54
+convex/registrationEngagement.ts
+  s_da0a181db1c116::t_515d1a96b1a6b3 1-175
+convex/registrationExternal.ts
+  s_da0a181db1c116::t_a1bb7e34e9552b 182
+convex/registrationMail.ts
+  s_da0a181db1c116::t_1c604f45e56b82 334,348-349
+convex/registrationPortal.ts
+  s_ad5204f0da8008::t_9cae0487cf5e0d 7,173-201
+convex/registrationSchema.ts
+  s_da0a181db1c116::t_c6e9ecc5ed947c 281-283,314-331,358-359
+docs/mcp.md
+  s_da0a181db1c116::t_198aae99803943 157-163
+docs/registration-deployment.md
+  s_da0a181db1c116::t_613a9f36668718 140-171
+lib/mcp/tools/registrations.ts
+  s_da0a181db1c116::t_44e7339dee6efd 28-45
+tests/registration/backend.test.ts
+  s_da0a181db1c116::t_bb79ddb21d260b 1,5434-5610
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "83239f2c889a72da201d64e8cf95c924dce46df8",
+  "prompts": {},
+  "sessions": {
+    "s_ad5204f0da8008": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a179d9-53d2-7aa0-b18c-aaffe1f8adf4",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_da0a181db1c116": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a179d6-c0b5-7872-8978-2c4e4f38fa3e",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
