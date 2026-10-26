@@ -1,0 +1,23 @@
+components/registration/engagement.tsx
+  s_da0a181db1c116::t_e8d47683d972a8 105-108
+convex/registrationEngagement.ts
+  s_da0a181db1c116::t_34e102396dce11 76,121-132,156-160,180
+tests/registration/backend.test.ts
+  s_da0a181db1c116::t_2904fa437975ca 5611-5715
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "febb8fd1d76b580ca86286efa2b18b193de9b045",
+  "prompts": {},
+  "sessions": {
+    "s_da0a181db1c116": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a179d6-c0b5-7872-8978-2c4e4f38fa3e",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
