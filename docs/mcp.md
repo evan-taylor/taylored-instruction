@@ -154,3 +154,10 @@ without canceling the registration. Removing materials does not itself refund.
 Unpaid transfer balances must settle before editing materials. Unpaid orders with
 coupons or card checkouts require re-enrollment; draft/open invoices must be voided
 first. Pending additions must settle or be canceled before another edit.
+
+`get_registration_activity` accepts `seatId` and returns admin-only email job
+history, Resend delivery/open/click summaries, and authenticated portal material
+access timestamps/counts. Includes order billing messages. `truncated` flags the
+history limit; missing tracking is not proof of no engagement. Material access
+is a link request, not external course completion. See registration deployment
+instructions for the signed Resend webhook setup.

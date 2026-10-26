@@ -137,3 +137,35 @@ URLs keep resolving to the same session with the same publication and visibility
 checks. Admin copy buttons, MCP responses, and public listings use the shortened
 code automatically. Session edits retain both codes. This migration does not
 send notifications or change meeting, enrollment, or payment data.
+
+## Registration email and material activity
+
+The admin registration management panel includes email history (attendee jobs
+plus receipt/payment-request/invoice jobs for the order) and authenticated portal
+material-link requests. MCP exposes the same admin-only data through
+`get_registration_activity({ seatId })`.
+
+After deploying the schema/functions and frontend, configure a Resend webhook at
+`https://<deployment>.convex.site/registration/resend` and securely set its signing
+secret as `RESEND_WEBHOOK_SECRET` **in Convex**. Subscribe to `email.sent`,
+`email.delivered`, `email.delivery_delayed`, `email.bounced`, `email.complained`,
+`email.failed`, `email.suppressed`, `email.opened`, and `email.clicked`. Keep domain
+open and click tracking enabled in Resend. Use separate endpoints/secrets for
+production and test deployments. No credentials are set by this code change.
+
+Verification uses the raw body and Svix headers. Events are deduplicated by
+webhook message ID and stored by provider email ID, including events arriving
+before a send result is saved. Late events preserve earliest/latest engagement
+timestamps without reverting the most recent delivery status. No full clicked
+URLs, access codes, user agents, or IP addresses are stored. Test sends show the
+actual redirected recipient for newly sent jobs.
+
+Existing job history is visible, but earlier open/click history is not backfilled.
+Resend event replay can populate retained events for matching provider IDs.
+“No recorded activity” does not mean “unopened.” Mail privacy features and link
+scanners can generate events. Portal access is recorded only when the verified
+attendee explicitly opens a ready material; ordinary portal reads do not count.
+This records a link request, not a completed download, code redemption, or
+external LMS completion. Direct material links already in emails do not produce
+portal-access events (their clicks may appear in email tracking). History queries
+are bounded to 201 records per source and explicitly report truncation.

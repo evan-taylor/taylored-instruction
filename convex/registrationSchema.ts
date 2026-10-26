@@ -280,6 +280,9 @@ export const registrationTables = {
       v.literal("fulfilled"),
       v.literal("canceled")
     ),
+    firstAccessedAt: v.optional(v.number()),
+    lastAccessedAt: v.optional(v.number()),
+    accessCount: v.optional(v.number()),
     paidAt: v.number(),
     codeId: v.optional(v.id("registrationCodes")),
     /** The session bank a per-session keycode is drawn from. */
@@ -310,6 +313,24 @@ export const registrationTables = {
   })
     .index("by_entitlementId", ["entitlementId"])
     .index("by_codeId", ["codeId"]),
+  registrationEmailEvents: defineTable({
+    eventId: v.string(),
+    providerId: v.string(),
+    type: v.string(),
+    at: v.number(),
+  }).index("by_eventId", ["eventId"]),
+  registrationEmailTracking: defineTable({
+    providerId: v.string(),
+    status: v.string(),
+    statusAt: v.number(),
+    deliveredAt: v.optional(v.number()),
+    openedAt: v.optional(v.number()),
+    clickedAt: v.optional(v.number()),
+    lastOpenedAt: v.optional(v.number()),
+    lastClickedAt: v.optional(v.number()),
+    opens: v.number(),
+    clicks: v.number(),
+  }).index("by_providerId", ["providerId"]),
   registrationJobs: defineTable({
     key: v.string(),
     kind: v.union(
@@ -336,6 +357,8 @@ export const registrationTables = {
     scheduleRevision: v.optional(v.number()),
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
+    sentAt: v.optional(v.number()),
+    deliveredTo: v.optional(v.string()),
     link: v.optional(v.object({ label: v.string(), url: v.string() })),
     /** @deprecated Legacy magic-link token; cleared by `registrationMigration.purgeLegacyPortalGrants`. Remove once no rows carry it. */
     portalToken: v.optional(v.string()),

@@ -304,9 +304,11 @@ function MaterialRow({
                 trackRegistration("registration_material_open_requested", {
                   material_kind: kind,
                 });
-                const response = await fetch(
-                  `/api/registration/portal?material=${encodeURIComponent(material.id)}`
-                );
+                const response = await fetch("/api/registration/portal", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ material: material.id }),
+                });
                 const data = await response.json();
                 if (response.ok && data.url) {
                   trackRegistration("registration_material_opened", {

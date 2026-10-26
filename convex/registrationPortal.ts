@@ -4,7 +4,7 @@ import {
 } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { calendar } from "../shared/registration/schedule";
-import { query } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { activeSeatMaterials, portalEmail } from "./registrationHelpers";
 
 const portalSeat = v.object({
@@ -168,6 +168,34 @@ export const materialUrl = query({
     return entitlement.storageId
       ? await ctx.storage.getUrl(entitlement.storageId)
       : (entitlement.url ?? null);
+  },
+});
+export const accessMaterial = mutation({
+  args: { id: v.id("registrationEntitlements") },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    const identity = await portalEmail(ctx);
+    const entitlement = await ctx.db.get(args.id);
+    const seat = entitlement ? await ctx.db.get(entitlement.seatId) : null;
+    if (
+      entitlement?.state !== "ready" ||
+      seat?.email !== identity ||
+      !seat.settledAt
+    ) {
+      throw new ConvexError("Material access denied");
+    }
+    const url = entitlement.storageId
+      ? await ctx.storage.getUrl(entitlement.storageId)
+      : (entitlement.url ?? null);
+    if (url) {
+      const now = Date.now();
+      await ctx.db.patch(entitlement._id, {
+        firstAccessedAt: entitlement.firstAccessedAt ?? now,
+        lastAccessedAt: now,
+        accessCount: (entitlement.accessCount ?? 0) + 1,
+      });
+    }
+    return url;
   },
 });
 export const calendarFile = query({

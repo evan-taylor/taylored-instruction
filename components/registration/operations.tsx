@@ -1,4 +1,5 @@
 "use client";
+
 import { useAction, useMutation, useQuery } from "convex/react";
 import { ExternalLink } from "lucide-react";
 import type * as React from "react";
@@ -29,6 +30,7 @@ import {
   type Settings,
 } from "@/shared/registration/domain";
 import { AssignmentHistory } from "./assignment-history";
+import { RegistrationEngagement } from "./engagement";
 import { errorText } from "./errors";
 import { formatDate, formatDateTime, pluralize } from "./format";
 import { defaultMaterialIds, MaterialPicker } from "./material-picker";
@@ -1040,6 +1042,7 @@ export function SeatOperations({ seat }: { seat: Seat }) {
   return (
     <div className="space-y-6">
       <SeatMaterials seat={seat} />
+      <RegistrationEngagement seatId={seat._id} />
       <div className="grid gap-6 lg:grid-cols-2">
         <SeatActions seat={seat} />
         <TransferSeat seat={seat} />

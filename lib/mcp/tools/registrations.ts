@@ -26,6 +26,24 @@ import {
 
 export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
   server.registerTool(
+    "get_registration_activity",
+    {
+      title: "Get registration email and material activity",
+      description:
+        "Admin-only registration email history, Resend delivery/open/click signals, and authenticated portal material-access timestamps. Signals do not prove human reading or completion. Includes order billing mail; truncated indicates the history limit was reached.",
+      inputSchema: { seatId: id },
+      annotations: READ,
+    },
+    (args) =>
+      run(async () =>
+        ok(
+          await ctx.convex.query(api.registrationEngagement.history, {
+            seatId: args.seatId as Id<"registrationSeats">,
+          })
+        )
+      )
+  );
+  server.registerTool(
     "list_orders",
     {
       title: "List orders",
