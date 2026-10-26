@@ -447,7 +447,33 @@ export const saveSession = mutation({
       await ctx.scheduler.runAfter(
         0,
         internal.registrationOperations.reschedule,
-        { sessionId: id, notify, cursor: null }
+        {
+          sessionId: id,
+          notify:
+            notify &&
+            Boolean(
+              previous &&
+                (previous.title !== value.title ||
+                  previous.timeZone !== value.timeZone ||
+                  previous.meetings.length !== value.meetings.length ||
+                  value.meetings.some((meetingValue) => {
+                    const old = previous.meetings.find(
+                      (item) => item.id === meetingValue.id
+                    );
+                    return (
+                      !old ||
+                      old.start !== meetingValue.start ||
+                      old.end !== meetingValue.end ||
+                      old.location !== meetingValue.location ||
+                      old.locationId !== meetingValue.locationId ||
+                      old.onlineUrl !== meetingValue.onlineUrl ||
+                      (old.instructions ?? "") !==
+                        (meetingValue.instructions ?? "")
+                    );
+                  }))
+            ),
+          cursor: null,
+        }
       );
     }
     await ctx.scheduler.runAfter(0, internal.registrationWaitlist.advance, {

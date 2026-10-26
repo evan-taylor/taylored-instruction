@@ -422,6 +422,12 @@ describe("Registration transactions", () => {
           (await ctx.db.query("registrationAssignments").collect()).length
       )
     ).toBe(1);
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(jobs.filter((job) => job.key.startsWith("assigned:"))).toHaveLength(
+      1
+    );
   });
 });
 describe("Pricing and privacy utilities", () => {
@@ -4339,7 +4345,7 @@ describe("Staff material editing", () => {
         .withIndex("by_key", (q) => q.eq("key", `material:${entitlement._id}`))
         .unique()
     );
-    expect(canceledDelivery?.state).toBe("canceled");
+    expect(canceledDelivery).toBeNull();
     const balance = await f.adminClient.mutation(
       api.registrationMaterialOrders.edit,
       {
@@ -5174,3 +5180,116 @@ it("applies MCP complete-selection overrides despite stale choices and replays s
     await server.close();
   }
 });
+
+it.each([false, true])(
+  "notifies attendees only for schedule changes alongside instructor edits (schedule=%s)",
+  async (changeSchedule) => {
+    const f = await fixture();
+    const original = await f.t.run((ctx) => ctx.db.get(f.session));
+    if (!original) {
+      throw new Error("Missing session");
+    }
+    await f.adminClient.mutation(api.registration.saveSession, {
+      id: f.session,
+      courseId: f.course,
+      title: original.title,
+      publication: original.publication,
+      visibility: original.visibility,
+      capacity: original.capacity,
+      timeZone: original.timeZone,
+      meetings: original.meetings.map((meetingValue) => ({
+        ...meetingValue,
+        location: changeSchedule
+          ? "New training center"
+          : meetingValue.location,
+      })),
+      overrides: original.overrides,
+      instructors: [f.outsider],
+      offerMinutes: original.offerMinutes,
+      notify: true,
+    });
+    const scheduled = await f.t.run((ctx) =>
+      ctx.db.system.query("_scheduled_functions").collect()
+    );
+    const reschedule = scheduled.find((job) => job.name.includes("reschedule"));
+    expect(reschedule?.args.at(0)).toMatchObject({ notify: changeSchedule });
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(
+      jobs.filter((job) => job.key.startsWith("instructor:"))
+    ).toHaveLength(2);
+  }
+);
+
+it.each(["scheduled", "self-paced"] as const)(
+  "includes all ready signup materials in the %s confirmation without individual emails",
+  async (delivery) => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      const guide = await ctx.db.insert("registrationMaterials", {
+        title: "Preparation guide",
+        kind: "link",
+        url: "https://example.test/guide",
+        version: 1,
+        archived: false,
+      });
+      await ctx.db.insert("registrationCodes", {
+        materialId: f.material,
+        url: "https://example.test/code",
+        fingerprint: "signup-code",
+        state: "available",
+      });
+      await ctx.db.patch(f.course, {
+        delivery,
+        settings: {
+          ...config,
+          materials: [
+            {
+              id: "guide",
+              materialId: guide,
+              title: "Guide",
+              policy: "included",
+              cents: 0,
+            },
+            {
+              id: "code",
+              materialId: f.material,
+              title: "Code",
+              policy: "included",
+              cents: 0,
+            },
+          ],
+        },
+      });
+    });
+    await f.adminClient.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      sessionId: delivery === "scheduled" ? f.session : undefined,
+      admin: {
+        payment: "offline",
+        overbook: false,
+        reason: "Email consolidation",
+      },
+    });
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.query("registrationJobs").collect()
+    );
+    expect(jobs.map((job) => job.key.split(":").at(0)).sort()).toEqual([
+      "confirmation",
+      "receipt",
+    ]);
+    const confirmation = jobs.find((job) =>
+      job.key.startsWith("confirmation:")
+    );
+    if (!confirmation) {
+      throw new Error("Missing confirmation");
+    }
+    const claimed = await f.t.mutation(internal.registrationMail.claim, {
+      id: confirmation._id,
+    });
+    expect(claimed?.materials.map((material) => material.title).sort()).toEqual(
+      ["Online code", "Preparation guide"]
+    );
+  }
+);

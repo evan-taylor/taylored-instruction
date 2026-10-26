@@ -278,7 +278,8 @@ export function materialJobEntitlementId(
 export async function grantMaterial(
   ctx: MutationCtx,
   seat: Doc<"registrationSeats">,
-  attachment: Doc<"registrationSeats">["snapshot"]["materials"][number]
+  attachment: Doc<"registrationSeats">["snapshot"]["materials"][number],
+  notify = true
 ) {
   const [sameMaterial, sameAttachment] = await Promise.all([
     ctx.db
@@ -326,7 +327,7 @@ export async function grantMaterial(
         : "ready",
     sessionId,
   });
-  if (material.kind !== "keycode" && material.kind !== "physical") {
+  if (notify && material.kind !== "keycode" && material.kind !== "physical") {
     await enqueue(ctx, {
       key: `material:${id}`,
       kind: "email",
@@ -339,7 +340,7 @@ export async function grantMaterial(
     });
   }
   if (material.kind === "keycode") {
-    await fulfillKeycode(ctx, seat, material, id, sessionId);
+    await fulfillKeycode(ctx, seat, material, id, sessionId, notify);
   }
 }
 /** Assigns a code now if this seat is next in its bank, else reports a shortage. */
@@ -348,7 +349,8 @@ async function fulfillKeycode(
   seat: Doc<"registrationSeats">,
   material: Doc<"registrationMaterials">,
   id: Id<"registrationEntitlements">,
-  sessionId: Id<"registrationSessions"> | undefined
+  sessionId: Id<"registrationSessions"> | undefined,
+  notify: boolean
 ) {
   const code = await nextCode(ctx, material._id, sessionId);
   const firstPending = await ctx.db
@@ -361,7 +363,7 @@ async function fulfillKeycode(
     )
     .first();
   if (code && firstPending?._id === id) {
-    await assignCode(ctx, id, code, "system", "settlement");
+    await assignCode(ctx, id, code, "system", "settlement", false, notify);
     return;
   }
   if (code) {
@@ -400,7 +402,8 @@ export async function assignCode(
   code: Doc<"registrationCodes">,
   actor: string,
   reason: string,
-  replace = false
+  replace = false,
+  notify = true
 ) {
   const entitlement = await ctx.db.get(entitlementId);
   if (entitlement && code.sessionId !== entitlement.sessionId) {
@@ -441,18 +444,20 @@ export async function assignCode(
     codeId: code._id,
     url: code.url,
   });
-  await enqueue(ctx, {
-    key: `assigned:${entitlementId}:${code._id}`,
-    kind: "email",
-    recipient: seat.email,
-    subject: replace
-      ? "Your replacement course code is ready"
-      : "Your course material is ready",
-    body: "Your course code is available in your secure registration portal.",
-    due: Date.now(),
-    seatId: seat._id,
-    entitlementId,
-  });
+  if (notify) {
+    await enqueue(ctx, {
+      key: `assigned:${entitlementId}:${code._id}`,
+      kind: "email",
+      recipient: seat.email,
+      subject: replace
+        ? "Your replacement course code is ready"
+        : "Your course material is ready",
+      body: "Your course code is available in your secure registration portal.",
+      due: Date.now(),
+      seatId: seat._id,
+      entitlementId,
+    });
+  }
   await ctx.db.insert("registrationAssignments", {
     entitlementId,
     codeId: code._id,
@@ -602,7 +607,8 @@ export async function settle(
     const paid = { ...seat, settledAt: now };
     await seat.snapshot.materials.reduce(async (before, attachment) => {
       await before;
-      await grantMaterial(ctx, paid, attachment);
+      // The confirmation includes every material ready at signup.
+      await grantMaterial(ctx, paid, attachment, false);
     }, Promise.resolve());
     const confirmation =
       config.confirmationEmail ?? defaultConfirmation(!session);
