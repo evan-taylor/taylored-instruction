@@ -1,0 +1,78 @@
+.agents/skills/babysit-pr/SKILL.md
+  h_83bc5aaa251b9b 1-117
+.agents/skills/babysit-pr/scripts/pr-wait
+  h_83bc5aaa251b9b 1-556
+.agents/skills/council/SKILL.md
+  h_83bc5aaa251b9b 1-51
+.agents/skills/file-pr/SKILL.md
+  h_83bc5aaa251b9b 1-50
+.agents/skills/full-send/SKILL.md
+  h_83bc5aaa251b9b 1-123
+.agents/skills/full-send/agents/openai.yaml
+  h_83bc5aaa251b9b 1-4
+.agents/skills/full-stop/SKILL.md
+  h_83bc5aaa251b9b 1-47
+.agents/skills/full-stop/agents/openai.yaml
+  h_83bc5aaa251b9b 1-4
+.agents/skills/leaving-pr-comments/SKILL.md
+  h_83bc5aaa251b9b 1-44
+.agents/skills/leaving-pr-comments/agents/openai.yaml
+  h_83bc5aaa251b9b 1-4
+.agents/skills/modernize/SKILL.md
+  h_83bc5aaa251b9b 1-102
+.agents/skills/modernize/agents/openai.yaml
+  h_83bc5aaa251b9b 1-4
+.agents/skills/sol-loop/SKILL.md
+  h_83bc5aaa251b9b 1-119
+.agents/skills/takeover/SKILL.md
+  h_83bc5aaa251b9b 1-42
+.claude/skills/babysit-pr
+  h_83bc5aaa251b9b 1
+.claude/skills/council
+  h_83bc5aaa251b9b 1
+.claude/skills/file-pr
+  h_83bc5aaa251b9b 1
+.claude/skills/full-send
+  h_83bc5aaa251b9b 1
+.claude/skills/full-stop
+  h_83bc5aaa251b9b 1
+.claude/skills/leaving-pr-comments
+  h_83bc5aaa251b9b 1
+.claude/skills/modernize
+  h_83bc5aaa251b9b 1
+.claude/skills/sol-loop
+  h_83bc5aaa251b9b 1
+.claude/skills/takeover
+  h_83bc5aaa251b9b 1
+.pi/skills/babysit-pr
+  h_83bc5aaa251b9b 1
+.pi/skills/council
+  h_83bc5aaa251b9b 1
+.pi/skills/file-pr
+  h_83bc5aaa251b9b 1
+.pi/skills/full-send
+  h_83bc5aaa251b9b 1
+.pi/skills/full-stop
+  h_83bc5aaa251b9b 1
+.pi/skills/leaving-pr-comments
+  h_83bc5aaa251b9b 1
+.pi/skills/modernize
+  h_83bc5aaa251b9b 1
+.pi/skills/sol-loop
+  h_83bc5aaa251b9b 1
+.pi/skills/takeover
+  h_83bc5aaa251b9b 1
+skills-lock.json
+  h_83bc5aaa251b9b 10-21,28-57,75-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19f9f85fee713d7e76930ec9df389021d60720b8",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
