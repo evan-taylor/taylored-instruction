@@ -84,6 +84,15 @@ const schema = defineSchema({
   ...authTables,
   ...registrationTables,
 
+  // Production accounts retain the names captured during instructor onboarding.
+  users: defineTable({
+    ...authTables.users.validator.fields,
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+  })
+    .index("email", ["email"])
+    .index("phone", ["phone"]),
+
   mcpTokens,
 
   onboarding_steps: onboardingSteps,
