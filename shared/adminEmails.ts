@@ -1,6 +1,7 @@
 export const ADMIN_EMAILS: readonly string[] = [
   "admin@tayloredinstruction.com",
   "evan@tayloredinstruction.com",
+  "ken@tayloredinstruction.com",
   "mike@northvalleysolutions.co",
 ];
 
