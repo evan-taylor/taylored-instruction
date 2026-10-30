@@ -25,6 +25,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import { AgencyRosterExport } from "./agency-roster-export";
 import { useAssignedSessions } from "./catalog";
 import { errorText } from "./errors";
 import {
@@ -574,7 +575,7 @@ async function downloadRoster(fetchPage: FetchPage) {
   );
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = "roster.csv";
+  anchor.download = "internal-roster-not-for-agency-upload.csv";
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -627,6 +628,7 @@ export function InstructorRoster({
   }
   const actions = (
     <>
+      {session ? <AgencyRosterExport session={session} /> : null}
       <Button
         disabled={!selected.length}
         onClick={() => {
@@ -652,7 +654,9 @@ export function InstructorRoster({
                 paginationOpts: { numItems: 100, cursor },
               })
             );
-            setMessage("Complete roster exported");
+            setMessage(
+              "Internal roster exported. Use Export agency roster for ARC or AHA uploads."
+            );
           } catch (error) {
             setMessage(errorText(error));
           } finally {
@@ -663,7 +667,7 @@ export function InstructorRoster({
         type="button"
       >
         <Download aria-hidden="true" className="h-4 w-4" />
-        {exporting ? "Exporting…" : "Export CSV"}
+        {exporting ? "Exporting…" : "Internal CSV"}
       </Button>
     </>
   );
