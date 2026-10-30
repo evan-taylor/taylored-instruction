@@ -1,0 +1,19 @@
+tests/registration/fixtures/agency-roster/arc.csv
+  s_fa1a75d427ab22::t_3c47c821a27945 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4fa5d7472354032c93f2010a3f6e014f1f2e2b98",
+  "prompts": {},
+  "sessions": {
+    "s_fa1a75d427ab22": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17ef5-8d87-7243-9c2d-a6d56fafe5fe",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
