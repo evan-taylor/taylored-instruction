@@ -83,6 +83,28 @@ test("free checkout completes without a card and the success page reads backend 
     )
   ).toBeVisible();
 });
+test("checkout names the fields that block submit", async ({ page }) => {
+  await page.goto("/s/registration-test-free");
+  const continueButton = page.getByRole("button", {
+    name: "Continue to payment",
+    exact: true,
+  });
+  await continueButton.click();
+  const notice = page.getByText("Complete these fields to continue:");
+  await expect(notice).toHaveText(
+    "Complete these fields to continue: Your first name, Your last name, Your email."
+  );
+  await page.getByLabel("Your first name", { exact: true }).fill("Safe");
+  await page.getByLabel("Your last name", { exact: true }).fill("Test Buyer");
+  await expect(notice).toHaveText(
+    "Complete these fields to continue: Your email."
+  );
+  await page
+    .getByLabel("Your email", { exact: true })
+    .fill(`buyer-${crypto.randomUUID()}@example.test`);
+  await expect(notice).toHaveCount(0);
+  await expect(page).not.toHaveURL(SUCCESS_URL);
+});
 test("the portal asks visitors to sign in with the same code flow as staff", async ({
   page,
 }) => {

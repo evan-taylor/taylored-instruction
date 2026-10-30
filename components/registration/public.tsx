@@ -67,6 +67,7 @@ import {
 } from "./format";
 import { InvitationActions } from "./invitation";
 import { PaymentStep } from "./payment-step";
+import { invalidFieldLabels } from "./validation";
 
 type Offering = NonNullable<FunctionReturnType<typeof api.registration.detail>>;
 type Material = Offering["config"]["materials"][number];
@@ -639,6 +640,7 @@ function useRegistrationForm(
   ).map((row) => ({ ...row, name: fullName(row.firstName, row.lastName) }));
   const [coupon, setCoupon] = useState("");
   const [error, setError] = useState("");
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [review, setReview] = useState<Review | null>(null);
   const authoritativeReview = useQuery(
@@ -775,6 +777,7 @@ function useRegistrationForm(
       trackRegistration("registration_mode_changed", {
         registering_self: value,
       });
+      setInvalidFields([]);
       setRegisteringSelf(value);
     },
     add,
@@ -802,6 +805,8 @@ function useRegistrationForm(
     setCoupon,
     error,
     setError,
+    invalidFields,
+    setInvalidFields,
     busy,
     review,
     authoritativeReview,
@@ -1236,7 +1241,11 @@ function AttendeeCard({
 }) {
   return (
     <Card>
-      <fieldset className="min-w-0 border-0 p-0" disabled={disabled}>
+      <fieldset
+        className="min-w-0 border-0 p-0"
+        data-field-group={`Attendee ${index + 1}`}
+        disabled={disabled}
+      >
         <legend className="sr-only">Attendee {index + 1}</legend>
         <CardHeader className="sm:items-center">
           <CardTitle>Attendee {index + 1}</CardTitle>
@@ -1687,6 +1696,12 @@ function OrderSummary({
               </p>
             </div>
             <ResultNotice message={form.error} tone="danger" />
+            {form.invalidFields.length ? (
+              <Notice tone="danger">
+                Complete these fields to continue:{" "}
+                {form.invalidFields.join(", ")}.
+              </Notice>
+            ) : null}
             {open ? (
               <Button
                 className="mt-2 w-full"
@@ -1930,6 +1945,7 @@ function OfferingPage({
 }) {
   const form = useRegistrationForm(offering, sessionId);
   const viewed = useRef("");
+  const invalidReported = useRef(false);
   useEffect(() => {
     const key = `${offering.courseId}:${sessionId ?? ""}`;
     if (viewed.current === key) {
@@ -1981,15 +1997,32 @@ function OfferingPage({
           </div>
         ) : (
           <form
-            className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px]"
-            onInvalid={() =>
+            className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_360px] [&_:user-invalid]:border-rose-500"
+            onChange={(e) => {
+              if (form.invalidFields.length) {
+                form.setInvalidFields(invalidFieldLabels(e.currentTarget));
+              }
+            }}
+            onInvalid={(e) => {
+              // The browser fires one invalid event per field; report each submit attempt once.
+              if (invalidReported.current) {
+                return;
+              }
+              invalidReported.current = true;
+              setTimeout(() => {
+                invalidReported.current = false;
+              }, 0);
+              const fields = invalidFieldLabels(e.currentTarget);
+              form.setInvalidFields(fields);
               trackRegistration("registration_validation_failed", {
                 course_id: offering.courseId,
                 error_stage: "browser_validation",
-              })
-            }
+                invalid_field_count: fields.length,
+              });
+            }}
             onSubmit={(e) => {
               e.preventDefault();
+              form.setInvalidFields([]);
               form.submit();
             }}
           >
