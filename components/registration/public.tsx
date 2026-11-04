@@ -1520,7 +1520,9 @@ function ReviewSummary({ form }: { form: RegistrationForm }) {
       ) : null}
       {quoteResult?.seats.map((seat) => (
         <div className="space-y-1 text-sm" key={seat.email}>
-          <p className="font-medium text-slate-900">{seat.name}</p>
+          <p className="ph-no-capture sentry-mask font-medium text-slate-900">
+            {seat.name}
+          </p>
           {seat.lines.map((line) => (
             <div
               className="flex items-center justify-between gap-3 text-slate-600"
@@ -1572,8 +1574,9 @@ function WaitlistAction({
   if (joined) {
     return (
       <Notice tone="success">
-        You’re on the waitlist. We’ll email {form.purchaser} if a seat opens. No
-        payment is required.
+        You’re on the waitlist. We’ll email{" "}
+        <span className="ph-no-capture sentry-mask">{form.purchaser}</span> if a
+        seat opens. No payment is required.
       </Notice>
     );
   }
@@ -1659,7 +1662,7 @@ function OrderSummary({
                     className="flex items-center justify-between gap-3 text-slate-700"
                     key={a.key}
                   >
-                    <span className="truncate">
+                    <span className="ph-no-capture sentry-mask truncate">
                       {a.name.trim() || `Attendee ${index + 1}`}
                     </span>
                     <span className="tabular-nums">
