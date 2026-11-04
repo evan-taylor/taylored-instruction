@@ -55,6 +55,10 @@ requests use `X-POSTHOG-DISTINCT-ID` and `X-POSTHOG-SESSION-ID`; the contact ser
 action receives explicit context. OTP verification is captured after identifying
 the verified Convex user.
 
+Public class browsing routes (`/classes`, `/courses/[slug]`, and `/s/[code]`)
+use normal PostHog pageviews, autocapture and session replay, subject to the
+project's recording settings. They also use normal Sentry and Vercel monitoring.
+
 Private registration paths still suppress automatic capture, pageviews, replay,
 and raw exceptions. Explicit allowlisted events are rebuilt from safe scalar
 properties and identity fields. SDK URL/referrer properties, form values, names,
