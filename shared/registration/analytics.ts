@@ -81,6 +81,7 @@ const PROPERTY_NAMES = new Set([
   "is_more",
   "material_kind",
   "error_stage",
+  "invalid_field_count",
   "attempt",
   "source",
   "schema_version",
