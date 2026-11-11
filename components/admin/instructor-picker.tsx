@@ -92,9 +92,11 @@ export function InstructorPicker({
               }
               // Enter picks the top match instead of submitting the session form.
               e.preventDefault();
-              const [first] = matches;
+              const first = matches.find(
+                (person) => !value.includes(person.id)
+              );
               if (needle && first) {
-                toggle(first.id);
+                onChange([...value, first.id]);
                 setSearch("");
               }
             }}
@@ -139,7 +141,9 @@ export function InstructorPicker({
           {needle
             ? `${matches.length} of ${directory.length} instructors`
             : `${directory.length} approved instructors`}
-          {needle && matches.length ? " · Enter adds the first match" : ""}
+          {needle && matches.some((person) => !value.includes(person.id))
+            ? " · Enter adds the first unassigned match"
+            : ""}
         </p>
       </div>
     </div>

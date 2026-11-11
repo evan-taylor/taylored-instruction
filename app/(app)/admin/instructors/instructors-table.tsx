@@ -8,7 +8,7 @@ import { TextInput } from "@/components/ui/field";
 import { MenuItem, RowMenu } from "@/components/ui/menu";
 import { EmptyState } from "@/components/ui/page-header";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { Tabs } from "@/components/ui/tabs";
+import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { formatLastLogin } from "./helpers";
 import type { ProfileWithUser } from "./types";
 
@@ -86,102 +86,104 @@ export function InstructorsTable({
           />
         </div>
       </div>
-      {rows.length === 0 ? (
-        <EmptyState
-          className="rounded-none border-0"
-          description="Try a different name, email, or status."
-          title="No instructors match"
-        />
-      ) : (
-        <Table wrapperClassName="rounded-none border-0">
-          <THead>
-            <tr>
-              <TH>Instructor</TH>
-              <TH>Status</TH>
-              <TH>Last sign-in</TH>
-              <TH className="text-right">
-                <span className="sr-only">Actions</span>
-              </TH>
-            </tr>
-          </THead>
-          <TBody>
-            {rows.map((profile) => {
-              const email = profile.userEmail || "No email";
-              const lastLogin = formatLastLogin(profile.lastLogin).text;
-              return (
-                <TR key={profile.id}>
-                  <TD>
-                    <span className="block font-medium text-slate-900">
-                      {profile.userName || email}
-                    </span>
-                    {profile.userName ? (
-                      <span className="block text-slate-500 text-xs">
-                        {email}
+      <TabPanel active className="pt-0" id={status}>
+        {rows.length === 0 ? (
+          <EmptyState
+            className="rounded-none border-0"
+            description="Try a different name, email, or status."
+            title="No instructors match"
+          />
+        ) : (
+          <Table wrapperClassName="rounded-none border-0">
+            <THead>
+              <tr>
+                <TH>Instructor</TH>
+                <TH>Status</TH>
+                <TH>Last sign-in</TH>
+                <TH className="text-right">
+                  <span className="sr-only">Actions</span>
+                </TH>
+              </tr>
+            </THead>
+            <TBody>
+              {rows.map((profile) => {
+                const email = profile.userEmail || "No email";
+                const lastLogin = formatLastLogin(profile.lastLogin).text;
+                return (
+                  <TR key={profile.id}>
+                    <TD>
+                      <span className="block font-medium text-slate-900">
+                        {profile.userName || email}
                       </span>
-                    ) : null}
-                  </TD>
-                  <TD>
-                    {profile.isInstructor ? (
-                      <Badge tone="success">Approved</Badge>
-                    ) : (
-                      <Badge tone="warning">Not approved</Badge>
-                    )}
-                  </TD>
-                  <TD
-                    className={
-                      profile.lastLogin
-                        ? "whitespace-nowrap"
-                        : "whitespace-nowrap text-slate-400"
-                    }
-                  >
-                    {lastLogin}
-                  </TD>
-                  <TD className="text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      {profile.isInstructor ? null : (
-                        <Button
-                          aria-label={`Approve ${email}`}
-                          onClick={() =>
-                            onToggleStatus(profile.id, profile.userId, false)
-                          }
-                          size="xs"
-                          type="button"
-                          variant="secondary"
-                        >
-                          Approve
-                        </Button>
+                      {profile.userName ? (
+                        <span className="block text-slate-500 text-xs">
+                          {email}
+                        </span>
+                      ) : null}
+                    </TD>
+                    <TD>
+                      {profile.isInstructor ? (
+                        <Badge tone="success">Approved</Badge>
+                      ) : (
+                        <Badge tone="warning">Not approved</Badge>
                       )}
-                      <RowMenu label={`More actions for ${email}`}>
-                        {profile.isInstructor ? (
-                          <MenuItem
-                            danger
-                            icon={UserMinus}
-                            onSelect={() =>
-                              onToggleStatus(profile.id, profile.userId, true)
+                    </TD>
+                    <TD
+                      className={
+                        profile.lastLogin
+                          ? "whitespace-nowrap"
+                          : "whitespace-nowrap text-slate-400"
+                      }
+                    >
+                      {lastLogin}
+                    </TD>
+                    <TD className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        {profile.isInstructor ? null : (
+                          <Button
+                            aria-label={`Approve ${email}`}
+                            onClick={() =>
+                              onToggleStatus(profile.id, profile.userId, false)
                             }
+                            size="xs"
+                            type="button"
+                            variant="secondary"
                           >
-                            Revoke approval
-                          </MenuItem>
-                        ) : (
-                          <MenuItem
-                            danger
-                            icon={Trash2}
-                            onSelect={() =>
-                              onRejectUser(profile.id, profile.userEmail)
-                            }
-                          >
-                            Reject and delete account
-                          </MenuItem>
+                            Approve
+                          </Button>
                         )}
-                      </RowMenu>
-                    </div>
-                  </TD>
-                </TR>
-              );
-            })}
-          </TBody>
-        </Table>
-      )}
+                        <RowMenu label={`More actions for ${email}`}>
+                          {profile.isInstructor ? (
+                            <MenuItem
+                              danger
+                              icon={UserMinus}
+                              onSelect={() =>
+                                onToggleStatus(profile.id, profile.userId, true)
+                              }
+                            >
+                              Revoke approval
+                            </MenuItem>
+                          ) : (
+                            <MenuItem
+                              danger
+                              icon={Trash2}
+                              onSelect={() =>
+                                onRejectUser(profile.id, profile.userEmail)
+                              }
+                            >
+                              Reject and delete account
+                            </MenuItem>
+                          )}
+                        </RowMenu>
+                      </div>
+                    </TD>
+                  </TR>
+                );
+              })}
+            </TBody>
+          </Table>
+        )}
+      </TabPanel>
     </div>
   );
 }

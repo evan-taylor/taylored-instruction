@@ -1245,11 +1245,17 @@ function RecurrenceModal({
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1]);
-  const [preview, setPreview] = useState<Occurrence[]>([]);
+  const [previewed, setPreview] = useState<Occurrence[]>([]);
+  const [previewKey, setPreviewKey] = useState("");
   const [error, setError] = useState("");
   const pattern = sessions.find((entry) => entry._id === patternId);
   const draft = pattern ? draftFrom(pattern, courses, true) : undefined;
   const course = courses.find((c) => c._id === draft?.courseId);
+  const patternKey = pattern
+    ? `${pattern._id}|${pattern.timeZone}|${JSON.stringify(pattern.meetings)}`
+    : "";
+  // A preview only counts for the schedule it was computed from.
+  const preview = previewKey === patternKey ? previewed : [];
   const candidates = sessions
     .filter((entry) => entry.state !== "canceled" || entry._id === patternId)
     .sort((a, b) => b.firstStart - a.firstStart);
@@ -1259,6 +1265,7 @@ function RecurrenceModal({
       return;
     }
     try {
+      setPreviewKey(patternKey);
       setPreview(
         recurrenceFromMeetings({
           startDate,
@@ -1543,6 +1550,7 @@ export function SessionAdmin() {
   const openEditor = useCallback((next: SessionDraft) => {
     setError("");
     setNotice("");
+    setNotify(true);
     setDraft(next);
     setEditorOpen(true);
   }, []);

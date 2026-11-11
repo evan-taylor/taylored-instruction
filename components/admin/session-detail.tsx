@@ -188,19 +188,18 @@ export function SessionDetail({
                   { label: "Time zone", value: zone },
                   {
                     label: "Instructors",
-                    value:
-                      session.instructors
-                        .map((id) => {
-                          const person = directory?.find(
-                            (entry) => entry.id === id
-                          );
-                          return person ? staffLabel(person) : undefined;
-                        })
-                        .filter(Boolean)
-                        .join(", ") ||
-                      (session.instructors.length
-                        ? pluralize(session.instructors.length, "instructor")
-                        : "Unassigned"),
+                    value: directory
+                      ? session.instructors
+                          .map((id) => {
+                            const person = directory.find(
+                              (entry) => entry.id === id
+                            );
+                            return person
+                              ? staffLabel(person)
+                              : "Inactive instructor";
+                          })
+                          .join(", ") || "Unassigned"
+                      : pluralize(session.instructors.length, "instructor"),
                   },
                   {
                     label: "Waitlist offer window",
