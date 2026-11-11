@@ -1,5 +1,5 @@
 "use client";
-import { useAction, useConvexAuth } from "convex/react";
+import { useAction, useConvexAuth, useQuery } from "convex/react";
 import {
   CalendarDays,
   Download,
@@ -399,7 +399,7 @@ function MeetingRow({
 }
 
 function CertificateUpload({
-  certificate,
+  certificate: initialCertificate,
   seatId,
 }: {
   certificate: NonNullable<PortalRow["certificate"]>;
@@ -407,7 +407,11 @@ function CertificateUpload({
 }) {
   const upload = useAction(api.registrationCertificates.upload);
   const input = useRef<HTMLInputElement>(null);
-  const [uploaded, setUploaded] = useState(false);
+  const liveCertificate = useQuery(api.registrationPortal.certificate, {
+    seatId,
+  });
+  const certificate =
+    liveCertificate === undefined ? initialCertificate : liveCertificate;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -429,7 +433,6 @@ function CertificateUpload({
         name: file.name,
         bytes: await file.arrayBuffer(),
       });
-      setUploaded(true);
     } catch (cause) {
       setError(errorText(cause, "The certificate could not be uploaded."));
     } finally {
@@ -437,12 +440,15 @@ function CertificateUpload({
     }
   }
 
+  if (!certificate) {
+    return null;
+  }
   return (
     <section className="space-y-2">
       <h3 className="font-semibold text-slate-900 text-sm">
         {certificate.title}
       </h3>
-      {certificate.uploaded || uploaded ? (
+      {certificate.uploaded ? (
         <Notice tone="success">Completion certificate uploaded.</Notice>
       ) : (
         <form className="space-y-3" onSubmit={submit}>

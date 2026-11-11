@@ -336,9 +336,14 @@ export const saveCourse = mutation({
     }
     if (value.delivery === "self-paced") {
       if (
-        value.settings.outcomes.some((outcome) => outcome.certificateRequired)
+        value.settings.outcomes.some(
+          (outcome) => outcome.certificateRequired
+        ) ||
+        value.settings.emails.some((step) => step.onlyMissingCertificate)
       ) {
-        throw new ConvexError("Certificate uploads require a scheduled course");
+        throw new ConvexError(
+          "Certificate uploads and reminders require a scheduled course"
+        );
       }
       const materials = await Promise.all(
         value.settings.materials.map((m) => ctx.db.get(m.materialId))

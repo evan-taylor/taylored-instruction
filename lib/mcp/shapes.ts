@@ -76,6 +76,7 @@ export const outcome = z.object({
   type: z.enum(["category", "percentage"]),
   options: z.array(z.string()).default([]),
   required: z.boolean(),
+  certificateRequired: z.boolean().optional(),
   passingValue: z.string().optional(),
   minimum: z.number().optional(),
   version: z
@@ -110,6 +111,7 @@ export const emailStep = z.object({
     .describe(
       "Reference point: first meeting, last meeting, or registration time"
     ),
+  onlyMissingCertificate: z.boolean().optional(),
   offsetMinutes: z
     .number()
     .int()

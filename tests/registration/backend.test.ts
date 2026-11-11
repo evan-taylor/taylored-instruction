@@ -5920,6 +5920,8 @@ it("records an attendee's certificate and skips only their pending upload remind
   const paginationOpts = { numItems: 10, cursor: null };
   const portal = () =>
     attendee.query(api.registrationPortal.registrations, { paginationOpts });
+  const liveCertificate = () =>
+    attendee.query(api.registrationPortal.certificate, { seatId: student._id });
   const files = () =>
     f.instructorClient.query(api.registrationOperations.sessionFiles, {
       sessionId: f.session,
@@ -5946,6 +5948,12 @@ it("records an attendee's certificate and skips only their pending upload remind
     attendee.action(api.registrationCertificates.upload, upload),
   ]);
   expect((await portal()).page.at(0)?.certificate?.uploaded).toBe(true);
+  expect(await liveCertificate()).toMatchObject({ uploaded: true });
+  expect(
+    await f.outsiderClient.query(api.registrationPortal.certificate, {
+      seatId: student._id,
+    })
+  ).toBeNull();
   const listed = (await files()).page;
   expect(listed).toHaveLength(1);
   const file = listed.at(0);
@@ -5994,6 +6002,7 @@ it("records an attendee's certificate and skips only their pending upload remind
   });
   expect((await files()).page).toHaveLength(0);
   expect((await portal()).page.at(0)?.certificate?.uploaded).toBe(false);
+  expect(await liveCertificate()).toMatchObject({ uploaded: false });
   expect(
     await f.instructorClient.query(api.registrationOperations.outcomeState, {
       seatId: student._id,

@@ -8,6 +8,28 @@ import { mutation, query } from "./_generated/server";
 import { certificateStatus } from "./registrationCertificates";
 import { activeSeatMaterials, portalEmail } from "./registrationHelpers";
 
+const portalCertificate = v.object({
+  title: v.string(),
+  uploaded: v.boolean(),
+});
+
+export const certificate = query({
+  args: { seatId: v.id("registrationSeats") },
+  returns: v.union(portalCertificate, v.null()),
+  handler: async (ctx, { seatId }) => {
+    const identity = await portalEmail(ctx);
+    const seat = await ctx.db.get(seatId);
+    if (seat?.email !== identity || !seat.sessionId) {
+      return null;
+    }
+    const session = await ctx.db.get(seat.sessionId);
+    if (!session || session.state === "canceled") {
+      return null;
+    }
+    return (await certificateStatus(ctx, seat)) ?? null;
+  },
+});
+
 const portalSeat = v.object({
   id: v.id("registrationSeats"),
   name: v.string(),
@@ -15,9 +37,7 @@ const portalSeat = v.object({
   title: v.string(),
   sessionId: v.optional(v.id("registrationSessions")),
   timeZone: v.optional(v.string()),
-  certificate: v.optional(
-    v.object({ title: v.string(), uploaded: v.boolean() })
-  ),
+  certificate: v.optional(portalCertificate),
   materials: v.array(
     v.object({
       id: v.id("registrationEntitlements"),

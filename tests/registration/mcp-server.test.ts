@@ -194,6 +194,27 @@ describe("MCP server", () => {
           questions: [
             { id: "q1", title: "Employer name", type: "text", required: true },
           ],
+          outcomes: [
+            {
+              id: "online",
+              title: "HeartCode",
+              type: "category",
+              required: true,
+              certificateRequired: true,
+              options: ["Complete"],
+              passingValue: "Complete",
+            },
+          ],
+          emails: [
+            {
+              id: "certificate",
+              anchor: "first",
+              offsetMinutes: -2880,
+              subject: "Upload your certificate",
+              body: "Submit your online completion certificate in the portal.",
+              onlyMissingCertificate: true,
+            },
+          ],
         },
       },
     });
@@ -216,6 +237,8 @@ describe("MCP server", () => {
         questions: [
           { id: "q1", title: "Employer name", required: true, version: 2 },
         ],
+        outcomes: [{ id: "online", certificateRequired: true }],
+        emails: [{ id: "certificate", onlyMissingCertificate: true }],
       },
     });
   });
