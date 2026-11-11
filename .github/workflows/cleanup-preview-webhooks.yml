@@ -1,0 +1,35 @@
+name: Clean up Stripe preview webhooks
+
+on:
+  pull_request_target:
+    types: [closed]
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: stripe-preview-cleanup
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    if: github.event_name != 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+      - run: bun install --frozen-lockfile --ignore-scripts
+      - run: bun scripts/cleanup-stripe-previews.ts
+        env:
+          STRIPE_PREVIEW_SECRET_KEY: ${{ secrets.STRIPE_PREVIEW_SECRET_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}

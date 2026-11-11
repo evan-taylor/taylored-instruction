@@ -47,6 +47,41 @@ test mailbox, sender, Resend, auth signing keys, and internal email secret). The
 fills in their unique site URL and webhook secret. Never put a live key in preview
 defaults. Fixture password auth is forbidden on hosted builds.
 
+### Preview webhook lifecycle
+
+Preview builds tag test endpoints with `repository=evan-taylor/taylored-instruction`,
+`environment=preview`, and the exact `VERCEL_GIT_COMMIT_REF` as `branch`. Production
+endpoints are never tagged or cleaned up. Cleanup requires all tags, test mode, and
+an exact `https://<deployment>.convex.site/registration/stripe` URL; legacy unowned
+and development endpoints require manual review, not automatic adoption by cleanup.
+An existing endpoint at the current preview's exact URL is tagged when the build
+updates it, and still requires its signing secret in Convex.
+
+The cleanup workflow runs every six hours, on PR closure, and manually. It always
+checks out the trusted default branch, never a PR head, and uses read-only GitHub
+contents/pull-request permissions. Configure the repository Actions secret
+`STRIPE_PREVIEW_SECRET_KEY` with a **test** Stripe key for the same account as preview
+defaults, with webhook endpoint management access. The workflow becomes effective
+once it exists on the default branch; no live key belongs in this secret.
+
+Cleanup verifies GitHub state before deletion. Any open PR on the exact repository
+branch protects it. Closed PR branches retain endpoints for 24 hours after the
+latest closure for rollback and delayed test events; the closure event reconciles
+older endpoints immediately, while the schedule removes the newly closed preview
+after that grace period. Branches with no PR are retained unless GitHub confirms
+the branch was deleted. Unknown state, API errors, and rate limits fail closed.
+Reopening a PR during grace preserves its endpoint; reopening after cleanup needs
+a new preview build to create an endpoint and replace its Convex signing secret.
+
+Before creating an endpoint, preview builds attempt the same cleanup and protect
+their own branch. Public GitHub API access needs no token; optional `GITHUB_TOKEN`
+in the build environment raises its rate limit. Existing endpoints remain reusable
+when GitHub is unavailable. At Stripe's 16-endpoint test cap, builds fail with an
+actionable message rather than deleting active/unverifiable endpoints or silently
+disabling webhooks. Creation retries use an idempotency key derived from the URL
+and a hash of the previous Convex signing secret: successful recreation advances
+that state, avoiding reuse of a deleted endpoint's cached creation response.
+
 Card payment uses a Checkout Session in `ui_mode: "elements"`: Stripe still owns line
 items, Stripe Tax, and settlement, but the Payment and Billing Address Elements render
 on `/s/<code>` and `/registration/payment`, so seats are held for 15 minutes with a
