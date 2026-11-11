@@ -1,0 +1,23 @@
+components/registration/instructor.tsx
+  s_5e1227f916f251::t_f8eae326e40c53 28,40-44,46-51,190,192-193,196-197,200-205,207-219,221-248,252-253,257,262-306,308,310,312,316,319,324-337,339,344-350,352-356,362-365,374,382,384-386,388-391,394-396,398-402,406,417-418,423-424,457-465,468,486-487,624-735,750,753-754,761-763,767,769-772,774-777,870-881,895,929,936,938,947,955,959
+convex/registrationOperations.ts
+  s_5e1227f916f251::t_ba996c14fee76e 459-464,475-477,500-511,629-666,671,680-697,699-709,714
+tests/registration/backend.test.ts
+  s_5e1227f916f251::t_b75dfe254cb8cf 421-521
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b71f092d5532a32d1164ff6092fced22a4139e53",
+  "prompts": {},
+  "sessions": {
+    "s_5e1227f916f251": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cbe9-af88-7ad1-bd33-553844187229",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
