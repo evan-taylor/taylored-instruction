@@ -10,6 +10,7 @@ const ADMIN_EMAIL = "admin@tayloredinstruction.com";
 const SHOTS = ".context/shots";
 const enabled = process.env.ADMIN_QA === "true";
 const RE_MANAGE_MATERIAL_ATTENDEE = /^Manage(?: Material Edit Test)?$/u;
+const RE_MORE_ACTIONS_FOR_TI = /^More actions for TI-/u;
 const RE_COURSE_U = /Course/u;
 const RE_OVERBOOK_U = /Overbook/u;
 const RE_ENROLL_3_ATTENDEES_U = /Enroll 3 attendees/u;
@@ -194,7 +195,11 @@ test("group enrollment wizard creates an unpaid order, invoices it, and records 
     path: `${SHOTS}/admin-invoices.png`,
     fullPage: true,
   });
-  await page.getByRole("button", { name: "Record payment" }).first().click();
+  await page
+    .getByRole("button", { name: RE_MORE_ACTIONS_FOR_TI })
+    .first()
+    .click();
+  await page.getByRole("menuitem", { name: "Record payment" }).click();
   await page
     .getByRole("textbox", { name: RE_HOW_WAS_IT_PAID_U })
     .fill("Check #1001");
@@ -311,7 +316,7 @@ test("session registration selects materials and paid order additions stay under
   }
   await page.goto(sessionUrl);
   await press(
-    page.getByRole("button", { name: "+ Registration", exact: true })
+    page.getByRole("button", { name: "Add registration", exact: true })
   );
   const enrollment = page.getByRole("dialog", {
     name: "Manual enrollment",

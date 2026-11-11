@@ -31,6 +31,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import { staffLabel } from "./instructor-picker";
 import { SessionFiles } from "./session-files";
 import { SessionKeycodes } from "./session-keycodes";
+import { SessionEditDialog } from "./sessions";
 
 type DetailTab = "overview" | "roster" | "keycodes" | "files";
 const TABS: { id: DetailTab; label: string }[] = [
@@ -51,6 +52,7 @@ export function SessionDetail({
   sessionId: Id<"registrationSessions">;
 }) {
   const [enrollOpen, setEnrollOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const session = useQuery(api.registrationOperations.sessionForStaff, {
     sessionId,
   });
@@ -111,14 +113,15 @@ export function SessionDetail({
               value={`${origin}/s/${session.code}`}
             />
             <Button
-              href={`/admin/sessions?session=${session._id}`}
+              onClick={() => setEditOpen(true)}
               size="sm"
+              type="button"
               variant="secondary"
             >
               Edit session
             </Button>
             <Button onClick={() => setEnrollOpen(true)} size="sm" type="button">
-              + Registration
+              Add registration
             </Button>
           </>
         }
@@ -140,7 +143,20 @@ export function SessionDetail({
       >
         {enrollOpen ? <ManualEnrollment initialSessionId={sessionId} /> : null}
       </Modal>
-      <Tabs label="Session sections" onChange={go} tabs={TABS} value={tab} />
+      {editOpen ? (
+        <SessionEditDialog
+          onClose={() => setEditOpen(false)}
+          session={session}
+        />
+      ) : null}
+      <Tabs
+        label="Session sections"
+        onChange={go}
+        tabs={TABS.map((entry) =>
+          entry.id === "roster" ? { ...entry, count: session.reserved } : entry
+        )}
+        value={tab}
+      />
       <TabPanel active={tab === "overview"} id="overview">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
           <Card>
@@ -185,7 +201,7 @@ export function SessionDetail({
                 items={[
                   { label: "Course", value: course?.title ?? "Unknown course" },
                   { label: "Code", value: session.code },
-                  { label: "Time zone", value: zone },
+                  { label: "Time zone", value: zone.replaceAll("_", " ") },
                   {
                     label: "Instructors",
                     value: directory
@@ -203,7 +219,10 @@ export function SessionDetail({
                   },
                   {
                     label: "Waitlist offer window",
-                    value: `${session.offerMinutes} minutes`,
+                    value:
+                      session.offerMinutes % 60 === 0
+                        ? pluralize(session.offerMinutes / 60, "hour")
+                        : pluralize(session.offerMinutes, "minute"),
                   },
                 ]}
               />

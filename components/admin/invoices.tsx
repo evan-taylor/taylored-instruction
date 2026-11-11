@@ -5,7 +5,7 @@ import {
   usePaginatedQuery,
   useQuery,
 } from "convex/react";
-import { ExternalLink, FileText } from "lucide-react";
+import { Ban, Banknote, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import { useOrganizations } from "@/components/registration/catalog";
@@ -27,6 +27,7 @@ import {
   TextArea,
   TextInput,
 } from "@/components/ui/field";
+import { MenuItem, MenuSeparator, RowMenu } from "@/components/ui/menu";
 import {
   EmptyState,
   ListState,
@@ -283,18 +284,7 @@ function InvoiceActions({
   }
   const closed = invoice.status === "paid" || invoice.status === "void";
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1.5">
-      {invoice.hostedUrl ? (
-        <a
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-primary text-xs hover:underline"
-          href={invoice.hostedUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
-          Open
-        </a>
-      ) : null}
+    <div className="flex items-center justify-end gap-1 whitespace-nowrap">
       {invoice.status === "draft" ? (
         <Button
           disabled={busy}
@@ -326,25 +316,25 @@ function InvoiceActions({
           Send reminder
         </Button>
       ) : null}
-      {closed ? null : (
-        <>
-          <Button
-            onClick={() => setDialog("record")}
-            size="xs"
-            type="button"
-            variant="secondary"
-          >
-            Record payment
-          </Button>
-          <Button
-            onClick={() => setDialog("void")}
-            size="xs"
-            type="button"
-            variant="ghost"
-          >
-            Void
-          </Button>
-        </>
+      {closed && !invoice.hostedUrl ? null : (
+        <RowMenu label={`More actions for ${invoice.number}`}>
+          {invoice.hostedUrl ? (
+            <MenuItem external href={invoice.hostedUrl} icon={ExternalLink}>
+              Open hosted invoice
+            </MenuItem>
+          ) : null}
+          {closed ? null : (
+            <>
+              <MenuItem icon={Banknote} onSelect={() => setDialog("record")}>
+                Record payment
+              </MenuItem>
+              <MenuSeparator />
+              <MenuItem danger icon={Ban} onSelect={() => setDialog("void")}>
+                Void invoice
+              </MenuItem>
+            </>
+          )}
+        </RowMenu>
       )}
       <ConfirmDialog
         busy={busy}
@@ -617,11 +607,15 @@ function InvoiceRowView({
   return (
     <TR key={row.invoice._id}>
       <TD>
-        <div className="flex items-center gap-2 font-mono text-slate-900 text-xs">
+        <div className="flex items-center gap-1 whitespace-nowrap font-medium font-mono text-slate-900 text-xs">
           {row.invoice.number}
-          <CopyButton label="Copy" value={row.invoice.number} />
+          <CopyButton
+            compact
+            label={`Copy invoice number ${row.invoice.number}`}
+            value={row.invoice.number}
+          />
         </div>
-        <div className="text-slate-500 text-xs">
+        <div className="whitespace-nowrap text-slate-500 text-xs">
           Created {formatDateTime(row.invoice._creationTime)}
           {row.invoice.poNumber ? ` · PO ${row.invoice.poNumber}` : ""}
         </div>
@@ -656,7 +650,7 @@ function InvoiceRowView({
           </div>
         ) : null}
       </TD>
-      <TD>
+      <TD className="whitespace-nowrap">
         <div className="text-slate-900">{formatDate(row.invoice.dueAt)}</div>
         <div className="mt-0.5">{dueBadge(row.invoice)}</div>
       </TD>
@@ -705,30 +699,24 @@ export function InvoicesPanel({
   );
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Field label="Status">
-            {(p) => (
-              <Select
-                {...p}
-                className="w-44"
-                onChange={(e) =>
-                  setStatus(e.target.value as InvoiceStatus | "")
-                }
-                value={status}
-              >
-                <option value="">All invoices</option>
-                <option value="draft">Draft</option>
-                <option value="open">Open</option>
-                <option value="paid">Paid</option>
-                <option value="void">Voided</option>
-              </Select>
-            )}
-          </Field>
+          <Select
+            aria-label="Filter by status"
+            className="w-44"
+            onChange={(e) => setStatus(e.target.value as InvoiceStatus | "")}
+            value={status}
+          >
+            <option value="">All invoices</option>
+            <option value="draft">Draft</option>
+            <option value="open">Open</option>
+            <option value="paid">Paid</option>
+            <option value="void">Voided</option>
+          </Select>
           {rows ? (
-            <p className="pb-2 text-slate-500 text-sm">
+            <p className="text-slate-500 text-sm">
               {pluralize(open.length, "open invoice")} ·{" "}
-              <Money cents={outstanding} /> outstanding in the loaded invoices
+              <Money cents={outstanding} /> outstanding
             </p>
           ) : null}
         </div>
@@ -764,7 +752,9 @@ export function InvoicesPanel({
               <TH className="text-right">Amount</TH>
               <TH>Due</TH>
               <TH>Status</TH>
-              <TH className="text-right">Actions</TH>
+              <TH className="text-right">
+                <span className="sr-only">Actions</span>
+              </TH>
             </TR>
           </THead>
           <TBody>

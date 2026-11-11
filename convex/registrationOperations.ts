@@ -1297,6 +1297,30 @@ export const activity = query({
       .paginate(args.paginationOpts);
   },
 });
+/** Display names for the user ids recorded as audit actors. */
+export const activityActors = query({
+  args: { ids: v.array(v.string()) },
+  returns: v.array(v.object({ id: v.string(), label: v.string() })),
+  handler: async (ctx, args) => {
+    await staff(ctx);
+    const users = await Promise.all(
+      args.ids.slice(0, 200).map(async (id) => {
+        const userId = ctx.db.normalizeId("users", id);
+        return userId ? await ctx.db.get(userId) : null;
+      })
+    );
+    return users
+      .filter((u) => u !== null)
+      .map((u) => ({
+        id: u._id as string,
+        label:
+          u.name?.trim() ||
+          [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
+          u.email ||
+          "Unknown user",
+      }));
+  },
+});
 export const attention = query({
   args: {},
   returns: v.object({

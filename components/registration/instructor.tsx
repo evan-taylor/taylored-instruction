@@ -628,7 +628,6 @@ export function InstructorRoster({
   }
   const actions = (
     <>
-      {session ? <AgencyRosterExport session={session} /> : null}
       <Button
         disabled={!selected.length}
         onClick={() => {
@@ -655,7 +654,7 @@ export function InstructorRoster({
               })
             );
             setMessage(
-              "Internal roster exported. Use Export agency roster for ARC or AHA uploads."
+              "Roster CSV downloaded. Use Export agency roster for ARC or AHA uploads."
             );
           } catch (error) {
             setMessage(errorText(error));
@@ -665,10 +664,12 @@ export function InstructorRoster({
         }}
         size="sm"
         type="button"
+        variant="secondary"
       >
         <Download aria-hidden="true" className="h-4 w-4" />
-        {exporting ? "Exporting…" : "Internal CSV"}
+        {exporting ? "Exporting…" : "Download CSV"}
       </Button>
+      {session ? <AgencyRosterExport session={session} /> : null}
     </>
   );
   const body = (

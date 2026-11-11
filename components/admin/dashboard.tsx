@@ -37,6 +37,7 @@ import { Meter, StatTile } from "@/components/ui/stat";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import { formatMoney } from "@/shared/registration/domain";
+import { activityDetail, activityLabel } from "./activity-format";
 
 function AttentionRow({
   count,
@@ -123,7 +124,7 @@ export function AdminDashboard() {
         <StatTile
           hint={`${pluralize(summary.seatsSold, "seat")} across ${pluralize(summary.ordersSettled, "order")} in ${summary.windowDays} days`}
           icon={<Banknote aria-hidden="true" className="h-5 w-5" />}
-          label="Payments including tax"
+          label="Payments, incl. tax"
           tone="primary"
           value={formatMoney(summary.revenue)}
         />
@@ -195,7 +196,7 @@ export function AdminDashboard() {
                       <TD>
                         <Link
                           className="font-medium text-slate-900 hover:text-primary"
-                          href={`/admin/sessions?session=${s._id}`}
+                          href={`/admin/sessions/${s._id}`}
                         >
                           {s.title}
                         </Link>
@@ -400,15 +401,15 @@ export function AdminDashboard() {
               {summary.recentActivity.map((row) => (
                 <li className="px-5 py-3" key={row._id}>
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-slate-800 text-sm capitalize">
-                      {row.action.replaceAll("-", " ")}
+                    <span className="font-medium text-slate-800 text-sm">
+                      {activityLabel(row.action)}
                     </span>
                     <span className="whitespace-nowrap text-slate-500 text-xs">
                       {formatRelative(row.at)}
                     </span>
                   </div>
                   <p className="mt-0.5 truncate text-slate-500 text-xs">
-                    {row.detail}
+                    {activityDetail(row.detail)}
                   </p>
                 </li>
               ))}

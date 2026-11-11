@@ -1,5 +1,6 @@
 "use client";
 import { useMutation, usePaginatedQuery } from "convex/react";
+import { ListChecks } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { errorText } from "@/components/registration/errors";
@@ -22,6 +23,7 @@ import {
   TextInput,
   Toggle,
 } from "@/components/ui/field";
+import { MenuItem, RowMenu } from "@/components/ui/menu";
 import {
   EmptyState,
   Notice,
@@ -96,6 +98,7 @@ function StockCell({ material }: { material: Material }) {
       <div className="flex flex-wrap items-center gap-1.5 text-slate-600 text-xs">
         <span className="tabular-nums">
           {available} available · {assigned} assigned
+          {material.retiredCount ? ` · ${material.retiredCount} retired` : ""}
         </span>
         {available <= LOW_STOCK ? (
           <Badge tone="warning">Low stock</Badge>
@@ -148,23 +151,8 @@ function MaterialRow({
       <TD>
         <KindBadge material={material} />
       </TD>
-      <TD className="tabular-nums">v{material.version}</TD>
       <TD>
         <StockCell material={material} />
-      </TD>
-      <TD className="tabular-nums">
-        {keycode ? (
-          <>
-            <div>
-              {pluralize(material.assignedCount ?? 0, "assigned", "assigned")}
-            </div>
-            <div className="text-slate-500 text-xs">
-              {material.retiredCount ?? 0} retired
-            </div>
-          </>
-        ) : (
-          <span className="text-slate-400">—</span>
-        )}
       </TD>
       <TD>
         {material.archived ? (
@@ -174,7 +162,18 @@ function MaterialRow({
         )}
       </TD>
       <TD className="text-right">
-        <div className="flex justify-end gap-1">
+        <div className="flex items-center justify-end gap-1">
+          {keycode && !material.perSession ? (
+            <Button
+              aria-label={`Add codes to ${material.title}`}
+              onClick={onRestock}
+              size="xs"
+              type="button"
+              variant="secondary"
+            >
+              Add codes
+            </Button>
+          ) : null}
           <Button
             aria-label={`Edit ${material.title}`}
             onClick={onEdit}
@@ -185,27 +184,14 @@ function MaterialRow({
             Edit
           </Button>
           {keycode ? (
-            <>
-              {material.perSession ? null : (
-                <Button
-                  onClick={onRestock}
-                  size="xs"
-                  type="button"
-                  variant="secondary"
-                >
-                  Restock
-                </Button>
-              )}
-              <Button
-                onClick={onInventory}
-                size="xs"
-                type="button"
-                variant={inventoryOpen ? "primary" : "secondary"}
-              >
-                {inventoryOpen ? "Viewing inventory" : "Manage inventory"}
-              </Button>
-            </>
-          ) : null}
+            <RowMenu label={`More actions for ${material.title}`}>
+              <MenuItem icon={ListChecks} onSelect={onInventory}>
+                {inventoryOpen ? "Hide code inventory" : "View code inventory"}
+              </MenuItem>
+            </RowMenu>
+          ) : (
+            <span aria-hidden="true" className="w-8" />
+          )}
         </div>
       </TD>
     </TR>
@@ -262,11 +248,11 @@ function MaterialsTable({
           <TR>
             <TH>Material</TH>
             <TH>Kind</TH>
-            <TH>Version</TH>
             <TH>Stock</TH>
-            <TH>Assigned / retired</TH>
             <TH>Status</TH>
-            <TH className="text-right">Actions</TH>
+            <TH className="text-right">
+              <span className="sr-only">Actions</span>
+            </TH>
           </TR>
         </THead>
         <TBody>
@@ -796,7 +782,7 @@ export function MaterialAdmin() {
             New material
           </Button>
         }
-        description="Three kinds: a PDF you upload, a shared link every student receives, or a keycode inventory that hands out one unique link per paid seat, from one shared pool or a separate bank for each session. Materials are reusable across course templates."
+        description="PDFs, shared links, and keycode inventories you attach to course templates."
         title="Materials & keycodes"
       />
       <Card>

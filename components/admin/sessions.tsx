@@ -1175,6 +1175,99 @@ function SessionEditorModal({
   );
 }
 
+function saveArgs(
+  draft: SessionDraft,
+  courseId: Id<"registrationCourses">,
+  publication: Session["publication"],
+  notify: boolean
+) {
+  return {
+    id: draft.id,
+    courseId,
+    title: draft.title,
+    timeZone: draft.timeZone,
+    capacity: draft.capacity,
+    visibility: draft.visibility,
+    publication,
+    meetings: draft.meetings,
+    overrides: draft.override ? draft.settings : {},
+    instructors: draft.instructors,
+    offerMinutes: OFFER_MINUTES,
+    notify,
+  };
+}
+
+function LoadedSessionEditDialog({
+  session,
+  courses,
+  onClose,
+}: {
+  session: Session;
+  courses: Course[];
+  onClose: () => void;
+}) {
+  const locations = useQuery(api.registrationOperations.locations);
+  const directory = useQuery(api.registrationOperations.staffDirectory);
+  const save = useMutation(api.registration.saveSession);
+  const [draft, setDraft] = useState(() => draftFrom(session, courses, false));
+  const [notify, setNotify] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const submit = async (publication?: Session["publication"]) => {
+    setError("");
+    setBusy(true);
+    try {
+      await save(
+        saveArgs(
+          draft,
+          session.courseId,
+          publication ?? draft.publication,
+          notify
+        )
+      );
+      onClose();
+    } catch (caught) {
+      setError(String(caught));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <SessionEditorModal
+      busy={busy}
+      courses={courses}
+      directory={directory}
+      draft={draft}
+      locations={locations ?? []}
+      message={error}
+      notify={notify}
+      onChange={setDraft}
+      onClose={onClose}
+      onNotify={setNotify}
+      onSubmit={submit}
+      origin={typeof window === "undefined" ? "" : window.location.origin}
+    />
+  );
+}
+
+/** Edits one existing session in place, for pages outside the sessions list. */
+export function SessionEditDialog({
+  session,
+  onClose,
+}: {
+  session: Session;
+  onClose: () => void;
+}) {
+  const courses = useCourses();
+  return courses ? (
+    <LoadedSessionEditDialog
+      courses={courses}
+      onClose={onClose}
+      session={session}
+    />
+  ) : null;
+}
+
 /* --------------------------------- Recurrence --------------------------------- */
 
 type Occurrence = { start: number; end: number }[];
@@ -1564,20 +1657,14 @@ export function SessionAdmin() {
     setError("");
     setBusy(true);
     try {
-      await save({
-        id: draft.id,
-        courseId: draft.courseId,
-        title: draft.title,
-        timeZone: draft.timeZone,
-        capacity: draft.capacity,
-        visibility: draft.visibility,
-        publication: publication ?? draft.publication,
-        meetings: draft.meetings,
-        overrides: draft.override ? draft.settings : {},
-        instructors: draft.instructors,
-        offerMinutes: OFFER_MINUTES,
-        notify,
-      });
+      await save(
+        saveArgs(
+          draft,
+          draft.courseId,
+          publication ?? draft.publication,
+          notify
+        )
+      );
       setNotice("Saved. The share link is unchanged.");
       setEditorOpen(false);
     } catch (caught) {

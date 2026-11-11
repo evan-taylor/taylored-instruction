@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, Inbox } from "lucide-react";
+import { Building2, Inbox, Receipt } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Modal } from "@/components/ui/dialog";
 import { Field, Money, Select, TextArea } from "@/components/ui/field";
+import { MenuItem, RowMenu } from "@/components/ui/menu";
 import {
   DescriptionList,
   EmptyState,
@@ -177,21 +178,17 @@ function RequestModal({
           </div>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Status">
-            {(p) => (
-              <Select
-                {...p}
-                onChange={(e) => setStatus(e.target.value as RequestStatus)}
-                value={status}
-              >
-                {REQUEST_STATUSES.map((s) => (
-                  <option className="capitalize" key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
+          <Select
+            aria-label="Filter by status"
+            onChange={(e) => setStatus(e.target.value as RequestStatus)}
+            value={status}
+          >
+            {REQUEST_STATUSES.map((s) => (
+              <option className="capitalize" key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
           <Field label="Organization">
             {(p) => (
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -267,7 +264,7 @@ function RequestsPanel({
   const open = requests?.find((r) => r._id === openId);
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Field label="Status">
           {(p) => (
             <Select
@@ -285,7 +282,7 @@ function RequestsPanel({
             </Select>
           )}
         </Field>
-        <p className="pb-2 text-slate-500 text-sm">
+        <p className="text-slate-500 text-sm">
           Requests arrive from the public{" "}
           <Link className="text-primary hover:underline" href="/group-training">
             group training page
@@ -502,7 +499,9 @@ function OrganizationsPanel() {
               <TH>Organization</TH>
               <TH>Billing contact</TH>
               <TH>Address</TH>
-              <TH className="text-right">Actions</TH>
+              <TH className="text-right">
+                <span className="sr-only">Actions</span>
+              </TH>
             </TR>
           </THead>
           <TBody>
@@ -532,16 +531,7 @@ function OrganizationsPanel() {
                   {o.address || "—"}
                 </TD>
                 <TD>
-                  <div className="flex justify-end gap-1.5">
-                    <Button
-                      aria-label={`Orders for ${o.name}`}
-                      onClick={() => setViewing(o)}
-                      size="xs"
-                      type="button"
-                      variant="secondary"
-                    >
-                      Orders
-                    </Button>
+                  <div className="flex items-center justify-end gap-1">
                     <Button
                       aria-label={`Edit ${o.name}`}
                       onClick={() => setEditing(o)}
@@ -551,6 +541,11 @@ function OrganizationsPanel() {
                     >
                       Edit
                     </Button>
+                    <RowMenu label={`More actions for ${o.name}`}>
+                      <MenuItem icon={Receipt} onSelect={() => setViewing(o)}>
+                        View orders
+                      </MenuItem>
+                    </RowMenu>
                   </div>
                 </TD>
               </TR>
@@ -603,7 +598,7 @@ export function GroupsAdmin() {
             Enroll a group
           </Button>
         }
-        description="Corporate and group training: requests, organizations, roster enrollment, and invoices with net terms."
+        description="Group training requests, the organizations you bill, and their invoices."
         title="Groups & invoices"
       />
       <Tabs
