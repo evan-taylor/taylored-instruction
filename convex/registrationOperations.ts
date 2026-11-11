@@ -456,6 +456,12 @@ export const manageCode = mutation({
     return null;
   },
 });
+const attendanceStatus = v.union(
+  v.literal("present"),
+  v.literal("absent"),
+  v.literal("not-recorded")
+);
+
 export const roster = query({
   args: {
     sessionId: v.id("registrationSessions"),
@@ -466,6 +472,9 @@ export const roster = query({
       v.object({
         ...doc(schema, "registrationSeats").fields,
         completion: v.string(),
+        attendance: v.array(
+          v.object({ meetingId: v.string(), status: attendanceStatus })
+        ),
       })
     ),
     continueCursor: v.string(),
@@ -488,10 +497,18 @@ export const roster = query({
       )
       .paginate(args.paginationOpts);
     const page = await Promise.all(
-      result.page.map(async (seat) => ({
-        ...seat,
-        completion: (await seatOutcomes(ctx, seat)).completion,
-      }))
+      result.page.map(async (seat) => {
+        const { attendance: rows, completion: seatCompletion } =
+          await seatOutcomes(ctx, seat);
+        return {
+          ...seat,
+          completion: seatCompletion,
+          attendance: rows.map(({ meetingId, status }) => ({
+            meetingId,
+            status,
+          })),
+        };
+      })
     );
     return { ...result, page };
   },
@@ -609,15 +626,49 @@ export const recordOutcome = mutation({
     return null;
   },
 });
+async function assertAttendanceMeeting(
+  ctx: MutationCtx,
+  sessionId: Id<"registrationSessions">,
+  meetingId: string
+) {
+  const session = await ctx.db.get(sessionId);
+  if (!session?.meetings.some((meeting) => meeting.id === meetingId)) {
+    throw new ConvexError("Meeting not found");
+  }
+}
+
+async function writeAttendance(
+  ctx: MutationCtx,
+  actor: Id<"users">,
+  args: Pick<Doc<"registrationAttendance">, "seatId" | "meetingId" | "status">
+) {
+  const previous = await ctx.db
+    .query("registrationAttendance")
+    .withIndex("by_seatId", (q) => q.eq("seatId", args.seatId))
+    .filter((q) => q.eq(q.field("meetingId"), args.meetingId))
+    .first();
+  if ((previous?.status ?? "not-recorded") === args.status) {
+    return;
+  }
+  if (previous) {
+    await ctx.db.patch(previous._id, { status: args.status, actor });
+  } else {
+    await ctx.db.insert("registrationAttendance", { ...args, actor });
+  }
+  await audit(
+    ctx,
+    actor,
+    "attendance",
+    args.seatId,
+    `${args.meetingId}: ${args.status}`
+  );
+}
+
 export const attendance = mutation({
   args: {
     seatId: v.id("registrationSeats"),
     meetingId: v.string(),
-    status: v.union(
-      v.literal("present"),
-      v.literal("absent"),
-      v.literal("not-recorded")
-    ),
+    status: attendanceStatus,
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -626,36 +677,41 @@ export const attendance = mutation({
       throw new ConvexError("Scheduled registration required");
     }
     const actor = await staff(ctx, seat.sessionId);
-    const session = await ctx.db.get(seat.sessionId);
-    if (!session?.meetings.some((m) => m.id === args.meetingId)) {
-      throw new ConvexError("Meeting not found");
+    await assertAttendanceMeeting(ctx, seat.sessionId, args.meetingId);
+    await writeAttendance(ctx, actor.userId, args);
+    return null;
+  },
+});
+
+export const bulkAttendance = mutation({
+  args: {
+    sessionId: v.id("registrationSessions"),
+    seatIds: v.array(v.id("registrationSeats")),
+    meetingId: v.string(),
+    status: v.union(v.literal("present"), v.literal("absent")),
+  },
+  returns: v.null(),
+  handler: async (ctx, { sessionId, seatIds, meetingId, status }) => {
+    const actor = await staff(ctx, sessionId);
+    if (!seatIds.length || seatIds.length > BATCH) {
+      throw new ConvexError(`Choose 1 to ${BATCH} attendees per batch`);
     }
-    const rows = await ctx.db
-      .query("registrationAttendance")
-      .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
-      .take(BATCH);
-    const previous = rows.find((row) => row.meetingId === args.meetingId);
-    if (previous) {
-      await ctx.db.patch(previous._id, {
-        status: args.status,
-        actor: actor.userId,
-      });
-    } else {
-      await ctx.db.insert("registrationAttendance", {
-        ...args,
-        actor: actor.userId,
-      });
-    }
-    await audit(
-      ctx,
-      actor.userId,
-      "attendance",
-      seat._id,
-      `${args.meetingId}: ${args.status}`
+    await assertAttendanceMeeting(ctx, sessionId, meetingId);
+    await Promise.all(
+      [...new Set(seatIds)].map(async (seatId) => {
+        const seat = await ctx.db.get(seatId);
+        if (seat?.sessionId !== sessionId || seat.state !== "active") {
+          throw new ConvexError(
+            "Bulk attendance requires active attendees in this session"
+          );
+        }
+        await writeAttendance(ctx, actor.userId, { seatId, meetingId, status });
+      })
     );
     return null;
   },
 });
+
 export const overrideCompletion = mutation({
   args: {
     seatId: v.id("registrationSeats"),
