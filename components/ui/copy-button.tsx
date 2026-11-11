@@ -7,10 +7,13 @@ export function CopyButton({
   value,
   label = "Copy link",
   className,
+  compact = false,
 }: {
   value: string;
   label?: string;
   className?: string;
+  /** Icon-only, borderless; the label is still announced to screen readers. */
+  compact?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   useEffect(() => {
@@ -24,8 +27,13 @@ export function CopyButton({
     <button
       aria-live="polite"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 text-xs shadow-xs transition-colors duration-150 hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
-        copied && "border-emerald-300 text-emerald-700",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 text-xs shadow-xs transition-colors duration-150 hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
+        compact &&
+          "border-transparent bg-transparent px-1.5 text-slate-400 shadow-none hover:bg-slate-100 hover:text-slate-700",
+        copied &&
+          (compact
+            ? "text-emerald-700"
+            : "border-emerald-300 text-emerald-700"),
         className
       )}
       onClick={async () => {
@@ -36,6 +44,7 @@ export function CopyButton({
           setCopied(false);
         }
       }}
+      title={compact ? label : undefined}
       type="button"
     >
       {/* Both states share one grid cell so the button never changes size. */}
@@ -55,7 +64,7 @@ export function CopyButton({
           )}
         />
       </span>
-      <span className="grid [&>*]:[grid-area:1/1]">
+      <span className={cn("grid [&>*]:[grid-area:1/1]", compact && "sr-only")}>
         <span
           aria-hidden={copied}
           className={cn(

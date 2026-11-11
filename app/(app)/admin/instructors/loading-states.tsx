@@ -1,31 +1,12 @@
-export function LoadingVerification({
-  profileLoading,
-  adminAccessCheckInProgress,
-}: {
-  profileLoading: boolean;
-  adminAccessCheckInProgress: boolean;
-}) {
-  return (
-    <div className="container mx-auto flex items-center justify-center px-4 py-8">
-      <div className="text-center">
-        <p className="text-lg">Verifying admin access...</p>
-        {profileLoading && (
-          <p className="mt-1 text-slate-500 text-sm">Loading user profile...</p>
-        )}
-        {adminAccessCheckInProgress && !profileLoading && (
-          <p className="mt-1 text-slate-500 text-sm">
-            Checking admin privileges...
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
+import { Skeleton } from "@/components/ui/page-header";
 
 export function LoadingAdminPanel() {
   return (
-    <div className="container mx-auto flex items-center justify-center px-4 py-8">
-      <p className="text-lg">Loading administrator panel...</p>
+    <div aria-busy="true" className="space-y-6" role="status">
+      <span className="sr-only">Loading instructors…</span>
+      <Skeleton className="h-9 w-56" />
+      <Skeleton className="h-40" />
+      <Skeleton className="h-64" />
     </div>
   );
 }

@@ -69,6 +69,14 @@ export function Invitations() {
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
+  const [showPast, setShowPast] = useState(false);
+  const pendingCount =
+    invitations?.filter((row) => !(row.acceptedAt || row.revokedAt)).length ??
+    0;
+  const visible = invitations?.filter(
+    (row) => showPast || !(row.acceptedAt || row.revokedAt)
+  );
+  const pastCount = (invitations?.length ?? 0) - pendingCount;
 
   async function send(target: string) {
     setBusy(true);
@@ -132,7 +140,7 @@ export function Invitations() {
             )}
           </Field>
         </form>
-        {invitations?.length ? (
+        {visible?.length ? (
           <Table>
             <THead>
               <tr>
@@ -143,7 +151,7 @@ export function Invitations() {
               </tr>
             </THead>
             <TBody>
-              {invitations.map((row) => {
+              {visible.map((row) => {
                 const pending = !(row.acceptedAt || row.revokedAt);
                 return (
                   <TR key={row.id}>
@@ -208,8 +216,24 @@ export function Invitations() {
             </TBody>
           </Table>
         ) : (
-          <p className="text-slate-500 text-sm">No invitations sent yet.</p>
+          <p className="text-slate-500 text-sm">
+            {invitations?.length
+              ? "No pending invitations."
+              : "No invitations sent yet."}
+          </p>
         )}
+        {pastCount ? (
+          <Button
+            onClick={() => setShowPast(!showPast)}
+            size="xs"
+            type="button"
+            variant="ghost"
+          >
+            {showPast
+              ? "Hide accepted and revoked"
+              : `Show ${pastCount} accepted or revoked`}
+          </Button>
+        ) : null}
       </CardContent>
     </Card>
   );

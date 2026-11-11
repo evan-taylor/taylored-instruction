@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { isAdminEmail } from "@/lib/admin";
 import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
+import { WorkspaceMenu } from "./workspace-menu";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
 const REGISTER_URL = "/classes";
@@ -168,7 +169,7 @@ export const Header = () => {
 
   const isLoggedIn = !!session;
 
-  const _handleLogout = async () => {
+  const handleLogout = async () => {
     setActiveDesktopDropdown(null);
     closeMobileMenu();
     try {
@@ -273,9 +274,10 @@ export const Header = () => {
               activeDropdown={activeDesktopDropdown}
               isInstructor={isInstructor}
               isLoggedIn={isLoggedIn}
-              navLinks={visibleNavLinks}
+              navLinks={visibleNavLinks.slice(0, -1)}
               toggleDropdown={toggleDesktopDropdown}
             />
+            <WorkspaceMenu onOpen={() => setActiveDesktopDropdown(null)} />
 
             {/* Cart, Search, Register */}
             <div className="ml-4 flex items-center space-x-4">
@@ -347,6 +349,15 @@ export const Header = () => {
               >
                 Register now
               </Link>
+              {isLoggedIn ? (
+                <button
+                  className="min-h-11 w-full rounded-md font-medium text-text-light transition-colors hover:text-primary"
+                  onClick={handleLogout}
+                  type="button"
+                >
+                  Sign out
+                </button>
+              ) : null}
             </div>
           </div>
         </div>
@@ -447,6 +458,7 @@ const NavMenu = ({
     if (link.dropdown) {
       return (
         <button
+          aria-expanded={activeDropdown === link.label}
           className={`flex items-center text-text transition-colors duration-200 hover:text-primary ${
             activeDropdown === link.label ||
             link.dropdown?.some(
@@ -593,6 +605,7 @@ const MobileNavMenu = ({
       return (
         <>
           <button
+            aria-expanded={openMobileDropdown === link.label}
             className="flex w-full items-center justify-between py-2 text-left text-text transition-colors duration-200 hover:text-primary"
             onClick={() => toggleMobileDropdown(link.label)}
             type="button"

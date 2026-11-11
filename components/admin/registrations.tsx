@@ -623,13 +623,14 @@ function OrderRow({
   onOpen: () => void;
 }) {
   return (
-    <TR>
+    <TR className="cursor-pointer" onClick={onOpen}>
       <TD className="w-10">
         <input
           aria-label={`Select ${order.title} for ${order.purchaserName}`}
           checked={checked}
           className="h-4 w-4 rounded-sm accent-primary"
           onChange={onToggle}
+          onClick={(e) => e.stopPropagation()}
           type="checkbox"
         />
       </TD>
@@ -888,7 +889,7 @@ export function OrderAdmin() {
               size="sm"
               variant="secondary"
             >
-              Group enrollment & invoices
+              Group enrollment
             </Button>
             <Button onClick={() => setEnrollOpen(true)} size="sm" type="button">
               Manual enrollment
@@ -898,6 +899,13 @@ export function OrderAdmin() {
         description="Every order with its attendees, payments, refunds, and invoices."
         title="Registrations"
       />
+      {selected.length ? (
+        <BulkBar
+          onClear={() => setSelected([])}
+          orders={known}
+          selected={selected}
+        />
+      ) : null}
       <Card>
         <CardHeader className="sm:items-center">
           <div>
@@ -905,7 +913,7 @@ export function OrderAdmin() {
             <CardDescription>
               {byEmail
                 ? "Showing every order where this address is the purchaser or an attendee."
-                : "Type part of a course, purchaser, or attendee to filter loaded orders; enter a full email to search all orders."}
+                : "Search filters the orders loaded below. Enter a full email to search every order."}
             </CardDescription>
           </div>
           <div className="w-full sm:w-80">
@@ -955,13 +963,6 @@ export function OrderAdmin() {
           </div>
         ) : null}
       </Card>
-      {selected.length ? (
-        <BulkBar
-          onClear={() => setSelected([])}
-          orders={known}
-          selected={selected}
-        />
-      ) : null}
       <Modal
         description="Create a single-seat order on behalf of an attendee. For rosters and invoices use Group enrollment."
         onClose={() => setEnrollOpen(false)}

@@ -33,6 +33,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { activityDetail, activityLabel, shortId } from "./activity-format";
 
 type Attention = NonNullable<
   ReturnType<typeof useQuery<typeof api.registrationOperations.attention>>
@@ -42,9 +43,6 @@ const PAGE = 25;
 const DANGER_ACTION = /cancel|fail|void|exception|refund/u;
 const SUCCESS_ACTION = /paid|settled|sent|created|restored|offline|waived/u;
 
-function shortId(value: string) {
-  return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
-}
 function actionTone(action: string): BadgeTone {
   if (DANGER_ACTION.test(action)) {
     return "danger";
@@ -367,7 +365,7 @@ function GroupRequests({ requests }: { requests: Attention["requests"] }) {
     <AttentionCard
       action={
         <Button href="/admin/groups" size="xs" variant="ghost">
-          Open groups
+          All requests
         </Button>
       }
       count={requests.length}
@@ -391,7 +389,7 @@ function GroupRequests({ requests }: { requests: Attention["requests"] }) {
               <TD>
                 <Link
                   className="font-medium text-slate-900 hover:text-primary"
-                  href="/admin/groups"
+                  href={`/admin/groups?request=${r._id}`}
                 >
                   {r.organization}
                 </Link>
@@ -458,18 +456,28 @@ function AttentionPanel({ attention }: { attention: Attention | undefined }) {
 /* Audit log                                                           */
 /* ------------------------------------------------------------------ */
 
-function Actor({ actor }: { actor: string }) {
-  if (actor === "system" || actor === "guest") {
-    return <span className="text-slate-400">{actor}</span>;
+function isPerson(actor: string) {
+  return actor !== "system" && actor !== "guest";
+}
+
+function Actor({ actor, name }: { actor: string; name: string | undefined }) {
+  if (!isPerson(actor)) {
+    return <span className="text-slate-400 capitalize">{actor}</span>;
   }
   return (
     <span className="text-slate-700" title={actor}>
-      {shortId(actor)}
+      {name ?? shortId(actor)}
     </span>
   );
 }
 
-function AuditRow({ row }: { row: Doc<"registrationActivity"> }) {
+function AuditRow({
+  row,
+  actorName,
+}: {
+  row: Doc<"registrationActivity">;
+  actorName: string | undefined;
+}) {
   return (
     <TR>
       <TD className="whitespace-nowrap">
@@ -477,23 +485,34 @@ function AuditRow({ row }: { row: Doc<"registrationActivity"> }) {
         <div className="text-slate-500 text-xs">{formatRelative(row.at)}</div>
       </TD>
       <TD>
-        <Badge className="capitalize" tone={actionTone(row.action)}>
-          {row.action.replaceAll("-", " ")}
+        <Badge className="whitespace-nowrap" tone={actionTone(row.action)}>
+          {activityLabel(row.action)}
         </Badge>
       </TD>
-      <TD className="text-xs">
-        <Actor actor={row.actor} />
-      </TD>
-      <TD>
-        <div className="flex items-center gap-2">
-          <code className="text-slate-600 text-xs" title={row.entity}>
-            {shortId(row.entity)}
-          </code>
-          <CopyButton label="Copy" value={row.entity} />
+      <TD className="text-slate-700 text-sm">
+        <div className="break-words">{activityDetail(row.detail)}</div>
+        {row.detail.startsWith("{") ? (
+          <details className="mt-1 text-slate-500 text-xs">
+            <summary className="cursor-pointer select-none hover:text-slate-700">
+              Full record
+            </summary>
+            <pre className="mt-1 max-w-xl whitespace-pre-wrap break-all rounded-md bg-slate-50 p-2 font-mono">
+              {row.detail}
+            </pre>
+          </details>
+        ) : null}
+        <div className="mt-0.5 flex items-center gap-0.5 text-slate-400 text-xs">
+          <code title={row.entity}>{shortId(row.entity)}</code>
+          <CopyButton
+            className="py-0.5"
+            compact
+            label="Copy record id"
+            value={row.entity}
+          />
         </div>
       </TD>
-      <TD className="max-w-lg break-words text-slate-600 text-xs">
-        {row.detail}
+      <TD className="whitespace-nowrap text-sm">
+        <Actor actor={row.actor} name={actorName} />
       </TD>
     </TR>
   );
@@ -507,10 +526,20 @@ function AuditPanel() {
   );
   const [filter, setFilter] = useState("");
   const needle = filter.trim().toLowerCase();
+  const actorIds = [
+    ...new Set(activity.results.map((row) => row.actor).filter(isPerson)),
+  ].sort();
+  const actors = useQuery(
+    api.registrationOperations.activityActors,
+    actorIds.length ? { ids: actorIds } : "skip"
+  );
+  const actorNames = new Map(actors?.map((a) => [a.id, a.label]));
   const rows = activity.results.filter(
     (row) =>
       !needle ||
-      `${row.action} ${row.detail} ${row.actor}`.toLowerCase().includes(needle)
+      `${row.action} ${row.detail} ${actorNames.get(row.actor) ?? row.actor}`
+        .toLowerCase()
+        .includes(needle)
   );
   let body: React.ReactNode = (
     <Table wrapperClassName="rounded-none border-0">
@@ -518,14 +547,17 @@ function AuditPanel() {
         <TR>
           <TH>When</TH>
           <TH>Action</TH>
-          <TH>Actor</TH>
-          <TH>Entity</TH>
           <TH>Detail</TH>
+          <TH>By</TH>
         </TR>
       </THead>
       <TBody>
         {rows.map((row) => (
-          <AuditRow key={row._id} row={row} />
+          <AuditRow
+            actorName={actorNames.get(row.actor)}
+            key={row._id}
+            row={row}
+          />
         ))}
       </TBody>
     </Table>
@@ -566,7 +598,7 @@ function AuditPanel() {
           <TextInput
             aria-label="Filter audit log"
             onChange={(e) => setFilter(e.target.value)}
-            placeholder="Filter by action, detail, or actor"
+            placeholder="Filter by action, detail, or person"
             type="search"
             value={filter}
           />

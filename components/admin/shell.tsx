@@ -9,7 +9,6 @@ import {
   Building2,
   CalendarDays,
   ExternalLink,
-  Globe,
   GraduationCap,
   KeyRound,
   LayoutDashboard,
@@ -40,47 +39,38 @@ type NavItem = {
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   badge?: "attention";
 };
-const NAV: { group: string; items: NavItem[] }[] = [
+/** Ordered by how often staff open each page: daily work first, setup last. */
+const NAV: { group?: string; items: NavItem[] }[] = [
   {
-    group: "Overview",
-    items: [{ label: "Dashboard", href: "/admin", icon: LayoutDashboard }],
-  },
-  {
-    group: "Classes",
     items: [
-      { label: "Course templates", href: "/admin/courses", icon: BookOpen },
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Sessions", href: "/admin/sessions", icon: CalendarDays },
-    ],
-  },
-  {
-    group: "Sales",
-    items: [
       { label: "Registrations", href: "/admin/registrations", icon: Users },
       { label: "Groups & invoices", href: "/admin/groups", icon: Building2 },
-      { label: "Coupons", href: "/admin/coupons", icon: Ticket },
-    ],
-  },
-  {
-    group: "Fulfillment",
-    items: [
-      {
-        label: "Materials & keycodes",
-        href: "/admin/materials",
-        icon: KeyRound,
-      },
-    ],
-  },
-  {
-    group: "Operations",
-    items: [
       {
         label: "Activity & attention",
         href: "/admin/registration-activity",
         icon: Bell,
         badge: "attention",
       },
+    ],
+  },
+  {
+    group: "Setup",
+    items: [
       { label: "Instructors", href: "/admin/instructors", icon: GraduationCap },
-      { label: "SEO content", href: "/admin/seo-content", icon: Globe },
+      {
+        label: "Materials & keycodes",
+        href: "/admin/materials",
+        icon: KeyRound,
+      },
+      { label: "Coupons", href: "/admin/coupons", icon: Ticket },
+      { label: "Course templates", href: "/admin/courses", icon: BookOpen },
+    ],
+  },
+  {
+    group: "Tools",
+    items: [
       { label: "Content studio", href: "/admin/studio", icon: Newspaper },
       { label: "Agent access", href: "/admin/agent-access", icon: Bot },
     ],
@@ -146,10 +136,12 @@ function NavGroups({
   return (
     <div className="space-y-6">
       {NAV.map((section) => (
-        <div key={section.group}>
-          <p className="mb-1.5 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
-            {section.group}
-          </p>
+        <div key={section.group ?? "main"}>
+          {section.group ? (
+            <p className="mb-1.5 px-3 font-semibold text-slate-500 text-xs uppercase tracking-wider">
+              {section.group}
+            </p>
+          ) : null}
           <ul className="list-none space-y-0.5 p-0">
             {section.items.map((item) => (
               <li key={item.href}>
@@ -238,7 +230,7 @@ function SidebarContent({
 }) {
   return (
     <>
-      <nav aria-label="Admin" className="flex-1 overflow-y-auto px-3 py-5">
+      <nav aria-label="Admin" className="flex-1 overflow-y-auto px-3 py-4">
         <NavGroups attentionCount={attentionCount} pathname={pathname} />
       </nav>
       <div className="border-slate-200 border-t px-3 py-3">

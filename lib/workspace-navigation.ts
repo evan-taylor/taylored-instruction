@@ -3,6 +3,8 @@ export type WorkspaceLink =
       label: string;
       href: string;
       type?: undefined;
+      /** Left out of the compact header menu; still listed on the account page. */
+      secondary?: boolean;
     }
   | {
       label: string;
@@ -23,10 +25,20 @@ export function workspaceLinks(
     ];
   }
   const links: WorkspaceLink[] = [];
+  if (admin) {
+    links.push(
+      { label: "Administration", type: "divider" },
+      { label: "Admin dashboard", href: "/admin" },
+      { label: "Sessions", href: "/admin/sessions" },
+      { label: "Registrations", href: "/admin/registrations", secondary: true },
+      { label: "Groups & invoices", href: "/admin/groups", secondary: true },
+      { label: "Instructors", href: "/admin/instructors", secondary: true }
+    );
+  }
   if (instructor || admin) {
     links.push(
       { label: "Teaching", type: "divider" },
-      { label: "My sessions & rosters", href: "/instructor/sessions" }
+      { label: "My teaching sessions", href: "/instructor/sessions" }
     );
   }
   if (instructor) {
@@ -38,20 +50,10 @@ export function workspaceLinks(
       }
     );
   }
-  if (admin) {
-    links.push(
-      { label: "Administration", type: "divider" },
-      { label: "Admin dashboard", href: "/admin" },
-      { label: "Sessions & scheduling", href: "/admin/sessions" },
-      { label: "Registrations & payments", href: "/admin/registrations" },
-      { label: "Groups & invoices", href: "/admin/groups" },
-      { label: "Instructor approvals", href: "/admin/instructors" }
-    );
-  }
   links.push(
     { label: "My account", type: "divider" },
     { label: "My registrations", href: "/registrations" },
-    { label: "Account & sign out", href: "/my-account" }
+    { label: "Account settings", href: "/my-account" }
   );
   return links;
 }

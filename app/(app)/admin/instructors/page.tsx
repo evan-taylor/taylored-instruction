@@ -8,11 +8,7 @@ import { AlertMessages } from "./alert-messages";
 import { ConfirmDialog } from "./confirm-dialog";
 import { InstructorsTable } from "./instructors-table";
 import { Invitations } from "./invitations";
-import {
-  AccessDenied,
-  LoadingAdminPanel,
-  LoadingVerification,
-} from "./loading-states";
+import { AccessDenied, LoadingAdminPanel } from "./loading-states";
 import { useAdminAuth } from "./use-admin-auth";
 import { useAdminProfiles } from "./use-admin-profiles";
 import { useInstructorActions } from "./use-instructor-actions";
@@ -43,12 +39,7 @@ function AdminInstructorsContent() {
   const error = fetchError || actionError;
 
   if (profileLoading || adminAccessCheckInProgress) {
-    return (
-      <LoadingVerification
-        adminAccessCheckInProgress={adminAccessCheckInProgress}
-        profileLoading={profileLoading}
-      />
-    );
+    return <LoadingAdminPanel />;
   }
 
   if (!isAdmin) {
@@ -60,7 +51,7 @@ function AdminInstructorsContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
       <ConfirmDialog
         isOpen={confirmDialogState.isOpen}
         onCancel={cancelRejectUser}
@@ -72,37 +63,31 @@ function AdminInstructorsContent() {
       <div className="space-y-6">
         <PageHeader
           actions={
-            <Button href="/admin/sessions" variant="secondary">
-              Sessions & assignments
+            <Button href="/admin/sessions" size="sm" variant="secondary">
+              Assign to sessions
             </Button>
           }
-          description="Invite instructors by email. Accepting an invitation grants eCard purchasing and teaching resources; assign approved instructors to classes from Sessions."
+          description="Invite instructors by email. Accepting an invitation grants eCard purchasing and teaching resources."
           title="Instructors"
         />
 
         <AlertMessages actionMessage={actionMessage} error={error} />
-
-        <Invitations />
 
         <InstructorsTable
           onRejectUser={initiateRejectUser}
           onToggleStatus={toggleInstructorStatus}
           profiles={profiles}
         />
+
+        <Invitations />
       </div>
-    </div>
+    </>
   );
 }
 
 export default function AdminInstructorsPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto flex items-center justify-center px-4 py-8">
-          <p className="text-lg">Loading...</p>
-        </div>
-      }
-    >
+    <Suspense fallback={<LoadingAdminPanel />}>
       <AdminInstructorsContent />
     </Suspense>
   );

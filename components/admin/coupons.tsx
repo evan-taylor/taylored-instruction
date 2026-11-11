@@ -1,5 +1,6 @@
 "use client";
 import { useMutation, usePaginatedQuery } from "convex/react";
+import { Ban, CircleCheck } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { useCoupons, useCourses } from "@/components/registration/catalog";
@@ -11,6 +12,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ConfirmDialog, Modal } from "@/components/ui/dialog";
 import { Field, MoneyInput, TextInput, Toggle } from "@/components/ui/field";
+import { MenuItem, RowMenu } from "@/components/ui/menu";
 import {
   EmptyState,
   PageHeader,
@@ -129,11 +131,15 @@ function CouponRow({
   return (
     <TR>
       <TD>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <span className="font-mono font-semibold text-slate-900">
             {coupon.code}
           </span>
-          <CopyButton label="Copy" value={coupon.code} />
+          <CopyButton
+            compact
+            label={`Copy code ${coupon.code}`}
+            value={coupon.code}
+          />
         </div>
       </TD>
       <TD className="whitespace-nowrap">{describeDiscount(coupon)}</TD>
@@ -157,7 +163,7 @@ function CouponRow({
         )}
       </TD>
       <TD className="text-right">
-        <div className="flex justify-end gap-1">
+        <div className="flex items-center justify-end gap-1">
           <Button
             aria-label={`Edit ${coupon.code}`}
             onClick={onEdit}
@@ -167,15 +173,14 @@ function CouponRow({
           >
             Edit
           </Button>
-          <Button
-            aria-label={`${coupon.disabled ? "Enable" : "Disable"} ${coupon.code}`}
-            onClick={onToggle}
-            size="xs"
-            type="button"
-            variant="secondary"
-          >
-            {coupon.disabled ? "Enable" : "Disable"}
-          </Button>
+          <RowMenu label={`More actions for ${coupon.code}`}>
+            <MenuItem
+              icon={coupon.disabled ? CircleCheck : Ban}
+              onSelect={onToggle}
+            >
+              {coupon.disabled ? "Enable coupon" : "Disable coupon"}
+            </MenuItem>
+          </RowMenu>
         </div>
       </TD>
     </TR>
@@ -230,7 +235,9 @@ function CouponsTable({
           <TH>Uses</TH>
           <TH>Expires</TH>
           <TH>Status</TH>
-          <TH className="text-right">Actions</TH>
+          <TH className="text-right">
+            <span className="sr-only">Actions</span>
+          </TH>
         </TR>
       </THead>
       <TBody>

@@ -8,6 +8,7 @@ import { formatDateTime } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
+import { MenuItem, RowMenu } from "@/components/ui/menu";
 import {
   EmptyState,
   Notice,
@@ -136,7 +137,9 @@ export function SessionFiles({
               <TH>File</TH>
               <TH>Size</TH>
               <TH>Uploaded</TH>
-              <TH className="text-right">Actions</TH>
+              <TH className="text-right">
+                <span className="sr-only">Actions</span>
+              </TH>
             </tr>
           </THead>
           <TBody>
@@ -163,7 +166,7 @@ export function SessionFiles({
                   </div>
                 </TD>
                 <TD className="whitespace-nowrap text-right">
-                  <div className="flex justify-end gap-1">
+                  <div className="flex items-center justify-end gap-1">
                     {file.url ? (
                       <Button
                         aria-label={`Download ${file.name}`}
@@ -176,17 +179,15 @@ export function SessionFiles({
                         Download
                       </Button>
                     ) : null}
-                    <Button
-                      aria-label={`Delete ${file.name}`}
-                      className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-                      onClick={() => setRemoving(file)}
-                      size="xs"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <Trash2 aria-hidden="true" className="h-3.5 w-3.5" />
-                      Delete
-                    </Button>
+                    <RowMenu label={`More actions for ${file.name}`}>
+                      <MenuItem
+                        danger
+                        icon={Trash2}
+                        onSelect={() => setRemoving(file)}
+                      >
+                        Delete file
+                      </MenuItem>
+                    </RowMenu>
                   </div>
                 </TD>
               </TR>
