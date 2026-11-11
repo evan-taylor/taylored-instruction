@@ -77,6 +77,7 @@ export const outcome = z.object({
   options: z.array(z.string()).default([]),
   required: z.boolean(),
   certificateRequired: z.boolean().optional(),
+  certificateMaterialId: z.string().min(1).optional(),
   passingValue: z.string().optional(),
   minimum: z.number().optional(),
   version: z

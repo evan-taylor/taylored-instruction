@@ -544,11 +544,13 @@ function PassingField({
 
 function OutcomeCard({
   outcome,
+  materials,
   selfPaced,
   onChange,
   onRemove,
 }: {
   outcome: Outcome;
+  materials: Settings["materials"];
   selfPaced: boolean;
   onChange: (patch: Partial<Outcome>) => void;
   onRemove: () => void;
@@ -591,12 +593,37 @@ function OutcomeCard({
                 minimum: undefined,
               });
             } else {
-              bump({ certificateRequired });
+              bump({ certificateRequired, certificateMaterialId: undefined });
             }
           }}
         />
       )}
-      {outcome.certificateRequired ? null : (
+      {outcome.certificateRequired ? (
+        <Field
+          hint="Shows the upload beneath this item. Attendees without the material can upload separately."
+          label="Online course material"
+        >
+          {(props) => (
+            <Select
+              {...props}
+              onChange={(event) => {
+                const material = materials.find(
+                  (entry) => entry.materialId === event.target.value
+                );
+                onChange({ certificateMaterialId: material?.materialId });
+              }}
+              value={outcome.certificateMaterialId ?? ""}
+            >
+              <option value="">Show a standalone upload</option>
+              {materials.map((material) => (
+                <option key={material.materialId} value={material.materialId}>
+                  {material.title}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+      ) : (
         <>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Graded as">
@@ -670,7 +697,7 @@ function OutcomesSection({ value, onChange, selfPaced = false }: SectionProps) {
             <Plus aria-hidden="true" className="h-3.5 w-3.5" /> Add outcome
           </Button>
         }
-        description="Staff-only grading rules recorded on the roster. Attendees never see these."
+        description="Track completion on the roster. Certificate outcomes also appear in the attendee portal."
         title="Outcome rules"
       />
       {value.outcomes.length === 0 ? (
@@ -683,6 +710,7 @@ function OutcomesSection({ value, onChange, selfPaced = false }: SectionProps) {
       {value.outcomes.map((o) => (
         <OutcomeCard
           key={o.id}
+          materials={value.materials}
           onChange={(patch) =>
             onChange({
               ...value,

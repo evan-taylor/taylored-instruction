@@ -19,7 +19,10 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
-import { certificateStatus } from "./registrationCertificates";
+import {
+  certificateStatus,
+  certificateStatusValidator,
+} from "./registrationCertificates";
 import {
   activeSeatMaterials,
   assignCode,
@@ -473,9 +476,7 @@ export const roster = query({
       v.object({
         ...doc(schema, "registrationSeats").fields,
         completion: v.string(),
-        certificate: v.optional(
-          v.object({ title: v.string(), uploaded: v.boolean() })
-        ),
+        certificate: v.optional(certificateStatusValidator),
         attendance: v.array(
           v.object({ meetingId: v.string(), status: attendanceStatus })
         ),

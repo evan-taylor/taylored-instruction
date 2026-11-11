@@ -27,6 +27,7 @@ export const outcome = v.object({
   options: v.array(v.string()),
   required: v.boolean(),
   certificateRequired: v.optional(v.boolean()),
+  certificateMaterialId: v.optional(v.id("registrationMaterials")),
   passingValue: v.optional(v.string()),
   minimum: v.optional(v.number()),
   version: v.number(),

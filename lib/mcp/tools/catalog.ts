@@ -41,6 +41,17 @@ const EMAIL_BATCH = 50;
 type Course = Doc<"registrationCourses">;
 type Session = Doc<"registrationSessions">;
 
+function outcomeMaterialId<T extends { certificateMaterialId?: string }>(
+  rule: T
+) {
+  return {
+    ...rule,
+    certificateMaterialId: rule.certificateMaterialId as
+      | Id<"registrationMaterials">
+      | undefined,
+  };
+}
+
 function mergeSettings(
   previous: Course["settings"] | undefined,
   patch: z.infer<typeof settingsPatch> | undefined
@@ -74,7 +85,7 @@ function mergeSettings(
       ? withIds(patch.questions, base.questions)
       : base.questions,
     outcomes: patch.outcomes
-      ? withIds(patch.outcomes, base.outcomes)
+      ? withIds(patch.outcomes, base.outcomes).map(outcomeMaterialId)
       : base.outcomes,
     emails: patch.emails
       ? withIds(patch.emails, base.emails).map(({ version, ...step }) => step)
@@ -112,7 +123,7 @@ function mergeOverrides(
       ? withIds(patch.questions, base.questions ?? [])
       : base.questions,
     outcomes: patch.outcomes
-      ? withIds(patch.outcomes, base.outcomes ?? [])
+      ? withIds(patch.outcomes, base.outcomes ?? []).map(outcomeMaterialId)
       : base.outcomes,
     emails: patch.emails
       ? withIds(patch.emails, base.emails ?? []).map(

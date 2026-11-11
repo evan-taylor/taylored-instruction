@@ -27,6 +27,12 @@ async function certificateOutcome(
     .first();
 }
 
+export const certificateStatusValidator = v.object({
+  title: v.string(),
+  uploaded: v.boolean(),
+  materialId: v.optional(v.id("registrationMaterials")),
+});
+
 export async function certificateStatus(
   ctx: QueryCtx,
   seat: Doc<"registrationSeats">
@@ -34,7 +40,11 @@ export async function certificateStatus(
   const rule = certificateRequirement(seat);
   if (rule) {
     const outcome = await certificateOutcome(ctx, seat._id, rule);
-    return { title: rule.title, uploaded: Boolean(outcome?.certificateFileId) };
+    return {
+      title: rule.title,
+      uploaded: Boolean(outcome?.certificateFileId),
+      materialId: rule.certificateMaterialId,
+    };
   }
 }
 
