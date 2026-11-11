@@ -326,11 +326,11 @@ try {
 }
 ```
 
-## Cursor Cloud specific instructions
+## Development environment instructions
 
 ### Service overview
 
-This is a Next.js 16 website (Taylored Instruction — CPR/BLS training company). All backend data lives in **Convex** (cloud-hosted); there is no local database. Standard dev commands are in `package.json` — see `CLAUDE.md` for the full list.
+This is a Next.js 16 website (Taylored Instruction — CPR/BLS training company). Backend data lives in Convex, either an isolated local development backend or a cloud deployment. Standard dev commands are in `package.json`; see `CLAUDE.md` and `docs/development.md` for environment ownership and safety.
 
 ### Running the dev server
 
@@ -338,17 +338,17 @@ This is a Next.js 16 website (Taylored Instruction — CPR/BLS training company)
 bun run dev          # starts Next.js on port 3000
 ```
 
-A `.env.local` file must exist with at least `NEXT_PUBLIC_CONVEX_URL` set — the Convex client provider throws at module load time if it is missing. All available VM secrets must be written to `.env.local` before starting the dev server. Key vars: `NEXT_PUBLIC_CONVEX_URL`, `CONVEX_DEPLOYMENT`, `STRIPE_SECRET_KEY`, `RESEND_API_KEY`, `NEXT_PUBLIC_BASE_URL`, `SENTRY_AUTH_TOKEN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`, `AUTH_EMAIL_FROM`, `JWKS`, `JWT_PRIVATE_KEY`, `SITE_URL`, `INTERNAL_EMAIL_WEBHOOK_SECRET`.
+Next.js needs `NEXT_PUBLIC_CONVEX_URL` in its process environment or `.env.local`. Let the Convex CLI generate deployment URLs. `bun run dev:full` keeps Convex running and starts Next.js after syncing. Check the selected deployment first; agents must not share a developer's backend. Never copy all VM secrets into `.env.local`: Next.js, Convex, and build/provisioning tools have separate settings. Keep auth private keys on the isolated backend and personal provisioning tokens out of agent environments.
 
 ### Lint / Type-check / Test
 
 - `bun run lint` — runs `bunx ultracite check` (Biome-based)
-- `bun run type-check` — runs `tsc --noEmit`
-- `bun run test` — runs both lint and type-check (no unit test suite)
+- `bun run type-check` — checks both the app and Convex TypeScript projects
+- `bun run test` — runs lint, type-check, and Vitest behavior tests
 
 ### Runtime and package manager
 
-The project uses **Bun** for installing dependencies and running scripts. Use `bun install` and `bun run <script>` instead of npm commands.
+The project uses Bun 1.3.14 and Node 24. Use `bun install --frozen-lockfile` and `bun run <script>` instead of npm commands.
 
 ### Git hooks
 
@@ -357,9 +357,9 @@ Lefthook is configured (`lefthook.yml`) with a pre-commit hook that runs `bunx u
 ### Gotchas
 
 - The `ConvexClientProvider` (`providers/ConvexClientProvider.tsx`) will **throw** if `NEXT_PUBLIC_CONVEX_URL` is not set, crashing the app at compile time for any route that uses Convex (both `(marketing)` and `(app)` layouts).
-- Sentry config in `next.config.js` uses `withSentryConfig`; if `SENTRY_AUTH_TOKEN` is missing, source-map upload will silently fail but the build/dev server still works.
-- There is no unit test framework — `bun run test` only lints and type-checks.
-- The contact form (`/contact`) is a good end-to-end smoke test: it exercises a server action (`app/actions/send-contact-email.ts`) that sends email via Resend. If `RESEND_API_KEY` is set, submission returns a green "Message sent successfully!" banner.
+- Sentry reporting uses `NEXT_PUBLIC_SENTRY_DSN`; leave it absent to disable reporting. Build integration currently requires all of `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`.
+- Vitest uses in-memory Convex fixtures. Playwright requires a running app and an isolated backend; install its Chromium with `bun run test:e2e:install`.
+- Loading `/contact` is a read-only smoke test. Submitting it sends real email when Resend is configured; registration's test-recipient guard does not cover this route.
 - Auth uses Convex Auth with email OTP (via Resend) and Google OAuth. The `JWKS` and `JWT_PRIVATE_KEY` secrets are needed for Convex Auth token verification. The login page is at `/login`.
 
 <!-- BEGIN:nextjs-agent-rules -->

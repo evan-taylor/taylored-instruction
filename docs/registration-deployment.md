@@ -67,7 +67,9 @@ Copy `.env.example` to ignored `.env.local`, or pull the Vercel development envi
 into a temporary file and merge it with existing local settings. Keep local
 `CONVEX_DEPLOYMENT` and `NEXT_PUBLIC_CONVEX_URL` pointed at the same dev backend.
 Configure Convex secrets with `bunx convex env set NAME` (stdin is supported), then run
-`bunx convex dev --once` and `bun run dev`. Do not copy production credentials into dev.
+`bun run dev:full`. This keeps a local backend alive; `convex dev --once` only syncs
+once and exits. See [the development guide](development.md) before selecting a
+backend or supplying integration credentials. Do not copy production credentials into dev.
 The shared registration mode defaults to `test` when unset and rejects invalid modes.
 
 ## Upgrade notes and release checks

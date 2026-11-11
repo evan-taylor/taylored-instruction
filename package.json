@@ -6,11 +6,14 @@
     "build": "next build",
     "build:vercel": "bun scripts/vercel-build.ts",
     "dev": "next dev",
+    "dev:convex": "convex dev",
+    "dev:full": "convex dev --start 'bun run dev'",
     "lint": "bunx ultracite check",
     "start": "next start",
     "test": "bun run lint && bun run type-check && bun run test:behavior",
     "test:behavior": "vitest run",
     "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "type-check": "tsc --noEmit && tsc --noEmit -p convex/tsconfig.json"
   },
   "dependencies": {
