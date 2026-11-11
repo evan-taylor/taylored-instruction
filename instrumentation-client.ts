@@ -40,7 +40,7 @@ if (posthogProjectToken && posthogHost) {
 export const onRouterTransitionStart = captureRouterTransitionStart;
 
 init({
-  dsn: "https://f31f65850f94006f5f71c6a16458e0aa@o4510288242933760.ingest.us.sentry.io/4510288256958464",
+  dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
   // Add optional integrations for additional features
   integrations: [

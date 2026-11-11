@@ -22,13 +22,13 @@ All original direct dependency versions on the handoff branch are preserved. Add
 
 ## Reproduction
 
-Use Bun 1.3.14 and Node >=22.12. Run `bun install --frozen-lockfile`.
+Use Bun 1.3.14 and Node 24. Run `bun install --frozen-lockfile`.
 
 1. Start a **local or explicitly designated development** Convex deployment with `bunx convex dev`. Do not use `convex deploy`. In this cloud workspace an inherited cloud `CONVEX_DEPLOYMENT` needed to be unset before selecting the anonymous local deployment. Local endpoints are 3210 (client) and 3211 (HTTP).
 2. Set `NEXT_PUBLIC_CONVEX_URL` in ignored `.env.local` to that deployment. Preserve the app's other existing development environment values. Never commit keys or export them into logs.
 3. On that deployment only, set `REGISTRATION_ALLOW_TEST_FIXTURES=true`, then run `bunx convex run registrationFixtures:seed`. This internal fixture seeds example.test identities, three-meeting blended and self-paced offerings, private/admin-only/free sessions, material policies, instructor assignments and a two-use coupon. Remove/disable the flag outside isolated testing.
 4. Run `bun run dev`. Browser verification uses **http://localhost:3000**. Next's development origin protection blocked hydration when this environment used 127.0.0.1 for the browser origin.
-5. Run `bun run test` and `bun run test:e2e`. Playwright currently uses the cloud workspace's `/usr/bin/chromium`, with desktop and mobile Chromium projects. Adapt the executable path for another workstation.
+5. Run `bun run test:e2e:install`, `bun run test`, and `bun run test:e2e`. Playwright uses its managed Chromium, with desktop and mobile projects. Set `PLAYWRIGHT_CHROMIUM` only when intentionally using an externally installed browser.
 6. Run `SENTRY_AUTH_TOKEN= SENTRY_ORG= SENTRY_PROJECT= NEXT_TELEMETRY_DISABLED=1 bun run build`. This does not deploy the application.
 
 Convex generated files were produced with its CLI. Only an anonymous local backend was updated; cloud access returned `MissingAccessToken`.
@@ -106,6 +106,6 @@ The cloud workspace's local Convex backend was made to run by launching the prec
 - `bun run test:e2e`: all 10 public scenarios pass (desktop and mobile).
 - `ADMIN_QA=true bunx playwright test tests/e2e/admin.spec.ts --project=desktop`: 4 staff scenarios pass: every admin page renders for an administrator; course and session editors open with fixture data; the group wizard enrolls a pasted roster at a custom price, the invoice is created as TI-YYYY-NNNN, and recording an offline payment settles the order; a public group request appears in the admin queue.
 
-Staff sign-in for tests uses a password provider that only exists when `REGISTRATION_ALLOW_TEST_FIXTURES=true` on the deployment, with the form rendered only when `NEXT_PUBLIC_REGISTRATION_TEST_LOGIN=true` on the web app. Never set either on a shared deployment. Set `PLAYWRIGHT_CHROMIUM` to the browser path when it is not `/usr/bin/chromium`.
+Staff sign-in for tests uses a password provider that only exists when `REGISTRATION_ALLOW_TEST_FIXTURES=true` on the deployment, with the form rendered only when `NEXT_PUBLIC_REGISTRATION_TEST_LOGIN=true` on the web app. Never set either on a shared deployment. `PLAYWRIGHT_CHROMIUM` overrides the managed browser only when explicitly configured.
 
 Not exercised here: Stripe test-mode calls (the workspace only has a live key, which registration refuses), real email delivery, and Google or OTP login. Next's dev overlay reports "instant navigation" validation notes for admin routes because the admin shell gates rendering on client auth; these are development diagnostics only.

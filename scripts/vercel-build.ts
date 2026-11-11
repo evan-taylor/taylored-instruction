@@ -1,5 +1,11 @@
 import { execFileSync } from "node:child_process";
 import Stripe from "stripe";
+import {
+  assertPreviewTarget,
+  cleanupPreviews,
+  previewCreationKey,
+  previewMetadata,
+} from "./stripe-preview-lifecycle";
 
 // `convex deploy --cmd` supplies the URLs for this exact deployment.
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
@@ -110,26 +116,59 @@ const enabledEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "invoice.voided",
   "invoice.marked_uncollectible",
 ];
-const endpoints = await stripe.webhookEndpoints.list({ limit: 100 });
-const endpoint = endpoints.data.find((entry) => entry.url === url);
+const metadata =
+  target === "preview"
+    ? previewMetadata(process.env.VERCEL_GIT_COMMIT_REF ?? "")
+    : undefined;
+const previousSecret = convexEnv("get", "REGISTRATION_STRIPE_WEBHOOK_SECRET");
+let endpoints = await stripe.webhookEndpoints
+  .list({ limit: 100 })
+  .autoPagingToArray({ limit: 1000 });
+const endpoint = endpoints.find((entry) => entry.url === url);
+if (metadata) {
+  assertPreviewTarget(url, endpoint);
+}
 if (endpoint) {
-  if (!convexEnv("get", "REGISTRATION_STRIPE_WEBHOOK_SECRET")) {
+  if (!previousSecret) {
     throw new Error(
       "Existing Stripe endpoint needs its signing secret configured in Convex"
     );
   }
   await stripe.webhookEndpoints.update(endpoint.id, {
     enabled_events: enabledEvents,
+    ...(metadata ? { metadata } : {}),
   });
 } else {
+  if (metadata) {
+    try {
+      endpoints = await cleanupPreviews(stripe, endpoints, metadata.branch);
+    } catch {
+      process.stderr.write(
+        "Preview cleanup could not verify retirement; retaining endpoints. Check GitHub API access and run the cleanup workflow.\n"
+      );
+      endpoints = await stripe.webhookEndpoints
+        .list({ limit: 100 })
+        .autoPagingToArray({ limit: 1000 });
+    }
+    if (endpoints.length >= 16) {
+      throw new Error(
+        "Stripe test webhook capacity (16) is full. Close unused preview PRs, wait for the 24-hour grace period, and run the Stripe preview cleanup workflow. Review legacy unowned endpoints manually; active or unverifiable endpoints are never removed to make room."
+      );
+    }
+  }
   const created = await stripe.webhookEndpoints.create(
     {
       url,
       enabled_events: enabledEvents,
       api_version: "2026-09-30.endive",
       description: `Taylored Instruction registration (${deployment})`,
+      ...(metadata ? { metadata } : {}),
     },
-    { idempotencyKey: `registration-webhook:${deployment}` }
+    {
+      idempotencyKey: metadata
+        ? previewCreationKey(url, previousSecret)
+        : `registration-webhook:${deployment}`,
+    }
   );
   if (!created.secret) {
     throw new Error("Stripe did not return a webhook signing secret");

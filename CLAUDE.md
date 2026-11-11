@@ -8,11 +8,17 @@ Sanity content, and PostHog/Sentry monitoring. Follow `AGENTS.md` for code rules
 
 Use Bun 1.3.14 and Node 24 (`nvm use`).
 
+Read `docs/development.md` for isolated development, environment ownership, and
+integration-test safety. Do not distribute personal Convex tokens to agents.
+
 - `bun install --frozen-lockfile`
 - `bun run dev` — Next.js on port 3000
+- `bun run dev:convex` — keep the selected Convex backend synced
+- `bun run dev:full` — sync Convex, then start Next.js alongside it
 - `bunx convex dev --once` — generate types and push to the selected dev backend
 - `bun run test` — Ultracite lint, TypeScript, and Vitest registration tests
 - `bun run test:e2e` — Playwright against a prepared isolated fixture deployment
+- `bun run test:e2e:install` — install Playwright's matching Chromium
 - `bun run build` — production frontend build, no backend deployment
 - `bun run start` — serve the production build
 

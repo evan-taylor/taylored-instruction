@@ -13,6 +13,10 @@ const nextConfig = {
         source: "/ingest/static/:path*",
         destination: `${assets}/static/:path*`,
       },
+      {
+        source: "/ingest/array/:path*",
+        destination: `${assets}/array/:path*`,
+      },
       { source: "/ingest/:path*", destination: `${host}/:path*` },
     ];
   },
