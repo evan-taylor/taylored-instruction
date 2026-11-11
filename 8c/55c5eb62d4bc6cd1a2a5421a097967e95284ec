@@ -1,0 +1,91 @@
+components/registration/instructor.tsx
+  s_5e1227f916f251::t_f8eae326e40c53 28,41-44,46,48-53,192,194-195,198-199,202-207,209-221,223-250,259,267,269,286-289,293,304-305,310-311,353-356,358-362,365,383-384,521-632,681,684-685,698,700-703,705-708,806-817,865,872,874,883,891,895
+  s_5e1227f916f251::t_3e79a554a32907 39,357
+  s_781d026b6ae2f0::t_97c582c079fa2f 45,270-285,335-343,633-666,687,693-696,795-799,831
+convex/registrationOperations.ts
+  s_5e1227f916f251::t_ba996c14fee76e 463-468,480-482,505-510,512-517,638-675,680,689-706,708-718,723
+  s_781d026b6ae2f0::t_931bd86a373286 511,599-601,1849,1862-1865,1873,1890-1900
+  s_781d026b6ae2f0::t_55927a6ce2256d 22-25,479
+tests/registration/backend.test.ts
+  s_5e1227f916f251::t_b75dfe254cb8cf 421-521
+  s_781d026b6ae2f0::t_6ec2eb6d4fd9de 5860-5867,5877-5885,5887-5907,5909-5922,5929-5933,5936-5941,5958,5967-5982,5989-6036,6038-6043
+  s_781d026b6ae2f0::t_ad4f382113beda 5934-5935,5983-5988,6037
+  s_781d026b6ae2f0::t_a8cece4729bc0f 5868-5876,5886,5908,5923-5928,5942-5957,5959-5966
+bun.lock
+  s_5e1227f916f251::t_c734d59b191829 78,1416,1934,3562-3563,4270-4271
+components/registration/outcome-field.tsx
+  s_5e1227f916f251::t_2cc13e899b48ae 1-125
+package.json
+  s_5e1227f916f251::t_cacc6d57767590 90
+tests/registration/instructor-outcomes.test.tsx
+  s_5e1227f916f251::t_d4b9aded2f80a0 1-151
+components/admin/config-editor.tsx
+  s_781d026b6ae2f0::t_ae9d0255bd5e2a 548,554,580-595,597-600,627-667,675,727,822,827,875-884,997,1044-1048
+  s_781d026b6ae2f0::t_9bc2cf5d2f15e5 547,553,596,601-626,700,713
+components/admin/courses.tsx
+  s_781d026b6ae2f0::t_1512064937f304 298
+  s_781d026b6ae2f0::t_e7fca9a9877a82 68-86,172,181-183
+components/admin/session-files.tsx
+  s_781d026b6ae2f0::t_c650589c1de714 42,157-161,280-284
+components/registration/portal.tsx
+  s_781d026b6ae2f0::t_ebd82214e5340d 31,39-40,42-45,47,435-437,439-441,443-445,446-466,467-474,482-485,487-511
+  s_781d026b6ae2f0::t_d629ba845b2e73 2,481
+  s_781d026b6ae2f0::t_1a624342621b52 13-19,60,63,117-137,149-151,189,282,286,383,436,438,442,475-480,486
+convex/_generated/api.d.ts
+  s_781d026b6ae2f0::t_8203b8ca559c24 25,69
+convex/registration.ts
+  s_781d026b6ae2f0::t_5c5fd86d01721a 338,343,347
+  s_781d026b6ae2f0::t_a9a75eaf9f8cc0 339-342,344-346
+convex/registrationCertificates.ts
+  s_781d026b6ae2f0::t_10262ef010b772 1-29,36-42,48-185
+  s_781d026b6ae2f0::t_752a77fa3acf3e 30-35,43-47
+convex/registrationHelpers.ts
+  s_781d026b6ae2f0::t_af709139254833 562
+convex/registrationMail.ts
+  s_781d026b6ae2f0::t_cde9b8cebef9a5 7,240-255,298-303,305
+convex/registrationPortal.ts
+  s_781d026b6ae2f0::t_ec3dc2a530bfe7 99-102
+  s_781d026b6ae2f0::t_252abb02a6fbfd 17,21-24,26-39
+  s_781d026b6ae2f0::t_bb5a594a2ca1cc 8-11,14-16,18-20,25,47-48,105,312,327
+convex/registrationSchema.ts
+  s_781d026b6ae2f0::t_807963604a75a4 51,60,358,394,396
+shared/registration/certificate.ts
+  s_781d026b6ae2f0::t_b8ea4bcaad4262 1-2
+shared/registration/domain.ts
+  s_781d026b6ae2f0::t_58e5ff4a1b6831 127-143,145
+shared/registration/validators.ts
+  s_781d026b6ae2f0::t_f9549b41e597b1 29,42
+  s_781d026b6ae2f0::t_c65d4ae60c68fd 30
+lib/mcp/shapes.ts
+  s_781d026b6ae2f0::t_c71e32b15a48c0 79,115
+  s_781d026b6ae2f0::t_8448e6d573331b 80
+tests/registration/mcp-server.test.ts
+  s_781d026b6ae2f0::t_e8b5ee7769cfe2 197-203,205-218,248
+  s_781d026b6ae2f0::t_833513f79b48ed 204,241-247
+lib/mcp/tools/catalog.ts
+  s_781d026b6ae2f0::t_1cfe796314cc29 44-54,88,126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c55c5eb62d4bc6cd1a2a5421a097967e95284ec",
+  "prompts": {},
+  "sessions": {
+    "s_5e1227f916f251": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cbe9-af88-7ad1-bd33-553844187229",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_781d026b6ae2f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cc8a-2140-7b82-8b53-d1a046929650",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
