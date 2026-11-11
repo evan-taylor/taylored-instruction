@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { BATCH, formatMoney } from "../shared/registration/domain";
-import { calendar } from "../shared/registration/schedule";
+import { calendar, formatSchedule } from "../shared/registration/schedule";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
@@ -148,12 +148,16 @@ function scheduleContent(
 ) {
   return {
     schedule: session
-      ? session.meetings
-          .map(
-            (m) =>
-              `${new Date(m.start).toLocaleString("en-US", { dateStyle: "full", timeStyle: "short", timeZone: session.timeZone })} – ${new Date(m.end).toLocaleTimeString("en-US", { timeStyle: "short", timeZone: session.timeZone })} (${session.timeZone})\n${m.location}${seat?.state === "active" && seat.settledAt && m.instructions ? `\n${m.instructions}` : ""}`
-          )
-          .join("\n")
+      ? formatSchedule(
+          session.meetings.map((m) => ({
+            ...m,
+            instructions:
+              seat?.state === "active" && seat.settledAt
+                ? m.instructions
+                : undefined,
+          })),
+          session.timeZone
+        )
       : "",
     calendar:
       session && seat?.state === "active" && seat.settledAt
@@ -268,7 +272,9 @@ export const claim = internalMutation({
     const entitlementId = materialJobEntitlementId(ctx, job);
     const entitlement = entitlementId ? await ctx.db.get(entitlementId) : null;
     const explicit =
-      job.key.startsWith("staff:") || job.key.startsWith("schedule:");
+      job.key.startsWith("staff:") ||
+      job.key.startsWith("schedule:") ||
+      job.key.startsWith("instructor:");
     const invoiceOpen = await invoiceStillOpen(ctx, job);
     const paymentOpen = await paymentStillOpen(ctx, job);
     const offerOpen = await offerStillOpen(ctx, job);
