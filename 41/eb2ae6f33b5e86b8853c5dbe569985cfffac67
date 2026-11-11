@@ -1,0 +1,71 @@
+components/registration/instructor.tsx
+  s_5e1227f916f251::t_f8eae326e40c53 28,41-44,46,48-53,192,194-195,198-199,202-207,209-221,223-250,259,267,269,286-289,293,304-305,310-311,353-356,358-362,365,383-384,521-632,681,684-685,698,700-703,705-708,806-817,865,872,874,883,891,895
+  s_5e1227f916f251::t_3e79a554a32907 39,357
+  s_781d026b6ae2f0::t_97c582c079fa2f 45,270-285,335-343,633-666,687,693-696,795-799,831
+convex/registrationOperations.ts
+  s_5e1227f916f251::t_ba996c14fee76e 460-465,479-481,504-509,511-516,637-674,679,688-705,707-717,722
+  s_781d026b6ae2f0::t_931bd86a373286 22,476-478,510,598-600,1848,1861-1864,1872,1889-1899
+tests/registration/backend.test.ts
+  s_5e1227f916f251::t_b75dfe254cb8cf 421-521
+  s_781d026b6ae2f0::t_6ec2eb6d4fd9de 5860-6002
+bun.lock
+  s_5e1227f916f251::t_c734d59b191829 78,1416,1934,3562-3563,4270-4271
+components/registration/outcome-field.tsx
+  s_5e1227f916f251::t_2cc13e899b48ae 1-125
+package.json
+  s_5e1227f916f251::t_cacc6d57767590 87
+tests/registration/instructor-outcomes.test.tsx
+  s_5e1227f916f251::t_d4b9aded2f80a0 1-151
+components/admin/config-editor.tsx
+  s_781d026b6ae2f0::t_ae9d0255bd5e2a 547,552,578-640,648,699,794,799,847-856,969,1016-1020
+components/admin/courses.tsx
+  s_781d026b6ae2f0::t_1512064937f304 280
+components/admin/session-files.tsx
+  s_781d026b6ae2f0::t_c650589c1de714 42,157-161,280-284
+components/registration/portal.tsx
+  s_781d026b6ae2f0::t_ebd82214e5340d 2,13,25,33-34,36-39,41,54,401-475,515-520
+convex/_generated/api.d.ts
+  s_781d026b6ae2f0::t_8203b8ca559c24 25,69
+convex/registration.ts
+  s_781d026b6ae2f0::t_5c5fd86d01721a 338-342
+convex/registrationCertificates.ts
+  s_781d026b6ae2f0::t_10262ef010b772 1-175
+convex/registrationHelpers.ts
+  s_781d026b6ae2f0::t_af709139254833 562
+convex/registrationMail.ts
+  s_781d026b6ae2f0::t_cde9b8cebef9a5 7,240-255,298-303,305
+convex/registrationPortal.ts
+  s_781d026b6ae2f0::t_ec3dc2a530bfe7 8,18-20,80-83
+convex/registrationSchema.ts
+  s_781d026b6ae2f0::t_807963604a75a4 51,60,358,394,396
+shared/registration/certificate.ts
+  s_781d026b6ae2f0::t_b8ea4bcaad4262 1-2
+shared/registration/domain.ts
+  s_781d026b6ae2f0::t_58e5ff4a1b6831 127-143,145
+shared/registration/validators.ts
+  s_781d026b6ae2f0::t_f9549b41e597b1 29,41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "41eb2ae6f33b5e86b8853c5dbe569985cfffac67",
+  "prompts": {},
+  "sessions": {
+    "s_5e1227f916f251": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cbe9-af88-7ad1-bd33-553844187229",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    },
+    "s_781d026b6ae2f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cc8a-2140-7b82-8b53-d1a046929650",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
