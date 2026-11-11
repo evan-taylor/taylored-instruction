@@ -27,14 +27,29 @@ async function certificateOutcome(
     .first();
 }
 
+export const certificateStatusValidator = v.object({
+  title: v.string(),
+  uploaded: v.boolean(),
+  materialId: v.optional(v.id("registrationMaterials")),
+});
+
 export async function certificateStatus(
   ctx: QueryCtx,
-  seat: Doc<"registrationSeats">
+  seat: Doc<"registrationSeats">,
+  displayRules = seat.outcomeDefinitions
 ) {
   const rule = certificateRequirement(seat);
   if (rule) {
     const outcome = await certificateOutcome(ctx, seat._id, rule);
-    return { title: rule.title, uploaded: Boolean(outcome?.certificateFileId) };
+    return {
+      title: rule.title,
+      uploaded: Boolean(outcome?.certificateFileId),
+      // Display settings can change after an attendee's grading rules are frozen.
+      materialId: displayRules.find(
+        (displayRule) =>
+          displayRule.id === rule.id && displayRule.certificateRequired
+      )?.certificateMaterialId,
+    };
   }
 }
 

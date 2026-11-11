@@ -201,6 +201,7 @@ describe("MCP server", () => {
               type: "category",
               required: true,
               certificateRequired: true,
+              certificateMaterialId: "material1",
               options: ["Complete"],
               passingValue: "Complete",
             },
@@ -237,7 +238,13 @@ describe("MCP server", () => {
         questions: [
           { id: "q1", title: "Employer name", required: true, version: 2 },
         ],
-        outcomes: [{ id: "online", certificateRequired: true }],
+        outcomes: [
+          {
+            id: "online",
+            certificateRequired: true,
+            certificateMaterialId: "material1",
+          },
+        ],
         emails: [{ id: "certificate", onlyMissingCertificate: true }],
       },
     });

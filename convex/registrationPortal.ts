@@ -5,28 +5,44 @@ import {
 import { ConvexError, v } from "convex/values";
 import { calendar } from "../shared/registration/schedule";
 import { mutation, query } from "./_generated/server";
-import { certificateStatus } from "./registrationCertificates";
+import {
+  certificateStatus,
+  certificateStatusValidator,
+} from "./registrationCertificates";
 import { activeSeatMaterials, portalEmail } from "./registrationHelpers";
 
-const portalCertificate = v.object({
+const portalMaterial = v.object({
+  id: v.id("registrationEntitlements"),
+  materialId: v.id("registrationMaterials"),
   title: v.string(),
-  uploaded: v.boolean(),
+  state: v.string(),
+  kind: v.optional(v.string()),
+  instructions: v.optional(v.string()),
 });
 
 export const certificate = query({
   args: { seatId: v.id("registrationSeats") },
-  returns: v.union(portalCertificate, v.null()),
+  returns: v.union(certificateStatusValidator, v.null()),
   handler: async (ctx, { seatId }) => {
     const identity = await portalEmail(ctx);
     const seat = await ctx.db.get(seatId);
     if (seat?.email !== identity || !seat.sessionId) {
       return null;
     }
-    const session = await ctx.db.get(seat.sessionId);
+    const [session, course] = await Promise.all([
+      ctx.db.get(seat.sessionId),
+      ctx.db.get(seat.courseId),
+    ]);
     if (!session || session.state === "canceled") {
       return null;
     }
-    return (await certificateStatus(ctx, seat)) ?? null;
+    return (
+      (await certificateStatus(
+        ctx,
+        seat,
+        session.overrides.outcomes ?? course?.settings.outcomes
+      )) ?? null
+    );
   },
 });
 
@@ -37,16 +53,8 @@ const portalSeat = v.object({
   title: v.string(),
   sessionId: v.optional(v.id("registrationSessions")),
   timeZone: v.optional(v.string()),
-  certificate: v.optional(portalCertificate),
-  materials: v.array(
-    v.object({
-      id: v.id("registrationEntitlements"),
-      title: v.string(),
-      state: v.string(),
-      kind: v.optional(v.string()),
-      instructions: v.optional(v.string()),
-    })
-  ),
+  certificate: v.optional(certificateStatusValidator),
+  materials: v.array(portalMaterial),
   meetings: v.array(
     v.object({
       id: v.string(),
@@ -99,10 +107,15 @@ export const registrations = query({
           sessionId: session?._id,
           certificate:
             session && session.state !== "canceled"
-              ? await certificateStatus(ctx, seat)
+              ? await certificateStatus(
+                  ctx,
+                  seat,
+                  session.overrides.outcomes ?? course?.settings.outcomes
+                )
               : undefined,
           materials: entitlements.map((e) => ({
             id: e._id,
+            materialId: e.materialId,
             title: e.title,
             state: e.state,
             kind: e.kind,
@@ -309,15 +322,7 @@ export const materials = query({
     seatId: v.id("registrationSeats"),
     paginationOpts: paginationOptsValidator,
   },
-  returns: paginationResultValidator(
-    v.object({
-      id: v.id("registrationEntitlements"),
-      title: v.string(),
-      state: v.string(),
-      kind: v.optional(v.string()),
-      instructions: v.optional(v.string()),
-    })
-  ),
+  returns: paginationResultValidator(portalMaterial),
   handler: async (ctx, args) => {
     const identity = await portalEmail(ctx);
     const seat = await ctx.db.get(args.seatId);
@@ -332,6 +337,7 @@ export const materials = query({
       ...result,
       page: result.page.map((e) => ({
         id: e._id,
+        materialId: e.materialId,
         title: e.title,
         state: e.state,
         kind: e.kind,

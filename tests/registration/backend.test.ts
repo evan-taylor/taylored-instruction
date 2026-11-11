@@ -5865,6 +5865,15 @@ it("records an attendee's certificate and skips only their pending upload remind
       settings: {
         ...config,
         tuition: 0,
+        materials: [
+          {
+            id: "online-access",
+            materialId: f.material,
+            title: "HeartCode BLS Online",
+            cents: 0,
+            policy: "waivable",
+          },
+        ],
         outcomes: [
           {
             id: "online",
@@ -5895,7 +5904,7 @@ it("records an attendee's certificate and skips only their pending upload remind
   const order = await f.t.mutation(api.registration.reserve, {
     ...attempt(f.course, f.session),
     attendees: [
-      seat(address),
+      { ...seat(address), waived: ["online-access"] },
       { ...seat(otherAddress), name: "Other student" },
     ],
   });
@@ -5910,11 +5919,12 @@ it("records an attendee's certificate and skips only their pending upload remind
   if (!(student && other)) {
     throw new Error("Expected both attendees");
   }
-  const user = await f.t.run((ctx) =>
-    ctx.db.insert("users", {
-      email: address,
-      emailVerificationTime: Date.now(),
-    })
+  const [user, otherUser] = await f.t.run((ctx) =>
+    Promise.all(
+      [address, otherAddress].map((email) =>
+        ctx.db.insert("users", { email, emailVerificationTime: Date.now() })
+      )
+    )
   );
   const attendee = f.t.withIdentity({ subject: `${user}|session` });
   const paginationOpts = { numItems: 10, cursor: null };
@@ -5928,10 +5938,50 @@ it("records an attendee's certificate and skips only their pending upload remind
       paginationOpts,
     });
 
-  expect((await portal()).page.at(0)?.certificate).toEqual({
-    title: "HeartCode BLS",
-    uploaded: false,
+  // This template change is read even when the saved seat rules are frozen.
+  expect((await liveCertificate())?.materialId).toBeUndefined();
+  await f.t.run(async (ctx) => {
+    const course = await ctx.db.get(f.course);
+    if (!course) {
+      throw new Error("Expected course");
+    }
+    await ctx.db.patch(f.course, {
+      settings: {
+        ...course.settings,
+        outcomes: course.settings.outcomes.map((rule) => ({
+          ...rule,
+          certificateMaterialId: f.material,
+        })),
+      },
+    });
   });
+  expect((await liveCertificate())?.materialId).toBe(f.material);
+
+  expect((await portal()).page.at(0)).toMatchObject({
+    materials: [],
+    certificate: {
+      title: "HeartCode BLS",
+      uploaded: false,
+      materialId: f.material,
+    },
+  });
+  const otherAttendee = f.t.withIdentity({ subject: `${otherUser}|session` });
+  const otherPortal = await otherAttendee.query(
+    api.registrationPortal.registrations,
+    { paginationOpts }
+  );
+  expect(otherPortal.page.at(0)).toMatchObject({
+    certificate: { materialId: f.material, uploaded: false },
+    materials: [{ materialId: f.material }],
+  });
+  const materialHistory = await otherAttendee.query(
+    api.registrationPortal.materials,
+    {
+      seatId: other._id,
+      paginationOpts,
+    }
+  );
+  expect(materialHistory.page.at(0)?.materialId).toBe(f.material);
   const bytes = new TextEncoder().encode("%PDF-1.7\n%%EOF").buffer;
   const upload = { seatId: student._id, name: "heartcode.pdf", bytes };
   await expect(

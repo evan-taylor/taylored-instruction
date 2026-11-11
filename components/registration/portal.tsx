@@ -10,7 +10,13 @@ import {
   MapPin,
   Package,
 } from "lucide-react";
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import {
+  type FormEvent,
+  type ReactNode,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -51,9 +57,10 @@ type PortalRow = {
   total?: number;
   refunded?: number;
   tax?: number;
-  certificate?: { title: string; uploaded: boolean };
+  certificate?: { title: string; uploaded: boolean; materialId?: string };
   materials?: {
     id: string;
+    materialId: string;
     title: string;
     state: string;
     kind?: string;
@@ -107,6 +114,27 @@ function MaterialList({
   const [done, setDone] = useState(false);
   const [busy, setBusy] = useState(false);
   const materials = loaded ?? row.materials ?? [];
+  const seatId = row.id as Id<"registrationSeats">;
+  const liveCertificate = useQuery(
+    api.registrationPortal.certificate,
+    row.certificate ? { seatId } : "skip"
+  );
+  const certificate =
+    liveCertificate === undefined ? row.certificate : liveCertificate;
+  const linkedRow = certificate?.materialId
+    ? materials.find(
+        (material) =>
+          material.materialId === certificate.materialId &&
+          material.state !== "canceled"
+      )
+    : undefined;
+  const upload = certificate ? (
+    <CertificateUpload
+      certificate={certificate}
+      seatId={seatId}
+      underMaterial={Boolean(linkedRow)}
+    />
+  ) : null;
   return (
     <>
       {materials.length ? (
@@ -118,7 +146,9 @@ function MaterialList({
               onUnavailable={() =>
                 onMessage({ text: "Material unavailable", tone: "danger" })
               }
-            />
+            >
+              {linkedRow?.id === m.id ? upload : null}
+            </MaterialRow>
           ))}
         </ul>
       ) : (
@@ -156,6 +186,7 @@ function MaterialList({
           {busy ? "Loading…" : "Load material history"}
         </Button>
       ) : null}
+      {linkedRow ? null : upload}
     </>
   );
 }
@@ -248,9 +279,11 @@ function MaterialStatusNote({
 }
 
 function MaterialRow({
+  children,
   material,
   onUnavailable,
 }: {
+  children: ReactNode;
   material: NonNullable<PortalRow["materials"]>[number];
   onUnavailable: () => void;
 }) {
@@ -347,6 +380,7 @@ function MaterialRow({
             {busy ? "Opening…" : openLabel(kind)}
           </Button>
         ) : null}
+        {children}
       </div>
     </li>
   );
@@ -399,19 +433,16 @@ function MeetingRow({
 }
 
 function CertificateUpload({
-  certificate: initialCertificate,
+  certificate,
   seatId,
+  underMaterial,
 }: {
   certificate: NonNullable<PortalRow["certificate"]>;
   seatId: Id<"registrationSeats">;
+  underMaterial: boolean;
 }) {
   const upload = useAction(api.registrationCertificates.upload);
   const input = useRef<HTMLInputElement>(null);
-  const liveCertificate = useQuery(api.registrationPortal.certificate, {
-    seatId,
-  });
-  const certificate =
-    liveCertificate === undefined ? initialCertificate : liveCertificate;
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
@@ -440,20 +471,19 @@ function CertificateUpload({
     }
   }
 
-  if (!certificate) {
-    return null;
-  }
   return (
-    <section className="space-y-2">
-      <h3 className="font-semibold text-slate-900 text-sm">
-        {certificate.title}
-      </h3>
+    <section className="mt-3 space-y-2 rounded-md border border-slate-200 p-3">
+      {underMaterial ? null : (
+        <h3 className="font-semibold text-slate-900 text-sm">
+          {certificate.title}
+        </h3>
+      )}
       {certificate.uploaded ? (
         <Notice tone="success">Completion certificate uploaded.</Notice>
       ) : (
         <form className="space-y-3" onSubmit={submit}>
           <Field
-            hint="Finish the online course, then upload the PDF, JPEG, or PNG certificate (up to 3 MB)."
+            hint="Upload your proof of online completion as a PDF, JPEG, or PNG (up to 3 MB). You can upload even if you got course access elsewhere."
             label="Completion certificate"
             required
           >
@@ -518,12 +548,6 @@ function RegistrationCard({
           </h3>
           <MaterialList onMessage={onMessage} row={row} />
         </section>
-        {row.certificate ? (
-          <CertificateUpload
-            certificate={row.certificate}
-            seatId={row.id as Id<"registrationSeats">}
-          />
-        ) : null}
       </CardContent>
     </Card>
   );
