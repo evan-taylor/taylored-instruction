@@ -124,7 +124,25 @@ function validateConfirmation(config: Settings) {
   }
 }
 
+function validateCertificateSettings(config: Settings) {
+  const [rule, secondRule] = config.outcomes.filter(
+    (outcomeRule) => outcomeRule.certificateRequired
+  );
+  if (secondRule) {
+    throw new Error("Choose one outcome for the online completion certificate");
+  }
+  if (
+    rule &&
+    (!rule.required || rule.type !== "category" || !rule.passingValue)
+  ) {
+    throw new Error(
+      "The certificate outcome needs a required passing category"
+    );
+  }
+}
+
 export function validateSettings(config: Settings) {
+  validateCertificateSettings(config);
   validateConfirmation(config);
   cents(config.tuition);
   taxCode(config.taxCode);

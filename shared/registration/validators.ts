@@ -26,6 +26,7 @@ export const outcome = v.object({
   type: v.union(v.literal("category"), v.literal("percentage")),
   options: v.array(v.string()),
   required: v.boolean(),
+  certificateRequired: v.optional(v.boolean()),
   passingValue: v.optional(v.string()),
   minimum: v.optional(v.number()),
   version: v.number(),
@@ -37,6 +38,7 @@ export const emailStep = v.object({
     v.literal("last"),
     v.literal("registration")
   ),
+  onlyMissingCertificate: v.optional(v.boolean()),
   offsetMinutes: v.number(),
   subject: v.string(),
   body: v.string(),

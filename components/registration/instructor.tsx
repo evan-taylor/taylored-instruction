@@ -42,6 +42,7 @@ type AttendanceStatus = Doc<"registrationAttendance">["status"];
 type Seat = Doc<"registrationSeats"> & {
   attendance: Pick<Doc<"registrationAttendance">, "meetingId" | "status">[];
   completion: string;
+  certificate?: { title: string; uploaded: boolean };
 };
 const EMAIL_BATCH = 50;
 const ATTENDANCE_CHOICES = [
@@ -266,20 +267,22 @@ function SeatDetails({
       <section className="space-y-3">
         <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
         {data?.values &&
-          seat.outcomeDefinitions.map((definition) => (
-            <OutcomeField
-              current={
-                data.values.find(
-                  (value) =>
-                    value.fieldId === definition.id &&
-                    value.version === definition.version
-                )?.value
-              }
-              definition={definition}
-              key={`${definition.id}:${definition.version}`}
-              seatId={seat._id}
-            />
-          ))}
+          seat.outcomeDefinitions
+            .filter((definition) => !definition.certificateRequired)
+            .map((definition) => (
+              <OutcomeField
+                current={
+                  data.values.find(
+                    (value) =>
+                      value.fieldId === definition.id &&
+                      value.version === definition.version
+                  )?.value
+                }
+                definition={definition}
+                key={`${definition.id}:${definition.version}`}
+                seatId={seat._id}
+              />
+            ))}
         {!data && seat.outcomeDefinitions.length > 0 ? (
           <p role="status">Loading outcomes…</p>
         ) : null}
@@ -329,6 +332,15 @@ function RosterRow({
         <TD>
           <div className="font-medium text-slate-900">{seat.name}</div>
           <div className="text-slate-500 text-xs">{seat.email}</div>
+          {seat.certificate ? (
+            <div className="mt-1">
+              <Badge tone={seat.certificate.uploaded ? "success" : "warning"}>
+                {seat.certificate.uploaded
+                  ? "Certificate uploaded"
+                  : "Certificate missing"}
+              </Badge>
+            </div>
+          ) : null}
         </TD>
         <TD>
           <StatusBadge status={seat.state} />
@@ -618,6 +630,40 @@ function AttendanceToolbar({
   );
 }
 
+function rosterEmptyDescription(needle: string, missingOnly: boolean) {
+  if (missingOnly) {
+    return "No loaded attendees with missing certificates match this view.";
+  }
+  return needle
+    ? "No loaded attendees match your search."
+    : "Attendees appear here as registrations are paid.";
+}
+
+function CertificateFilter({
+  checked,
+  onChange,
+  seats,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  seats: Seat[];
+}) {
+  if (!(checked || seats.some((seat) => seat.certificate))) {
+    return null;
+  }
+  return (
+    <label className="flex items-center gap-2 text-slate-700 text-sm">
+      <input
+        checked={checked}
+        className="accent-primary"
+        onChange={(event) => onChange(event.target.checked)}
+        type="checkbox"
+      />
+      Missing certificates only
+    </label>
+  );
+}
+
 export function InstructorRoster({
   sessionId,
   embedded = false,
@@ -638,16 +684,16 @@ export function InstructorRoster({
   const [chosenMeeting, setChosenMeeting] = useState<string>();
   const [bulkSaving, setBulkSaving] = useState(false);
   const [search, setSearch] = useState("");
+  const [missingOnly, setMissingOnly] = useState(false);
   const [selected, setSelected] = useState<Id<"registrationSeats">[]>([]);
   const [emailOpen, setEmailOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
   const needle = search.trim().toLowerCase();
-  const emptyRosterDescription = needle
-    ? "No loaded attendees match your search."
-    : "Attendees appear here as registrations are paid.";
-  const visible = roster.results.filter((s) =>
-    `${s.name} ${s.email}`.toLowerCase().includes(needle)
+  const visible = roster.results.filter(
+    (s) =>
+      (!missingOnly || s.certificate?.uploaded === false) &&
+      `${s.name} ${s.email}`.toLowerCase().includes(needle)
   );
   const selectedIds = new Set(selected);
   const allVisibleSelected =
@@ -746,6 +792,11 @@ export function InstructorRoster({
               </div>
             )}
           </Field>
+          <CertificateFilter
+            checked={missingOnly}
+            onChange={setMissingOnly}
+            seats={roster.results}
+          />
           <p className="text-slate-500 text-sm">
             {pluralize(visible.length, "attendee")} shown ·{" "}
             {pluralize(selected.length, "selected", "selected")}
@@ -777,7 +828,7 @@ export function InstructorRoster({
           {roster.status !== "LoadingFirstPage" && !visible.length ? (
             <div className="p-5">
               <EmptyState
-                description={emptyRosterDescription}
+                description={rosterEmptyDescription(needle, missingOnly)}
                 title="No attendees"
               />
             </div>

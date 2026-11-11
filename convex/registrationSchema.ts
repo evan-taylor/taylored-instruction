@@ -48,7 +48,7 @@ export const registrationTables = {
       "visibility",
       "firstStart",
     ]),
-  /** Staff uploads attached to a session: rosters, sign-in sheets, handouts. */
+  /** Staff uploads and attendee completion certificates attached to a session. */
   registrationSessionFiles: defineTable({
     sessionId: v.id("registrationSessions"),
     storageId: v.id("_storage"),
@@ -57,6 +57,7 @@ export const registrationTables = {
     size: v.number(),
     uploadedBy: v.id("users"),
     uploadedAt: v.number(),
+    certificateSeatId: v.optional(v.id("registrationSeats")),
   }).index("by_sessionId", ["sessionId"]),
   registrationLocations: defineTable({
     name: v.string(),
@@ -354,6 +355,7 @@ export const registrationTables = {
     sessionId: v.optional(v.id("registrationSessions")),
     entitlementId: v.optional(v.id("registrationEntitlements")),
     stepId: v.optional(v.string()),
+    onlyMissingCertificate: v.optional(v.boolean()),
     scheduleRevision: v.optional(v.number()),
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
@@ -389,7 +391,9 @@ export const registrationTables = {
     value: v.union(v.string(), v.number()),
     actor: v.id("users"),
     at: v.number(),
+    certificateFileId: v.optional(v.id("registrationSessionFiles")),
   })
+    .index("by_certificateFileId", ["certificateFileId"])
     .index("by_seatId", ["seatId"])
     .index("by_seatId_and_fieldId_and_version", [
       "seatId",

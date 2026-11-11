@@ -544,10 +544,12 @@ function PassingField({
 
 function OutcomeCard({
   outcome,
+  selfPaced,
   onChange,
   onRemove,
 }: {
   outcome: Outcome;
+  selfPaced: boolean;
   onChange: (patch: Partial<Outcome>) => void;
   onRemove: () => void;
 }) {
@@ -573,40 +575,69 @@ function OutcomeCard({
           />
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Graded as">
-          {(props) => (
-            <Select
-              {...props}
-              onChange={(e) =>
-                bump({ type: e.target.value as Outcome["type"] })
-              }
-              value={outcome.type}
-            >
-              <option value="category">Categorical (pass / fail / …)</option>
-              <option value="percentage">Exam percentage</option>
-            </Select>
-          )}
-        </Field>
-        <PassingField onChange={bump} outcome={outcome} />
-      </div>
-      {outcome.type === "category" ? (
-        <Field hint="One category per line." label="Categories">
-          {(props) => (
-            <TextArea
-              {...props}
-              onChange={(e) => bump({ options: e.target.value.split("\n") })}
-              value={outcome.options.join("\n")}
-            />
-          )}
-        </Field>
-      ) : null}
-      <Toggle
-        checked={outcome.required}
-        description="Attendees are marked complete only once every required outcome passes."
-        label="Required for completion"
-        onChange={(required) => bump({ required })}
-      />
+      {selfPaced ? null : (
+        <Toggle
+          checked={outcome.certificateRequired ?? false}
+          description="Attendees must upload proof of online coursework in their portal."
+          label="Require an online completion certificate"
+          onChange={(certificateRequired) => {
+            if (certificateRequired) {
+              bump({
+                certificateRequired,
+                type: "category",
+                required: true,
+                options: ["Complete"],
+                passingValue: "Complete",
+                minimum: undefined,
+              });
+            } else {
+              bump({ certificateRequired });
+            }
+          }}
+        />
+      )}
+      {outcome.certificateRequired ? null : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Graded as">
+              {(props) => (
+                <Select
+                  {...props}
+                  onChange={(e) =>
+                    bump({ type: e.target.value as Outcome["type"] })
+                  }
+                  value={outcome.type}
+                >
+                  <option value="category">
+                    Categorical (pass / fail / …)
+                  </option>
+                  <option value="percentage">Exam percentage</option>
+                </Select>
+              )}
+            </Field>
+            <PassingField onChange={bump} outcome={outcome} />
+          </div>
+          {outcome.type === "category" ? (
+            <Field hint="One category per line." label="Categories">
+              {(props) => (
+                <TextArea
+                  {...props}
+                  onChange={(e) =>
+                    bump({ options: e.target.value.split("\n") })
+                  }
+                  value={outcome.options.join("\n")}
+                />
+              )}
+            </Field>
+          ) : null}
+          <Toggle
+            checked={outcome.required}
+            description="Attendees are marked complete only once every required outcome passes."
+            label="Required for completion"
+            onChange={(required) => bump({ required })}
+          />
+        </>
+      )}
       <p className="text-slate-500 text-xs">
         Rule version {outcome.version}. Grading changes start a new version.
       </p>
@@ -614,7 +645,7 @@ function OutcomeCard({
   );
 }
 
-function OutcomesSection({ value, onChange }: SectionProps) {
+function OutcomesSection({ value, onChange, selfPaced = false }: SectionProps) {
   const add = () =>
     onChange({
       ...value,
@@ -665,6 +696,7 @@ function OutcomesSection({ value, onChange }: SectionProps) {
             })
           }
           outcome={o}
+          selfPaced={selfPaced}
         />
       ))}
     </div>
@@ -759,10 +791,12 @@ function OffsetFields({
 
 function EmailStepCard({
   step,
+  selfPaced,
   onChange,
   onRemove,
 }: {
   step: EmailStep;
+  selfPaced: boolean;
   onChange: (patch: Partial<EmailStep>) => void;
   onRemove: () => void;
 }) {
@@ -810,6 +844,16 @@ function EmailStepCard({
         onChange={(body) => onChange({ body })}
         value={step.body}
       />
+      {selfPaced ? null : (
+        <Toggle
+          checked={step.onlyMissingCertificate ?? false}
+          description="Checks each attendee when the email is due."
+          label="Only send if the required certificate is missing"
+          onChange={(onlyMissingCertificate) =>
+            onChange({ onlyMissingCertificate })
+          }
+        />
+      )}
       <EmailPreview body={step.body} subject={step.subject} />
     </div>
   );
@@ -922,6 +966,7 @@ function EmailsSection({ value, onChange, selfPaced = false }: SectionProps) {
               emails: value.emails.filter((entry) => entry.id !== step.id),
             })
           }
+          selfPaced={selfPaced}
           step={step}
         />
       ))}
@@ -968,7 +1013,11 @@ export function ConfigEditor({
         value={value}
       />
       <QuestionsSection onChange={onChange} value={value} />
-      <OutcomesSection onChange={onChange} value={value} />
+      <OutcomesSection
+        onChange={onChange}
+        selfPaced={selfPaced}
+        value={value}
+      />
       <EmailsSection onChange={onChange} selfPaced={selfPaced} value={value} />
     </div>
   );

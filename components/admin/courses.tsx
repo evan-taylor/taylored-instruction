@@ -65,6 +65,25 @@ function blankDraft(): CourseDraft {
     settings: emptySettings,
   };
 }
+function withDelivery(draft: CourseDraft, delivery: Course["delivery"]) {
+  if (delivery === "scheduled") {
+    return { ...draft, delivery };
+  }
+  return {
+    ...draft,
+    delivery,
+    settings: {
+      ...draft.settings,
+      outcomes: draft.settings.outcomes.filter(
+        (outcome) => !outcome.certificateRequired
+      ),
+      emails: draft.settings.emails.filter(
+        (email) => !email.onlyMissingCertificate
+      ),
+    },
+  };
+}
+
 function draftFrom(course: Course, duplicate: boolean): CourseDraft {
   return {
     id: duplicate ? undefined : course._id,
@@ -150,7 +169,7 @@ function BasicsSection({
           hint={
             editing
               ? "Duplicate the template to change delivery type."
-              : "Scheduled courses meet at set times; self-paced courses deliver materials immediately."
+              : "Self-paced courses deliver materials immediately and remove certificate requirements and their reminders."
           }
           label="Delivery"
         >
@@ -159,10 +178,9 @@ function BasicsSection({
               {...props}
               disabled={editing}
               onChange={(e) =>
-                onChange({
-                  ...draft,
-                  delivery: e.target.value as Course["delivery"],
-                })
+                onChange(
+                  withDelivery(draft, e.target.value as Course["delivery"])
+                )
               }
               value={draft.delivery}
             >
@@ -277,6 +295,7 @@ function CourseEditorModal({
           <ConfigEditor
             onChange={setSettings}
             section="outcomes"
+            selfPaced={draft.delivery === "self-paced"}
             value={draft.settings}
           />
         </TabPanel>
