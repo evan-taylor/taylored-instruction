@@ -195,6 +195,13 @@ export function formatSchedule(meetings: ScheduledMeeting[], timeZone: string) {
     hour: "numeric",
     minute: "2-digit",
   });
+  const dated = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
   const zones = new Set(
     sorted.flatMap((m) => [
       zoneName(m.start, timeZone),
@@ -212,7 +219,9 @@ export function formatSchedule(meetings: ScheduledMeeting[], timeZone: string) {
     if (startZone === endZone) {
       return `${time.formatRange(m.start, m.end)} ${startZone}`;
     }
-    return `${time.format(m.start)} ${startZone} – ${time.format(m.end)} ${endZone}`;
+    const endpoint =
+      dayKey.format(m.start) === dayKey.format(m.end) ? time : dated;
+    return `${endpoint.format(m.start)} ${startZone} – ${endpoint.format(m.end)} ${endZone}`;
   };
   const days = groupBy(sorted, (m) => dayKey.format(m.start));
   let lines: string[];

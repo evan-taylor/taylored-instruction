@@ -130,3 +130,24 @@ it("labels both ends of a meeting that crosses a daylight-saving change", () => 
     ["Sunday, November 1, 2026", "12:30 AM PDT – 2:30 AM PST", ymca].join("\n")
   );
 });
+
+it("keeps both dates when a meeting crosses midnight and a daylight-saving change", () => {
+  expect(
+    formatSchedule(
+      [
+        {
+          start: at("2026-11-01T06:00:00Z"),
+          end: at("2026-11-02T10:00:00Z"),
+          location: ymca,
+        },
+      ],
+      zone
+    )
+  ).toBe(
+    [
+      "Saturday, October 31, 2026",
+      "Oct 31, 11:00 PM PDT – Nov 2, 2:00 AM PST",
+      ymca,
+    ].join("\n")
+  );
+});
