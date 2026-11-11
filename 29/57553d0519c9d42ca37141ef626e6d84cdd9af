@@ -1,0 +1,51 @@
+components/admin/config-editor.tsx
+  s_781d026b6ae2f0::t_ae9d0255bd5e2a 547,552,578-640,648,699,794,799,847-856,969,1016-1020
+components/admin/courses.tsx
+  s_781d026b6ae2f0::t_1512064937f304 280
+components/admin/session-files.tsx
+  s_781d026b6ae2f0::t_c650589c1de714 42,157-161,280-284
+components/registration/instructor.tsx
+  s_781d026b6ae2f0::t_97c582c079fa2f 45,270-285,335-343,633-666,687,693-696,795-799,831
+components/registration/portal.tsx
+  s_781d026b6ae2f0::t_ebd82214e5340d 2,13,25,33-34,36-39,41,54,401-475,515-520
+convex/_generated/api.d.ts
+  s_781d026b6ae2f0::t_8203b8ca559c24 25,69
+convex/registration.ts
+  s_781d026b6ae2f0::t_5c5fd86d01721a 338-342
+convex/registrationCertificates.ts
+  s_781d026b6ae2f0::t_10262ef010b772 1-175
+convex/registrationHelpers.ts
+  s_781d026b6ae2f0::t_af709139254833 562
+convex/registrationMail.ts
+  s_781d026b6ae2f0::t_cde9b8cebef9a5 7,236-251,292-297,299
+convex/registrationOperations.ts
+  s_781d026b6ae2f0::t_931bd86a373286 22,476-478,510,598-600,1848,1861-1864,1872,1889-1899
+convex/registrationPortal.ts
+  s_781d026b6ae2f0::t_ec3dc2a530bfe7 8,18-20,80-83
+convex/registrationSchema.ts
+  s_781d026b6ae2f0::t_807963604a75a4 51,60,358,394,396
+shared/registration/certificate.ts
+  s_781d026b6ae2f0::t_b8ea4bcaad4262 1-2
+shared/registration/domain.ts
+  s_781d026b6ae2f0::t_58e5ff4a1b6831 127-143,145
+shared/registration/validators.ts
+  s_781d026b6ae2f0::t_f9549b41e597b1 29,41
+tests/registration/backend.test.ts
+  s_781d026b6ae2f0::t_6ec2eb6d4fd9de 5860-6002
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2957553d0519c9d42ca37141ef626e6d84cdd9af",
+  "prompts": {},
+  "sessions": {
+    "s_781d026b6ae2f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cc8a-2140-7b82-8b53-d1a046929650",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
