@@ -178,17 +178,21 @@ function RequestModal({
           </div>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Select
-            aria-label="Filter by status"
-            onChange={(e) => setStatus(e.target.value as RequestStatus)}
-            value={status}
-          >
-            {REQUEST_STATUSES.map((s) => (
-              <option className="capitalize" key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </Select>
+          <Field label="Status">
+            {(p) => (
+              <Select
+                {...p}
+                onChange={(e) => setStatus(e.target.value as RequestStatus)}
+                value={status}
+              >
+                {REQUEST_STATUSES.map((s) => (
+                  <option className="capitalize" key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
           <Field label="Organization">
             {(p) => (
               <div className="flex flex-col gap-2 sm:flex-row">
@@ -265,23 +269,19 @@ function RequestsPanel({
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Field label="Status">
-          {(p) => (
-            <Select
-              {...p}
-              className="w-44"
-              onChange={(e) => setStatus(e.target.value as RequestStatus | "")}
-              value={status}
-            >
-              <option value="">All requests</option>
-              {REQUEST_STATUSES.map((s) => (
-                <option className="capitalize" key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </Select>
-          )}
-        </Field>
+        <Select
+          aria-label="Filter requests by status"
+          className="w-44"
+          onChange={(e) => setStatus(e.target.value as RequestStatus | "")}
+          value={status}
+        >
+          <option value="">All requests</option>
+          {REQUEST_STATUSES.map((s) => (
+            <option className="capitalize" key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </Select>
         <p className="text-slate-500 text-sm">
           Requests arrive from the public{" "}
           <Link className="text-primary hover:underline" href="/group-training">

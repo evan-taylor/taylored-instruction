@@ -702,7 +702,7 @@ export function InvoicesPanel({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <Select
-            aria-label="Filter by status"
+            aria-label="Filter invoices by status"
             className="w-44"
             onChange={(e) => setStatus(e.target.value as InvoiceStatus | "")}
             value={status}
@@ -716,7 +716,7 @@ export function InvoicesPanel({
           {rows ? (
             <p className="text-slate-500 text-sm">
               {pluralize(open.length, "open invoice")} ·{" "}
-              <Money cents={outstanding} /> outstanding
+              <Money cents={outstanding} /> outstanding among the invoices shown
             </p>
           ) : null}
         </div>
