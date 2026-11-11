@@ -29,11 +29,20 @@ export const certificate = query({
     if (seat?.email !== identity || !seat.sessionId) {
       return null;
     }
-    const session = await ctx.db.get(seat.sessionId);
+    const [session, course] = await Promise.all([
+      ctx.db.get(seat.sessionId),
+      ctx.db.get(seat.courseId),
+    ]);
     if (!session || session.state === "canceled") {
       return null;
     }
-    return (await certificateStatus(ctx, seat)) ?? null;
+    return (
+      (await certificateStatus(
+        ctx,
+        seat,
+        session.overrides.outcomes ?? course?.settings.outcomes
+      )) ?? null
+    );
   },
 });
 
@@ -98,7 +107,11 @@ export const registrations = query({
           sessionId: session?._id,
           certificate:
             session && session.state !== "canceled"
-              ? await certificateStatus(ctx, seat)
+              ? await certificateStatus(
+                  ctx,
+                  seat,
+                  session.overrides.outcomes ?? course?.settings.outcomes
+                )
               : undefined,
           materials: entitlements.map((e) => ({
             id: e._id,

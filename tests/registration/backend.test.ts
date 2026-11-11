@@ -5883,7 +5883,6 @@ it("records an attendee's certificate and skips only their pending upload remind
             passingValue: "Complete",
             required: true,
             certificateRequired: true,
-            certificateMaterialId: f.material,
             version: 1,
           },
         ],
@@ -5938,6 +5937,25 @@ it("records an attendee's certificate and skips only their pending upload remind
       sessionId: f.session,
       paginationOpts,
     });
+
+  // This template change is read even when the saved seat rules are frozen.
+  expect((await liveCertificate())?.materialId).toBeUndefined();
+  await f.t.run(async (ctx) => {
+    const course = await ctx.db.get(f.course);
+    if (!course) {
+      throw new Error("Expected course");
+    }
+    await ctx.db.patch(f.course, {
+      settings: {
+        ...course.settings,
+        outcomes: course.settings.outcomes.map((rule) => ({
+          ...rule,
+          certificateMaterialId: f.material,
+        })),
+      },
+    });
+  });
+  expect((await liveCertificate())?.materialId).toBe(f.material);
 
   expect((await portal()).page.at(0)).toMatchObject({
     materials: [],

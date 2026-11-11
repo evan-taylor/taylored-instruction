@@ -35,7 +35,8 @@ export const certificateStatusValidator = v.object({
 
 export async function certificateStatus(
   ctx: QueryCtx,
-  seat: Doc<"registrationSeats">
+  seat: Doc<"registrationSeats">,
+  displayRules = seat.outcomeDefinitions
 ) {
   const rule = certificateRequirement(seat);
   if (rule) {
@@ -43,7 +44,11 @@ export async function certificateStatus(
     return {
       title: rule.title,
       uploaded: Boolean(outcome?.certificateFileId),
-      materialId: rule.certificateMaterialId,
+      // Display settings can change after an attendee's grading rules are frozen.
+      materialId: displayRules.find(
+        (displayRule) =>
+          displayRule.id === rule.id && displayRule.certificateRequired
+      )?.certificateMaterialId,
     };
   }
 }
