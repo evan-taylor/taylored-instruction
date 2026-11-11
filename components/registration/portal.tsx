@@ -442,13 +442,12 @@ function CertificateUpload({
   underMaterial: boolean;
 }) {
   const upload = useAction(api.registrationCertificates.upload);
-  const input = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const file = input.current?.files?.item(0);
     if (!file || pending) {
       return;
     }
@@ -456,6 +455,7 @@ function CertificateUpload({
       setError("The certificate must be 3 MB or smaller.");
       return;
     }
+    const form = event.currentTarget;
     setError("");
     setPending(true);
     try {
@@ -464,6 +464,8 @@ function CertificateUpload({
         name: file.name,
         bytes: await file.arrayBuffer(),
       });
+      form.reset();
+      setFile(null);
     } catch (cause) {
       setError(errorText(cause, "The certificate could not be uploaded."));
     } finally {
@@ -483,7 +485,7 @@ function CertificateUpload({
       ) : (
         <form className="space-y-3" onSubmit={submit}>
           <Field
-            hint="Upload your proof of online completion as a PDF, JPEG, or PNG (up to 3 MB). You can upload even if you got course access elsewhere."
+            hint="Choose a PDF, JPEG, or PNG (up to 3 MB), then select Upload certificate."
             label="Completion certificate"
             required
           >
@@ -491,17 +493,22 @@ function CertificateUpload({
               <input
                 {...props}
                 accept={CERTIFICATE_ACCEPT}
-                className="block w-full text-slate-900 text-sm"
+                className="block w-full min-w-0 cursor-pointer rounded-md text-base text-slate-900 file:mr-3 file:min-h-11 file:cursor-pointer file:rounded-md file:border file:border-primary file:bg-white file:px-4 file:font-medium file:text-primary hover:file:bg-slate-50 focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-50"
                 disabled={pending}
-                ref={input}
+                onChange={(event) => {
+                  setFile(event.currentTarget.files?.item(0) ?? null);
+                  setError("");
+                }}
                 required
                 type="file"
               />
             )}
           </Field>
-          <Button disabled={pending} size="sm" type="submit">
-            {pending ? "Uploading…" : "Upload certificate"}
-          </Button>
+          {file ? (
+            <Button disabled={pending} size="sm" type="submit">
+              {pending ? "Uploading…" : "Upload certificate"}
+            </Button>
+          ) : null}
           {error ? <Notice tone="danger">{error}</Notice> : null}
         </form>
       )}
