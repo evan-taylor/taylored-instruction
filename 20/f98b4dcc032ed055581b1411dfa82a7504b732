@@ -1,0 +1,19 @@
+components/registration/portal.tsx
+  s_781d026b6ae2f0::t_846e1ed69d45ad 445,458,467-468,488,496,498-501,507-511
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "20f98b4dcc032ed055581b1411dfa82a7504b732",
+  "prompts": {},
+  "sessions": {
+    "s_781d026b6ae2f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cc8a-2140-7b82-8b53-d1a046929650",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
