@@ -1,0 +1,27 @@
+bun.lock
+  s_5e1227f916f251::t_c734d59b191829 78,1416,1934,3562-3563,4270-4271
+components/registration/instructor.tsx
+  s_5e1227f916f251::t_3e79a554a32907 39,345
+components/registration/outcome-field.tsx
+  s_5e1227f916f251::t_2cc13e899b48ae 1-125
+package.json
+  s_5e1227f916f251::t_cacc6d57767590 87
+tests/registration/instructor-outcomes.test.tsx
+  s_5e1227f916f251::t_d4b9aded2f80a0 1-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6fb3a82897f813027f3aab031d1d652dbf840ead",
+  "prompts": {},
+  "sessions": {
+    "s_5e1227f916f251": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cbe9-af88-7ad1-bd33-553844187229",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
