@@ -491,6 +491,16 @@ function AuditRow({
       </TD>
       <TD className="text-slate-700 text-sm">
         <div className="break-words">{activityDetail(row.detail)}</div>
+        {row.detail.startsWith("{") ? (
+          <details className="mt-1 text-slate-500 text-xs">
+            <summary className="cursor-pointer select-none hover:text-slate-700">
+              Full record
+            </summary>
+            <pre className="mt-1 max-w-xl whitespace-pre-wrap break-all rounded-md bg-slate-50 p-2 font-mono">
+              {row.detail}
+            </pre>
+          </details>
+        ) : null}
         <div className="mt-0.5 flex items-center gap-0.5 text-slate-400 text-xs">
           <code title={row.entity}>{shortId(row.entity)}</code>
           <CopyButton
