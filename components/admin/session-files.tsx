@@ -39,6 +39,7 @@ type SessionFile = {
   size: number;
   uploadedAt: number;
   uploadedBy: string;
+  attendeeName?: string;
   url: string | null;
 };
 const PAGE = 50;
@@ -153,6 +154,11 @@ export function SessionFiles({
                     />
                     <span className="font-medium text-slate-900">
                       {file.name}
+                      {file.attendeeName ? (
+                        <span className="block font-normal text-slate-600 text-xs">
+                          Completion certificate for {file.attendeeName}
+                        </span>
+                      ) : null}
                     </span>
                   </div>
                 </TD>
@@ -271,7 +277,11 @@ export function SessionFiles({
       <ConfirmDialog
         confirmLabel="Delete file"
         danger
-        description="The file is removed from storage and cannot be recovered."
+        description={
+          removing?.attendeeName
+            ? "Deleting this file reopens the attendee’s certificate requirement."
+            : "The file is removed from storage and cannot be recovered."
+        }
         onClose={() => setRemoving(null)}
         onConfirm={async () => {
           if (!removing) {

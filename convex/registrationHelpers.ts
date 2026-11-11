@@ -559,6 +559,7 @@ export async function scheduleEmails(
         sessionId: session?._id,
         stepId: step.id,
         scheduleRevision: session?.revision,
+        onlyMissingCertificate: step.onlyMissingCertificate ?? false,
       });
     })
   );

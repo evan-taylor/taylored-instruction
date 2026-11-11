@@ -1,5 +1,5 @@
 "use client";
-import { useConvexAuth } from "convex/react";
+import { useAction, useConvexAuth } from "convex/react";
 import {
   CalendarDays,
   Download,
@@ -10,7 +10,7 @@ import {
   MapPin,
   Package,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import { SignInForm } from "@/components/auth/sign-in-form";
 import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { Field } from "@/components/ui/field";
 import {
   EmptyState,
   Notice,
@@ -29,8 +30,15 @@ import {
   Skeleton,
 } from "@/components/ui/page-header";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import { trackRegistration } from "@/lib/registration-analytics";
+import {
+  CERTIFICATE_ACCEPT,
+  MAX_CERTIFICATE_BYTES,
+} from "@/shared/registration/certificate";
 import { formatMoney } from "@/shared/registration/domain";
+import { errorText } from "./errors";
 import { formatMeeting, formatTime, shortZone } from "./format";
 
 type PortalView = "registrations" | "orders";
@@ -43,6 +51,7 @@ type PortalRow = {
   total?: number;
   refunded?: number;
   tax?: number;
+  certificate?: { title: string; uploaded: boolean };
   materials?: {
     id: string;
     title: string;
@@ -389,6 +398,81 @@ function MeetingRow({
   );
 }
 
+function CertificateUpload({
+  certificate,
+  seatId,
+}: {
+  certificate: NonNullable<PortalRow["certificate"]>;
+  seatId: Id<"registrationSeats">;
+}) {
+  const upload = useAction(api.registrationCertificates.upload);
+  const input = useRef<HTMLInputElement>(null);
+  const [uploaded, setUploaded] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const file = input.current?.files?.item(0);
+    if (!file || pending) {
+      return;
+    }
+    if (file.size > MAX_CERTIFICATE_BYTES) {
+      setError("The certificate must be 3 MB or smaller.");
+      return;
+    }
+    setError("");
+    setPending(true);
+    try {
+      await upload({
+        seatId,
+        name: file.name,
+        bytes: await file.arrayBuffer(),
+      });
+      setUploaded(true);
+    } catch (cause) {
+      setError(errorText(cause, "The certificate could not be uploaded."));
+    } finally {
+      setPending(false);
+    }
+  }
+
+  return (
+    <section className="space-y-2">
+      <h3 className="font-semibold text-slate-900 text-sm">
+        {certificate.title}
+      </h3>
+      {certificate.uploaded || uploaded ? (
+        <Notice tone="success">Completion certificate uploaded.</Notice>
+      ) : (
+        <form className="space-y-3" onSubmit={submit}>
+          <Field
+            hint="Finish the online course, then upload the PDF, JPEG, or PNG certificate (up to 3 MB)."
+            label="Completion certificate"
+            required
+          >
+            {(props) => (
+              <input
+                {...props}
+                accept={CERTIFICATE_ACCEPT}
+                className="block w-full text-slate-900 text-sm"
+                disabled={pending}
+                ref={input}
+                required
+                type="file"
+              />
+            )}
+          </Field>
+          <Button disabled={pending} size="sm" type="submit">
+            {pending ? "Uploading…" : "Upload certificate"}
+          </Button>
+          {error ? <Notice tone="danger">{error}</Notice> : null}
+        </form>
+      )}
+    </section>
+  );
+}
+
 function RegistrationCard({
   row,
   onMessage,
@@ -428,6 +512,12 @@ function RegistrationCard({
           </h3>
           <MaterialList onMessage={onMessage} row={row} />
         </section>
+        {row.certificate ? (
+          <CertificateUpload
+            certificate={row.certificate}
+            seatId={row.id as Id<"registrationSeats">}
+          />
+        ) : null}
       </CardContent>
     </Card>
   );

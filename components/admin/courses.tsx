@@ -277,6 +277,7 @@ function CourseEditorModal({
           <ConfigEditor
             onChange={setSettings}
             section="outcomes"
+            selfPaced={draft.delivery === "self-paced"}
             value={draft.settings}
           />
         </TabPanel>

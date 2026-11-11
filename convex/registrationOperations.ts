@@ -19,6 +19,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { certificateStatus } from "./registrationCertificates";
 import {
   activeSeatMaterials,
   assignCode,
@@ -472,6 +473,9 @@ export const roster = query({
       v.object({
         ...doc(schema, "registrationSeats").fields,
         completion: v.string(),
+        certificate: v.optional(
+          v.object({ title: v.string(), uploaded: v.boolean() })
+        ),
         attendance: v.array(
           v.object({ meetingId: v.string(), status: attendanceStatus })
         ),
@@ -503,6 +507,7 @@ export const roster = query({
         return {
           ...seat,
           completion: seatCompletion,
+          certificate: await certificateStatus(ctx, seat),
           attendance: rows.map(({ meetingId, status }) => ({
             meetingId,
             status,
@@ -589,6 +594,9 @@ export const recordOutcome = mutation({
           !definition.options.includes(args.value))
     ) {
       throw new ConvexError("Invalid outcome value");
+    }
+    if (definition.certificateRequired) {
+      throw new ConvexError("This outcome is recorded by a certificate upload");
     }
     const previous = await ctx.db
       .query("registrationOutcomes")
@@ -1837,6 +1845,7 @@ export const sessionFiles = query({
       size: v.number(),
       uploadedAt: v.number(),
       uploadedBy: v.string(),
+      attendeeName: v.optional(v.string()),
       url: v.union(v.string(), v.null()),
     })
   ),
@@ -1849,7 +1858,10 @@ export const sessionFiles = query({
       .paginate(args.paginationOpts);
     const page = await Promise.all(
       result.page.map(async (file) => {
-        const user = await ctx.db.get(file.uploadedBy);
+        const [user, attendee] = await Promise.all([
+          ctx.db.get(file.uploadedBy),
+          file.certificateSeatId ? ctx.db.get(file.certificateSeatId) : null,
+        ]);
         return {
           _id: file._id,
           name: file.name,
@@ -1857,6 +1869,7 @@ export const sessionFiles = query({
           size: file.size,
           uploadedAt: file.uploadedAt,
           uploadedBy: user?.email ?? "Staff",
+          attendeeName: attendee?.name,
           url: await ctx.storage.getUrl(file.storageId),
         };
       })
@@ -1873,6 +1886,17 @@ export const removeFile = mutation({
       return null;
     }
     const actor = await staff(ctx, file.sessionId);
+    if (file.certificateSeatId) {
+      const outcome = await ctx.db
+        .query("registrationOutcomes")
+        .withIndex("by_certificateFileId", (q) =>
+          q.eq("certificateFileId", file._id)
+        )
+        .unique();
+      if (outcome) {
+        await ctx.db.delete(outcome._id);
+      }
+    }
     await ctx.storage.delete(file.storageId);
     await ctx.db.delete(file._id);
     await audit(

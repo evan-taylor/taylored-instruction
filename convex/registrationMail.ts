@@ -4,6 +4,7 @@ import { calendar, formatSchedule } from "../shared/registration/schedule";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { certificateStatus } from "./registrationCertificates";
 import {
   activeSeatMaterials,
   materialJobEntitlementId,
@@ -236,6 +237,22 @@ async function stepAlreadyHandled(
   }
   return null;
 }
+async function certificateReminderEligible(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  seat: Doc<"registrationSeats"> | null,
+  session: Doc<"registrationSessions"> | null
+) {
+  if (!job.onlyMissingCertificate) {
+    return true;
+  }
+  if (!(seat && session) || seat.sessionId !== session._id) {
+    return false;
+  }
+  const certificate = await certificateStatus(ctx, seat);
+  return certificate?.uploaded === false;
+}
+
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
   returns: v.union(
@@ -278,8 +295,14 @@ export const claim = internalMutation({
     const invoiceOpen = await invoiceStillOpen(ctx, job);
     const paymentOpen = await paymentStillOpen(ctx, job);
     const offerOpen = await offerStillOpen(ctx, job);
+    const certificateEligible = await certificateReminderEligible(
+      ctx,
+      job,
+      seat,
+      session
+    );
     if (
-      !(invoiceOpen && offerOpen && paymentOpen) ||
+      !(invoiceOpen && offerOpen && paymentOpen && certificateEligible) ||
       (seat && seat.state !== "active" && !explicit) ||
       (session &&
         ((session.state === "canceled" && !explicit) ||

@@ -335,6 +335,11 @@ export const saveCourse = mutation({
       throw new ConvexError("Duplicate the template to change delivery type");
     }
     if (value.delivery === "self-paced") {
+      if (
+        value.settings.outcomes.some((outcome) => outcome.certificateRequired)
+      ) {
+        throw new ConvexError("Certificate uploads require a scheduled course");
+      }
       const materials = await Promise.all(
         value.settings.materials.map((m) => ctx.db.get(m.materialId))
       );

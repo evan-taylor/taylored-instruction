@@ -5857,3 +5857,146 @@ it("includes retained cancellation emails and distinguishes removed material his
   ).toBe(false);
   expect(history.materials.at(0)?.state).toBe("canceled");
 });
+
+it("records an attendee's certificate and skips only their pending upload reminder", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        tuition: 0,
+        outcomes: [
+          {
+            id: "online",
+            title: "HeartCode BLS",
+            type: "category",
+            options: ["Complete"],
+            passingValue: "Complete",
+            required: true,
+            certificateRequired: true,
+            version: 1,
+          },
+        ],
+        emails: [
+          {
+            id: "certificate",
+            anchor: "first",
+            offsetMinutes: -60,
+            subject: "Upload your certificate",
+            body: "Bring proof of online completion.",
+            onlyMissingCertificate: true,
+          },
+        ],
+      },
+    })
+  );
+  const address = "student@example.test";
+  const otherAddress = "second@example.test";
+  const order = await f.t.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    attendees: [
+      seat(address),
+      { ...seat(otherAddress), name: "Other student" },
+    ],
+  });
+  const seats = await f.adminClient.query(
+    api.registrationOperations.orderSeats,
+    {
+      orderId: order.orderId,
+    }
+  );
+  const student = seats.find((entry) => entry.email === address);
+  const other = seats.find((entry) => entry.email === otherAddress);
+  if (!(student && other)) {
+    throw new Error("Expected both attendees");
+  }
+  const user = await f.t.run((ctx) =>
+    ctx.db.insert("users", {
+      email: address,
+      emailVerificationTime: Date.now(),
+    })
+  );
+  const attendee = f.t.withIdentity({ subject: `${user}|session` });
+  const paginationOpts = { numItems: 10, cursor: null };
+  const portal = () =>
+    attendee.query(api.registrationPortal.registrations, { paginationOpts });
+  const files = () =>
+    f.instructorClient.query(api.registrationOperations.sessionFiles, {
+      sessionId: f.session,
+      paginationOpts,
+    });
+
+  expect((await portal()).page.at(0)?.certificate).toEqual({
+    title: "HeartCode BLS",
+    uploaded: false,
+  });
+  const bytes = new TextEncoder().encode("%PDF-1.7\n%%EOF").buffer;
+  const upload = { seatId: student._id, name: "heartcode.pdf", bytes };
+  await expect(
+    f.outsiderClient.action(api.registrationCertificates.upload, upload)
+  ).rejects.toThrow("Registration unavailable");
+  await expect(
+    attendee.action(api.registrationCertificates.upload, {
+      ...upload,
+      bytes: new TextEncoder().encode("<html>not a certificate</html>").buffer,
+    })
+  ).rejects.toThrow("Choose a PDF, JPEG, or PNG certificate");
+  await Promise.all([
+    attendee.action(api.registrationCertificates.upload, upload),
+    attendee.action(api.registrationCertificates.upload, upload),
+  ]);
+  expect((await portal()).page.at(0)?.certificate?.uploaded).toBe(true);
+  const listed = (await files()).page;
+  expect(listed).toHaveLength(1);
+  const file = listed.at(0);
+  if (!file) {
+    throw new Error("Expected the uploaded certificate");
+  }
+  expect(file).toMatchObject({
+    name: "heartcode.pdf",
+    type: "application/pdf",
+    attendeeName: student.name,
+  });
+  const roster = await f.instructorClient.query(
+    api.registrationOperations.roster,
+    { sessionId: f.session, paginationOpts }
+  );
+  expect(roster.page.find((entry) => entry._id === student._id)).toMatchObject({
+    completion: "complete",
+    certificate: { uploaded: true },
+  });
+  expect(roster.page.find((entry) => entry._id === other._id)).toMatchObject({
+    completion: "incomplete",
+    certificate: { uploaded: false },
+  });
+
+  const reminders = await f.t.run((ctx) =>
+    ctx.db.query("registrationJobs").collect()
+  );
+  const uploaded = reminders.find(
+    (job) => job.stepId === "certificate" && job.seatId === student._id
+  );
+  const missing = reminders.find(
+    (job) => job.stepId === "certificate" && job.seatId === other._id
+  );
+  if (!(uploaded && missing)) {
+    throw new Error("Expected scheduled certificate reminders");
+  }
+  expect(
+    await f.t.mutation(internal.registrationMail.claim, { id: uploaded._id })
+  ).toBeNull();
+  expect(
+    await f.t.mutation(internal.registrationMail.claim, { id: missing._id })
+  ).toMatchObject({ recipient: otherAddress });
+
+  await f.instructorClient.mutation(api.registrationOperations.removeFile, {
+    id: file._id,
+  });
+  expect((await files()).page).toHaveLength(0);
+  expect((await portal()).page.at(0)?.certificate?.uploaded).toBe(false);
+  expect(
+    await f.instructorClient.query(api.registrationOperations.outcomeState, {
+      seatId: student._id,
+    })
+  ).toMatchObject({ completion: "incomplete", values: [] });
+});

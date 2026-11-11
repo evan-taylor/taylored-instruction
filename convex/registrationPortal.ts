@@ -5,6 +5,7 @@ import {
 import { ConvexError, v } from "convex/values";
 import { calendar } from "../shared/registration/schedule";
 import { mutation, query } from "./_generated/server";
+import { certificateStatus } from "./registrationCertificates";
 import { activeSeatMaterials, portalEmail } from "./registrationHelpers";
 
 const portalSeat = v.object({
@@ -14,6 +15,9 @@ const portalSeat = v.object({
   title: v.string(),
   sessionId: v.optional(v.id("registrationSessions")),
   timeZone: v.optional(v.string()),
+  certificate: v.optional(
+    v.object({ title: v.string(), uploaded: v.boolean() })
+  ),
   materials: v.array(
     v.object({
       id: v.id("registrationEntitlements"),
@@ -73,6 +77,10 @@ export const registrations = query({
           timeZone: session?.timeZone,
           title: session?.title ?? course?.title ?? "Course",
           sessionId: session?._id,
+          certificate:
+            session && session.state !== "canceled"
+              ? await certificateStatus(ctx, seat)
+              : undefined,
           materials: entitlements.map((e) => ({
             id: e._id,
             title: e.title,
