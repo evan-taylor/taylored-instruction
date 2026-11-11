@@ -1,0 +1,16 @@
+components/registration/public.tsx
+  h_83bc5aaa251b9b 1523-1525,1577-1579,1665
+docs/registration-analytics.md
+  h_83bc5aaa251b9b 61-62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b4c0e4843c784f951a1e1bbb1cb256e8cc15a5e",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}

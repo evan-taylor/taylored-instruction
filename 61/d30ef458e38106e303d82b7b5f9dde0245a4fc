@@ -1,0 +1,26 @@
+.github/workflows/cleanup-preview-webhooks.yml
+  h_83bc5aaa251b9b 1-35
+docs/registration-deployment.md
+  h_83bc5aaa251b9b 50-84
+scripts/cleanup-stripe-previews.ts
+  h_83bc5aaa251b9b 1-15
+scripts/stripe-preview-lifecycle.ts
+  h_83bc5aaa251b9b 1-185
+scripts/vercel-build.ts
+  h_83bc5aaa251b9b 3-8,119-130,132,139,142-158,165,167-171
+tests/registration/stripe-preview-build.test.ts
+  h_83bc5aaa251b9b 1-117
+tests/registration/stripe-preview-lifecycle.test.ts
+  h_83bc5aaa251b9b 1-222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61d30ef458e38106e303d82b7b5f9dde0245a4fc",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}

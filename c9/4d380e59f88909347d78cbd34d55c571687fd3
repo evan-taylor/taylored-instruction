@@ -1,0 +1,36 @@
+.env.example
+  h_83bc5aaa251b9b 1-6,16,42-43
+AGENTS.md
+  h_83bc5aaa251b9b 329,333,341,346-347,351,360-362
+CLAUDE.md
+  h_83bc5aaa251b9b 11-13,16-17,21
+docs/development.md
+  h_83bc5aaa251b9b 1-121
+docs/plans/registration-validation.md
+  h_83bc5aaa251b9b 25,31,109
+docs/registration-deployment.md
+  h_83bc5aaa251b9b 70-72
+instrumentation-client.ts
+  h_83bc5aaa251b9b 43
+next.config.js
+  h_83bc5aaa251b9b 16-19
+package.json
+  h_83bc5aaa251b9b 9-10,16
+playwright.config.ts
+  h_83bc5aaa251b9b 8
+sentry.edge.config.ts
+  h_83bc5aaa251b9b 15
+sentry.server.config.ts
+  h_83bc5aaa251b9b 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c94d380e59f88909347d78cbd34d55c571687fd3",
+  "prompts": {},
+  "humans": {
+    "h_83bc5aaa251b9b": {
+      "author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
