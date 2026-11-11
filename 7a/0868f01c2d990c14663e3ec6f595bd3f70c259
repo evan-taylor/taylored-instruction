@@ -1,0 +1,31 @@
+components/admin/courses.tsx
+  s_781d026b6ae2f0::t_e7fca9a9877a82 68-86,172,181-183
+components/registration/portal.tsx
+  s_781d026b6ae2f0::t_d629ba845b2e73 2,402,410-414,443-445,451
+convex/registration.ts
+  s_781d026b6ae2f0::t_a9a75eaf9f8cc0 339-342,344-346
+convex/registrationPortal.ts
+  s_781d026b6ae2f0::t_252abb02a6fbfd 11-32,40
+lib/mcp/shapes.ts
+  s_781d026b6ae2f0::t_c71e32b15a48c0 79,114
+tests/registration/backend.test.ts
+  s_781d026b6ae2f0::t_ad4f382113beda 5923-5924,5951-5956,6005
+tests/registration/mcp-server.test.ts
+  s_781d026b6ae2f0::t_e8b5ee7769cfe2 197-217,240-241
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a0868f01c2d990c14663e3ec6f595bd3f70c259",
+  "prompts": {},
+  "sessions": {
+    "s_781d026b6ae2f0": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1cc8a-2140-7b82-8b53-d1a046929650",
+        "model": "unknown"
+      },
+      "human_author": "Evan Taylor <eltaylor1104@gmail.com>"
+    }
+  }
+}
