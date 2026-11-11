@@ -130,3 +130,108 @@ export function recurrenceFromMeetings(input: {
     }),
   });
 }
+
+type ScheduledMeeting = {
+  start: number;
+  end: number;
+  location: string;
+  instructions?: string;
+};
+
+const INTL_SPACES = /[\u2009\u202f]/gu;
+
+function zoneName(ms: number, timeZone: string) {
+  return (
+    new Intl.DateTimeFormat("en-US", { timeZone, timeZoneName: "short" })
+      .formatToParts(ms)
+      .find((part) => part.type === "timeZoneName")?.value ?? timeZone
+  );
+}
+
+function groupBy<T>(items: T[], key: (item: T) => string) {
+  const groups: T[][] = [];
+  let group: T[] = [];
+  let previous: string | undefined;
+  for (const item of items) {
+    const current = key(item);
+    if (group.length === 0 || current !== previous) {
+      group = [];
+      groups.push(group);
+    }
+    group.push(item);
+    previous = current;
+  }
+  return groups;
+}
+
+function placeLines([head, ...rest]: ScheduledMeeting[]) {
+  if (!head) {
+    return [];
+  }
+  const notes = new Set(
+    [head, ...rest]
+      .map((m) => m.instructions?.trim() ?? "")
+      .filter((note) => note.length > 0)
+  );
+  return [head.location, ...notes];
+}
+
+/**
+ * A compact, human schedule for emails: one line per class day with the
+ * time zone and location stated once instead of on every meeting.
+ */
+export function formatSchedule(meetings: ScheduledMeeting[], timeZone: string) {
+  const sorted = [...meetings].sort((a, b) => a.start - b.start);
+  const [first] = sorted;
+  if (!first) {
+    return "";
+  }
+  const dayKey = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    dateStyle: "short",
+  });
+  const time = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const zones = new Set(sorted.map((m) => zoneName(m.start, timeZone)));
+  const zoneEach = zones.size > 1;
+  const zoneLabel = zoneEach ? "" : ` ${[...zones].join("")}`;
+  const range = (m: ScheduledMeeting) =>
+    `${time.formatRange(m.start, m.end)}${zoneEach ? ` ${zoneName(m.start, timeZone)}` : ""}`;
+  const days = groupBy(sorted, (m) => dayKey.format(m.start));
+  let lines: string[];
+  if (days.length === 1) {
+    lines = [
+      new Intl.DateTimeFormat("en-US", { timeZone, dateStyle: "full" }).format(
+        first.start
+      ),
+      `${sorted.map(range).join(", ")}${zoneLabel}`,
+      ...placeLines(sorted),
+    ];
+  } else {
+    const weekday = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    const dayLine = (day: ScheduledMeeting[]) =>
+      `${weekday.format((day[0] ?? first).start)} · ${day.map(range).join(", ")}`;
+    const span = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }).formatRange(first.start, Math.max(...sorted.map((m) => m.start)));
+    lines = [
+      `${span} · ${days.length} days${zoneEach ? "" : ` ·${zoneLabel}`}`,
+      ...groupBy(sorted, (m) => m.location).flatMap((place) => [
+        ...groupBy(place, (m) => dayKey.format(m.start)).map(dayLine),
+        ...placeLines(place),
+      ]),
+    ];
+  }
+  return lines.join("\n").replace(INTL_SPACES, " ");
+}

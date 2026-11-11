@@ -498,8 +498,13 @@ export const saveSession = mutation({
               kind: "email",
               recipient: user.email,
               subject: `Instructor schedule: ${value.title}`,
-              body: `Your assignment or schedule has changed. Meetings: ${values.meetings.map((m) => `${new Date(m.start).toISOString()} ${m.location}`).join("; ")}. View your assigned-session roster.`,
+              body: `Your teaching assignment or schedule for ${value.title} has changed. The latest schedule is below, and your roster has the attendee list.`,
               due: Date.now(),
+              sessionId: saved,
+              link: {
+                label: "Open your session roster",
+                url: `/instructor/sessions/${saved}`,
+              },
             });
           }
         })

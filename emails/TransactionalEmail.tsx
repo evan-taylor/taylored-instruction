@@ -72,7 +72,7 @@ TransactionalEmail.PreviewProps = {
     {
       label: "Your schedule",
       value:
-        "Saturday, November 14, 2026 at 9:00 AM – 1:00 PM (America/Los_Angeles)\n2101 E 4th Plain Blvd, Vancouver, WA",
+        "Saturday, November 14, 2026\n9:00 AM – 1:00 PM PST\n2101 E 4th Plain Blvd, Vancouver, WA",
     },
   ],
   note: "Your calendar invitation is attached.",

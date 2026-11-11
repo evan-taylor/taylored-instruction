@@ -143,7 +143,7 @@ export const advance = internalMutation({
           kind: "email",
           recipient: entry.email,
           subject: `A seat is available: ${session.title}`,
-          body: `An opening is reserved until ${new Date(expires).toISOString()}. Register at /s/${session.code}#invitation=${token}`,
+          body: `An opening is reserved for you until ${new Intl.DateTimeFormat("en-US", { timeZone: session.timeZone, weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(expires)}. Register at /s/${session.code}#invitation=${token}`,
           due: Date.now(),
           sessionId: session._id,
         });
