@@ -113,3 +113,20 @@ it("keeps each venue beside its times on a single day", () => {
     ].join("\n")
   );
 });
+
+it("labels both ends of a meeting that crosses a daylight-saving change", () => {
+  expect(
+    formatSchedule(
+      [
+        {
+          start: at("2026-11-01T07:30:00Z"),
+          end: at("2026-11-01T10:30:00Z"),
+          location: ymca,
+        },
+      ],
+      zone
+    )
+  ).toBe(
+    ["Sunday, November 1, 2026", "12:30 AM PDT – 2:30 AM PST", ymca].join("\n")
+  );
+});

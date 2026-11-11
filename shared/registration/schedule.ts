@@ -195,11 +195,25 @@ export function formatSchedule(meetings: ScheduledMeeting[], timeZone: string) {
     hour: "numeric",
     minute: "2-digit",
   });
-  const zones = new Set(sorted.map((m) => zoneName(m.start, timeZone)));
+  const zones = new Set(
+    sorted.flatMap((m) => [
+      zoneName(m.start, timeZone),
+      zoneName(m.end, timeZone),
+    ])
+  );
   const zoneEach = zones.size > 1;
   const zoneLabel = zoneEach ? "" : ` ${[...zones].join("")}`;
-  const range = (m: ScheduledMeeting) =>
-    `${time.formatRange(m.start, m.end)}${zoneEach ? ` ${zoneName(m.start, timeZone)}` : ""}`;
+  const range = (m: ScheduledMeeting) => {
+    if (!zoneEach) {
+      return time.formatRange(m.start, m.end);
+    }
+    const startZone = zoneName(m.start, timeZone);
+    const endZone = zoneName(m.end, timeZone);
+    if (startZone === endZone) {
+      return `${time.formatRange(m.start, m.end)} ${startZone}`;
+    }
+    return `${time.format(m.start)} ${startZone} – ${time.format(m.end)} ${endZone}`;
+  };
   const days = groupBy(sorted, (m) => dayKey.format(m.start));
   let lines: string[];
   if (days.length === 1) {
