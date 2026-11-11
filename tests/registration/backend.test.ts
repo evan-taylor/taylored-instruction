@@ -418,6 +418,107 @@ describe("Registration transactions", () => {
       })
     ).rejects.toThrow("Verified");
   });
+  it("records bulk attendance for the chosen meeting and rejects invalid batches", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [
+        seat("one@example.test"),
+        seat("two@example.test"),
+        seat("three@example.test"),
+      ],
+    });
+    const rosterArgs = {
+      sessionId: f.session,
+      paginationOpts: { cursor: null, numItems: 20 },
+    };
+    const [first, second, canceled] = (
+      await f.instructorClient.query(
+        api.registrationOperations.roster,
+        rosterArgs
+      )
+    ).page;
+    if (!(first && second && canceled)) {
+      throw new Error("Missing attendees");
+    }
+    await f.t.run(async (ctx) => {
+      const session = await ctx.db.get(f.session);
+      const meeting = session?.meetings.at(0);
+      if (!meeting) {
+        throw new Error("Missing meeting");
+      }
+      await ctx.db.patch(f.session, {
+        meetings: [meeting, { ...meeting, id: "second", sequence: 1 }],
+      });
+      await ctx.db.patch(canceled._id, { state: "canceled" });
+    });
+    await f.instructorClient.mutation(api.registrationOperations.attendance, {
+      seatId: first._id,
+      meetingId: "first",
+      status: "absent",
+    });
+
+    const batch = {
+      sessionId: f.session,
+      seatIds: [first._id, second._id],
+      meetingId: "second",
+      status: "present" as const,
+    };
+    await expect(
+      f.outsiderClient.mutation(
+        api.registrationOperations.bulkAttendance,
+        batch
+      )
+    ).rejects.toThrow("Forbidden");
+    await expect(
+      f.instructorClient.mutation(api.registrationOperations.bulkAttendance, {
+        ...batch,
+        meetingId: "missing",
+      })
+    ).rejects.toThrow("Meeting not found");
+    await expect(
+      f.instructorClient.mutation(api.registrationOperations.bulkAttendance, {
+        ...batch,
+        seatIds: [first._id, canceled._id],
+      })
+    ).rejects.toThrow("active attendees");
+    expect(
+      (
+        await f.instructorClient.query(
+          api.registrationOperations.roster,
+          rosterArgs
+        )
+      ).page.find((row) => row._id === first._id)?.attendance
+    ).toEqual([{ meetingId: "first", status: "absent" }]);
+
+    await f.instructorClient.mutation(
+      api.registrationOperations.bulkAttendance,
+      batch
+    );
+    await f.instructorClient.mutation(
+      api.registrationOperations.bulkAttendance,
+      batch
+    );
+    const rows = (
+      await f.instructorClient.query(
+        api.registrationOperations.roster,
+        rosterArgs
+      )
+    ).page;
+    expect(rows.find((row) => row._id === first._id)?.attendance).toEqual([
+      { meetingId: "first", status: "absent" },
+      { meetingId: "second", status: "present" },
+    ]);
+    expect(rows.find((row) => row._id === second._id)?.attendance).toEqual([
+      { meetingId: "second", status: "present" },
+    ]);
+    expect(rows.find((row) => row._id === canceled._id)?.attendance).toEqual(
+      []
+    );
+  });
   it("free settlement creates missing entitlements and restock assigns one code once", async () => {
     const f = await fixture();
     await f.t.run(async (ctx) => {

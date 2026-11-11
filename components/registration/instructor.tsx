@@ -25,6 +25,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import { BATCH } from "@/shared/registration/domain";
 import { AgencyRosterExport } from "./agency-roster-export";
 import { useAssignedSessions } from "./catalog";
 import { errorText } from "./errors";
@@ -36,10 +37,18 @@ import {
   shortZone,
 } from "./format";
 
-type Seat = Doc<"registrationSeats"> & { completion: string };
+type AttendanceStatus = Doc<"registrationAttendance">["status"];
+type Seat = Doc<"registrationSeats"> & {
+  attendance: Pick<Doc<"registrationAttendance">, "meetingId" | "status">[];
+  completion: string;
+};
 const EMAIL_BATCH = 50;
-type Meeting = Doc<"registrationSessions">["meetings"][number];
-type AttendanceStatus = "present" | "absent" | "not-recorded";
+const ATTENDANCE_CHOICES = [
+  { status: "present", label: "Present" },
+  { status: "absent", label: "Absent" },
+  { status: "not-recorded", label: "Clear" },
+] as const;
+const ROSTER_PAGE_SIZE = 50;
 
 /* ---------------------------- Session list --------------------------- */
 
@@ -178,214 +187,241 @@ function AnswerList({ seat }: { seat: Seat }) {
   );
 }
 
-function AttendanceControls({
+function AttendanceCell({
   seat,
-  meetings,
-  timeZone,
-  attendance,
-  onError,
+  meetingId,
+  bulkSaving,
 }: {
   seat: Seat;
-  meetings: Meeting[];
-  timeZone?: string;
-  attendance: Doc<"registrationAttendance">[] | undefined;
-  onError: (message: string) => void;
+  meetingId: string;
+  bulkSaving: boolean;
 }) {
   const record = useMutation(api.registrationOperations.attendance);
-  if (!meetings.length) {
-    return <p className="text-slate-500 text-sm">No meetings scheduled.</p>;
-  }
+  const [pending, setPending] = useState<AttendanceStatus>();
+  const [error, setError] = useState("");
+  const current =
+    seat.attendance.find((row) => row.meetingId === meetingId)?.status ??
+    "not-recorded";
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {meetings.map((m) => (
-        <Field
-          key={m.id}
-          label={`${formatMeeting(m, timeZone)}${timeZone ? ` ${shortZone(timeZone, m.start)}` : ""}`}
-        >
-          {(props) => (
-            <Select
-              {...props}
-              onChange={async (e) => {
-                try {
-                  await record({
-                    seatId: seat._id,
-                    meetingId: m.id,
-                    status: e.target.value as AttendanceStatus,
-                  });
-                } catch (error) {
-                  onError(errorText(error));
-                }
-              }}
-              value={
-                attendance?.find((a) => a.meetingId === m.id)?.status ??
-                "not-recorded"
+    <>
+      <div className="flex flex-wrap items-center gap-1">
+        {ATTENDANCE_CHOICES.map(({ status, label }) => (
+          <Button
+            aria-label={`${label} attendance for ${seat.name}`}
+            aria-pressed={
+              status === "not-recorded" ? undefined : current === status
+            }
+            disabled={bulkSaving || pending !== undefined}
+            key={status}
+            onClick={async () => {
+              if (current === status) {
+                return;
               }
-            >
-              <option value="not-recorded">Not recorded</option>
-              <option value="present">Present</option>
-              <option value="absent">Absent</option>
-            </Select>
-          )}
-        </Field>
-      ))}
-    </div>
+              setPending(status);
+              setError("");
+              try {
+                await record({ seatId: seat._id, meetingId, status });
+              } catch (failure) {
+                setError(errorText(failure));
+              } finally {
+                setPending(undefined);
+              }
+            }}
+            size="xs"
+            type="button"
+            variant={
+              current === status && status !== "not-recorded"
+                ? "primary"
+                : "secondary"
+            }
+          >
+            {label}
+          </Button>
+        ))}
+      </div>
+      <span aria-live="polite" className="text-slate-500 text-xs">
+        {pending ? "Saving…" : null}
+        {!pending && current === "not-recorded" ? "Not recorded" : null}
+      </span>
+      <ResultNotice message={error} tone="danger" />
+    </>
   );
 }
 
-function OutcomeForm({
-  seat,
+function OutcomeField({
+  seatId,
   definition,
   current,
-  onResult,
 }: {
-  seat: Seat;
+  seatId: Seat["_id"];
   definition: Seat["outcomeDefinitions"][number];
   current: string | number | undefined;
-  onResult: (message: string) => void;
 }) {
   const record = useMutation(api.registrationOperations.recordOutcome);
-  const [busy, setBusy] = useState(false);
-  const label = `${definition.title} ${definition.required ? "(required)" : "(informational)"}`;
+  const [draft, setDraft] = useState<string>();
+  const [status, setStatus] = useState("");
+  const [error, setError] = useState("");
+  const saving = useRef(false);
+  const percentage = definition.type === "percentage";
+  const value = draft ?? String(current ?? "");
+
+  async function save(next: string | number) {
+    if (saving.current || next === current) {
+      return;
+    }
+    saving.current = true;
+    setError("");
+    setStatus("Saving…");
+    try {
+      await record({ seatId, fieldId: definition.id, value: next });
+      setDraft(undefined);
+      setStatus("Saved");
+    } catch (failure) {
+      if (!percentage) {
+        setDraft(undefined);
+      }
+      setStatus("");
+      setError(`Couldn’t save outcome. ${errorText(failure)}`);
+    } finally {
+      saving.current = false;
+    }
+  }
+
+  async function saveScore(input: HTMLInputElement) {
+    if (draft === undefined || saving.current) {
+      return;
+    }
+    if (input.validity.badInput || (input.value && !input.validity.valid)) {
+      setError("Enter a score from 0 to 100.");
+      return;
+    }
+    if (!input.value || input.valueAsNumber === current) {
+      setDraft(undefined);
+      setError("");
+      return;
+    }
+    await save(input.valueAsNumber);
+  }
+
   return (
-    <form
-      className="flex flex-wrap items-end gap-3"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const value = new FormData(e.currentTarget).get("value");
-        setBusy(true);
-        try {
-          await record({
-            seatId: seat._id,
-            fieldId: definition.id,
-            value:
-              definition.type === "percentage" ? Number(value) : String(value),
-          });
-          onResult("Outcome saved");
-        } catch (error) {
-          onResult(errorText(error));
-        } finally {
-          setBusy(false);
-        }
-      }}
-    >
+    <div>
       <Field
-        className="min-w-48 flex-1"
+        error={error}
         hint={
-          definition.type === "percentage" && definition.minimum !== undefined
+          percentage && definition.minimum !== undefined
             ? `Passing score: ${definition.minimum}% or higher`
             : undefined
         }
-        label={label}
+        label={`${definition.title} ${definition.required ? "(required)" : "(informational)"}`}
       >
         {(props) =>
-          definition.type === "percentage" ? (
+          percentage ? (
             <TextInput
               {...props}
-              defaultValue={current === undefined ? "" : String(current)}
               max={100}
               min={0}
-              name="value"
-              required
+              onBlur={(event) => saveScore(event.currentTarget)}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                setError("");
+                setStatus("");
+              }}
+              onKeyDown={async (event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  await saveScore(event.currentTarget);
+                }
+              }}
+              readOnly={status === "Saving…"}
+              step="any"
               type="number"
+              value={value}
             />
           ) : (
             <Select
               {...props}
-              defaultValue={current === undefined ? "" : String(current)}
-              name="value"
-              required
+              disabled={status === "Saving…"}
+              onChange={async (event) => {
+                const choice = event.target.value;
+                setDraft(choice);
+                await save(choice);
+              }}
+              value={value}
             >
-              <option value="">Choose…</option>
-              {definition.options.map((o) => (
-                <option key={o}>{o}</option>
+              <option disabled value="">
+                Choose…
+              </option>
+              {definition.options.map((option) => (
+                <option key={option}>{option}</option>
               ))}
             </Select>
           )
         }
       </Field>
-      <Button disabled={busy} size="sm" type="submit" variant="secondary">
-        {busy ? "Saving…" : "Save outcome"}
-      </Button>
-    </form>
+      <span aria-live="polite" className="text-slate-500 text-xs">
+        {status}
+      </span>
+    </div>
   );
 }
 
 function SeatDetails({
   seat,
-  meetings,
-  timeZone,
   data,
 }: {
   seat: Seat;
-  meetings: Meeting[];
-  timeZone?: string;
-  data:
-    | {
-        values: Doc<"registrationOutcomes">[];
-        attendance: Doc<"registrationAttendance">[];
-        completion: string;
-      }
-    | undefined;
+  data: { values: Doc<"registrationOutcomes">[] } | undefined;
 }) {
-  const [message, setMessage] = useState("");
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section className="space-y-2">
         <h3 className="font-semibold text-slate-900 text-sm">Answers</h3>
         <AnswerList seat={seat} />
       </section>
-      <section className="space-y-2">
-        <h3 className="font-semibold text-slate-900 text-sm">Attendance</h3>
-        <AttendanceControls
-          attendance={data?.attendance}
-          meetings={meetings}
-          onError={setMessage}
-          seat={seat}
-          timeZone={timeZone}
-        />
-      </section>
-      <section className="space-y-3 lg:col-span-2">
+      <section className="space-y-3">
         <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
-        {seat.outcomeDefinitions.length ? (
-          seat.outcomeDefinitions.map((d) => (
-            <OutcomeForm
+        {data?.values &&
+          seat.outcomeDefinitions.map((definition) => (
+            <OutcomeField
               current={
-                data?.values.find(
-                  (v) => v.fieldId === d.id && v.version === d.version
+                data.values.find(
+                  (value) =>
+                    value.fieldId === definition.id &&
+                    value.version === definition.version
                 )?.value
               }
-              definition={d}
-              key={`${d.id}:${d.version}:${JSON.stringify(data?.values.find((v) => v.fieldId === d.id && v.version === d.version)?.value)}`}
-              onResult={setMessage}
-              seat={seat}
+              definition={definition}
+              key={`${definition.id}:${definition.version}`}
+              seatId={seat._id}
             />
-          ))
-        ) : (
+          ))}
+        {!data && seat.outcomeDefinitions.length > 0 ? (
+          <p role="status">Loading outcomes…</p>
+        ) : null}
+        {seat.outcomeDefinitions.length === 0 ? (
           <p className="text-slate-500 text-sm">
             This course has no outcome fields.
           </p>
-        )}
+        ) : null}
         <p className="text-slate-500 text-xs">
           Completion overrides are handled by administrators.
         </p>
       </section>
-      <div className="lg:col-span-2">
-        <ResultNotice message={message} />
-      </div>
     </div>
   );
 }
 
 function RosterRow({
   seat,
-  meetings,
-  timeZone,
+  meetingId,
+  bulkSaving,
   selected,
   onSelect,
 }: {
   seat: Seat;
-  meetings: Meeting[];
-  timeZone?: string;
+  meetingId: string | undefined;
+  bulkSaving: boolean;
   selected: boolean;
   onSelect: (checked: boolean) => void;
 }) {
@@ -418,8 +454,18 @@ function RosterRow({
             {completionLabel(seat.completion)}
           </Badge>
         </TD>
+        {meetingId ? (
+          <TD>
+            <AttendanceCell
+              bulkSaving={bulkSaving}
+              meetingId={meetingId}
+              seat={seat}
+            />
+          </TD>
+        ) : null}
         <TD className="text-right">
           <Button
+            aria-expanded={open}
             aria-label={`${open ? "Hide" : "Show"} details for ${seat.name}`}
             onClick={() => setOpen(!open)}
             size="xs"
@@ -437,13 +483,8 @@ function RosterRow({
       </TR>
       {open ? (
         <TR className="hover:bg-white">
-          <TD className="bg-slate-50/40 px-6 py-5" colSpan={5}>
-            <SeatDetails
-              data={data}
-              meetings={meetings}
-              seat={seat}
-              timeZone={timeZone}
-            />
+          <TD className="bg-slate-50/40 px-6 py-5" colSpan={meetingId ? 6 : 5}>
+            <SeatDetails data={data} seat={seat} />
           </TD>
         </TR>
       ) : null}
@@ -580,6 +621,118 @@ async function downloadRoster(fetchPage: FetchPage) {
   URL.revokeObjectURL(url);
 }
 
+function AttendanceToolbar({
+  attendanceSeats,
+  bulkSaving,
+  meetingId,
+  meetings,
+  onMeetingChange,
+  onSavingChange,
+  sessionId,
+  timeZone,
+}: {
+  attendanceSeats: Id<"registrationSeats">[];
+  bulkSaving: boolean;
+  meetingId: string;
+  meetings: Doc<"registrationSessions">["meetings"];
+  onMeetingChange: (meetingId: string) => void;
+  onSavingChange: (saving: boolean) => void;
+  sessionId: Id<"registrationSessions">;
+  timeZone?: string;
+}) {
+  const recordBulk = useMutation(api.registrationOperations.bulkAttendance);
+  const [attendanceResult, setAttendanceResult] = useState<{
+    message: string;
+    tone: "danger" | "success";
+  }>();
+  async function markSelected(status: "present" | "absent") {
+    if (!attendanceSeats.length || bulkSaving) {
+      return;
+    }
+    onSavingChange(true);
+    setAttendanceResult(undefined);
+    let processed = 0;
+    try {
+      while (processed < attendanceSeats.length) {
+        // biome-ignore lint/performance/noAwaitInLoops: finish each batch before starting the next
+        await recordBulk({
+          sessionId,
+          meetingId,
+          status,
+          seatIds: attendanceSeats.slice(processed, processed + BATCH),
+        });
+        processed = Math.min(processed + BATCH, attendanceSeats.length);
+      }
+      setAttendanceResult({
+        message: `Marked ${pluralize(processed, "attendee")} ${status}.`,
+        tone: "success",
+      });
+    } catch (error) {
+      setAttendanceResult({
+        message: `Saved ${processed} of ${attendanceSeats.length} attendance updates. ${errorText(error)}`,
+        tone: "danger",
+      });
+    } finally {
+      onSavingChange(false);
+    }
+  }
+  return (
+    <Card>
+      <CardContent className="space-y-3">
+        <h2 className="font-semibold text-slate-900">Attendance</h2>
+        <div className="flex flex-wrap items-end gap-3">
+          {meetings.length > 1 ? (
+            <Field label="Meeting">
+              {(props) => (
+                <Select
+                  {...props}
+                  disabled={bulkSaving}
+                  onChange={(event) => {
+                    setAttendanceResult(undefined);
+                    onMeetingChange(event.target.value);
+                  }}
+                  value={meetingId}
+                >
+                  {meetings.map((meeting) => (
+                    <option key={meeting.id} value={meeting.id}>
+                      {formatMeeting(meeting, timeZone)}
+                    </option>
+                  ))}
+                </Select>
+              )}
+            </Field>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={bulkSaving || !attendanceSeats.length}
+              onClick={() => markSelected("present")}
+              size="sm"
+              type="button"
+            >
+              Mark selected present
+            </Button>
+            <Button
+              disabled={bulkSaving || !attendanceSeats.length}
+              onClick={() => markSelected("absent")}
+              size="sm"
+              type="button"
+              variant="secondary"
+            >
+              Mark selected absent
+            </Button>
+          </div>
+        </div>
+        <p aria-live="polite" className="text-slate-500 text-sm">
+          {bulkSaving
+            ? "Saving attendance…"
+            : `${pluralize(attendanceSeats.length, "active attendee")} selected for attendance. Use the roster checkboxes to select attendees.`}
+        </p>
+        {attendanceResult ? <ResultNotice {...attendanceResult} /> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function InstructorRoster({
   sessionId,
   embedded = false,
@@ -594,21 +747,34 @@ export function InstructorRoster({
   const roster = usePaginatedQuery(
     api.registrationOperations.roster,
     { sessionId },
-    { initialNumItems: 20 }
+    { initialNumItems: ROSTER_PAGE_SIZE }
   );
   const convex = useConvex();
+  const [chosenMeeting, setChosenMeeting] = useState<string>();
+  const [bulkSaving, setBulkSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<Id<"registrationSeats">[]>([]);
   const [emailOpen, setEmailOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
   const needle = search.trim().toLowerCase();
+  const emptyRosterDescription = needle
+    ? "No loaded attendees match your search."
+    : "Attendees appear here as registrations are paid.";
   const visible = roster.results.filter((s) =>
     `${s.name} ${s.email}`.toLowerCase().includes(needle)
   );
+  const selectedIds = new Set(selected);
   const allVisibleSelected =
-    visible.length > 0 && visible.every((s) => selected.includes(s._id));
+    visible.length > 0 && visible.every((s) => selectedIds.has(s._id));
+  const attendanceSeats = roster.results
+    .filter((seat) => seat.state === "active" && selectedIds.has(seat._id))
+    .map((seat) => seat._id);
   const meetings = session?.meetings ?? [];
+  const meetingId =
+    meetings.find((meeting) => meeting.id === chosenMeeting)?.id ??
+    meetings.at(0)?.id;
+
   if (session === null) {
     return (
       <div className="bg-slate-50">
@@ -701,6 +867,18 @@ export function InstructorRoster({
           </p>
         </CardContent>
       </Card>
+      {meetingId ? (
+        <AttendanceToolbar
+          attendanceSeats={attendanceSeats}
+          bulkSaving={bulkSaving}
+          meetingId={meetingId}
+          meetings={meetings}
+          onMeetingChange={setChosenMeeting}
+          onSavingChange={setBulkSaving}
+          sessionId={sessionId}
+          timeZone={session?.timeZone}
+        />
+      ) : null}
       <Card>
         <CardContent className="p-0">
           {roster.status === "LoadingFirstPage" ? (
@@ -714,11 +892,7 @@ export function InstructorRoster({
           {roster.status !== "LoadingFirstPage" && !visible.length ? (
             <div className="p-5">
               <EmptyState
-                description={
-                  needle
-                    ? "No loaded attendees match your search."
-                    : "Attendees appear here as registrations are paid."
-                }
+                description={emptyRosterDescription}
                 title="No attendees"
               />
             </div>
@@ -752,14 +926,16 @@ export function InstructorRoster({
                   <TH>Attendee</TH>
                   <TH>State</TH>
                   <TH>Completion</TH>
+                  {meetingId ? <TH>Attendance</TH> : null}
                   <TH className="text-right">Record</TH>
                 </TR>
               </THead>
               <TBody>
                 {visible.map((seat) => (
                   <RosterRow
+                    bulkSaving={bulkSaving}
                     key={seat._id}
-                    meetings={meetings}
+                    meetingId={meetingId}
                     onSelect={(checked) =>
                       setSelected(
                         checked
@@ -768,8 +944,7 @@ export function InstructorRoster({
                       )
                     }
                     seat={seat}
-                    selected={selected.includes(seat._id)}
-                    timeZone={session?.timeZone}
+                    selected={selectedIds.has(seat._id)}
                   />
                 ))}
               </TBody>
@@ -777,11 +952,11 @@ export function InstructorRoster({
           ) : null}
         </CardContent>
       </Card>
-      {roster.status === "CanLoadMore" || roster.status === "LoadingMore" ? (
+      {["CanLoadMore", "LoadingMore"].includes(roster.status) ? (
         <div className="flex justify-center">
           <Button
             disabled={roster.status === "LoadingMore"}
-            onClick={() => roster.loadMore(20)}
+            onClick={() => roster.loadMore(ROSTER_PAGE_SIZE)}
             size="sm"
             type="button"
             variant="secondary"
