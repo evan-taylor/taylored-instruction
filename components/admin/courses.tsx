@@ -1,5 +1,6 @@
 "use client";
 import { useMutation } from "convex/react";
+import { CopyPlus, ExternalLink, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useState } from "react";
 import { useCourses } from "@/components/registration/catalog";
@@ -16,6 +17,7 @@ import {
   TextInput,
   Toggle,
 } from "@/components/ui/field";
+import { MenuItem, MenuSeparator, RowMenu } from "@/components/ui/menu";
 import {
   EmptyState,
   PageHeader,
@@ -333,7 +335,7 @@ function CourseRow({
         {pluralize(course.settings.materials.length, "material")}
       </TD>
       <TD className="text-right">
-        <div className="flex justify-end gap-1">
+        <div className="flex items-center justify-end gap-1">
           <Button
             aria-label={`Edit ${course.title}`}
             onClick={onEdit}
@@ -343,33 +345,22 @@ function CourseRow({
           >
             Edit
           </Button>
-          <Button
-            aria-label={`Duplicate ${course.title}`}
-            onClick={onDuplicate}
-            size="xs"
-            type="button"
-            variant="ghost"
-          >
-            Duplicate
-          </Button>
-          <Button
-            aria-label={`Delete ${course.title}`}
-            onClick={onDelete}
-            size="xs"
-            type="button"
-            variant="danger"
-          >
-            Delete
-          </Button>
-          <Button
-            href={`/courses/${course.slug}`}
-            rel="noopener noreferrer"
-            size="xs"
-            target="_blank"
-            variant="ghost"
-          >
-            View offering
-          </Button>
+          <RowMenu label={`More actions for ${course.title}`}>
+            <MenuItem
+              external
+              href={`/courses/${course.slug}`}
+              icon={ExternalLink}
+            >
+              View public page
+            </MenuItem>
+            <MenuItem icon={CopyPlus} onSelect={onDuplicate}>
+              Duplicate
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem danger icon={Trash2} onSelect={onDelete}>
+              Delete template
+            </MenuItem>
+          </RowMenu>
         </div>
       </TD>
     </TR>

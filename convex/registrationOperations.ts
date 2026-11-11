@@ -1407,7 +1407,13 @@ export const sessionForStaff = query({
 });
 export const staffDirectory = query({
   args: {},
-  returns: v.array(v.object({ id: v.id("users"), email: v.string() })),
+  returns: v.array(
+    v.object({
+      id: v.id("users"),
+      email: v.string(),
+      name: v.optional(v.string()),
+    })
+  ),
   handler: async (ctx) => {
     await staff(ctx);
     // Approved instructors are a short list; read all of them so newly
@@ -1422,7 +1428,14 @@ export const staffDirectory = query({
     return users
       .filter((u) => u !== null)
       .filter((u) => u.emailVerificationTime !== undefined && Boolean(u.email))
-      .map((u) => ({ id: u._id, email: u.email ?? "" }));
+      .map((u) => ({
+        id: u._id,
+        email: u.email ?? "",
+        name:
+          u.name?.trim() ||
+          [u.firstName, u.lastName].filter(Boolean).join(" ").trim() ||
+          undefined,
+      }));
   },
 });
 export const saveLocation = mutation({

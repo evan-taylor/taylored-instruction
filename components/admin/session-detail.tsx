@@ -28,6 +28,7 @@ import { Meter } from "@/components/ui/stat";
 import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
+import { staffLabel } from "./instructor-picker";
 import { SessionFiles } from "./session-files";
 import { SessionKeycodes } from "./session-keycodes";
 
@@ -54,6 +55,7 @@ export function SessionDetail({
     sessionId,
   });
   const courses = useCourses();
+  const directory = useQuery(api.registrationOperations.staffDirectory);
   const params = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -103,15 +105,20 @@ export function SessionDetail({
       <PageHeader
         actions={
           <>
-            <Button onClick={() => setEnrollOpen(true)} size="sm" type="button">
-              + Registration
-            </Button>
             <CopyButton
-              label="Share link"
+              className="min-h-9 px-3 text-sm"
+              label="Copy share link"
               value={`${origin}/s/${session.code}`}
             />
-            <Button href={`/admin/sessions?session=${session._id}`} size="sm">
+            <Button
+              href={`/admin/sessions?session=${session._id}`}
+              size="sm"
+              variant="secondary"
+            >
               Edit session
+            </Button>
+            <Button onClick={() => setEnrollOpen(true)} size="sm" type="button">
+              + Registration
             </Button>
           </>
         }
@@ -181,7 +188,19 @@ export function SessionDetail({
                   { label: "Time zone", value: zone },
                   {
                     label: "Instructors",
-                    value: pluralize(session.instructors.length, "instructor"),
+                    value:
+                      session.instructors
+                        .map((id) => {
+                          const person = directory?.find(
+                            (entry) => entry.id === id
+                          );
+                          return person ? staffLabel(person) : undefined;
+                        })
+                        .filter(Boolean)
+                        .join(", ") ||
+                      (session.instructors.length
+                        ? pluralize(session.instructors.length, "instructor")
+                        : "Unassigned"),
                   },
                   {
                     label: "Waitlist offer window",

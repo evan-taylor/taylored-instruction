@@ -43,6 +43,13 @@ export const getAllInstructors = query({
           updated_at: profile.updatedAt,
           last_login: profile.lastLogin,
           user_email: user?.email || null,
+          user_name:
+            user?.name?.trim() ||
+            [user?.firstName, user?.lastName]
+              .filter(Boolean)
+              .join(" ")
+              .trim() ||
+            null,
           short_id: `${profile._id.slice(0, SHORT_ID_PREFIX_LENGTH)}...${profile._id.slice(-SHORT_ID_SUFFIX_LENGTH)}`,
         };
       })

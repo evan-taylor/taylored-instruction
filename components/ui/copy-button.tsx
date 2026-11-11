@@ -24,7 +24,7 @@ export function CopyButton({
     <button
       aria-live="polite"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 text-xs shadow-xs transition-colors duration-150 hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
+        "inline-flex items-center gap-1.5 whitespace-nowrap rounded-md border border-slate-300 bg-white px-2.5 py-1.5 font-medium text-slate-700 text-xs shadow-xs transition-colors duration-150 hover:bg-slate-50 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30",
         copied && "border-emerald-300 text-emerald-700",
         className
       )}

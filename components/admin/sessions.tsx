@@ -1,6 +1,15 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
-import { Plus, Trash2 } from "lucide-react";
+import {
+  Ban,
+  CopyPlus,
+  Files,
+  Link2,
+  Plus,
+  Repeat,
+  Trash2,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
@@ -21,6 +30,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ConfirmDialog, Modal } from "@/components/ui/dialog";
 import { Field, Money, Select, TextInput, Toggle } from "@/components/ui/field";
+import { MenuItem, MenuSeparator, RowMenu } from "@/components/ui/menu";
 import {
   DescriptionList,
   EmptyState,
@@ -37,13 +47,17 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import type { Settings } from "@/shared/registration/domain";
 import { recurrenceFromMeetings } from "@/shared/registration/schedule";
 import { ConfigEditor } from "./config-editor";
+import {
+  InstructorPicker,
+  type StaffMember,
+  staffLabel,
+} from "./instructor-picker";
 import { emptySettings, patchById, US_TIME_ZONES } from "./shared";
 
 type Session = Doc<"registrationSessions">;
 type Course = Doc<"registrationCourses">;
 type Location = Doc<"registrationLocations">;
 type Meeting = Session["meetings"][number];
-type StaffMember = { id: Id<"users">; email: string };
 type SessionDraft = {
   id?: Id<"registrationSessions">;
   code?: string;
@@ -167,19 +181,39 @@ function filterSessions(
 
 /* ------------------------------------ List ------------------------------------ */
 
+/** One badge for where the session stands, plus who can see it when that isn't everyone. */
+function SessionStatus({ session }: { session: Session }) {
+  const hidden =
+    session.state !== "canceled" && session.publication !== "published";
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <StatusBadge status={hidden ? session.publication : session.state} />
+      {session.visibility === "public" ? null : (
+        <StatusBadge status={session.visibility} />
+      )}
+    </div>
+  );
+}
+
 function SessionRow({
   session,
   course,
-  origin,
+  instructors,
+  upcoming,
   onEdit,
   onDuplicate,
+  onRepeat,
+  onCopyLink,
   onCancel,
 }: {
   session: Session;
   course: Course | undefined;
-  origin: string;
+  instructors: string[] | undefined;
+  upcoming: boolean;
   onEdit: () => void;
   onDuplicate: () => void;
+  onRepeat: () => void;
+  onCopyLink: () => void;
   onCancel: () => void;
 }) {
   const zone = session.timeZone;
@@ -211,6 +245,18 @@ function SessionRow({
           {pluralize(session.meetings.length, "meeting")}
         </div>
       </TD>
+      <TD className="max-w-48">
+        {instructors?.length ? (
+          <span className="line-clamp-2" title={instructors.join(", ")}>
+            {instructors.join(", ")}
+          </span>
+        ) : null}
+        {instructors?.length === 0 ? (
+          <span className={upcoming ? "text-amber-700" : "text-slate-400"}>
+            Unassigned
+          </span>
+        ) : null}
+      </TD>
       <TD>
         <Meter
           label={`${session.reserved} of ${session.capacity} seats reserved`}
@@ -219,16 +265,10 @@ function SessionRow({
         />
       </TD>
       <TD>
-        <StatusBadge status={session.visibility} />
-      </TD>
-      <TD>
-        <StatusBadge status={session.publication} />
-      </TD>
-      <TD>
-        <StatusBadge status={session.state} />
+        <SessionStatus session={session} />
       </TD>
       <TD className="text-right" onClick={(e) => e.stopPropagation()}>
-        <div className="flex flex-wrap justify-end gap-1">
+        <div className="flex items-center justify-end gap-1">
           <Button
             aria-label={`Edit ${session.title}`}
             onClick={onEdit}
@@ -238,66 +278,68 @@ function SessionRow({
           >
             Edit
           </Button>
-          <Button
-            aria-label={`Duplicate ${session.title}`}
-            onClick={onDuplicate}
-            size="xs"
-            type="button"
-            variant="ghost"
-          >
-            Duplicate
-          </Button>
-          <CopyButton
-            label="Share link"
-            value={`${origin}/s/${session.code}`}
-          />
-          <Button href={`${href}?tab=roster`} size="xs" variant="ghost">
-            Roster
-          </Button>
-          <Button href={`${href}?tab=files`} size="xs" variant="ghost">
-            Files
-          </Button>
-          <Button
-            className="text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-            disabled={session.state === "canceled"}
-            onClick={onCancel}
-            size="xs"
-            type="button"
-            variant="ghost"
-          >
-            Cancel
-          </Button>
+          <RowMenu label={`More actions for ${session.title}`}>
+            <MenuItem href={`${href}?tab=roster`} icon={Users}>
+              Roster
+            </MenuItem>
+            <MenuItem href={`${href}?tab=files`} icon={Files}>
+              Files
+            </MenuItem>
+            <MenuItem icon={Link2} onSelect={onCopyLink}>
+              Copy share link
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem icon={CopyPlus} onSelect={onDuplicate}>
+              Duplicate
+            </MenuItem>
+            <MenuItem icon={Repeat} onSelect={onRepeat}>
+              Repeat on more dates
+            </MenuItem>
+            <MenuSeparator />
+            <MenuItem
+              danger
+              disabled={session.state === "canceled"}
+              icon={Ban}
+              onSelect={onCancel}
+            >
+              Cancel session
+            </MenuItem>
+          </RowMenu>
         </div>
       </TD>
     </TR>
   );
 }
 
+type RowHandlers = {
+  onEdit: (session: Session) => void;
+  onDuplicate: (session: Session) => void;
+  onRepeat: (session: Session) => void;
+  onCopyLink: (session: Session) => void;
+  onCancel: (session: Session) => void;
+};
+
 function SessionTable({
   sessions,
   courses,
-  origin,
-  onEdit,
-  onDuplicate,
-  onCancel,
+  directory,
+  handlers,
 }: {
   sessions: Session[];
   courses: Course[];
-  origin: string;
-  onEdit: (session: Session) => void;
-  onDuplicate: (session: Session) => void;
-  onCancel: (session: Session) => void;
+  directory: StaffMember[] | undefined;
+  handlers: RowHandlers;
 }) {
+  const now = Date.now();
   return (
-    <Table className="min-w-[960px]" wrapperClassName="rounded-none border-0">
+    <Table className="min-w-[880px]" wrapperClassName="rounded-none border-0">
       <THead>
         <TR>
           <TH>Starts</TH>
           <TH>Session</TH>
+          <TH>Instructor</TH>
           <TH>Seats</TH>
-          <TH>Visibility</TH>
-          <TH>Publication</TH>
-          <TH>State</TH>
+          <TH>Status</TH>
           <TH className="text-right">
             <span className="sr-only">Actions</span>
           </TH>
@@ -307,12 +349,21 @@ function SessionTable({
         {sessions.map((s) => (
           <SessionRow
             course={courses.find((c) => c._id === s.courseId)}
+            instructors={
+              directory &&
+              s.instructors.map((id) => {
+                const person = directory.find((entry) => entry.id === id);
+                return person ? staffLabel(person) : "Inactive instructor";
+              })
+            }
             key={s._id}
-            onCancel={() => onCancel(s)}
-            onDuplicate={() => onDuplicate(s)}
-            onEdit={() => onEdit(s)}
-            origin={origin}
+            onCancel={() => handlers.onCancel(s)}
+            onCopyLink={() => handlers.onCopyLink(s)}
+            onDuplicate={() => handlers.onDuplicate(s)}
+            onEdit={() => handlers.onEdit(s)}
+            onRepeat={() => handlers.onRepeat(s)}
             session={s}
+            upcoming={s.state !== "canceled" && s.lastEnd >= now}
           />
         ))}
       </TBody>
@@ -889,35 +940,25 @@ function InstructorsSection({
   if (directory.length === 0) {
     return (
       <Notice tone="info">
-        No verified instructors found. Instructors appear here once their
-        account is marked as an instructor and their email is verified.
+        No approved instructors yet. Invite them from the{" "}
+        <Link className="font-medium underline" href="/admin/instructors">
+          Instructors page
+        </Link>
+        ; they appear here once they accept.
       </Notice>
     );
   }
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <p className="text-slate-500 text-sm">
         Assigned instructors can open the roster and record outcomes for this
         session.
       </p>
-      <div className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white">
-        {directory.map((person) => (
-          <Toggle
-            checked={draft.instructors.includes(person.id)}
-            className="px-4 py-3"
-            key={person.id}
-            label={person.email}
-            onChange={(checked) =>
-              onChange({
-                ...draft,
-                instructors: checked
-                  ? [...draft.instructors, person.id]
-                  : draft.instructors.filter((id) => id !== person.id),
-              })
-            }
-          />
-        ))}
-      </div>
+      <InstructorPicker
+        directory={directory}
+        onChange={(instructors) => onChange({ ...draft, instructors })}
+        value={draft.instructors}
+      />
     </div>
   );
 }
@@ -1050,13 +1091,15 @@ function SessionEditorModal({
       }
       footer={
         <>
-          <Toggle
-            checked={notify}
-            className="mr-auto"
-            description="Emails updated details and calendar invites to registered attendees."
-            label="Notify affected attendees about schedule changes"
-            onChange={onNotify}
-          />
+          {draft.id ? (
+            <Toggle
+              checked={notify}
+              className="mr-auto"
+              description="Emails updated details and calendar invites to registered attendees."
+              label="Notify attendees about schedule changes"
+              onChange={onNotify}
+            />
+          ) : null}
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Cancel
           </Button>
@@ -1099,7 +1142,11 @@ function SessionEditorModal({
         <Tabs
           label="Session sections"
           onChange={setTab}
-          tabs={EDITOR_TABS}
+          tabs={EDITOR_TABS.map((entry) =>
+            entry.id === "instructors"
+              ? { ...entry, count: draft.instructors.length }
+              : entry
+          )}
           value={tab}
         />
         <TabPanel active={tab === "schedule"} id="schedule">
@@ -1175,28 +1222,42 @@ function WeekdayChips({
 }
 
 function RecurrenceModal({
-  draft,
-  course,
+  sessions,
+  courses,
+  initialId,
   onClose,
   onCreate,
   busy,
   message,
 }: {
-  draft: SessionDraft;
-  course: Course | undefined;
+  sessions: Session[];
+  courses: Course[];
+  initialId: string;
   onClose: () => void;
-  onCreate: (occurrences: Occurrence[]) => Promise<Occurrence[]>;
+  onCreate: (
+    pattern: SessionDraft,
+    occurrences: Occurrence[]
+  ) => Promise<Occurrence[]>;
   busy: boolean;
   message: string;
 }) {
+  const [patternId, setPatternId] = useState(initialId);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [weekdays, setWeekdays] = useState<number[]>([1]);
   const [preview, setPreview] = useState<Occurrence[]>([]);
   const [error, setError] = useState("");
-  const ready = Boolean(draft.courseId && draft.meetings.length);
+  const pattern = sessions.find((entry) => entry._id === patternId);
+  const draft = pattern ? draftFrom(pattern, courses, true) : undefined;
+  const course = courses.find((c) => c._id === draft?.courseId);
+  const candidates = sessions
+    .filter((entry) => entry.state !== "canceled" || entry._id === patternId)
+    .sort((a, b) => b.firstStart - a.firstStart);
   const runPreview = () => {
     setError("");
+    if (!draft) {
+      return;
+    }
     try {
       setPreview(
         recurrenceFromMeetings({
@@ -1214,16 +1275,18 @@ function RecurrenceModal({
   };
   return (
     <Modal
-      description="Creates independent draft sessions on each selected weekday, preserving the editor's meeting offsets and local start times."
+      description="Copies one session onto more dates. Each copy is an independent draft with the same times, venue, capacity, instructors, and settings."
       footer={
         <>
           <Button onClick={onClose} size="sm" type="button" variant="secondary">
             Close
           </Button>
           <Button
-            disabled={busy || preview.length === 0 || !ready}
+            disabled={busy || preview.length === 0 || !draft}
             onClick={async () => {
-              setPreview(await onCreate(preview));
+              if (draft) {
+                setPreview(await onCreate(draft, preview));
+              }
             }}
             size="sm"
             type="button"
@@ -1237,15 +1300,38 @@ function RecurrenceModal({
       onClose={onClose}
       open
       size="lg"
-      title="Recurring sessions"
+      title="Repeat a session"
     >
       <div className="space-y-5">
-        {ready ? (
+        <Field
+          hint="Start from any existing session. To repeat a new class, create it once first."
+          label="Session to repeat"
+          required
+        >
+          {(props) => (
+            <Select
+              {...props}
+              onChange={(e) => {
+                setPatternId(e.target.value);
+                setPreview([]);
+              }}
+              value={patternId}
+            >
+              <option value="">Choose a session</option>
+              {candidates.map((entry) => (
+                <option key={entry._id} value={entry._id}>
+                  {entry.title} ·{" "}
+                  {formatWeekday(entry.firstStart, entry.timeZone)}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+        {draft ? (
           <DescriptionList
-            className="sm:grid-cols-3"
+            className="rounded-lg border border-slate-200 bg-slate-50 p-4 sm:grid-cols-3"
             items={[
               { label: "Course", value: course?.title ?? "—" },
-              { label: "Title", value: draft.title || "—" },
               { label: "Time zone", value: zoneLabel(draft.timeZone) },
               { label: "Capacity", value: draft.capacity },
               {
@@ -1256,14 +1342,13 @@ function RecurrenceModal({
                 label: "Meetings per session",
                 value: draft.meetings.length,
               },
+              {
+                label: "Instructors",
+                value: draft.instructors.length || "Unassigned",
+              },
             ]}
           />
-        ) : (
-          <Notice tone="warning">
-            Open the session editor first and choose a course and at least one
-            meeting. Recurrence copies that pattern onto each date.
-          </Notice>
-        )}
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First date" required>
             {(props) => (
@@ -1301,7 +1386,7 @@ function RecurrenceModal({
         />
         <div className="flex flex-wrap items-center gap-3">
           <Button
-            disabled={!(ready && startDate && endDate && weekdays.length)}
+            disabled={!(draft && startDate && endDate && weekdays.length)}
             onClick={runPreview}
             size="sm"
             type="button"
@@ -1316,7 +1401,7 @@ function RecurrenceModal({
           ) : null}
         </div>
         <ResultNotice message={error || message} />
-        {preview.length ? (
+        {draft && preview.length ? (
           <ul className="max-h-56 list-none space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-3 text-sm">
             {preview.map((occurrence) => {
               const [first] = occurrence;
@@ -1373,19 +1458,15 @@ function useDeepLinks(
 function SessionListCard({
   sessions,
   courses,
-  origin,
+  directory,
   onCreate,
-  onEdit,
-  onDuplicate,
-  onCancel,
+  handlers,
 }: {
   sessions: Session[] | undefined;
   courses: Course[];
-  origin: string;
+  directory: StaffMember[] | undefined;
   onCreate: () => void;
-  onEdit: (session: Session) => void;
-  onDuplicate: (session: Session) => void;
-  onCancel: (session: Session) => void;
+  handlers: RowHandlers;
 }) {
   const [search, setSearch] = useState("");
   const [courseId, setCourseId] = useState("");
@@ -1432,10 +1513,8 @@ function SessionListCard({
         {rows && rows.length > 0 ? (
           <SessionTable
             courses={courses}
-            onCancel={onCancel}
-            onDuplicate={onDuplicate}
-            onEdit={onEdit}
-            origin={origin}
+            directory={directory}
+            handlers={handlers}
             sessions={rows}
           />
         ) : null}
@@ -1455,7 +1534,7 @@ export function SessionAdmin() {
   const [tab, setTab] = useState<PageTab>("sessions");
   const [draft, setDraft] = useState<SessionDraft>(blankDraft);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [recurrenceOpen, setRecurrenceOpen] = useState(false);
+  const [repeating, setRepeating] = useState<string | null>(null);
   const [canceling, setCanceling] = useState<Session | null>(null);
   const [notify, setNotify] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -1468,7 +1547,6 @@ export function SessionAdmin() {
     setEditorOpen(true);
   }, []);
   useDeepLinks(sessions, courses, openEditor);
-  const course = courses?.find((c) => c._id === draft.courseId);
 
   const submit = async (publication?: Session["publication"]) => {
     if (!draft.courseId) {
@@ -1520,11 +1598,14 @@ export function SessionAdmin() {
       setBusy(false);
     }
   };
-  const createRecurring = async (occurrences: Occurrence[]) => {
-    if (!draft.courseId) {
+  const createRecurring = async (
+    pattern: SessionDraft,
+    occurrences: Occurrence[]
+  ) => {
+    if (!pattern.courseId) {
       return occurrences;
     }
-    const { courseId } = draft;
+    const { courseId } = pattern;
     setError("");
     setBusy(true);
     try {
@@ -1532,22 +1613,22 @@ export function SessionAdmin() {
         occurrences.map((occurrence) =>
           save({
             courseId,
-            title: draft.title,
-            timeZone: draft.timeZone,
-            capacity: draft.capacity,
-            visibility: draft.visibility,
+            title: pattern.title,
+            timeZone: pattern.timeZone,
+            capacity: pattern.capacity,
+            visibility: pattern.visibility,
             publication: "draft",
             meetings: occurrence.map((m, index) => ({
               ...m,
               id: crypto.randomUUID(),
-              location: draft.meetings[index]?.location ?? "Training center",
-              locationId: draft.meetings[index]?.locationId,
-              onlineUrl: draft.meetings[index]?.onlineUrl,
-              instructions: draft.meetings[index]?.instructions ?? "",
+              location: pattern.meetings[index]?.location ?? "Training center",
+              locationId: pattern.meetings[index]?.locationId,
+              onlineUrl: pattern.meetings[index]?.onlineUrl,
+              instructions: pattern.meetings[index]?.instructions ?? "",
               sequence: 0,
             })),
-            overrides: {},
-            instructors: [],
+            overrides: pattern.override ? pattern.settings : {},
+            instructors: pattern.instructors,
             offerMinutes: OFFER_MINUTES,
             notify: false,
           })
@@ -1558,7 +1639,9 @@ export function SessionAdmin() {
       );
       const created = occurrences.length - remaining.length;
       const failed = results.find((result) => result.status === "rejected");
-      setNotice(`Created ${pluralize(created, "independent draft session")}.`);
+      setNotice(
+        `Created ${pluralize(created, "draft session")}. Review and publish them from the list.`
+      );
       setError(
         failed?.status === "rejected"
           ? `${created} drafts created. ${remaining.length} failed; retry creates only the remaining drafts. ${String(failed.reason)}`
@@ -1582,13 +1665,13 @@ export function SessionAdmin() {
               onClick={() => {
                 setError("");
                 setNotice("");
-                setRecurrenceOpen(true);
+                setRepeating("");
               }}
               size="sm"
               type="button"
               variant="secondary"
             >
-              Recurring sessions
+              Repeat a session
             </Button>
             <Button
               onClick={() => openEditor(blankDraft())}
@@ -1616,20 +1699,35 @@ export function SessionAdmin() {
         className="space-y-4 pt-0"
         id="sessions"
       >
-        {editorOpen || canceling || recurrenceOpen ? null : (
+        {editorOpen || canceling || repeating !== null ? null : (
           <ResultNotice message={notice} />
         )}
         <SessionListCard
           courses={courses ?? []}
-          onCancel={(s) => {
-            setError("");
-            setNotice("");
-            setCanceling(s);
+          directory={directory}
+          handlers={{
+            onCancel: (s) => {
+              setError("");
+              setNotice("");
+              setCanceling(s);
+            },
+            onCopyLink: async (s) => {
+              try {
+                await navigator.clipboard.writeText(`${origin}/s/${s.code}`);
+                setNotice(`Share link for ${s.title} copied.`);
+              } catch {
+                setNotice(`Share link: ${origin}/s/${s.code}`);
+              }
+            },
+            onDuplicate: (s) => openEditor(draftFrom(s, courses ?? [], true)),
+            onEdit: (s) => openEditor(draftFrom(s, courses ?? [], false)),
+            onRepeat: (s) => {
+              setError("");
+              setNotice("");
+              setRepeating(s._id);
+            },
           }}
           onCreate={() => openEditor(blankDraft())}
-          onDuplicate={(s) => openEditor(draftFrom(s, courses ?? [], true))}
-          onEdit={(s) => openEditor(draftFrom(s, courses ?? [], false))}
-          origin={origin}
           sessions={sessions}
         />
       </TabPanel>
@@ -1661,16 +1759,17 @@ export function SessionAdmin() {
           session={canceling}
         />
       ) : null}
-      {recurrenceOpen ? (
+      {repeating === null ? null : (
         <RecurrenceModal
           busy={busy}
-          course={course}
-          draft={draft}
+          courses={courses ?? []}
+          initialId={repeating}
           message={error || notice}
-          onClose={() => setRecurrenceOpen(false)}
+          onClose={() => setRepeating(null)}
           onCreate={createRecurring}
+          sessions={sessions ?? []}
         />
-      ) : null}
+      )}
     </div>
   );
 }

@@ -5,6 +5,7 @@ export type ProfileWithUser = {
   updatedAt: string | null;
   lastLogin: string | null;
   userEmail: string | null;
+  userName?: string | null;
   shortId?: string;
 };
 

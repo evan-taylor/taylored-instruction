@@ -26,7 +26,7 @@ export function Tabs<T extends string>({
     <div
       aria-label={label}
       className={cn(
-        "flex gap-1 overflow-x-auto border-slate-200 border-b",
+        "flex gap-1 overflow-x-auto overflow-y-hidden border-slate-200 border-b",
         className
       )}
       onKeyDown={(e) => {

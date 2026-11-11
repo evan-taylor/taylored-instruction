@@ -10,6 +10,7 @@ type ConvexProfile = {
   updated_at: string | null | undefined;
   last_login: string | null | undefined;
   user_email: string | null;
+  user_name?: string | null;
   short_id: string;
 };
 
@@ -23,6 +24,7 @@ function mapConvexProfileToLocal(
     updatedAt: convexProfile.updated_at ?? null,
     lastLogin: convexProfile.last_login ?? null,
     userEmail: convexProfile.user_email,
+    userName: convexProfile.user_name,
     shortId: convexProfile.short_id,
   };
 }
