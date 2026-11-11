@@ -207,8 +207,10 @@ export function formatSchedule(meetings: ScheduledMeeting[], timeZone: string) {
       new Intl.DateTimeFormat("en-US", { timeZone, dateStyle: "full" }).format(
         first.start
       ),
-      `${sorted.map(range).join(", ")}${zoneLabel}`,
-      ...placeLines(sorted),
+      ...groupBy(sorted, (m) => m.location).flatMap((place) => [
+        `${place.map(range).join(", ")}${zoneLabel}`,
+        ...placeLines(place),
+      ]),
     ];
   } else {
     const weekday = new Intl.DateTimeFormat("en-US", {

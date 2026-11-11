@@ -85,3 +85,31 @@ it("lists each location after its days and labels zones that change mid-class", 
     ].join("\n")
   );
 });
+
+it("keeps each venue beside its times on a single day", () => {
+  expect(
+    formatSchedule(
+      [
+        {
+          start: at("2026-11-14T17:00:00Z"),
+          end: at("2026-11-14T19:00:00Z"),
+          location: "Room A",
+        },
+        {
+          start: at("2026-11-14T20:00:00Z"),
+          end: at("2026-11-14T22:00:00Z"),
+          location: "Pool B",
+        },
+      ],
+      zone
+    )
+  ).toBe(
+    [
+      "Saturday, November 14, 2026",
+      "9:00 – 11:00 AM PST",
+      "Room A",
+      "12:00 – 2:00 PM PST",
+      "Pool B",
+    ].join("\n")
+  );
+});
