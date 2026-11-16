@@ -5,7 +5,15 @@ import {
   usePaginatedQuery,
   useQuery,
 } from "convex/react";
-import { ChevronDown, ChevronUp, Download, Mail, Search } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Download,
+  ExternalLink,
+  Mail,
+  MapPin,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { SessionFiles } from "@/components/admin/session-files";
@@ -25,6 +33,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
+import { parsePlace } from "@/shared/registration/catalog";
 import { BATCH } from "@/shared/registration/domain";
 import { AgencyRosterExport } from "./agency-roster-export";
 import { useAssignedSessions } from "./catalog";
@@ -112,6 +121,17 @@ export function InstructorSessions() {
                           {pluralize(s.meetings.length, "meeting")} ·{" "}
                           {shortZone(s.timeZone, s.firstStart)}
                         </div>
+                        <div className="flex items-start gap-1 text-slate-500 text-xs">
+                          <MapPin
+                            aria-hidden="true"
+                            className="mt-0.5 h-3 w-3 shrink-0"
+                          />
+                          {[
+                            ...new Set(
+                              s.meetings.map((m) => parsePlace(m.location).name)
+                            ),
+                          ].join(" · ")}
+                        </div>
                       </TD>
                       <TD>
                         <Meter
@@ -145,6 +165,82 @@ export function InstructorSessions() {
 }
 
 /* ------------------------------- Roster ------------------------------ */
+
+type Meeting = Doc<"registrationSessions">["meetings"][number];
+
+function SessionLocations({
+  meetings,
+  timeZone,
+}: {
+  meetings: Meeting[];
+  timeZone: string;
+}) {
+  const venues = new Map<string, { meeting: Meeting; times: string[] }>();
+  for (const meeting of meetings) {
+    const key = [meeting.location, meeting.instructions, meeting.onlineUrl]
+      .map((part) => part?.trim() ?? "")
+      .join("\n");
+    const venue = venues.get(key) ?? { meeting, times: [] };
+    venue.times.push(formatMeeting(meeting, timeZone));
+    venues.set(key, venue);
+  }
+  if (!venues.size) {
+    return null;
+  }
+  return (
+    <Card>
+      <CardContent className="divide-y divide-slate-100 p-0">
+        {[...venues.entries()].map(([key, { meeting, times }]) => {
+          const { name, address } = parsePlace(meeting.location);
+          return (
+            <div className="space-y-2 px-5 py-4 text-sm" key={key}>
+              <div className="flex items-start gap-2">
+                <MapPin
+                  aria-hidden="true"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                />
+                <div className="min-w-0">
+                  <p className="font-medium text-slate-900">{name}</p>
+                  {address ? (
+                    <a
+                      className="text-primary underline-offset-2 hover:underline"
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {address}
+                    </a>
+                  ) : null}
+                  {venues.size > 1 ? (
+                    <p className="text-slate-500 text-xs">
+                      {times.join(" · ")}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+              {meeting.instructions ? (
+                <p className="whitespace-pre-line rounded-md bg-slate-50 px-3 py-2 text-slate-700 text-xs">
+                  {meeting.instructions}
+                </p>
+              ) : null}
+              {meeting.onlineUrl ? (
+                <a
+                  className="inline-flex items-center gap-1 font-medium text-primary text-xs underline-offset-2 hover:underline"
+                  href={meeting.onlineUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+                  Join online meeting
+                </a>
+              ) : null}
+            </div>
+          );
+        })}
+      </CardContent>
+    </Card>
+  );
+}
 
 function completionTone(completion: string | undefined) {
   if (completion === "complete") {
@@ -941,6 +1037,9 @@ export function InstructorRoster({
           eyebrow="Roster"
           title={session?.title ?? "Session roster"}
         />
+        {session ? (
+          <SessionLocations meetings={meetings} timeZone={session.timeZone} />
+        ) : null}
         {body}
         <section className="space-y-4">
           <h2 className="font-semibold text-slate-900 text-xl">Files</h2>
