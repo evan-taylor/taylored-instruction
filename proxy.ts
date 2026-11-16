@@ -4,6 +4,7 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import { NextResponse } from "next/server";
+import { AUTH_SESSION_SECONDS } from "@/shared/authSession";
 
 const isLoginPage = createRouteMatcher(["/login"]);
 const isDebugRoute = createRouteMatcher(["/debug-auth"]);
@@ -65,54 +66,57 @@ const getSanityDashboardRedirectUrl = (url: URL): URL | null => {
   return redirectUrl;
 };
 
-export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
-  const url = new URL(request.url);
+export default convexAuthNextjsMiddleware(
+  async (request, { convexAuth }) => {
+    const url = new URL(request.url);
 
-  if (url.searchParams.has("code")) {
-    return;
-  }
+    if (url.searchParams.has("code")) {
+      return;
+    }
 
-  if (redirectEligibleMethods.has(request.method)) {
-    const legacyInstructorRedirectUrl = getLegacyInstructorRedirectUrl(
-      url,
-      request.url
-    );
-    if (legacyInstructorRedirectUrl) {
-      return NextResponse.redirect(
-        legacyInstructorRedirectUrl,
-        permanentRedirectStatus
+    if (redirectEligibleMethods.has(request.method)) {
+      const legacyInstructorRedirectUrl = getLegacyInstructorRedirectUrl(
+        url,
+        request.url
       );
+      if (legacyInstructorRedirectUrl) {
+        return NextResponse.redirect(
+          legacyInstructorRedirectUrl,
+          permanentRedirectStatus
+        );
+      }
+
+      const cleanedQueryRedirectUrl = getCleanedQueryRedirectUrl(url);
+      if (cleanedQueryRedirectUrl) {
+        return NextResponse.redirect(
+          cleanedQueryRedirectUrl,
+          permanentRedirectStatus
+        );
+      }
+
+      const sanityDashboardRedirectUrl = getSanityDashboardRedirectUrl(url);
+      if (sanityDashboardRedirectUrl) {
+        return NextResponse.redirect(sanityDashboardRedirectUrl);
+      }
     }
 
-    const cleanedQueryRedirectUrl = getCleanedQueryRedirectUrl(url);
-    if (cleanedQueryRedirectUrl) {
-      return NextResponse.redirect(
-        cleanedQueryRedirectUrl,
-        permanentRedirectStatus
-      );
+    if (isDebugRoute(request)) {
+      return;
     }
 
-    const sanityDashboardRedirectUrl = getSanityDashboardRedirectUrl(url);
-    if (sanityDashboardRedirectUrl) {
-      return NextResponse.redirect(sanityDashboardRedirectUrl);
+    if (isSanityStudioRoute(request)) {
+      return;
     }
-  }
 
-  if (isDebugRoute(request)) {
-    return;
-  }
-
-  if (isSanityStudioRoute(request)) {
-    return;
-  }
-
-  if (isLoginPage(request) && (await convexAuth.isAuthenticated())) {
-    return nextjsMiddlewareRedirect(request, "/my-account");
-  }
-  if (isProtectedRoute(request) && !(await convexAuth.isAuthenticated())) {
-    return nextjsMiddlewareRedirect(request, "/login");
-  }
-});
+    if (isLoginPage(request) && (await convexAuth.isAuthenticated())) {
+      return nextjsMiddlewareRedirect(request, "/my-account");
+    }
+    if (isProtectedRoute(request) && !(await convexAuth.isAuthenticated())) {
+      return nextjsMiddlewareRedirect(request, "/login");
+    }
+  },
+  { cookieConfig: { maxAge: AUTH_SESSION_SECONDS } }
+);
 
 export const config = {
   // The following matcher runs middleware on all routes

@@ -2,6 +2,7 @@ import Google from "@auth/core/providers/google";
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { AUTH_SESSION_MS } from "../shared/authSession";
 import { query } from "./_generated/server";
 import { ResendOTP } from "./ResendOTP";
 
@@ -34,6 +35,10 @@ const testPassword =
     : [];
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  session: {
+    totalDurationMs: AUTH_SESSION_MS,
+    inactiveDurationMs: AUTH_SESSION_MS,
+  },
   providers: [
     ...testPassword,
     ...(process.env.RESEND_API_KEY && process.env.AUTH_EMAIL_FROM
