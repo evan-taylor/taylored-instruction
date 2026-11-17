@@ -1,10 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const getSanityBlogPaths = vi.fn();
 const fetchAllRevnuPosts = vi.fn();
 const fetchRevnuPost = vi.fn();
 
-vi.mock("@/lib/blogRouting", () => ({ getSanityBlogPaths }));
 vi.mock("@/lib/revnu", () => ({ fetchAllRevnuPosts, fetchRevnuPost }));
 
 const { getBlogPathStatus, resetBlogPathIndex } = await import(
@@ -29,18 +27,15 @@ afterEach(() => {
 });
 
 describe("blog path status", () => {
-  it("serves Sanity and Revnu paths and calls everything else missing", async () => {
-    getSanityBlogPaths.mockResolvedValue(new Set(["/sanity-post"]));
+  it("serves Revnu paths and calls everything else missing", async () => {
     fetchAllRevnuPosts.mockResolvedValue([revnuSummary("revnu-post", 1)]);
     fetchRevnuPost.mockResolvedValue(null);
 
-    await expect(getBlogPathStatus("/sanity-post")).resolves.toBe("servable");
     await expect(getBlogPathStatus("/revnu-post")).resolves.toBe("servable");
     await expect(getBlogPathStatus("/no-such-post")).resolves.toBe("missing");
   });
 
   it("treats a post dropped from the Revnu list as missing after the next refresh", async () => {
-    getSanityBlogPaths.mockResolvedValue(new Set());
     fetchAllRevnuPosts.mockResolvedValueOnce([revnuSummary("removed", 1)]);
     fetchAllRevnuPosts.mockResolvedValueOnce([]);
     fetchRevnuPost.mockResolvedValue({
@@ -54,7 +49,6 @@ describe("blog path status", () => {
   });
 
   it("keeps an old Revnu slug servable so the page can redirect it", async () => {
-    getSanityBlogPaths.mockResolvedValue(new Set());
     fetchAllRevnuPosts.mockResolvedValue([revnuSummary("new-slug", 1)]);
     fetchRevnuPost.mockResolvedValue({ post: revnuSummary("new-slug", 1) });
 
@@ -62,9 +56,8 @@ describe("blog path status", () => {
   });
 
   it("only trusts stale lists to prove a post exists, and waits before retrying", async () => {
-    getSanityBlogPaths.mockResolvedValueOnce(new Set(["/kept"]));
-    getSanityBlogPaths.mockRejectedValue(new Error("Sanity down"));
-    fetchAllRevnuPosts.mockResolvedValue([]);
+    fetchAllRevnuPosts.mockResolvedValueOnce([revnuSummary("kept", 1)]);
+    fetchAllRevnuPosts.mockRejectedValue(new Error("Revnu down"));
     fetchRevnuPost.mockResolvedValue(null);
 
     await expect(getBlogPathStatus("/kept", 0)).resolves.toBe("servable");
@@ -75,11 +68,10 @@ describe("blog path status", () => {
     await expect(getBlogPathStatus("/new-post", 90_000)).resolves.toBe(
       "unknown"
     );
-    expect(getSanityBlogPaths).toHaveBeenCalledTimes(2);
+    expect(fetchAllRevnuPosts).toHaveBeenCalledTimes(2);
   });
 
   it("stops serving an old slug once its target leaves the list", async () => {
-    getSanityBlogPaths.mockResolvedValue(new Set());
     fetchAllRevnuPosts.mockResolvedValueOnce([revnuSummary("target", 1)]);
     fetchAllRevnuPosts.mockResolvedValue([]);
     fetchRevnuPost.mockResolvedValue({ post: revnuSummary("target", 1) });
@@ -90,37 +82,25 @@ describe("blog path status", () => {
     );
   });
 
-  it("does not 404 anything while the post lists are unreachable", async () => {
-    getSanityBlogPaths.mockRejectedValue(new Error("Sanity down"));
-    fetchAllRevnuPosts.mockResolvedValue([]);
+  it("does not 404 anything while the post list is unreachable", async () => {
+    fetchAllRevnuPosts.mockRejectedValue(new Error("Revnu down"));
 
     await expect(getBlogPathStatus("/anything")).resolves.toBe("unknown");
   });
 });
 
 describe("llms.txt", () => {
-  it("lists every Sanity and Revnu article once, newest first", () => {
-    const text = buildLlmsTxt({
-      sanityPosts: [
-        {
-          slug: "shared",
-          title: "Sanity shared",
-          excerpt: "Sanity\nexcerpt",
-          _updatedAt: "2025-01-01T00:00:00Z",
-          publishedAt: "2025-01-01T00:00:00Z",
-        },
-      ],
-      revnuPosts: [
-        revnuSummary("shared", Date.UTC(2026, 0, 1)),
-        revnuSummary("fresh", Date.UTC(2026, 0, 2)),
-      ],
-    });
+  it("lists every Revnu article, newest first", () => {
+    const text = buildLlmsTxt([
+      revnuSummary("older", Date.UTC(2026, 0, 1)),
+      revnuSummary("fresh", Date.UTC(2026, 0, 2)),
+    ]);
 
     const articles = text.split("## Articles\n\n")[1]?.trim().split("\n");
     expect(text.startsWith("# Taylored Instruction\n")).toBe(true);
     expect(articles).toEqual([
       "- [Revnu fresh](https://tayloredinstruction.com/blog/fresh): About fresh",
-      "- [Sanity shared](https://tayloredinstruction.com/blog/shared): Sanity excerpt",
+      "- [Revnu older](https://tayloredinstruction.com/blog/older): About older",
     ]);
   });
 });

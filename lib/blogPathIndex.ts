@@ -1,4 +1,3 @@
-import { getSanityBlogPaths } from "@/lib/blogRouting";
 import { fetchAllRevnuPosts, fetchRevnuPost } from "@/lib/revnu";
 
 export type BlogPathStatus = "servable" | "missing" | "unknown";
@@ -15,15 +14,9 @@ const redirectTargets = new Map<
 >();
 
 const loadKnownPaths = async (now: number) => {
-  const [sanityPaths, revnuPosts] = await Promise.all([
-    getSanityBlogPaths(),
-    fetchAllRevnuPosts(),
-  ]);
+  const revnuPosts = await fetchAllRevnuPosts();
   knownPaths = {
-    paths: new Set([
-      ...sanityPaths,
-      ...revnuPosts.map((post) => post.canonicalPath),
-    ]),
+    paths: new Set(revnuPosts.map((post) => post.canonicalPath)),
     loadedAt: now,
   };
 };

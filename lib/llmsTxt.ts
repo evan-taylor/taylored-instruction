@@ -1,6 +1,5 @@
 import type { RevnuPostSummary } from "@/lib/revnu";
 import { SITE_URL } from "@/lib/seo";
-import type { BlogPostSitemapEntry } from "@/sanity/types";
 
 type Article = {
   url: string;
@@ -26,30 +25,15 @@ Taylored Instruction runs public classes, blended and online courses, and privat
 
 const oneLine = (value: string) => value.replace(/\s+/g, " ").trim();
 
-export const buildLlmsTxt = ({
-  sanityPosts,
-  revnuPosts,
-}: {
-  sanityPosts: BlogPostSitemapEntry[];
-  revnuPosts: RevnuPostSummary[];
-}) => {
-  const sanityPaths = new Set(sanityPosts.map((post) => `/${post.slug}`));
-  const articles: Article[] = [
-    ...sanityPosts.map((post) => ({
-      url: `${SITE_URL}/blog/${post.slug}`,
+export const buildLlmsTxt = (revnuPosts: RevnuPostSummary[]) => {
+  const articles: Article[] = revnuPosts
+    .map((post) => ({
+      url: post.canonicalUrl,
       title: post.title,
-      description: post.excerpt,
-      publishedAt: Date.parse(post.publishedAt),
-    })),
-    ...revnuPosts
-      .filter((post) => !sanityPaths.has(post.canonicalPath))
-      .map((post) => ({
-        url: post.canonicalUrl,
-        title: post.title,
-        description: post.metaDescription,
-        publishedAt: post.publishedAt,
-      })),
-  ].sort((a, b) => b.publishedAt - a.publishedAt);
+      description: post.metaDescription,
+      publishedAt: post.publishedAt,
+    }))
+    .sort((a, b) => b.publishedAt - a.publishedAt);
 
   const articleLines = articles.map(
     (article) =>

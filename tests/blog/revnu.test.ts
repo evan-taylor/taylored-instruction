@@ -7,13 +7,7 @@ vi.mock("next/cache", () => ({
   revalidateTag: vi.fn(),
 }));
 
-const sanityFetch = vi.fn();
-vi.mock("@/sanity/lib/client", () => ({ sanityFetch }));
-
 const { POST } = await import("@/app/api/revnu-revalidate/route");
-const { mergeBlogListings, resolveRevnuFallback } = await import(
-  "@/lib/blogRouting"
-);
 const {
   buildRevnuSitemap,
   getRevnuPosts,
@@ -204,57 +198,6 @@ describe("Revnu sitemap", () => {
         lastModified: new Date(Date.UTC(2026, 0, 1)),
       },
     ]);
-  });
-});
-
-describe("Sanity and Revnu routing", () => {
-  const sanityPost = (slug: string, publishedAt: string) => ({
-    _id: `sanity-${slug}`,
-    _updatedAt: publishedAt,
-    title: `Sanity ${slug}`,
-    slug,
-    excerpt: "Sanity excerpt",
-    publishedAt,
-  });
-
-  it("keeps Sanity posts at their paths and merges Revnu-only posts by date", () => {
-    const listings = mergeBlogListings({
-      sanityPosts: [
-        sanityPost("shared", "2025-06-01T00:00:00.000Z"),
-        sanityPost("older", "2024-01-01T00:00:00.000Z"),
-      ],
-      sanityPaths: new Set(["/shared", "/older"]),
-      revnuPosts: [
-        summary("shared", { publishedAt: Date.UTC(2026, 5, 1) }),
-        summary("fresh", { publishedAt: Date.UTC(2025, 0, 1) }),
-      ],
-      limit: 12,
-    });
-
-    expect(listings.map((listing) => [listing.key, listing.href])).toEqual([
-      ["sanity-shared", "/blog/shared"],
-      ["revnu:/fresh", "/blog/fresh"],
-      ["sanity-older", "/blog/older"],
-    ]);
-  });
-
-  it("leaves Revnu posts out of the index when Sanity paths are unknown", () => {
-    const listings = mergeBlogListings({
-      sanityPosts: [],
-      sanityPaths: null,
-      revnuPosts: [summary("fresh")],
-      limit: 12,
-    });
-
-    expect(listings).toEqual([]);
-  });
-
-  it("never serves a Revnu copy at a path Sanity claims", async () => {
-    sanityFetch.mockResolvedValue([{ slug: "shared" }]);
-    const fetchMock = mockFetch(listRoute([summary("shared")]));
-
-    await expect(resolveRevnuFallback("/shared")).rejects.toThrow();
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

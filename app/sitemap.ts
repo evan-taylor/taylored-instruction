@@ -2,9 +2,6 @@ import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
 import { getRevnuPosts } from "@/lib/revnu";
-import { sanityFetch } from "@/sanity/lib/client";
-import { POSTS_SITEMAP_QUERY } from "@/sanity/lib/queries";
-import type { BlogPostSitemapEntry } from "@/sanity/types";
 
 const baseUrl = "https://tayloredinstruction.com";
 const staticRoutePaths = [
@@ -134,7 +131,6 @@ const buildEntry = ({
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
-  const dynamicBlogRouteMap = new Map<string, ResourceRouteEntry>();
 
   try {
     const resources = await fetchQuery(
@@ -153,25 +149,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // If Convex is unavailable, still return a valid sitemap for static routes.
   }
 
-  try {
-    const posts = await sanityFetch<BlogPostSitemapEntry[]>(
-      POSTS_SITEMAP_QUERY,
-      {
-        tags: ["post"],
-      }
-    );
-
-    for (const post of posts) {
-      const path = `/blog/${post.slug}`;
-      dynamicBlogRouteMap.set(path, {
-        path,
-        lastModified: new Date(post._updatedAt ?? post.publishedAt),
-      });
-    }
-  } catch {
-    // If Sanity is unavailable, still return a valid sitemap.
-  }
-
   const registrationRoutes: string[] = ["/classes", "/group-training"];
   try {
     const catalog = await fetchQuery(api.registration.publicCatalog, {});
@@ -187,13 +164,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const revnuPosts = await getRevnuPosts().catch(() => []);
   const listingLastModified: Record<string, Date | undefined> = {
-    "/blog": latestDate([
-      ...Array.from(
-        dynamicBlogRouteMap.values(),
-        (route) => route.lastModified
-      ),
-      ...revnuPosts.map((post) => new Date(post.updatedAt ?? post.publishedAt)),
-    ]),
+    "/blog": latestDate(
+      revnuPosts.map((post) => new Date(post.updatedAt ?? post.publishedAt))
+    ),
     "/resources": latestDate(
       Array.from(
         dynamicResourceRouteMap.values(),
@@ -218,12 +191,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       buildEntry({
         path: resourceRoute.path,
         lastModified: resourceRoute.lastModified,
-      })
-    ),
-    ...Array.from(dynamicBlogRouteMap.values()).map((blogRoute) =>
-      buildEntry({
-        path: blogRoute.path,
-        lastModified: blogRoute.lastModified,
       })
     ),
   ];

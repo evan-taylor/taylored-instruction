@@ -1,8 +1,7 @@
-import { absoluteUrl, SITE_NAME, SITE_URL } from "@/lib/seo";
-import { sanityFetch } from "@/sanity/lib/client";
-import { POSTS_QUERY } from "@/sanity/lib/queries";
-import type { BlogPostSummary } from "@/sanity/types";
+import { getRevnuPosts } from "@/lib/revnu";
+import { SITE_NAME, SITE_URL } from "@/lib/seo";
 
+const feedItemLimit = 12;
 const XML_ESCAPE_REGEX = /[<>&'"]/g;
 const xmlReplacements: Record<string, string> = {
   '"': "&quot;",
@@ -16,20 +15,19 @@ const escapeXml = (value: string) =>
   value.replace(XML_ESCAPE_REGEX, (character) => xmlReplacements[character]);
 
 export async function GET() {
-  const posts = await sanityFetch<BlogPostSummary[]>(POSTS_QUERY, {
-    tags: ["post"],
-  }).catch(() => []);
+  const posts = await getRevnuPosts().catch(() => []);
 
   const items = posts
+    .slice(0, feedItemLimit)
     .map((post) => {
-      const postUrl = absoluteUrl(`/blog/${post.slug}`);
+      const postUrl = escapeXml(post.canonicalUrl);
 
       return `
         <item>
           <title>${escapeXml(post.title)}</title>
           <link>${postUrl}</link>
           <guid>${postUrl}</guid>
-          <description>${escapeXml(post.excerpt)}</description>
+          <description>${escapeXml(post.metaDescription)}</description>
           <pubDate>${new Date(post.publishedAt).toUTCString()}</pubDate>
         </item>`;
     })

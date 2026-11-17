@@ -43,8 +43,8 @@ provisioning and a split secret inventory.
 | Owner | Settings |
 | --- | --- |
 | Convex CLI | Selected deployment, scoped deploy key, generated `NEXT_PUBLIC_CONVEX_URL` and `NEXT_PUBLIC_CONVEX_SITE_URL` |
-| Next.js browser | `NEXT_PUBLIC_BASE_URL`, Sanity project/dataset, optional Stripe publishable key, PostHog public token/host and `NEXT_PUBLIC_SENTRY_DSN` |
-| Next.js server | Opt-in legacy Stripe/Resend integrations, Notion credentials, CMS write/revalidation/webhook secrets, internal email endpoint secret |
+| Next.js browser | `NEXT_PUBLIC_BASE_URL`, optional Stripe publishable key, PostHog public token/host and `NEXT_PUBLIC_SENTRY_DSN` |
+| Next.js server | Opt-in legacy Stripe/Resend integrations, Notion credentials, `REVNU_CONTENT_API_KEY` and `REVNU_REVALIDATE_KEY`, internal email endpoint secret |
 | Convex deployment | `SITE_URL`, isolated auth signing keys, optional email/Google credentials, registration test settings and endpoint signing secrets |
 | Build/deploy only | `SENTRY_AUTH_TOKEN`, Sentry organization/project, Vercel's environment-specific Convex deploy key |
 
@@ -59,10 +59,9 @@ only the selected isolated backend. Project defaults apply to new cloud deployme
 they do not keep existing deployments synchronized. Generate separate auth signing
 keys for isolated environments rather than copying production keys.
 
-Sanity needs `NEXT_PUBLIC_SANITY_PROJECT_ID` for a full build. The dataset defaults
-to `production`; choose a separate dataset before testing CMS writes. Ordinary
-development does not need a Sanity write token, Sentry upload token, Notion token,
-or working email credentials.
+The blog reads posts from the Revnu Content API with `REVNU_CONTENT_API_KEY`.
+Without it, `/blog` renders its empty state. Ordinary development does not need a
+Sentry upload token, Notion token, or working email credentials.
 
 PostHog accepts `NEXT_PUBLIC_POSTHOG_KEY`, with the existing
 `NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN` as a compatibility fallback. Convex analytics

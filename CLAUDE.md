@@ -2,7 +2,7 @@
 
 Taylored Instruction is a Next.js 16 App Router site with a Convex backend,
 Convex Auth (Google and six-digit email OTP), Stripe commerce, Resend email,
-Sanity content, and PostHog/Sentry monitoring. Follow `AGENTS.md` for code rules.
+a Revnu-hosted blog, and PostHog/Sentry monitoring. Follow `AGENTS.md` for code rules.
 
 ## Commands
 
@@ -38,7 +38,7 @@ ownership. Never assume Next.js `.env.local` variables also exist in Convex.
 - `proxy.ts` — route protection
 - `app/actions` and `app/api` — Next.js email, existing eCard commerce, and CMS hooks
 - `app/api/mcp`, `lib/mcp`, `convex/mcp.ts` — agent access (MCP server); see `docs/mcp.md`
-- `sanity` — content schemas and CMS helpers
+- `lib/revnu.ts` — Revnu Content API client for the `/blog` routes
 
 Supabase is legacy; do not add new Supabase tables or auth flows. Preserve Convex
 Auth v1 and existing identities until the required passwordless OTP flow is supported
