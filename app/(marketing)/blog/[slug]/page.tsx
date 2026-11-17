@@ -6,6 +6,11 @@ import { cacheLife, cacheTag } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Image } from "next-sanity/image";
+import {
+  getRevnuPostMetadata,
+  renderRevnuPost,
+} from "@/components/blog/revnuPostRoute";
+import { REVNU_CACHE_TAG } from "@/lib/revnu";
 import { buildPageMetadata } from "@/lib/seo";
 import { generateJSONLD, getBreadcrumbSchema } from "@/lib/structuredData";
 import { sanityFetch } from "@/sanity/lib/client";
@@ -168,6 +173,11 @@ export async function generateMetadata(
   const post = await getPost(params.slug);
 
   if (!post) {
+    const revnuMetadata = await getRevnuPostMetadata(`/${params.slug}`);
+    if (revnuMetadata) {
+      return revnuMetadata;
+    }
+
     return buildPageMetadata({
       title: "Blog Post Not Found",
       description:
@@ -213,6 +223,7 @@ export async function generateMetadata(
 export default async function BlogPostPage(props: BlogPostPageProps) {
   cacheLife("minutes");
   cacheTag("post");
+  cacheTag(REVNU_CACHE_TAG);
 
   const params = await props.params;
   if (params.slug === emptyBlogStaticParamsSlug) {
@@ -223,7 +234,7 @@ export default async function BlogPostPage(props: BlogPostPageProps) {
   const post = await getPost(params.slug);
 
   if (!post) {
-    notFound();
+    return await renderRevnuPost(`/${params.slug}`);
   }
 
   const imageUrl = post.mainImage

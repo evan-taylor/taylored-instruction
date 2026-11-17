@@ -5,7 +5,10 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL(".", import.meta.url)) },
   },
   test: {
-    include: ["tests/registration/**/*.test.{ts,tsx}"],
+    include: [
+      "tests/blog/**/*.test.{ts,tsx}",
+      "tests/registration/**/*.test.{ts,tsx}",
+    ],
     server: { deps: { inline: ["convex-test"] } },
   },
 });
