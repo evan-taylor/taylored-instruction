@@ -1,8 +1,15 @@
 const { execFileSync } = require("node:child_process");
-const { existsSync, readdirSync, readFileSync } = require("node:fs");
+const { existsSync, readdirSync, readFileSync, statSync } = require("node:fs");
 const path = require("node:path");
 
 const marketingDir = path.join("app", "(marketing)");
+const importPattern = /(?:from|import)\s*["']([^"']+)["']/g;
+const sourceExtensions = [".tsx", ".ts", ".jsx", ".js"];
+// Shared chrome changes every page's look, not what a page says.
+const sharedComponentDirs = [
+  path.join("components", "ui"),
+  path.join("components", "layout"),
+];
 
 const git = (args) => {
   try {
@@ -25,19 +32,77 @@ const readShallowBoundary = () => {
   return new Set(readFileSync(shallowFile, "utf8").split("\n").filter(Boolean));
 };
 
-const lastCommit = (source, shallowBoundary) => {
+const resolveImport = (specifier, fromFile) => {
+  let base = null;
+  if (specifier.startsWith("@/")) {
+    base = specifier.slice(2);
+  } else if (specifier.startsWith(".")) {
+    base = path.join(path.dirname(fromFile), specifier);
+  }
+  if (!base) {
+    return null;
+  }
+  const candidates = [
+    base,
+    ...sourceExtensions.map((extension) => `${base}${extension}`),
+    ...sourceExtensions.map((extension) =>
+      path.join(base, `index${extension}`)
+    ),
+  ];
+  return (
+    candidates.find(
+      (candidate) => existsSync(candidate) && statSync(candidate).isFile()
+    ) ?? null
+  );
+};
+
+const listFiles = (dir) =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(dir, entry.name);
+    return entry.isDirectory() ? listFiles(entryPath) : [entryPath];
+  });
+
+const isPageContent = (file, pageDir) =>
+  file.startsWith(`${pageDir}${path.sep}`) ||
+  (file.startsWith(`components${path.sep}`) &&
+    !sharedComponentDirs.some((dir) => file.startsWith(`${dir}${path.sep}`)));
+
+// The page's own files plus the components they render, followed through
+// imports, so an edit to a page's content component dates that page.
+const collectContentFiles = (pageDir, entryFiles) => {
+  const seen = new Set();
+  const queue = [...entryFiles];
+  while (queue.length > 0) {
+    const file = queue.pop();
+    if (seen.has(file)) {
+      continue;
+    }
+    seen.add(file);
+    for (const [, specifier] of readFileSync(file, "utf8").matchAll(
+      importPattern
+    )) {
+      const resolved = resolveImport(specifier, file);
+      if (resolved && isPageContent(resolved, pageDir)) {
+        queue.push(resolved);
+      }
+    }
+  }
+  return [...seen];
+};
+
+const lastCommit = (files, shallowBoundary) => {
   const [hash, date] = git([
     "log",
     "-1",
     "--format=%H %cI",
     "--",
-    source,
+    ...files,
   ]).split(" ");
   return hash && date && !shallowBoundary.has(hash) ? date : null;
 };
 
 /**
- * Last git commit date of each marketing page's source folder, keyed by route.
+ * Last git commit date of each marketing page's content, keyed by route.
  * Pages without a trustworthy date are left out.
  */
 const readPageLastModified = () => {
@@ -45,19 +110,21 @@ const readPageLastModified = () => {
     return {};
   }
   const shallowBoundary = readShallowBoundary();
-  const sources = [["/", path.join(marketingDir, "page.tsx")]];
+  const pages = [["/", marketingDir, [path.join(marketingDir, "page.tsx")]]];
   for (const entry of readdirSync(marketingDir, { withFileTypes: true })) {
-    if (
-      entry.isDirectory() &&
-      existsSync(path.join(marketingDir, entry.name, "page.tsx"))
-    ) {
-      sources.push([`/${entry.name}`, path.join(marketingDir, entry.name)]);
+    const pageDir = path.join(marketingDir, entry.name);
+    if (entry.isDirectory() && existsSync(path.join(pageDir, "page.tsx"))) {
+      pages.push([`/${entry.name}`, pageDir, listFiles(pageDir)]);
     }
   }
 
   const lastModified = {};
-  for (const [route, source] of sources) {
-    const date = lastCommit(source, shallowBoundary);
+  for (const [route, pageDir, entryFiles] of pages) {
+    const files = collectContentFiles(
+      route === "/" ? path.join(marketingDir, "page.tsx") : pageDir,
+      entryFiles
+    );
+    const date = lastCommit(files, shallowBoundary);
     if (date) {
       lastModified[route] = date;
     }

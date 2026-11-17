@@ -61,6 +61,35 @@ describe("blog path status", () => {
     await expect(getBlogPathStatus("/old-slug")).resolves.toBe("servable");
   });
 
+  it("only trusts stale lists to prove a post exists, and waits before retrying", async () => {
+    getSanityBlogPaths.mockResolvedValueOnce(new Set(["/kept"]));
+    getSanityBlogPaths.mockRejectedValue(new Error("Sanity down"));
+    fetchAllRevnuPosts.mockResolvedValue([]);
+    fetchRevnuPost.mockResolvedValue(null);
+
+    await expect(getBlogPathStatus("/kept", 0)).resolves.toBe("servable");
+    await expect(getBlogPathStatus("/kept", 61_000)).resolves.toBe("servable");
+    await expect(getBlogPathStatus("/new-post", 61_000)).resolves.toBe(
+      "unknown"
+    );
+    await expect(getBlogPathStatus("/new-post", 90_000)).resolves.toBe(
+      "unknown"
+    );
+    expect(getSanityBlogPaths).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops serving an old slug once its target leaves the list", async () => {
+    getSanityBlogPaths.mockResolvedValue(new Set());
+    fetchAllRevnuPosts.mockResolvedValueOnce([revnuSummary("target", 1)]);
+    fetchAllRevnuPosts.mockResolvedValue([]);
+    fetchRevnuPost.mockResolvedValue({ post: revnuSummary("target", 1) });
+
+    await expect(getBlogPathStatus("/old-slug", 0)).resolves.toBe("servable");
+    await expect(getBlogPathStatus("/old-slug", 61_000)).resolves.toBe(
+      "missing"
+    );
+  });
+
   it("does not 404 anything while the post lists are unreachable", async () => {
     getSanityBlogPaths.mockRejectedValue(new Error("Sanity down"));
     fetchAllRevnuPosts.mockResolvedValue([]);

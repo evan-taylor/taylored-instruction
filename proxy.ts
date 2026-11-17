@@ -71,7 +71,7 @@ const getSanityDashboardRedirectUrl = (url: URL): URL | null => {
 
 const getBlogPostPath = (pathname: string) => {
   const match = blogPostPathPattern.exec(pathname);
-  if (!match?.[1]) {
+  if (!match?.[1] || match[1] === "/sitemap.xml") {
     return null;
   }
   try {
@@ -161,5 +161,10 @@ export default convexAuthNextjsMiddleware(
 export const config = {
   // The following matcher runs middleware on all routes
   // except static assets.
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    "/((?!.*\\..*|_next).*)",
+    "/",
+    "/(api|trpc)(.*)",
+    "/blog/((?!sitemap\\.xml$).*)",
+  ],
 };
