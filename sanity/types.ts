@@ -39,6 +39,8 @@ export type BlogPostSlug = {
 };
 
 export type BlogPostSitemapEntry = BlogPostSlug & {
+  title: string;
+  excerpt: string;
   _updatedAt: string;
   publishedAt: string;
 };

@@ -1,6 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
+import { getRevnuPosts } from "@/lib/revnu";
 import { sanityFetch } from "@/sanity/lib/client";
 import { POSTS_SITEMAP_QUERY } from "@/sanity/lib/queries";
 import type { BlogPostSitemapEntry } from "@/sanity/types";
@@ -100,6 +101,15 @@ const getRouteConfig = (routePath: string): RouteConfig => {
   );
 };
 
+const pageLastModified: Record<string, string> = JSON.parse(
+  process.env.PAGE_LAST_MODIFIED ?? "{}"
+);
+
+const latestDate = (dates: Date[]) =>
+  dates.length > 0
+    ? new Date(Math.max(...dates.map((date) => date.getTime())))
+    : undefined;
+
 type ResourceRouteEntry = {
   path: string;
   lastModified: Date;
@@ -175,8 +185,34 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Still return the static routes when Convex is unavailable.
   }
 
+  const revnuPosts = await getRevnuPosts().catch(() => []);
+  const listingLastModified: Record<string, Date | undefined> = {
+    "/blog": latestDate([
+      ...Array.from(
+        dynamicBlogRouteMap.values(),
+        (route) => route.lastModified
+      ),
+      ...revnuPosts.map((post) => new Date(post.updatedAt ?? post.publishedAt)),
+    ]),
+    "/resources": latestDate(
+      Array.from(
+        dynamicResourceRouteMap.values(),
+        (route) => route.lastModified
+      )
+    ),
+  };
+  const staticLastModified = (path: string) => {
+    if (path in listingLastModified) {
+      return listingLastModified[path];
+    }
+    const committedAt = pageLastModified[path];
+    return committedAt ? new Date(committedAt) : undefined;
+  };
+
   const entries = [
-    ...staticRoutePaths.map((path) => buildEntry({ path })),
+    ...staticRoutePaths.map((path) =>
+      buildEntry({ path, lastModified: staticLastModified(path) })
+    ),
     ...registrationRoutes.map((path) => buildEntry({ path })),
     ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
       buildEntry({
