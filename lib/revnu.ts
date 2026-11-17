@@ -3,7 +3,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 const revnuApiBase = "https://revnu.com/api/content/v1";
 const listPageLimit = 200;
-const rootRelativeHrefPattern = /href="\/(?!\/)/g;
+const rootRelativeHrefPattern = /href="(\/[^"/][^"#?]*)([^"]*)"/g;
 
 export const REVNU_CACHE_TAG = "revnu";
 
@@ -63,7 +63,7 @@ export type RevnuPostResponse = {
 };
 
 export type RevnuPostResolution =
-  | { kind: "post"; data: RevnuPostResponse }
+  | { kind: "post"; data: RevnuPostResponse; postPaths: string[] }
   | { kind: "redirect"; canonicalPath: string };
 
 const getAuthHeaders = () => {
@@ -155,14 +155,20 @@ export const resolveRevnuPost = async (
   if (data.post.canonicalPath !== canonicalPath) {
     return { kind: "redirect", canonicalPath: data.post.canonicalPath };
   }
-  return { kind: "post", data };
+  return { kind: "post", data, postPaths: [...listedPaths] };
 };
 
 export const getRevnuPostHref = (canonicalPath: string) =>
   `/blog${canonicalPath}`;
 
-export const rewriteRevnuBodyLinks = (html: string) =>
-  html.replace(rootRelativeHrefPattern, 'href="/blog/');
+export const rewriteRevnuBodyLinks = (html: string, postPaths: string[]) => {
+  const knownPaths = new Set(postPaths);
+  return html.replace(
+    rootRelativeHrefPattern,
+    (match, path: string, suffix: string) =>
+      knownPaths.has(path) ? `href="${getRevnuPostHref(path)}${suffix}"` : match
+  );
+};
 
 export const buildRevnuSitemap = (
   posts: RevnuPostSummary[]
