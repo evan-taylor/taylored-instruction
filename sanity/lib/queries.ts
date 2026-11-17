@@ -43,6 +43,8 @@ export const POSTS_SITEMAP_QUERY = defineQuery(
     publishedAt <= now()
   ] | order(publishedAt desc){
     "slug": slug.current,
+    title,
+    excerpt,
     _updatedAt,
     publishedAt
   }`

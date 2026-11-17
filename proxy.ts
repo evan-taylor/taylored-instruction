@@ -4,6 +4,7 @@ import {
   nextjsMiddlewareRedirect,
 } from "@convex-dev/auth/nextjs/server";
 import { NextResponse } from "next/server";
+import { getBlogPathStatus } from "@/lib/blogPathIndex";
 import { AUTH_SESSION_SECONDS } from "@/shared/authSession";
 
 const isLoginPage = createRouteMatcher(["/login"]);
@@ -19,6 +20,8 @@ const isProtectedRoute = createRouteMatcher([
 const queryParamsToStrip = ["amp", "__a"] as const;
 const permanentRedirectStatus = 308;
 const redirectEligibleMethods = new Set(["GET", "HEAD"]);
+const blogPostPathPattern = /^\/blog(\/.+?)\/?$/;
+const blogNotFoundHeader = "x-blog-not-found";
 
 const getLegacyInstructorRedirectUrl = (
   url: URL,
@@ -66,6 +69,34 @@ const getSanityDashboardRedirectUrl = (url: URL): URL | null => {
   return redirectUrl;
 };
 
+const getBlogPostPath = (pathname: string) => {
+  const match = blogPostPathPattern.exec(pathname);
+  if (!match?.[1] || match[1] === "/sitemap.xml") {
+    return null;
+  }
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+};
+
+// The marketing layout streams, so a page's notFound() arrives after a 200
+// status. Render the not-found page once more and send it with a real 404.
+const renderBlogNotFound = async (url: URL, method: string) => {
+  if (method === "HEAD") {
+    return new NextResponse(null, { status: 404 });
+  }
+  const page = await fetch(url, {
+    cache: "no-store",
+    headers: { [blogNotFoundHeader]: "1" },
+  });
+  return new NextResponse(page.body, {
+    status: 404,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+};
+
 export default convexAuthNextjsMiddleware(
   async (request, { convexAuth }) => {
     const url = new URL(request.url);
@@ -98,6 +129,15 @@ export default convexAuthNextjsMiddleware(
       if (sanityDashboardRedirectUrl) {
         return NextResponse.redirect(sanityDashboardRedirectUrl);
       }
+
+      const blogPostPath = getBlogPostPath(url.pathname);
+      if (
+        blogPostPath &&
+        !request.headers.has(blogNotFoundHeader) &&
+        (await getBlogPathStatus(blogPostPath)) === "missing"
+      ) {
+        return await renderBlogNotFound(url, request.method);
+      }
     }
 
     if (isDebugRoute(request)) {
@@ -121,5 +161,10 @@ export default convexAuthNextjsMiddleware(
 export const config = {
   // The following matcher runs middleware on all routes
   // except static assets.
-  matcher: ["/((?!.*\\..*|_next).*)", "/", "/(api|trpc)(.*)"],
+  matcher: [
+    "/((?!.*\\..*|_next).*)",
+    "/",
+    "/(api|trpc)(.*)",
+    "/blog/((?!sitemap\\.xml$).*)",
+  ],
 };

@@ -1,5 +1,10 @@
+const { readPageLastModified } = require("./scripts/page-last-modified");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  env: {
+    PAGE_LAST_MODIFIED: JSON.stringify(readPageLastModified()),
+  },
   reactStrictMode: true,
   skipTrailingSlashRedirect: true,
   rewrites() {
