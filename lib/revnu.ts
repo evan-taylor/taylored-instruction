@@ -93,12 +93,12 @@ const fetchRevnuPostPages = async (
     : posts;
 };
 
-const fetchAllRevnuPosts = async (): Promise<RevnuPostSummary[]> => {
+export const fetchAllRevnuPosts = async (): Promise<RevnuPostSummary[]> => {
   const headers = getAuthHeaders();
   return headers ? await fetchRevnuPostPages(headers, null) : [];
 };
 
-const fetchRevnuPost = async (
+export const fetchRevnuPost = async (
   slug: string
 ): Promise<RevnuPostResponse | null> => {
   const headers = getAuthHeaders();
