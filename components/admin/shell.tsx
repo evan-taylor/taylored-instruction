@@ -14,7 +14,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  Newspaper,
   Ticket,
   Users,
   X,
@@ -70,10 +69,7 @@ const NAV: { group?: string; items: NavItem[] }[] = [
   },
   {
     group: "Tools",
-    items: [
-      { label: "Content studio", href: "/admin/studio", icon: Newspaper },
-      { label: "Agent access", href: "/admin/agent-access", icon: Bot },
-    ],
+    items: [{ label: "Agent access", href: "/admin/agent-access", icon: Bot }],
   },
 ];
 /** Links out of the admin workspace, kept apart from the page navigation. */

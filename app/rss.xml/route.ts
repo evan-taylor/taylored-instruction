@@ -20,7 +20,7 @@ export async function GET() {
   const items = posts
     .slice(0, feedItemLimit)
     .map((post) => {
-      const postUrl = post.canonicalUrl;
+      const postUrl = escapeXml(post.canonicalUrl);
 
       return `
         <item>
