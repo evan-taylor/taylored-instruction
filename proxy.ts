@@ -8,7 +8,6 @@ import { AUTH_SESSION_SECONDS } from "@/shared/authSession";
 
 const isLoginPage = createRouteMatcher(["/login"]);
 const isDebugRoute = createRouteMatcher(["/debug-auth"]);
-const isSanityStudioRoute = createRouteMatcher(["/admin/studio(.*)"]);
 const isProtectedRoute = createRouteMatcher([
   "/my-account(.*)",
   "/instructor/sessions(.*)",
@@ -56,16 +55,6 @@ const getCleanedQueryRedirectUrl = (url: URL): URL | null => {
   return removedLegacyQueryParam ? cleanedUrl : null;
 };
 
-const getSanityDashboardRedirectUrl = (url: URL): URL | null => {
-  if (url.pathname !== "/" || !url.searchParams.has("_context")) {
-    return null;
-  }
-
-  const redirectUrl = new URL(url.toString());
-  redirectUrl.pathname = "/admin/studio";
-  return redirectUrl;
-};
-
 export default convexAuthNextjsMiddleware(
   async (request, { convexAuth }) => {
     const url = new URL(request.url);
@@ -93,18 +82,9 @@ export default convexAuthNextjsMiddleware(
           permanentRedirectStatus
         );
       }
-
-      const sanityDashboardRedirectUrl = getSanityDashboardRedirectUrl(url);
-      if (sanityDashboardRedirectUrl) {
-        return NextResponse.redirect(sanityDashboardRedirectUrl);
-      }
     }
 
     if (isDebugRoute(request)) {
-      return;
-    }
-
-    if (isSanityStudioRoute(request)) {
       return;
     }
 

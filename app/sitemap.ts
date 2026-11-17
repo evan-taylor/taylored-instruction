@@ -1,9 +1,6 @@
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
-import { sanityFetch } from "@/sanity/lib/client";
-import { POSTS_SITEMAP_QUERY } from "@/sanity/lib/queries";
-import type { BlogPostSitemapEntry } from "@/sanity/types";
 
 const baseUrl = "https://tayloredinstruction.com";
 const staticRoutePaths = [
@@ -124,7 +121,6 @@ const buildEntry = ({
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
-  const dynamicBlogRouteMap = new Map<string, ResourceRouteEntry>();
 
   try {
     const resources = await fetchQuery(
@@ -141,25 +137,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   } catch {
     // If Convex is unavailable, still return a valid sitemap for static routes.
-  }
-
-  try {
-    const posts = await sanityFetch<BlogPostSitemapEntry[]>(
-      POSTS_SITEMAP_QUERY,
-      {
-        tags: ["post"],
-      }
-    );
-
-    for (const post of posts) {
-      const path = `/blog/${post.slug}`;
-      dynamicBlogRouteMap.set(path, {
-        path,
-        lastModified: new Date(post._updatedAt ?? post.publishedAt),
-      });
-    }
-  } catch {
-    // If Sanity is unavailable, still return a valid sitemap.
   }
 
   const registrationRoutes: string[] = ["/classes", "/group-training"];
@@ -182,12 +159,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       buildEntry({
         path: resourceRoute.path,
         lastModified: resourceRoute.lastModified,
-      })
-    ),
-    ...Array.from(dynamicBlogRouteMap.values()).map((blogRoute) =>
-      buildEntry({
-        path: blogRoute.path,
-        lastModified: blogRoute.lastModified,
       })
     ),
   ];

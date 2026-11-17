@@ -3,21 +3,15 @@
 import { CalendarDays } from "lucide-react";
 import type { Metadata } from "next";
 import { cacheLife, cacheTag } from "next/cache";
-import NextImage from "next/image";
+import Image from "next/image";
 import Link from "next/link";
-import { Image } from "next-sanity/image";
-import { getSanityBlogPaths, mergeBlogListings } from "@/lib/blogRouting";
-import { getRevnuPosts, REVNU_CACHE_TAG } from "@/lib/revnu";
+import { getRevnuPostHref, getRevnuPosts, REVNU_CACHE_TAG } from "@/lib/revnu";
 import { type BuildPageMetadataInput, buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
   getWebPageSchema,
 } from "@/lib/structuredData";
-import { sanityFetch } from "@/sanity/lib/client";
-import { urlFor } from "@/sanity/lib/image";
-import { POSTS_QUERY } from "@/sanity/lib/queries";
-import type { BlogPostSummary } from "@/sanity/types";
 
 const pageTitle = "Taylored Instruction Blog";
 const pageDescription =
@@ -38,8 +32,8 @@ const blogPageMetadata: BuildPageMetadataInput = {
   ],
 };
 
-const formatPublishedDate = (date: string) =>
-  new Date(date).toLocaleDateString("en-US", {
+const formatPublishedDate = (date: Date) =>
+  date.toLocaleDateString("en-US", {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -51,23 +45,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function BlogPage() {
   cacheLife("minutes");
-  cacheTag("post");
   cacheTag(REVNU_CACHE_TAG);
 
-  const posts = await sanityFetch<BlogPostSummary[]>(POSTS_QUERY, {
-    tags: ["post"],
-  }).catch(() => null);
-  const [sanityPaths, revnuPosts] = await Promise.all([
-    getSanityBlogPaths().catch(() => null),
-    getRevnuPosts().catch(() => []),
-  ]);
-
-  const postList = mergeBlogListings({
-    sanityPosts: posts ?? [],
-    sanityPaths,
-    revnuPosts,
-    limit: listingLimit,
-  });
+  const posts = await getRevnuPosts().catch(() => []);
+  const postList = posts.slice(0, listingLimit);
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
     description: pageDescription,
@@ -86,11 +67,13 @@ export default async function BlogPage() {
       position: index + 1,
       item: {
         "@type": "Article",
-        description: post.excerpt,
+        description: post.metaDescription,
         name: post.title,
-        dateModified: post.updatedAt,
-        datePublished: post.publishedAt,
-        url: `https://tayloredinstruction.com${post.href}`,
+        dateModified: new Date(
+          post.updatedAt ?? post.publishedAt
+        ).toISOString(),
+        datePublished: new Date(post.publishedAt).toISOString(),
+        url: post.canonicalUrl,
       },
     })),
   };
@@ -156,33 +139,20 @@ export default async function BlogPage() {
         ) : (
           <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-2 lg:grid-cols-3">
             {postList.map((post) => {
-              const imageUrl = post.sanityImage
-                ? urlFor(post.sanityImage)
-                    .width(cardImageWidth)
-                    .height(cardImageHeight)
-                    .url()
-                : null;
+              const href = getRevnuPostHref(post.canonicalPath);
+              const publishedAt = new Date(post.publishedAt);
 
               return (
                 <article
                   className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs transition-shadow hover:shadow-md"
-                  key={post.key}
+                  key={post.canonicalPath}
                 >
-                  {imageUrl ? (
+                  {post.heroImageUrl ? (
                     <Image
-                      alt={post.sanityImage?.alt ?? post.title}
-                      className="aspect-video w-full object-cover"
-                      height={cardImageHeight}
-                      src={imageUrl}
-                      width={cardImageWidth}
-                    />
-                  ) : null}
-                  {post.imageUrl ? (
-                    <NextImage
                       alt={post.title}
                       className="aspect-video w-full object-cover"
                       height={cardImageHeight}
-                      src={post.imageUrl}
+                      src={post.heroImageUrl}
                       unoptimized
                       width={cardImageWidth}
                     />
@@ -190,21 +160,21 @@ export default async function BlogPage() {
                   <div className="p-6">
                     <div className="flex items-center gap-2 text-slate-500 text-sm">
                       <CalendarDays className="h-4 w-4" />
-                      <time dateTime={post.publishedAt}>
-                        {formatPublishedDate(post.publishedAt)}
+                      <time dateTime={publishedAt.toISOString()}>
+                        {formatPublishedDate(publishedAt)}
                       </time>
                     </div>
                     <h2 className="mt-3 font-semibold text-2xl text-slate-900 leading-tight">
-                      <Link className="hover:text-primary" href={post.href}>
+                      <Link className="hover:text-primary" href={href}>
                         {post.title}
                       </Link>
                     </h2>
                     <p className="mt-3 text-slate-700 leading-relaxed">
-                      {post.excerpt}
+                      {post.metaDescription}
                     </p>
                     <Link
                       className="mt-5 inline-flex font-medium text-primary text-sm hover:underline"
-                      href={post.href}
+                      href={href}
                     >
                       Read article
                     </Link>
