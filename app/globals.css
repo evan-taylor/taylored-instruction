@@ -109,6 +109,64 @@
   }
 }
 
+/*
+ * Revnu ships rendered post HTML with its own utility class names. These rules
+ * stay unlayered so the blog's article styles win over any of those classes.
+ */
+.revnu-post-body h2 {
+  @apply mt-10 mb-0 font-semibold text-3xl text-slate-900 leading-tight;
+}
+
+.revnu-post-body h3 {
+  @apply mt-8 mb-0 font-semibold text-2xl text-slate-900 leading-tight;
+}
+
+.revnu-post-body p {
+  @apply mt-5 mb-0 text-lg text-slate-700 leading-relaxed;
+}
+
+.revnu-post-body ul,
+.revnu-post-body ol {
+  @apply mt-5 space-y-2 pl-6 text-slate-700;
+}
+
+.revnu-post-body ul {
+  @apply list-disc;
+}
+
+.revnu-post-body ol {
+  @apply list-decimal;
+}
+
+.revnu-post-body li {
+  @apply leading-relaxed;
+}
+
+.revnu-post-body blockquote {
+  @apply mt-6 border-primary border-l-4 pl-5 text-slate-700 italic leading-relaxed;
+}
+
+.revnu-post-body a {
+  @apply font-medium text-primary underline-offset-4 hover:underline;
+}
+
+.revnu-post-body img {
+  @apply my-8 h-auto w-full rounded-xl;
+}
+
+.revnu-post-body table {
+  @apply mt-6 w-full border-collapse text-left text-base text-slate-700;
+}
+
+.revnu-post-body th,
+.revnu-post-body td {
+  @apply border border-slate-200 px-3 py-2 align-top;
+}
+
+.revnu-post-body th {
+  @apply bg-slate-50 font-semibold text-slate-900;
+}
+
 @utility container {
   @apply mx-auto px-4 max-w-7xl;
 }

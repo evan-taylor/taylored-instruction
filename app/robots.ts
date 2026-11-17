@@ -8,6 +8,9 @@ export default function robots(): MetadataRoute.Robots {
       disallow: ["/api/", "/admin/", "/private/"],
     },
     host: "https://tayloredinstruction.com",
-    sitemap: "https://tayloredinstruction.com/sitemap.xml",
+    sitemap: [
+      "https://tayloredinstruction.com/sitemap.xml",
+      "https://tayloredinstruction.com/blog/sitemap.xml",
+    ],
   };
 }
