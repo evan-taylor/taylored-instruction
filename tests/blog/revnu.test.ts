@@ -8,9 +8,12 @@ vi.mock("next/cache", () => ({
 }));
 
 const { POST } = await import("@/app/api/revnu-revalidate/route");
-const { buildRevnuSitemap, getRevnuPosts, resolveRevnuPost } = await import(
-  "@/lib/revnu"
-);
+const {
+  buildRevnuSitemap,
+  getRevnuPosts,
+  resolveRevnuPost,
+  rewriteRevnuBodyLinks,
+} = await import("@/lib/revnu");
 const { revalidateTag } = await import("next/cache");
 
 const apiKey = "rvc_test_key";
@@ -151,6 +154,30 @@ describe("Revnu post resolution", () => {
 
     mockFetch(listRoute([summary("a")], postResponse("a")));
     await expect(resolveRevnuPost("/a")).resolves.not.toBeNull();
+  });
+});
+
+describe("Revnu body links", () => {
+  it("moves links to other posts under /blog and leaves other site links alone", () => {
+    const html = [
+      '<a href="/cpr-basics">post</a>',
+      '<a href="/guides/aed#steps">nested post</a>',
+      '<a href="/classes">classes</a>',
+      '<a href="/blog/cpr-basics">already prefixed</a>',
+      '<a href="//cdn.example.com/x">protocol-relative</a>',
+      '<a href="https://tayloredinstruction.com/blog">absolute</a>',
+    ].join("");
+
+    expect(rewriteRevnuBodyLinks(html, ["/cpr-basics", "/guides/aed"])).toBe(
+      [
+        '<a href="/blog/cpr-basics">post</a>',
+        '<a href="/blog/guides/aed#steps">nested post</a>',
+        '<a href="/classes">classes</a>',
+        '<a href="/blog/cpr-basics">already prefixed</a>',
+        '<a href="//cdn.example.com/x">protocol-relative</a>',
+        '<a href="https://tayloredinstruction.com/blog">absolute</a>',
+      ].join("")
+    );
   });
 });
 

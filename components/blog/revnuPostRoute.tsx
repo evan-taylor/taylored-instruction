@@ -24,5 +24,7 @@ export const renderRevnuPost = async (canonicalPath: string) => {
   if (resolution.kind === "redirect") {
     permanentRedirect(getRevnuPostHref(resolution.canonicalPath));
   }
-  return <RevnuPostArticle data={resolution.data} />;
+  return (
+    <RevnuPostArticle data={resolution.data} postPaths={resolution.postPaths} />
+  );
 };
