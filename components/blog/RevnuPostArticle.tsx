@@ -13,7 +13,13 @@ const formatPublishedDate = (date: Date) =>
     year: "numeric",
   });
 
-export const RevnuPostArticle = ({ data }: { data: RevnuPostResponse }) => {
+export const RevnuPostArticle = ({
+  data,
+  postPaths,
+}: {
+  data: RevnuPostResponse;
+  postPaths: string[];
+}) => {
   const { post } = data;
   const publishedAt = new Date(post.publishedAt);
 
@@ -70,7 +76,7 @@ export const RevnuPostArticle = ({ data }: { data: RevnuPostResponse }) => {
           className="revnu-post-body text-lg"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: Revnu escapes raw HTML and rejects javascript: URLs
           dangerouslySetInnerHTML={{
-            __html: rewriteRevnuBodyLinks(post.body.html),
+            __html: rewriteRevnuBodyLinks(post.body.html, postPaths),
           }}
         />
       </section>
