@@ -749,10 +749,14 @@ function useOrderParam() {
   return { orderId, setOrderId, openNew: params.get("new") === "1" };
 }
 
-function useVisibleOrders(search: string, tab: StatusTab) {
+function useVisibleOrders(
+  search: string,
+  tab: StatusTab,
+  includeAbandoned: boolean
+) {
   const paginated = usePaginatedQuery(
     api.registrationOperations.orders,
-    {},
+    { includeAbandoned },
     { initialNumItems: PAGE }
   );
   const trimmed = search.trim();
@@ -764,7 +768,9 @@ function useVisibleOrders(search: string, tab: StatusTab) {
   }, [trimmed]);
   const lookup = useQuery(
     api.registrationDashboard.lookup,
-    byEmail && debounced.includes("@") ? { email: debounced } : "skip"
+    byEmail && debounced.includes("@")
+      ? { email: debounced, includeAbandoned }
+      : "skip"
   );
   const [lastLookup, setLastLookup] = useState<typeof lookup>();
   useEffect(() => {
@@ -866,9 +872,11 @@ export function OrderAdmin() {
   const [enrollOpen, setEnrollOpen] = useState(openNew);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<StatusTab>("all");
+  const [showAbandoned, setShowAbandoned] = useState(false);
   const [selected, setSelected] = useState<OrderId[]>([]);
   const { paginated, byEmail, visible, counts, known, loading } =
-    useVisibleOrders(search, tab);
+    useVisibleOrders(search, tab, showAbandoned);
+  const tabs = STATUS_TABS.filter((t) => showAbandoned || t.id !== "expired");
   const toggle = (id: OrderId) =>
     setSelected((current) =>
       current.includes(id) ? current.filter((x) => x !== id) : [...current, id]
@@ -926,12 +934,23 @@ export function OrderAdmin() {
             />
           </div>
         </CardHeader>
-        <div className="px-5">
+        <div className="flex flex-col gap-2 px-5 sm:flex-row sm:items-center sm:justify-between">
           <Tabs
             label="Order status"
             onChange={setTab}
-            tabs={STATUS_TABS.map((t) => ({ ...t, count: counts[t.id] }))}
+            tabs={tabs.map((t) => ({ ...t, count: counts[t.id] }))}
             value={tab}
+          />
+          <Toggle
+            checked={showAbandoned}
+            className="shrink-0"
+            label="Show abandoned checkouts"
+            onChange={(checked) => {
+              setShowAbandoned(checked);
+              if (!checked && tab === "expired") {
+                setTab("all");
+              }
+            }}
           />
         </div>
         <CardContent className="p-0">

@@ -180,6 +180,33 @@ export async function enqueue(
     });
   }
 }
+/**
+ * A checkout released before any payment or staff confirmation: the purchaser
+ * started registering and never finished. Paid orders that are later canceled
+ * keep settledAt and become settled or exception, never expired.
+ */
+export function isAbandonedOrder(
+  order: Pick<Doc<"registrationOrders">, "status" | "settledAt">
+) {
+  return order.status === "expired" && order.settledAt === undefined;
+}
+/** A seat canceled with its abandoned order; it was never a real enrollment. */
+async function isAbandonedSeat(ctx: QueryCtx, seat: Doc<"registrationSeats">) {
+  if (seat.state !== "canceled" || seat.settledAt !== undefined) {
+    return false;
+  }
+  const order = await ctx.db.get(seat.orderId);
+  return order !== null && isAbandonedOrder(order);
+}
+export async function withoutAbandonedSeats(
+  ctx: QueryCtx,
+  seats: Doc<"registrationSeats">[]
+) {
+  const abandoned = await Promise.all(
+    seats.map((seat) => isAbandonedSeat(ctx, seat))
+  );
+  return seats.filter((_, index) => !abandoned[index]);
+}
 export async function release(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">,

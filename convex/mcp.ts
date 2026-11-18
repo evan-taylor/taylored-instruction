@@ -4,7 +4,7 @@ import { isAdminEmail } from "../shared/adminEmails";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
-import { hash, staff } from "./registrationHelpers";
+import { hash, staff, withoutAbandonedSeats } from "./registrationHelpers";
 
 /**
  * Agent access for the admin workspace.
@@ -364,7 +364,7 @@ export const sessionOverview = query({
         .collect(),
     ]);
     const counts = { held: 0, active: 0, canceled: 0, transferred: 0 };
-    for (const seat of seats) {
+    for (const seat of await withoutAbandonedSeats(ctx, seats)) {
       counts[seat.state] += 1;
     }
     return {

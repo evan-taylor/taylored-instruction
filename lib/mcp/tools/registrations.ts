@@ -96,6 +96,7 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
         ok(
           await ctx.convex.query(api.registrationDashboard.lookup, {
             email: args.email,
+            includeAbandoned: true,
           })
         )
       )
