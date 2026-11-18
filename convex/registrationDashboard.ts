@@ -155,7 +155,7 @@ export const summary = query({
           available: m.availableCount ?? 0,
         })),
       nextSessions: upcoming.slice(0, RECENT),
-      recentOrders: orders.slice(0, RECENT),
+      recentOrders: orders.filter((o) => !isAbandonedOrder(o)).slice(0, RECENT),
       recentActivity: activity,
     };
   },

@@ -259,6 +259,16 @@ describe("Abandoned checkouts", () => {
     );
   });
 
+  it("are left out of the dashboard's recent orders", async () => {
+    const f = await fixture();
+    const summary = await f.adminClient.query(
+      api.registrationDashboard.summary
+    );
+    expect(summary.recentOrders.map((order) => order._id).sort()).toEqual(
+      f.kept.map((order) => order.orderId).sort()
+    );
+  });
+
   it("are hidden from email lookup unless staff opt in", async () => {
     const f = await fixture();
     const [walkedAway] = f.abandoned;
