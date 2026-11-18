@@ -43,7 +43,6 @@ import type * as registrationSchema from "../registrationSchema.js";
 import type * as registrationTransfers from "../registrationTransfers.js";
 import type * as registrationWaitlist from "../registrationWaitlist.js";
 import type * as registrationWebhook from "../registrationWebhook.js";
-import type * as seoContent from "../seoContent.js";
 
 import type {
   ApiFromModules,
@@ -87,7 +86,6 @@ declare const fullApi: ApiFromModules<{
   registrationTransfers: typeof registrationTransfers;
   registrationWaitlist: typeof registrationWaitlist;
   registrationWebhook: typeof registrationWebhook;
-  seoContent: typeof seoContent;
 }>;
 
 /**

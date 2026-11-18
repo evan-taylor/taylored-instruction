@@ -201,6 +201,53 @@ const nextConfig = {
         permanent: true,
       },
 
+      // Retired local-SEO resource pages.
+      {
+        source: "/resources",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        source: "/resources/",
+        destination: "/blog",
+        permanent: true,
+      },
+      {
+        source: "/resources/aed-program-services-:city",
+        destination: "/aeds",
+        permanent: true,
+      },
+      {
+        source: "/resources/bls-certification-:city",
+        destination: "/bls",
+        permanent: true,
+      },
+      {
+        source: "/resources/corporate-cpr-training-:city",
+        destination: "/corporate-training",
+        permanent: true,
+      },
+      {
+        source: "/resources/first-aid-cpr-aed-classes-:city",
+        destination: "/first-aid-cpr-aed",
+        permanent: true,
+      },
+      {
+        source: "/resources/heartsaver-cpr-aed-:city",
+        destination: "/heartsaver",
+        permanent: true,
+      },
+      {
+        source: "/resources/lifeguarding-certification-:city",
+        destination: "/lifeguarding",
+        permanent: true,
+      },
+      {
+        source: "/resources/:path*",
+        destination: "/classes",
+        permanent: true,
+      },
+
       // Legacy document URLs now handled via contact flow.
       {
         source: "/BLS-Fact-Sheet.pdf",

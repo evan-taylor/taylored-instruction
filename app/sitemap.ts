@@ -9,7 +9,6 @@ const staticRoutePaths = [
   "/about",
   "/contact",
   "/blog",
-  "/resources",
   "/bls",
   "/basic-life-support",
   "/first-aid-cpr-aed",
@@ -45,7 +44,6 @@ const routeConfigByPath: Record<string, RouteConfig> = {
   "/about": { priority: 0.9, changeFrequency: "monthly" },
   "/contact": { priority: 0.9, changeFrequency: "monthly" },
   "/blog": { priority: 0.9, changeFrequency: "weekly" },
-  "/resources": { priority: 0.95, changeFrequency: "weekly" },
   "/bls": { priority: 0.95, changeFrequency: "weekly" },
   "/basic-life-support": { priority: 0.95, changeFrequency: "weekly" },
   "/first-aid-cpr-aed": { priority: 0.95, changeFrequency: "weekly" },
@@ -76,13 +74,6 @@ const getRouteConfig = (routePath: string): RouteConfig => {
   if (routePath.startsWith("/courses/")) {
     return { priority: 0.85, changeFrequency: "weekly" };
   }
-  if (routePath.startsWith("/resources/")) {
-    return {
-      priority: 0.85,
-      changeFrequency: "weekly",
-    };
-  }
-
   if (routePath.startsWith("/blog/")) {
     return {
       priority: 0.8,
@@ -107,11 +98,6 @@ const latestDate = (dates: Date[]) =>
     ? new Date(Math.max(...dates.map((date) => date.getTime())))
     : undefined;
 
-type ResourceRouteEntry = {
-  path: string;
-  lastModified: Date;
-};
-
 const buildEntry = ({
   path,
   lastModified,
@@ -130,25 +116,6 @@ const buildEntry = ({
 };
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const dynamicResourceRouteMap = new Map<string, ResourceRouteEntry>();
-
-  try {
-    const resources = await fetchQuery(
-      api.seoContent.getPublishedPageSlugs,
-      {}
-    );
-
-    for (const resource of resources) {
-      const path = `/resources/${resource.slug}`;
-      dynamicResourceRouteMap.set(path, {
-        path,
-        lastModified: new Date(resource.updatedAt),
-      });
-    }
-  } catch {
-    // If Convex is unavailable, still return a valid sitemap for static routes.
-  }
-
   const registrationRoutes: string[] = ["/classes", "/group-training"];
   try {
     const catalog = await fetchQuery(api.registration.publicCatalog, {});
@@ -167,12 +134,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     "/blog": latestDate(
       revnuPosts.map((post) => new Date(post.updatedAt ?? post.publishedAt))
     ),
-    "/resources": latestDate(
-      Array.from(
-        dynamicResourceRouteMap.values(),
-        (route) => route.lastModified
-      )
-    ),
   };
   const staticLastModified = (path: string) => {
     if (path in listingLastModified) {
@@ -187,12 +148,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       buildEntry({ path, lastModified: staticLastModified(path) })
     ),
     ...registrationRoutes.map((path) => buildEntry({ path })),
-    ...Array.from(dynamicResourceRouteMap.values()).map((resourceRoute) =>
-      buildEntry({
-        path: resourceRoute.path,
-        lastModified: resourceRoute.lastModified,
-      })
-    ),
   ];
 
   const uniqueByUrl = new Map<string, MetadataRoute.Sitemap[number]>();

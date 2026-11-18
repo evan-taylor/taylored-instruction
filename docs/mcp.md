@@ -4,8 +4,8 @@ The admin workspace is exposed to AI agents through a Model Context Protocol
 server at `/api/mcp` (Streamable HTTP, MCP SDK 1.32). An agent with a token can
 do everything the admin dashboard and instructor workspace can do: manage course
 templates and sessions, enroll and bill attendees, refund and cancel, run
-materials and keycode inventory, approve instructors, and edit SEO pages. Blog
-posts are written in Revnu and are not covered.
+materials and keycode inventory, and approve instructors. Blog posts are
+written in Revnu and are not covered.
 
 ## Setup
 
@@ -66,7 +66,6 @@ Code lives in `lib/mcp`. Tools are grouped by file and carry MCP annotations
 | `tools/sales.ts` | coupons, group requests, organizations, invoices (create/issue/record payment/void/remind), stripe_tax_codes |
 | `tools/fulfillment.ts` | materials (with PDF upload), keycode_stock, add_keycodes, missing_materials, manage_keycode |
 | `tools/people.ts` | invite_instructor, list_instructor_invitations, revoke_instructor_invitation, staff_directory, list_instructor_profiles, list_users, set_instructor_approval, deactivate_user, delete_profile |
-| `tools/content.ts` | SEO pages list/get/upsert/delete/generate |
 
 Resources: `taylored://guide` (operations handbook), `taylored://dashboard`,
 `taylored://attention`, `taylored://courses`, `taylored://sessions/upcoming`,

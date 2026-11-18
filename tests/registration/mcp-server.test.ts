@@ -64,7 +64,6 @@ describe("MCP server", () => {
       "create_invoice",
       "add_keycodes",
       "set_instructor_approval",
-      "upsert_seo_page",
     ]) {
       expect(names).toContain(expected);
     }

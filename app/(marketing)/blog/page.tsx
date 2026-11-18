@@ -118,15 +118,15 @@ export default async function BlogPage() {
             </h2>
             <p className="mt-3 text-slate-700 leading-relaxed">
               We are setting up the blog library. In the meantime, you can
-              browse the resource library or contact us for course-specific
+              browse upcoming classes or contact us for course-specific
               guidance.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 className="inline-flex items-center justify-center rounded-md bg-primary px-5 py-2.5 font-medium text-white hover:bg-primary-dark"
-                href="/resources"
+                href="/classes"
               >
-                Browse resources
+                Browse classes
               </Link>
               <Link
                 className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-5 py-2.5 font-medium text-slate-700 hover:bg-slate-100"
