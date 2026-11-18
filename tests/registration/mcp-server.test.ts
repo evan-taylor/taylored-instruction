@@ -390,6 +390,32 @@ describe("MCP server", () => {
     expect(args.meetings[0]?.sequence).toBe(3);
   });
 
+  it("skips roster export pages whose seats were all filtered out", async () => {
+    const pages = [
+      '"Name","Email","State"\r\n"Ann","a@x.test","active"',
+      '"Name","Email","State"',
+      '"Name","Email","State"\r\n"Bob","b@x.test","active"',
+    ];
+    let page = 0;
+    const { client } = await connect({
+      "registrationOperations:exportRoster": () => {
+        page += 1;
+        return {
+          csv: pages[page - 1],
+          continueCursor: `c${page}`,
+          isDone: page === pages.length,
+        };
+      },
+    });
+    const result = await client.callTool({
+      name: "export_roster_csv",
+      arguments: { sessionId: "session1" },
+    });
+    expect((result.content as { text: string }[])[0]?.text).toBe(
+      '"Name","Email","State"\r\n"Ann","a@x.test","active"\r\n"Bob","b@x.test","active"'
+    );
+  });
+
   it("stitches multi-page roster exports into one CSV", async () => {
     let page = 0;
     const { client } = await connect({

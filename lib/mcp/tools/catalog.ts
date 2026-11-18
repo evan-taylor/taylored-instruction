@@ -2,6 +2,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
+import { csvRows } from "@/shared/registration/domain";
 import { recurrence } from "@/shared/registration/schedule";
 import {
   DESTRUCTIVE,
@@ -191,9 +192,9 @@ async function collectCsv(
     paginationOpts: { cursor, numItems: ROSTER_PAGE },
   });
   // Every page carries the header row; keep only the first one.
-  parts.push(cursor ? page.csv.slice(page.csv.indexOf("\n") + 1) : page.csv);
+  parts.push(cursor ? csvRows(page.csv) : page.csv);
   if (page.isDone) {
-    return parts.join("\r\n");
+    return parts.filter(Boolean).join("\r\n");
   }
   return collectCsv(ctx, sessionId, page.continueCursor, parts);
 }

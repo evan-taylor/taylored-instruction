@@ -34,7 +34,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { cn } from "@/lib/utils";
 import { parsePlace } from "@/shared/registration/catalog";
-import { BATCH } from "@/shared/registration/domain";
+import { BATCH, csvRows } from "@/shared/registration/domain";
 import { AgencyRosterExport } from "./agency-roster-export";
 import { useAssignedSessions } from "./catalog";
 import { errorText } from "./errors";
@@ -596,7 +596,7 @@ async function collectPages(
   pages: string[]
 ): Promise<string[]> {
   const page = await fetchPage(cursor);
-  pages.push(cursor ? page.csv.slice(page.csv.indexOf("\n") + 1) : page.csv);
+  pages.push(cursor ? csvRows(page.csv) : page.csv);
   if (page.isDone) {
     return pages;
   }
@@ -605,7 +605,7 @@ async function collectPages(
 async function downloadRoster(fetchPage: FetchPage) {
   const pages = await collectPages(fetchPage, null, []);
   const url = URL.createObjectURL(
-    new Blob([pages.join("\n")], { type: "text/csv" })
+    new Blob([pages.filter(Boolean).join("\n")], { type: "text/csv" })
   );
   const anchor = document.createElement("a");
   anchor.href = url;

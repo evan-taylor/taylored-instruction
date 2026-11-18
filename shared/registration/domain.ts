@@ -339,6 +339,11 @@ export function csv(rows: string[][]) {
     )
     .join("\r\n");
 }
+/** The data rows of one csv() page; a page with no rows has no newline. */
+export function csvRows(page: string) {
+  const newline = page.indexOf("\n");
+  return newline === -1 ? "" : page.slice(newline + 1);
+}
 export function inventoryPreview(input: string) {
   const valid: string[] = [];
   const invalid: string[] = [];
