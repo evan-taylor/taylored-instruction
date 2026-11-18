@@ -36,6 +36,7 @@ import {
   scheduleEmails,
   settle,
   staff,
+  withoutAbandonedSeats,
 } from "./registrationHelpers";
 import schema from "./schema";
 
@@ -501,8 +502,9 @@ export const roster = query({
         q.eq("sessionId", args.sessionId)
       )
       .paginate(args.paginationOpts);
+    const seats = await withoutAbandonedSeats(ctx, result.page);
     const page = await Promise.all(
-      result.page.map(async (seat) => {
+      seats.map(async (seat) => {
         const { attendance: rows, completion: seatCompletion } =
           await seatOutcomes(ctx, seat);
         return {
@@ -774,10 +776,11 @@ export const exportRoster = query({
         q.eq("sessionId", args.sessionId)
       )
       .paginate(args.paginationOpts);
+    const seats = await withoutAbandonedSeats(ctx, result.page);
     return {
       csv: csv([
         ["Name", "Email", "State"],
-        ...result.page.map((s) => [s.name, s.email, s.state]),
+        ...seats.map((s) => [s.name, s.email, s.state]),
       ]),
       continueCursor: result.continueCursor,
       isDone: result.isDone,
@@ -1312,6 +1315,7 @@ export const orders = query({
   args: {
     paginationOpts: paginationOptsValidator,
     unpaid: v.optional(v.boolean()),
+    includeAbandoned: v.optional(v.boolean()),
   },
   returns: v.object({
     page: v.array(doc(schema, "registrationOrders")),
@@ -1329,14 +1333,22 @@ export const orders = query({
   handler: async (ctx, args) => {
     await staff(ctx);
     const orderQuery = ctx.db.query("registrationOrders");
-    return await (args.unpaid
-      ? orderQuery.withIndex("by_status_and_expires", (q) =>
-          q.eq("status", "unpaid")
+    const ordered = (
+      args.unpaid
+        ? orderQuery.withIndex("by_status_and_expires", (q) =>
+            q.eq("status", "unpaid")
+          )
+        : orderQuery
+    ).order("desc");
+    return await (args.includeAbandoned
+      ? ordered
+      : ordered.filter((q) =>
+          q.or(
+            q.neq(q.field("status"), "expired"),
+            q.neq(q.field("settledAt"), undefined)
+          )
         )
-      : orderQuery
-    )
-      .order("desc")
-      .paginate(args.paginationOpts);
+    ).paginate(args.paginationOpts);
   },
 });
 export const activity = query({

@@ -2,7 +2,11 @@ import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { BATCH } from "../shared/registration/domain";
 import { query } from "./_generated/server";
-import { staff } from "./registrationHelpers";
+import {
+  isAbandonedOrder,
+  staff,
+  withoutAbandonedSeats,
+} from "./registrationHelpers";
 import schema from "./schema";
 
 const DAY_MS = 86_400_000;
@@ -151,7 +155,7 @@ export const summary = query({
           available: m.availableCount ?? 0,
         })),
       nextSessions: upcoming.slice(0, RECENT),
-      recentOrders: orders.slice(0, RECENT),
+      recentOrders: orders.filter((o) => !isAbandonedOrder(o)).slice(0, RECENT),
       recentActivity: activity,
     };
   },
@@ -159,7 +163,7 @@ export const summary = query({
 
 /** Finds every order and seat tied to an email so staff can help a caller fast. */
 export const lookup = query({
-  args: { email: v.string() },
+  args: { email: v.string(), includeAbandoned: v.optional(v.boolean()) },
   returns: v.object({
     orders: v.array(doc(schema, "registrationOrders")),
     seats: v.array(doc(schema, "registrationSeats")),
@@ -185,11 +189,18 @@ export const lookup = query({
         .filter((s) => !purchased.some((o) => o._id === s.orderId))
         .map((s) => ctx.db.get(s.orderId))
     );
+    const orders = [
+      ...purchased,
+      ...seatOrders.filter((o) => o !== null),
+    ].filter(
+      (o, index, all) => all.findIndex((x) => x._id === o._id) === index
+    );
+    if (args.includeAbandoned) {
+      return { orders, seats };
+    }
     return {
-      orders: [...purchased, ...seatOrders.filter((o) => o !== null)].filter(
-        (o, index, all) => all.findIndex((x) => x._id === o._id) === index
-      ),
-      seats,
+      orders: orders.filter((o) => !isAbandonedOrder(o)),
+      seats: await withoutAbandonedSeats(ctx, seats),
     };
   },
 });
