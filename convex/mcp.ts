@@ -387,19 +387,6 @@ export const sessionOverview = query({
   },
 });
 
-/** A SEO page in any publication state, by slug. */
-export const seoPage = query({
-  args: { slug: v.string() },
-  returns: v.any(),
-  handler: async (ctx, args) => {
-    await admin(ctx);
-    return await ctx.db
-      .query("seo_pages")
-      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
-      .unique();
-  },
-});
-
 const groupStatus = v.union(
   v.literal("new"),
   v.literal("contacted"),

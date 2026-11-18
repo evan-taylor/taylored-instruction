@@ -81,7 +81,6 @@ const generateNavLinks = (
     label: "About us",
     dropdown: [
       { label: "About Taylored Instruction", href: "/about" },
-      { label: "Training resources", href: "/resources" },
       { label: "Contact us", href: "/contact" },
     ],
   },

@@ -38,14 +38,6 @@ export const Footer = () => {
               <li>
                 <Link
                   className="transition-colors hover:text-primary"
-                  href="/resources"
-                >
-                  Training resources
-                </Link>
-              </li>
-              <li>
-                <Link
-                  className="transition-colors hover:text-primary"
                   href="/terms"
                 >
                   Terms and conditions
