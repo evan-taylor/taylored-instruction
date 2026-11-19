@@ -244,4 +244,23 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
         });
       })
   );
+
+  server.registerTool(
+    "restore_keycode",
+    {
+      title: "Restore a retired keycode",
+      description:
+        "Returns a retired code that was never delivered to a student to the available pool, where it fills waiting entitlements.",
+      inputSchema: { codeId: id, reason: z.string().min(1) },
+      annotations: WRITE,
+    },
+    (args) =>
+      run(async () => {
+        await ctx.convex.mutation(api.registrationOperations.restoreCode, {
+          codeId: args.codeId as Id<"registrationCodes">,
+          reason: args.reason,
+        });
+        return ok({ codeId: args.codeId });
+      })
+  );
 }
