@@ -2671,9 +2671,18 @@ describe("Fulfillment and transfer review coverage", () => {
     expect(after.material?.retiredCount).toBe(1);
     expect(after.activity).toHaveLength(1);
     expect(after.activity.at(0)?.entity).toBe(held._id);
-    await f.t.mutation(internal.registrationOperations.restock, {
-      materialId: f.material,
-    });
+    const scheduled = (
+      await f.t.run((ctx) =>
+        ctx.db.system.query("_scheduled_functions").collect()
+      )
+    ).filter((job) => job.name.includes("restock"));
+    const restoreJob = scheduled.at(-1);
+    expect(scheduled).toHaveLength(2);
+    expect(restoreJob?.args[0]).toEqual({ materialId: f.material });
+    await f.t.mutation(
+      internal.registrationOperations.restock,
+      restoreJob?.args[0]
+    );
     const entitlement = await f.t.run((ctx) =>
       ctx.db.query("registrationEntitlements").first()
     );

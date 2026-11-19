@@ -3,6 +3,7 @@ import { z } from "zod";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
+  EXTERNAL,
   fill,
   type McpContext,
   ok,
@@ -252,7 +253,7 @@ export function registerFulfillmentTools(server: McpServer, ctx: McpContext) {
       description:
         "Returns a retired code that was never delivered to a student to the available pool, where it fills waiting entitlements.",
       inputSchema: { codeId: id, reason: z.string().min(1) },
-      annotations: WRITE,
+      annotations: EXTERNAL,
     },
     (args) =>
       run(async () => {

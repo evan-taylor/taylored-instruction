@@ -560,6 +560,7 @@ function RetiredTable({
           }
           title="No retired codes"
         />
+        <LoadMore onLoadMore={onLoadMore} status={status} />
       </div>
     );
   }
