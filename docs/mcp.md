@@ -64,7 +64,7 @@ Code lives in `lib/mcp`. Tools are grouped by file and carry MCP annotations
 | `tools/registrations.ts` | list_orders, get_order, lookup_customer, enroll, request_payment_email, record_offline_payment, restore_coupon, refund_order, cancel_seat, transfer_preview/transfer_seat, seat_materials, resend_materials, replace_keycode, fulfill_physical, keycode_history, seat_outcomes, record_attendance, record_outcome, override_completion, waitlist_add |
 | `tools/order-materials.ts` | order_material_selection, order_material_balances, edit_order_materials, cancel_material_balance |
 | `tools/sales.ts` | coupons, group requests, organizations, invoices (create/issue/record payment/void/remind), stripe_tax_codes |
-| `tools/fulfillment.ts` | materials (with PDF upload), keycode_stock, add_keycodes, missing_materials, manage_keycode |
+| `tools/fulfillment.ts` | materials (with PDF upload), keycode_stock, add_keycodes, missing_materials, manage_keycode, restore_keycode |
 | `tools/people.ts` | invite_instructor, list_instructor_invitations, revoke_instructor_invitation, staff_directory, list_instructor_profiles, list_users, set_instructor_approval, deactivate_user, delete_profile |
 
 Resources: `taylored://guide` (operations handbook), `taylored://dashboard`,

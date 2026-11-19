@@ -26,7 +26,7 @@ import { errorText } from "./errors";
 
 type Code = Doc<"registrationCodes">;
 type Entitlement = Doc<"registrationEntitlements">;
-type InventoryTab = "available" | "assigned" | "queue";
+type InventoryTab = "available" | "assigned" | "retired" | "queue";
 type PaginationStatus =
   | "LoadingFirstPage"
   | "CanLoadMore"
@@ -135,7 +135,7 @@ function RetireDialog({
       busy={busy}
       confirmLabel="Retire code"
       danger
-      description="A retired code is never delivered to a student and cannot be made available again."
+      description="A retired code is never delivered to a student unless it is restored from the Retired tab."
       onClose={onClose}
       onConfirm={async () => {
         if (!code) {
@@ -159,6 +159,56 @@ function RetireDialog({
       }}
       open={code !== undefined}
       title="Retire this code?"
+    >
+      {code ? (
+        <p className="mb-4 break-all font-mono text-slate-600 text-xs">
+          {code.url}
+        </p>
+      ) : null}
+      <ReasonField error={error} onChange={setReason} value={reason} />
+    </ConfirmDialog>
+  );
+}
+
+function RestoreDialog({
+  code,
+  onClose,
+}: {
+  code: Code | undefined;
+  onClose: (message?: string) => void;
+}) {
+  const restore = useMutation(api.registrationOperations.restoreCode);
+  const [reason, setReason] = useState("");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  return (
+    <ConfirmDialog
+      busy={busy}
+      confirmLabel="Restore code"
+      description="The code returns to the available pool and can be delivered to the next waiting student."
+      onClose={() => onClose()}
+      onConfirm={async () => {
+        if (!code) {
+          return;
+        }
+        if (!reason.trim()) {
+          setError("Enter a reason before restoring.");
+          return;
+        }
+        setError("");
+        setBusy(true);
+        try {
+          await restore({ codeId: code._id, reason });
+          setReason("");
+          onClose("Retired code restored.");
+        } catch (failure) {
+          setError(errorText(failure));
+        } finally {
+          setBusy(false);
+        }
+      }}
+      open={code !== undefined}
+      title="Restore this code?"
     >
       {code ? (
         <p className="mb-4 break-all font-mono text-slate-600 text-xs">
@@ -483,6 +533,76 @@ function AssignedTable({
   );
 }
 
+function RetiredTable({
+  codes,
+  status,
+  onLoadMore,
+  onRestore,
+  filtered,
+}: {
+  codes: Code[];
+  status: PaginationStatus;
+  onLoadMore: () => void;
+  onRestore: (code: Code) => void;
+  filtered: boolean;
+}) {
+  if (status === "LoadingFirstPage") {
+    return <TableSkeleton />;
+  }
+  if (codes.length === 0) {
+    return (
+      <div className="p-4">
+        <EmptyState
+          description={
+            filtered
+              ? "No loaded codes match your search."
+              : "Codes move here when staff retire them."
+          }
+          title="No retired codes"
+        />
+        <LoadMore onLoadMore={onLoadMore} status={status} />
+      </div>
+    );
+  }
+  return (
+    <>
+      <Table wrapperClassName="rounded-none border-0">
+        <THead>
+          <TR>
+            <TH>Code</TH>
+            <TH>State</TH>
+            <TH className="text-right">Actions</TH>
+          </TR>
+        </THead>
+        <TBody>
+          {codes.map((code) => (
+            <TR key={code._id}>
+              <TD>
+                <CodeUrl url={code.url} />
+              </TD>
+              <TD>
+                <StatusBadge status={code.state} />
+              </TD>
+              <TD className="text-right">
+                <Button
+                  aria-label={`Restore code ${code.url}`}
+                  onClick={() => onRestore(code)}
+                  size="xs"
+                  type="button"
+                  variant="secondary"
+                >
+                  Restore
+                </Button>
+              </TD>
+            </TR>
+          ))}
+        </TBody>
+      </Table>
+      <LoadMore onLoadMore={onLoadMore} status={status} />
+    </>
+  );
+}
+
 function QueueTable({
   entitlements,
   status,
@@ -588,6 +708,11 @@ export function InventoryManager({
     { materialId, sessionId, state: "assigned" },
     { initialNumItems: 20 }
   );
+  const retiredStock = usePaginatedQuery(
+    api.registrationOperations.stock,
+    { materialId, sessionId, state: "retired" },
+    { initialNumItems: 20 }
+  );
   const missing = usePaginatedQuery(
     api.registrationOperations.missingMaterials,
     { materialId, sessionId },
@@ -598,6 +723,7 @@ export function InventoryManager({
   const [search, setSearch] = useState("");
   const [retiring, setRetiring] = useState<Code>();
   const [assigning, setAssigning] = useState<Code>();
+  const [restoring, setRestoring] = useState<Code>();
   const [queued, setQueued] = useState<Entitlement>();
   const [message, setMessage] = useState("");
 
@@ -618,11 +744,16 @@ export function InventoryManager({
     needle === "" || code.url.toLowerCase().includes(needle);
   const available = availableStock.results.filter(matches);
   const assigned = assignedStock.results.filter(matches);
+  const retired = retiredStock.results.filter(matches);
   const nextCode = availableStock.results.at(0);
-  const loaded = availableStock.results.length + assignedStock.results.length;
+  const loaded =
+    availableStock.results.length +
+    assignedStock.results.length +
+    retiredStock.results.length;
   const exhausted =
     availableStock.status === "Exhausted" &&
-    assignedStock.status === "Exhausted";
+    assignedStock.status === "Exhausted" &&
+    retiredStock.status === "Exhausted";
 
   return (
     <div className="space-y-4">
@@ -646,6 +777,14 @@ export function InventoryManager({
               count:
                 assignedStock.status === "Exhausted"
                   ? assigned.length
+                  : undefined,
+            },
+            {
+              id: "retired",
+              label: "Retired",
+              count:
+                retiredStock.status === "Exhausted"
+                  ? retired.length
                   : undefined,
             },
             {
@@ -697,6 +836,15 @@ export function InventoryManager({
           status={assignedStock.status}
         />
       </TabPanel>
+      <TabPanel active={tab === "retired"} className="pt-0" id="retired">
+        <RetiredTable
+          codes={retired}
+          filtered={needle !== ""}
+          onLoadMore={() => retiredStock.loadMore(20)}
+          onRestore={setRestoring}
+          status={retiredStock.status}
+        />
+      </TabPanel>
       <TabPanel active={tab === "queue"} className="pt-0" id="queue">
         <QueueTable
           entitlements={missing.results}
@@ -714,6 +862,15 @@ export function InventoryManager({
         act={act}
         code={retiring}
         onClose={() => setRetiring(undefined)}
+      />
+      <RestoreDialog
+        code={restoring}
+        onClose={(success) => {
+          setRestoring(undefined);
+          if (success) {
+            setMessage(success);
+          }
+        }}
       />
       <AssignDialog
         act={act}

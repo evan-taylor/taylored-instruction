@@ -2594,6 +2594,110 @@ describe("Fulfillment and transfer review coverage", () => {
     );
     expect(jobs.filter((j) => j.key.startsWith("assigned:"))).toHaveLength(1);
   });
+  it("restores a retired code to the pool with an audit entry and refuses delivered codes", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.course, {
+        settings: {
+          ...config,
+          tuition: 0,
+          materials: [
+            {
+              id: "code",
+              materialId: f.material,
+              title: "Code",
+              policy: "included",
+              cents: 0,
+            },
+          ],
+        },
+      })
+    );
+    await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+    await f.adminClient.mutation(api.registrationOperations.addStock, {
+      materialId: f.material,
+      input:
+        "https://codes.example.test/held\nhttps://codes.example.test/spare",
+      preview: false,
+    });
+    const codes = await f.t.run((ctx) =>
+      ctx.db.query("registrationCodes").collect()
+    );
+    const held = codes.find((c) => c.url.endsWith("/held"));
+    const spare = codes.find((c) => c.url.endsWith("/spare"));
+    if (!(held && spare)) {
+      throw new Error("Missing codes");
+    }
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.restoreCode, {
+        codeId: held._id,
+        reason: "Not retired",
+      })
+    ).rejects.toThrow("Only retired codes");
+    await f.adminClient.mutation(api.registrationOperations.manageCode, {
+      codeId: held._id,
+      reason: "Hand sale",
+    });
+    await f.adminClient.mutation(api.registrationOperations.manageCode, {
+      codeId: spare._id,
+      reason: "Hand sale",
+    });
+    await expect(
+      f.t.mutation(api.registrationOperations.restoreCode, {
+        codeId: held._id,
+        reason: "Anonymous",
+      })
+    ).rejects.toThrow();
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.restoreCode, {
+        codeId: held._id,
+        reason: " ",
+      })
+    ).rejects.toThrow("Reason required");
+    await f.adminClient.mutation(api.registrationOperations.restoreCode, {
+      codeId: held._id,
+      reason: "Still valid with the AHA",
+    });
+    const after = await f.t.run(async (ctx) => ({
+      code: await ctx.db.get(held._id),
+      material: await ctx.db.get(f.material),
+      activity: await ctx.db
+        .query("registrationActivity")
+        .filter((q) => q.eq(q.field("action"), "code-restored"))
+        .collect(),
+    }));
+    expect(after.code?.state).toBe("available");
+    expect(after.material?.availableCount).toBe(1);
+    expect(after.material?.retiredCount).toBe(1);
+    expect(after.activity).toHaveLength(1);
+    expect(after.activity.at(0)?.entity).toBe(held._id);
+    const scheduled = (
+      await f.t.run((ctx) =>
+        ctx.db.system.query("_scheduled_functions").collect()
+      )
+    ).filter((job) => job.name.includes("restock"));
+    const restoreJob = scheduled.at(-1);
+    expect(scheduled).toHaveLength(2);
+    expect(restoreJob?.args[0]).toEqual({ materialId: f.material });
+    await f.t.mutation(
+      internal.registrationOperations.restock,
+      restoreJob?.args[0]
+    );
+    const entitlement = await f.t.run((ctx) =>
+      ctx.db.query("registrationEntitlements").first()
+    );
+    expect(entitlement?.state).toBe("ready");
+    expect(entitlement?.codeId).toBe(held._id);
+    await f.t.run((ctx) =>
+      ctx.db.patch(spare._id, { entitlementId: entitlement?._id })
+    );
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.restoreCode, {
+        codeId: spare._id,
+        reason: "Delivered before",
+      })
+    ).rejects.toThrow("delivered to a student");
+  });
   it("requires new destination answers and stamps transfer adjustment tax codes", async () => {
     const f = await fixture();
     const original = await f.adminClient.mutation(api.registration.reserve, {

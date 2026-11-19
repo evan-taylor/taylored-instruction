@@ -461,6 +461,43 @@ export const manageCode = mutation({
     return null;
   },
 });
+export const restoreCode = mutation({
+  args: { codeId: v.id("registrationCodes"), reason: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    if (!args.reason.trim()) {
+      throw new ConvexError("Reason required");
+    }
+    const code = await ctx.db.get(args.codeId);
+    if (code?.state !== "retired") {
+      throw new ConvexError("Only retired codes can be restored");
+    }
+    const history = await ctx.db
+      .query("registrationAssignments")
+      .withIndex("by_codeId", (q) => q.eq("codeId", code._id))
+      .first();
+    if (code.entitlementId || history) {
+      throw new ConvexError(
+        "This code was delivered to a student and cannot be restored"
+      );
+    }
+    await ctx.db.patch(code._id, { state: "available" });
+    const material = await ctx.db.get(code.materialId);
+    if (material) {
+      await ctx.db.patch(material._id, {
+        availableCount: (material.availableCount ?? 0) + 1,
+        retiredCount: Math.max(0, (material.retiredCount ?? 0) - 1),
+      });
+    }
+    await audit(ctx, actor.userId, "code-restored", code._id, args.reason);
+    await ctx.scheduler.runAfter(0, internal.registrationOperations.restock, {
+      materialId: code.materialId,
+      sessionId: code.sessionId,
+    });
+    return null;
+  },
+});
 const attendanceStatus = v.union(
   v.literal("present"),
   v.literal("absent"),
