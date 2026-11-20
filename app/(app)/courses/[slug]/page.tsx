@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       path: `/courses/${slug}`,
       keywords: [offering.title],
-      image: { title: offering.title, description },
+      image: { title: offering.title, eyebrow: "Classes & registration" },
     })
   );
 }

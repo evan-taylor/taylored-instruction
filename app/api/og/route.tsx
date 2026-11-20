@@ -1,280 +1,169 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+import { OG_IMAGE_SIZE } from "@/lib/utils";
 
-const BRAND_COLORS = {
-  primary: "#2B5A8A",
-  primaryDark: "#163f69",
-  accent: "#C41E3A",
-  text: "#1a202c",
-  white: "#ffffff",
-  lightGray: "#f8fafc",
-  muted: "#64748b",
+const NAVY = "#123A61";
+const RED = "#B9221D";
+const EYEBROW = "#A9C3DE";
+const FOOTNOTE = "#C9D7E6";
+const DEFAULT_TITLE = "Professional CPR, BLS & Lifeguard Training";
+const MAX_TITLE_LENGTH = 120;
+const MAX_EYEBROW_LENGTH = 48;
+const RING_RADIUS = 300;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+const asset = (file: string) =>
+  readFile(join(process.cwd(), "assets/og", file));
+
+const [regular, medium, semibold, lockup] = await Promise.all([
+  asset("ReadexPro-400.ttf"),
+  asset("ReadexPro-500.ttf"),
+  asset("ReadexPro-600.ttf"),
+  asset("lockup-light.png"),
+]);
+const lockupSrc = `data:image/png;base64,${lockup.toString("base64")}`;
+
+const arc = (degrees: number) => (RING_CIRCUMFERENCE * degrees) / 360;
+
+const titleSize = (title: string) => {
+  if (title.length <= 30) {
+    return 84;
+  }
+  if (title.length <= 50) {
+    return 68;
+  }
+  if (title.length <= 75) {
+    return 58;
+  }
+  return 46;
 };
-
-const TITLE_LENGTH_THRESHOLD = 50;
 
 export function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-
-  const title = searchParams.get("title") ?? "Taylored Instruction";
-  const description =
-    searchParams.get("description") ??
-    "Professional CPR, BLS & Lifeguard Training";
-  const type = searchParams.get("type") ?? "default";
-
-  const logoUrl = new URL("/Logo-Black.png", request.url)
-    .toString()
-    .replace("/api/og", "");
-
-  const getAccentColor = (pageType: string) => {
-    switch (pageType) {
-      case "bls":
-      case "heartsaver":
-      case "aha":
-        return BRAND_COLORS.accent;
-      case "lifeguarding":
-      case "swimming":
-        return BRAND_COLORS.primary;
-      default:
-        return BRAND_COLORS.primary;
-    }
-  };
-
-  const accentColor = getAccentColor(type);
+  const title = (searchParams.get("title")?.trim() || DEFAULT_TITLE).slice(
+    0,
+    MAX_TITLE_LENGTH
+  );
+  const eyebrow = searchParams
+    .get("eyebrow")
+    ?.trim()
+    .slice(0, MAX_EYEBROW_LENGTH);
 
   return new ImageResponse(
     <div
       style={{
-        height: "100%",
         width: "100%",
+        height: "100%",
         display: "flex",
-        flexDirection: "column",
-        backgroundColor: BRAND_COLORS.white,
         position: "relative",
+        backgroundColor: NAVY,
+        fontFamily: "Readex Pro",
       }}
     >
-      {/* Top accent bar */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: "8px",
-          background: `linear-gradient(90deg, ${BRAND_COLORS.primary} 0%, ${accentColor} 50%, ${BRAND_COLORS.primaryDark} 100%)`,
-        }}
-      />
-
-      {/* Main content area */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          justifyContent: "flex-start",
-          padding: "60px 80px",
-          height: "100%",
-          gap: "60px",
-        }}
+      <svg
+        height={760}
+        style={{ position: "absolute", right: -330, top: -65 }}
+        viewBox="0 0 760 760"
+        width={760}
       >
-        {/* Logo section */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          {/* biome-ignore lint/performance/noImgElement: img required for OG image generation */}
-          <img
-            alt="Taylored Instruction Logo"
-            height={220}
-            src={logoUrl}
-            style={{
-              objectFit: "contain",
-            }}
-            width={220}
-          />
-        </div>
-
-        {/* Text content */}
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            flex: 1,
-            gap: "20px",
-          }}
-        >
-          {/* Title */}
-          <div
-            style={{
-              fontSize: title.length > TITLE_LENGTH_THRESHOLD ? "42px" : "52px",
-              fontWeight: 700,
-              color: BRAND_COLORS.text,
-              lineHeight: 1.2,
-              maxWidth: "700px",
-              display: "flex",
-              flexWrap: "wrap",
-            }}
-          >
-            {title}
-          </div>
-
-          {/* Description */}
-          <div
-            style={{
-              fontSize: "26px",
-              fontWeight: 400,
-              color: BRAND_COLORS.muted,
-              lineHeight: 1.4,
-              maxWidth: "650px",
-              display: "flex",
-              flexWrap: "wrap",
-            }}
-          >
-            {description}
-          </div>
-
-          {/* Location badges */}
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              gap: "16px",
-              marginTop: "10px",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                backgroundColor: BRAND_COLORS.lightGray,
-                padding: "10px 20px",
-                borderRadius: "8px",
-                border: `2px solid ${BRAND_COLORS.primary}`,
-              }}
-            >
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: BRAND_COLORS.primary,
-                }}
-              />
-              <span
-                style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: BRAND_COLORS.primary,
-                }}
-              >
-                Vancouver, WA
-              </span>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                backgroundColor: BRAND_COLORS.lightGray,
-                padding: "10px 20px",
-                borderRadius: "8px",
-                border: `2px solid ${BRAND_COLORS.accent}`,
-              }}
-            >
-              <div
-                style={{
-                  width: "10px",
-                  height: "10px",
-                  borderRadius: "50%",
-                  backgroundColor: BRAND_COLORS.accent,
-                }}
-              />
-              <span
-                style={{
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  color: BRAND_COLORS.accent,
-                }}
-              >
-                San Luis Obispo, CA
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom section with website */}
+        <title>Lifebuoy</title>
+        <circle
+          cx={380}
+          cy={380}
+          fill="none"
+          r={RING_RADIUS}
+          stroke="#FFFFFF"
+          strokeDasharray={`${arc(38)} ${arc(52)}`}
+          strokeDashoffset={-arc(26)}
+          strokeWidth={118}
+        />
+        <circle
+          cx={380}
+          cy={380}
+          fill="none"
+          r={RING_RADIUS}
+          stroke={RED}
+          strokeDasharray={`${arc(48)} ${arc(42)}`}
+          strokeDashoffset={arc(24)}
+          strokeWidth={118}
+        />
+      </svg>
       <div
         style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
           display: "flex",
+          flexDirection: "column",
           justifyContent: "space-between",
-          alignItems: "center",
-          padding: "20px 80px",
-          backgroundColor: BRAND_COLORS.primaryDark,
+          width: 780,
+          height: "100%",
+          padding: "72px 80px",
         }}
       >
         <div
           style={{
             display: "flex",
-            alignItems: "center",
-            gap: "24px",
+            fontSize: 26,
+            fontWeight: 500,
+            color: EYEBROW,
+            textTransform: "uppercase",
+            letterSpacing: "0.12em",
           }}
         >
-          <span
-            style={{
-              fontSize: "18px",
-              fontWeight: 500,
-              color: BRAND_COLORS.white,
-              opacity: 0.9,
-            }}
-          >
-            American Heart Association
-          </span>
-          <span
-            style={{
-              fontSize: "18px",
-              color: BRAND_COLORS.white,
-              opacity: 0.5,
-            }}
-          >
-            |
-          </span>
-          <span
-            style={{
-              fontSize: "18px",
-              fontWeight: 500,
-              color: BRAND_COLORS.white,
-              opacity: 0.9,
-            }}
-          >
-            American Red Cross
-          </span>
+          {eyebrow}
         </div>
-        <span
+        <div
           style={{
-            fontSize: "20px",
+            display: "block",
+            fontSize: titleSize(title),
             fontWeight: 600,
-            color: BRAND_COLORS.white,
+            color: "#FFFFFF",
+            lineHeight: 1.05,
+            letterSpacing: "-0.025em",
+            lineClamp: 4,
           }}
         >
-          tayloredinstruction.com
-        </span>
+          {title}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+          {/* biome-ignore lint/performance/noImgElement: ImageResponse renders plain img elements */}
+          <img
+            alt="Taylored Instruction"
+            height={48}
+            src={lockupSrc}
+            width={219}
+          />
+          <div
+            style={{
+              width: 1,
+              height: 32,
+              backgroundColor: "rgba(255, 255, 255, 0.24)",
+            }}
+          />
+          <div
+            style={{
+              display: "flex",
+              flexShrink: 0,
+              fontSize: 21,
+              color: FOOTNOTE,
+            }}
+          >
+            Vancouver WA · San Luis Obispo CA
+          </div>
+        </div>
       </div>
     </div>,
     {
-      width: 1200,
-      height: 630,
+      ...OG_IMAGE_SIZE,
+      fonts: [
+        { name: "Readex Pro", data: regular, weight: 400 },
+        { name: "Readex Pro", data: medium, weight: 500 },
+        { name: "Readex Pro", data: semibold, weight: 600 },
+      ],
+      headers: {
+        "Cache-Control":
+          "public, max-age=86400, s-maxage=31536000, stale-while-revalidate=604800",
+      },
     }
   );
 }

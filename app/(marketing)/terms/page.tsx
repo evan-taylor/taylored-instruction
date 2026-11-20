@@ -22,10 +22,7 @@ export const metadata = buildPageMetadata({
     "CPR course rescheduling policy",
     "training liability waiver terms",
   ],
-  image: {
-    title: "Terms and Conditions",
-    description: "Course booking, refund, and policy terms",
-  },
+  image: { title: "Terms and Conditions" },
 });
 
 export default async function TermsPage() {

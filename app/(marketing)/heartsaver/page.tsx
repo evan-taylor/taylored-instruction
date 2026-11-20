@@ -33,9 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "AHA Heartsaver First Aid CPR AED",
-    description:
-      "Workplace and community Heartsaver certification in Vancouver WA and San Luis Obispo CA",
-    type: "heartsaver",
+    eyebrow: "American Heart Association",
   },
 });
 

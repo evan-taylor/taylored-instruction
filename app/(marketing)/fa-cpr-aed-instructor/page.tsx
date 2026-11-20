@@ -31,7 +31,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "First Aid/CPR/AED Instructor Course",
-    description: "Become a certified Red Cross First Aid CPR AED instructor",
+    eyebrow: "American Red Cross",
   },
 });
 

@@ -156,6 +156,13 @@ export function sessionMetadata(offering: Offering): Metadata {
     ? longDate(offering.firstStart, offering.timeZone)
     : "";
   const title = [offering.title, city, date].filter(Boolean).join(" · ");
+  const day = offering.firstStart
+    ? new Intl.DateTimeFormat("en-US", {
+        month: "long",
+        day: "numeric",
+        timeZone: offering.timeZone,
+      }).format(new Date(offering.firstStart))
+    : "";
   const description = snippet(
     offering.description,
     `Register for ${offering.title}${city ? ` in ${city}` : ""}. See dates, location, and full pricing before you register.`
@@ -170,7 +177,7 @@ export function sessionMetadata(offering: Offering): Metadata {
     ),
     image: {
       title: offering.title,
-      description: [date, city].filter(Boolean).join(" · "),
+      eyebrow: [day, city].filter(Boolean).join(" · "),
     },
   });
   const listed = offering.state !== "canceled" && !offering.unlisted;

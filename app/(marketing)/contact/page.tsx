@@ -34,9 +34,8 @@ export const metadata = buildPageMetadata({
     "call Taylored Instruction",
   ],
   image: {
-    description:
-      "Call or email Taylored Instruction for CPR, BLS, First Aid, and Lifeguard classes",
     title: "Contact Taylored Instruction",
+    eyebrow: "Get in touch",
   },
 });
 

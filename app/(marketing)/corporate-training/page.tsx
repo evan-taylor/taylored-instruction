@@ -32,8 +32,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Corporate CPR Training",
-    description:
-      "On-site workplace CPR, BLS, and First Aid certification for teams",
+    eyebrow: "On-site team training",
   },
 });
 
