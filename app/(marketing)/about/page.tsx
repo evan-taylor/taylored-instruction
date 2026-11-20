@@ -34,9 +34,8 @@ export const metadata = buildPageMetadata({
     "CPR and lifeguard training San Luis Obispo",
   ],
   image: {
-    description:
-      "About Taylored Instruction and founder Evan Taylor, serving Vancouver WA and San Luis Obispo CA",
     title: "About Taylored Instruction",
+    eyebrow: "About us",
   },
 });
 

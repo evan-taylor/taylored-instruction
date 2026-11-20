@@ -33,8 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "AED Sales & Distribution",
-    description:
-      "Automated External Defibrillator sales, consultation, and support",
+    eyebrow: "AED sales & support",
   },
 });
 

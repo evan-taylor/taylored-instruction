@@ -30,7 +30,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Instructor Alignment",
-    description: "Partner with Taylored Instruction for instructor support",
+    eyebrow: "For instructors",
   },
 });
 

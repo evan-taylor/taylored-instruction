@@ -22,10 +22,7 @@ export const metadata = buildPageMetadata({
     "SMS privacy policy Taylored Instruction",
     "student data privacy policy",
   ],
-  image: {
-    title: "Privacy Policy",
-    description: "How Taylored Instruction protects your information",
-  },
+  image: { title: "Privacy Policy" },
 });
 
 export default async function PrivacyPolicyPage() {

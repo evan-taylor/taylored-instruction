@@ -32,8 +32,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Lifeguarding Instructor Trainer",
-    description: "On-site Red Cross instructor trainer services",
-    type: "lifeguarding",
+    eyebrow: "American Red Cross",
   },
 });
 

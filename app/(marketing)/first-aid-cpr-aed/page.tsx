@@ -33,8 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "First Aid/CPR/AED Certification",
-    description:
-      "Red Cross First Aid CPR AED classes in Vancouver WA and San Luis Obispo CA",
+    eyebrow: "American Red Cross",
   },
 });
 

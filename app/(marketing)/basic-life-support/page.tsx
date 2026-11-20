@@ -33,9 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Red Cross Basic Life Support (BLS)",
-    description:
-      "Red Cross BLS training for healthcare providers in Vancouver WA and San Luis Obispo CA",
-    type: "bls",
+    eyebrow: "American Red Cross",
   },
 });
 

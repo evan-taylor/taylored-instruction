@@ -5,20 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-type OgImageParams = {
-  title: string;
-  description?: string;
-  type?: "default" | "bls" | "heartsaver" | "aha" | "lifeguarding" | "swimming";
-};
+export const OG_IMAGE_SIZE = { width: 1200, height: 630 };
 
-export function generateOgImageUrl(params: OgImageParams): string {
-  const searchParams = new URLSearchParams();
-  searchParams.set("title", params.title);
-  if (params.description) {
-    searchParams.set("description", params.description);
-  }
-  if (params.type) {
-    searchParams.set("type", params.type);
+export function generateOgImageUrl(title: string, eyebrow?: string): string {
+  const searchParams = new URLSearchParams({ title });
+  if (eyebrow) {
+    searchParams.set("eyebrow", eyebrow);
   }
   return `/api/og?${searchParams.toString()}`;
 }

@@ -27,7 +27,7 @@ export const metadata: Metadata = indexable(
     ],
     image: {
       title: "Find your next class",
-      description: "Dates, locations, and full pricing before you register",
+      eyebrow: "Class schedule",
     },
   })
 );

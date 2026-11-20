@@ -27,7 +27,7 @@ export const metadata = buildPageMetadata({
     "Red Cross swim instructor training",
     "swimming teacher certification",
   ],
-  image: { title: "Water Safety Instructor", description: pageDescription },
+  image: { title: "Water Safety Instructor", eyebrow: "American Red Cross" },
 });
 
 export default async function Page() {

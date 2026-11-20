@@ -29,8 +29,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Professional CPR, BLS & Lifeguard Training",
-    description:
-      "American Red Cross & AHA certified courses in Vancouver WA and San Luis Obispo CA",
+    eyebrow: "Red Cross & AHA certified",
   },
 });
 

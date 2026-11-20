@@ -23,9 +23,7 @@ export const metadata = buildPageMetadata({
   ogType: "article",
   image: {
     title: "AHA BLS Certification Course",
-    description:
-      "Healthcare provider BLS certification in Vancouver WA and San Luis Obispo CA",
-    type: "bls",
+    eyebrow: "American Heart Association",
   },
   keywords: [
     "AHA BLS provider course Vancouver WA",

@@ -30,8 +30,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "AHA Instructor Training",
-    description: "Become a certified AHA BLS or Heartsaver instructor",
-    type: "aha",
+    eyebrow: "American Heart Association",
   },
 });
 

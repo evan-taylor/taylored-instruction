@@ -30,6 +30,10 @@ const blogPageMetadata: BuildPageMetadataInput = {
     "first aid and AED blog",
     "lifeguarding training articles",
   ],
+  image: {
+    title: "CPR, BLS, first aid & lifeguarding articles",
+    eyebrow: "Blog",
+  },
 };
 
 const formatPublishedDate = (date: Date) =>

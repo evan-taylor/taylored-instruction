@@ -33,9 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Red Cross Lifeguarding Certification",
-    description:
-      "Professional lifeguard training in Vancouver WA and San Luis Obispo CA",
-    type: "lifeguarding",
+    eyebrow: "American Red Cross",
   },
 });
 

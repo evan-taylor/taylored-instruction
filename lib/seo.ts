@@ -1,19 +1,9 @@
 import type { Metadata } from "next";
-import { generateOgImageUrl } from "@/lib/utils";
-
-type OgImageType =
-  | "default"
-  | "bls"
-  | "heartsaver"
-  | "aha"
-  | "lifeguarding"
-  | "swimming";
+import { generateOgImageUrl, OG_IMAGE_SIZE } from "@/lib/utils";
 
 type PageImageOptions = {
   title: string;
-  description?: string;
-  url?: string;
-  type?: OgImageType;
+  eyebrow?: string;
 };
 
 export type BuildPageMetadataInput = {
@@ -58,15 +48,11 @@ export const buildPageMetadata = ({
   noIndex = false,
 }: BuildPageMetadataInput): Metadata => {
   const canonicalUrl = absoluteUrl(path);
-  const ogTitle = image?.title ?? title;
-  const ogDescription = image?.description ?? description;
-  const ogImageUrl =
-    image?.url ??
-    generateOgImageUrl({
-      title: ogTitle,
-      description: ogDescription,
-      type: image?.type,
-    });
+  const ogImage = {
+    url: generateOgImageUrl(image?.title ?? title, image?.eyebrow),
+    ...OG_IMAGE_SIZE,
+    alt: `${image?.title ?? title} | ${SITE_NAME}`,
+  };
 
   return {
     title,
@@ -82,20 +68,13 @@ export const buildPageMetadata = ({
       url: canonicalUrl,
       siteName: SITE_NAME,
       locale: "en_US",
-      images: [
-        {
-          url: ogImageUrl,
-          width: 1200,
-          height: 630,
-          alt: ogTitle,
-        },
-      ],
+      images: [ogImage],
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: [ogImageUrl],
+      images: [ogImage],
     },
     ...(noIndex
       ? {
