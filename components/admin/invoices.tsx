@@ -7,7 +7,7 @@ import {
 } from "convex/react";
 import { Ban, Banknote, ExternalLink, FileText } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 import { useOrganizations } from "@/components/registration/catalog";
 import { errorText } from "@/components/registration/errors";
 import {
@@ -26,6 +26,7 @@ import {
   Select,
   TextArea,
   TextInput,
+  Toggle,
 } from "@/components/ui/field";
 import { MenuItem, MenuSeparator, RowMenu } from "@/components/ui/menu";
 import {
@@ -38,6 +39,11 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { formatMoney, INVOICE_TERMS_DAYS } from "@/shared/registration/domain";
+import {
+  invoicePrefill,
+  missingOrganizationBilling,
+  usePrefill,
+} from "./billing-prefill";
 
 type InvoiceRow = {
   invoice: Doc<"registrationInvoices">;
@@ -88,16 +94,20 @@ export type PostalAddress = {
 export function AddressFields({
   value,
   onChange,
+  section,
 }: {
   value: PostalAddress;
   onChange: (patch: Partial<PostalAddress>) => void;
+  section?: "billing";
 }) {
+  const prefix = section ? `${section} ` : "";
   return (
     <>
       <Field label="City" required>
         {(p) => (
           <TextInput
             {...p}
+            autoComplete={`${prefix}address-level2`}
             onChange={(e) => onChange({ city: e.target.value })}
             required
             value={value.city}
@@ -109,6 +119,7 @@ export function AddressFields({
           {(p) => (
             <TextInput
               {...p}
+              autoComplete={`${prefix}address-level1`}
               maxLength={2}
               onChange={(e) =>
                 onChange({ state: e.target.value.toUpperCase() })
@@ -123,6 +134,7 @@ export function AddressFields({
           {(p) => (
             <TextInput
               {...p}
+              autoComplete={`${prefix}postal-code`}
               inputMode="numeric"
               onChange={(e) => onChange({ postalCode: e.target.value })}
               required
@@ -134,6 +146,7 @@ export function AddressFields({
           {(p) => (
             <TextInput
               {...p}
+              autoComplete={`${prefix}country`}
               maxLength={2}
               onChange={(e) =>
                 onChange({ country: e.target.value.toUpperCase() })
@@ -162,6 +175,7 @@ export function InvoiceFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="billing organization"
             onChange={(e) => set({ billToName: e.target.value })}
             placeholder="Accounts payable contact or organization"
             required
@@ -177,6 +191,7 @@ export function InvoiceFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="billing email"
             onChange={(e) => set({ billToEmail: e.target.value })}
             required
             type="email"
@@ -193,17 +208,23 @@ export function InvoiceFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="billing address-line1"
             onChange={(e) => set({ billToAddress: e.target.value })}
             required
             value={value.billToAddress}
           />
         )}
       </Field>
-      <AddressFields onChange={(patch) => set(patch)} value={value} />
+      <AddressFields
+        onChange={(patch) => set(patch)}
+        section="billing"
+        value={value}
+      />
       <Field label="PO number">
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="off"
             onChange={(e) => set({ poNumber: e.target.value })}
             value={value.poNumber}
           />
@@ -238,6 +259,31 @@ export function InvoiceFields({
         )}
       </Field>
     </div>
+  );
+}
+
+/** Opt-in, off by default: adds invoice details the organization lacks so the next invoice prefills. */
+export function SaveToOrganization({
+  organizationName,
+  missing,
+  checked,
+  onChange,
+}: {
+  organizationName: string;
+  missing: string[];
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  if (missing.length === 0) {
+    return null;
+  }
+  return (
+    <Toggle
+      checked={checked}
+      description={`Adds the ${new Intl.ListFormat("en", { type: "conjunction" }).format(missing)} to ${organizationName || "the organization"} so the next invoice is prefilled. Existing details are never changed.`}
+      label="Save to organization"
+      onChange={onChange}
+    />
   );
 }
 
@@ -416,14 +462,18 @@ export function CreateInvoiceModal({
   );
   const organizations = useOrganizations();
   const create = useMutation(api.registrationGroups.createInvoice);
+  const completeOrganization = useMutation(
+    api.registrationGroups.completeOrganizationBilling
+  );
   const issue = useAction(api.registrationInvoiceActions.issue);
   const [selected, setSelected] = useState<Id<"registrationOrders"> | "">(
     orderId ?? ""
   );
-  const [organizationId, setOrganizationId] = useState<
+  const [chosenOrganizationId, setOrganizationId] = useState<
     Id<"registrationOrganizations"> | ""
-  >("");
+  >();
   const [draft, setDraft] = useState<InvoiceDraft>(emptyInvoiceDraft);
+  const [saveToOrganization, setSaveToOrganization] = useState(false);
   const [sendNow, setSendNow] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -433,26 +483,19 @@ export function CreateInvoiceModal({
     api.registrationOperations.order,
     selected ? { orderId: selected } : "skip"
   );
-  useEffect(() => {
-    if (!(order && organizations)) {
-      return;
-    }
-    const organization = organizations?.find(
-      (o) => o._id === (organizationId || order.organizationId)
-    );
-    setDraft((current) => ({
-      ...current,
-      billToName:
-        current.billToName || organization?.name || order.purchaserName,
-      billToEmail:
-        current.billToEmail || organization?.contactEmail || order.purchaser,
-      billToAddress: current.billToAddress || organization?.address || "",
-      city: current.city || organization?.city || "",
-      state: current.state || organization?.state || "",
-      postalCode: current.postalCode || organization?.postalCode || "",
-      country: current.country || organization?.country || "US",
-    }));
-  }, [order, organizations, organizationId]);
+  const organizationId = chosenOrganizationId ?? order?.organizationId ?? "";
+  const organization = organizations?.find((o) => o._id === organizationId);
+  usePrefill(
+    {
+      ...(order
+        ? { billToName: order.purchaserName, billToEmail: order.purchaser }
+        : {}),
+      ...invoicePrefill(organization),
+    },
+    setDraft,
+    emptyInvoiceDraft
+  );
+  const missing = missingOrganizationBilling(organization, draft);
   return (
     <Modal
       description="Invoices are only for enrollments awaiting payment. Totals come from the order and cannot be edited here."
@@ -498,6 +541,12 @@ export function CreateInvoiceModal({
               organizationId: organizationId || undefined,
             });
             setCreatedId(id);
+            if (organization && saveToOrganization && missing.labels.length) {
+              await completeOrganization({
+                id: organization._id,
+                ...missing.patch,
+              });
+            }
             let text = "Invoice created as a draft.";
             if (sendNow) {
               const url = await issue({ id });
@@ -521,8 +570,7 @@ export function CreateInvoiceModal({
             <Select
               {...p}
               onChange={(e) => {
-                setDraft(emptyInvoiceDraft);
-                setOrganizationId("");
+                setOrganizationId(undefined);
                 setSelected(e.target.value as Id<"registrationOrders"> | "");
               }}
               value={selected}
@@ -562,12 +610,11 @@ export function CreateInvoiceModal({
           {(p) => (
             <Select
               {...p}
-              onChange={(e) => {
-                setDraft(emptyInvoiceDraft);
+              onChange={(e) =>
                 setOrganizationId(
                   e.target.value as Id<"registrationOrganizations"> | ""
-                );
-              }}
+                )
+              }
               value={organizationId}
             >
               <option value="">No organization</option>
@@ -582,6 +629,14 @@ export function CreateInvoiceModal({
           )}
         </Field>
         <InvoiceFields onChange={setDraft} value={draft} />
+        {organization ? (
+          <SaveToOrganization
+            checked={saveToOrganization}
+            missing={missing.labels}
+            onChange={setSaveToOrganization}
+            organizationName={organization.name}
+          />
+        ) : null}
         <label className="flex items-center gap-2 text-sm">
           <input
             checked={sendNow}
