@@ -67,6 +67,7 @@ export function OrganizationFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="organization"
             onChange={(e) => set({ name: e.target.value })}
             placeholder="Acme Dental Group"
             required
@@ -78,6 +79,7 @@ export function OrganizationFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="name"
             onChange={(e) => set({ contactName: e.target.value })}
             value={value.contactName}
           />
@@ -87,6 +89,7 @@ export function OrganizationFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="email"
             onChange={(e) => set({ contactEmail: e.target.value })}
             type="email"
             value={value.contactEmail}
@@ -97,6 +100,7 @@ export function OrganizationFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="tel"
             onChange={(e) => set({ phone: e.target.value })}
             type="tel"
             value={value.phone}
@@ -107,6 +111,7 @@ export function OrganizationFields({
         {(p) => (
           <TextInput
             {...p}
+            autoComplete="address-line1"
             onChange={(e) => set({ address: e.target.value })}
             value={value.address}
           />
