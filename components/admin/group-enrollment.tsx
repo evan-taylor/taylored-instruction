@@ -1611,8 +1611,8 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
   );
   usePrefill(
     {
-      ...purchaserPrefill(derived.organization),
       ...purchaserPrefill(requester),
+      ...purchaserPrefill(derived.organization),
     },
     w.setPurchaser,
     emptyPurchaser
