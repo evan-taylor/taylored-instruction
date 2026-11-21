@@ -473,7 +473,7 @@ export function CreateInvoiceModal({
     Id<"registrationOrganizations"> | ""
   >();
   const [draft, setDraft] = useState<InvoiceDraft>(emptyInvoiceDraft);
-  const [saveToOrganization, setSaveToOrganization] = useState(false);
+  const [saveBillingTo, setSaveBillingTo] = useState("");
   const [sendNow, setSendNow] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
@@ -496,6 +496,8 @@ export function CreateInvoiceModal({
     emptyInvoiceDraft
   );
   const missing = missingOrganizationBilling(organization, draft);
+  const saveToOrganization =
+    organizationId !== "" && saveBillingTo === organizationId;
   return (
     <Modal
       description="Invoices are only for enrollments awaiting payment. Totals come from the order and cannot be edited here."
@@ -633,7 +635,7 @@ export function CreateInvoiceModal({
           <SaveToOrganization
             checked={saveToOrganization}
             missing={missing.labels}
-            onChange={setSaveToOrganization}
+            onChange={(on) => setSaveBillingTo(on ? organizationId : "")}
             organizationName={organization.name}
           />
         ) : null}

@@ -1228,7 +1228,12 @@ async function performEnrollment(
         ...input.organizationBilling,
       });
     } catch (error) {
-      outcome.warning = `Enrollment saved, but the organization's billing details were not updated: ${errorText(error)}`;
+      outcome.warning = [
+        outcome.warning,
+        `The organization's billing details were not updated: ${errorText(error)}`,
+      ]
+        .filter(Boolean)
+        .join(" ");
     }
   }
   if (input.requestId) {
@@ -1272,13 +1277,10 @@ function useWizardState(prefill?: EnrollmentPrefill) {
     contactEmail: prefill?.contactEmail ?? "",
     phone: prefill?.phone ?? "",
   });
-  const [purchaser, setPurchaser] = useState<Purchaser>({
-    name: prefill?.contactName ?? "",
-    email: prefill?.contactEmail ?? "",
-  });
+  const [purchaser, setPurchaser] = useState<Purchaser>(emptyPurchaser);
   const [payment, setPayment] = useState<Payment>("invoice");
   const [invoice, setInvoice] = useState<InvoiceDraft>(emptyInvoiceDraft);
-  const [saveToOrganization, setSaveToOrganization] = useState(false);
+  const [saveBillingTo, setSaveBillingTo] = useState("");
   const [reason, setReason] = useState("");
   return {
     step,
@@ -1323,8 +1325,10 @@ function useWizardState(prefill?: EnrollmentPrefill) {
     setPayment,
     invoice,
     setInvoice,
-    saveToOrganization,
-    setSaveToOrganization,
+    saveToOrganization:
+      organizationId !== "" && saveBillingTo === organizationId,
+    setSaveToOrganization: (on: boolean) =>
+      setSaveBillingTo(on ? organizationId : ""),
     reason,
     setReason,
   };
@@ -1591,13 +1595,25 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
     [w.rosterText, w.removed]
   );
   const derived = deriveWizard(w, offering, rows, organizations);
+  const requester = {
+    name: prefill?.organization ?? "",
+    contactName: prefill?.contactName ?? "",
+    contactEmail: prefill?.contactEmail ?? "",
+    address: "",
+  };
   usePrefill(
-    invoicePrefill(derived.organization),
+    {
+      ...invoicePrefill(requester),
+      ...invoicePrefill(derived.organization),
+    },
     w.setInvoice,
     emptyInvoiceDraft
   );
   usePrefill(
-    purchaserPrefill(derived.organization),
+    {
+      ...purchaserPrefill(derived.organization),
+      ...purchaserPrefill(requester),
+    },
     w.setPurchaser,
     emptyPurchaser
   );
@@ -1656,6 +1672,7 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
           w.setRemoved([]);
           w.setCoupon("");
           w.setReason("");
+          w.setSaveToOrganization(false);
         }}
         result={result}
       />
