@@ -3095,6 +3095,48 @@ it("pages organizations without losing records after the first page", async () =
   expect(second.page).toHaveLength(5);
 });
 
+it("completes only the billing fields an organization leaves blank", async () => {
+  const f = await fixture();
+  const id = await f.t.run((ctx) =>
+    ctx.db.insert("registrationOrganizations", {
+      name: "Harbor Pediatrics",
+      address: "",
+      phone: "",
+      notes: "",
+      contactName: "",
+      contactEmail: "billing@harbor.test",
+      city: "Seattle",
+      archived: false,
+    })
+  );
+  const billing = {
+    id,
+    contactEmail: "other@harbor.test",
+    address: "1 Harbor Way",
+    city: "Tacoma",
+    state: "WA",
+    postalCode: "98101",
+  };
+  await expect(
+    f.outsiderClient.mutation(
+      api.registrationGroups.completeOrganizationBilling,
+      billing
+    )
+  ).rejects.toThrow();
+  const saved = await f.adminClient.mutation(
+    api.registrationGroups.completeOrganizationBilling,
+    billing
+  );
+  expect(saved.toSorted()).toEqual(["address", "postalCode", "state"]);
+  expect(await f.t.run((ctx) => ctx.db.get(id))).toMatchObject({
+    contactEmail: "billing@harbor.test",
+    address: "1 Harbor Way",
+    city: "Seattle",
+    state: "WA",
+    postalCode: "98101",
+  });
+});
+
 it("uses current grades after more than two hundred historical versions", async () => {
   const f = await fixture();
   await f.t.run((ctx) =>

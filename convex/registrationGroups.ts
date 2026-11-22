@@ -221,6 +221,46 @@ export const saveOrganization = mutation({
     return saved;
   },
 });
+/** Fills only the billing fields an organization leaves blank, so an invoice can complete a record without overwriting it. */
+export const completeOrganizationBilling = mutation({
+  args: {
+    id: v.id("registrationOrganizations"),
+    contactEmail: v.optional(v.string()),
+    address: v.optional(v.string()),
+    ...postalAddress,
+  },
+  returns: v.array(v.string()),
+  handler: async (ctx, { id, ...fields }) => {
+    const actor = await staff(ctx);
+    const organization = await ctx.db.get(id);
+    if (!organization) {
+      throw new ConvexError("Organization not found");
+    }
+    const patch: Partial<Doc<"registrationOrganizations">> = {};
+    for (const [key, value] of Object.entries(fields) as [
+      keyof typeof fields,
+      string | undefined,
+    ][]) {
+      const next = text(value ?? "", key);
+      if (next && !organization[key]?.trim()) {
+        patch[key] = key === "contactEmail" ? email(next) : next;
+      }
+    }
+    const saved = Object.keys(patch);
+    if (saved.length === 0) {
+      return saved;
+    }
+    await ctx.db.patch(id, patch);
+    await audit(
+      ctx,
+      actor.userId,
+      "organization-billing-completed",
+      id,
+      `${organization.name}: ${saved.join(", ")}`
+    );
+    return saved;
+  },
+});
 export const organizations = query({
   args: { paginationOpts: paginationOptsValidator },
   returns: paginationResultValidator(doc(schema, "registrationOrganizations")),

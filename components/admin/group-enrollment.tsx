@@ -44,9 +44,18 @@ import {
   rosterSummary,
 } from "@/shared/registration/roster";
 import {
+  invoicePrefill,
+  missingOrganizationBilling,
+  type OrganizationBillingPatch,
+  type Purchaser,
+  purchaserPrefill,
+  usePrefill,
+} from "./billing-prefill";
+import {
   emptyInvoiceDraft,
   type InvoiceDraft,
   InvoiceFields,
+  SaveToOrganization,
 } from "./invoices";
 import {
   emptyOrganization,
@@ -55,6 +64,7 @@ import {
 } from "./organization-form";
 
 type Payment = "invoice" | "offline" | "waived" | "unpaid";
+const emptyPurchaser: Purchaser = { name: "", email: "" };
 type Step = "offering" | "roster" | "pricing" | "billing" | "review";
 const STEPS: { id: Step; label: string }[] = [
   { id: "offering", label: "Class" },
@@ -657,6 +667,9 @@ function BillingStep({
   setPayment,
   invoice,
   setInvoice,
+  missingBilling,
+  saveToOrganization,
+  setSaveToOrganization,
   reason,
   setReason,
 }: {
@@ -673,6 +686,9 @@ function BillingStep({
   setPayment: (v: Payment) => void;
   invoice: InvoiceDraft;
   setInvoice: (v: InvoiceDraft) => void;
+  missingBilling: { organizationName: string; labels: string[] };
+  saveToOrganization: boolean;
+  setSaveToOrganization: (v: boolean) => void;
   reason: string;
   setReason: (v: string) => void;
 }) {
@@ -757,6 +773,7 @@ function BillingStep({
               {(p) => (
                 <TextInput
                   {...p}
+                  autoComplete="name"
                   onChange={(e) => setPurchaserName(e.target.value)}
                   value={purchaserName}
                 />
@@ -766,6 +783,7 @@ function BillingStep({
               {(p) => (
                 <TextInput
                   {...p}
+                  autoComplete="email"
                   onChange={(e) => setPurchaserEmail(e.target.value)}
                   type="email"
                   value={purchaserEmail}
@@ -810,7 +828,17 @@ function BillingStep({
             ))}
           </fieldset>
           {payment === "invoice" ? (
-            <InvoiceFields onChange={setInvoice} value={invoice} />
+            <>
+              <InvoiceFields onChange={setInvoice} value={invoice} />
+              {organizationId ? (
+                <SaveToOrganization
+                  checked={saveToOrganization}
+                  missing={missingBilling.labels}
+                  onChange={setSaveToOrganization}
+                  organizationName={missingBilling.organizationName}
+                />
+              ) : null}
+            </>
           ) : null}
           <Field
             hint="Recorded in the audit log with this enrollment."
@@ -1105,12 +1133,18 @@ type EnrollmentInput = {
   organizationId: Id<"registrationOrganizations"> | "new" | "";
   newOrganization: OrganizationDraft;
   invoice: InvoiceDraft;
+  organizationBilling?: OrganizationBillingPatch;
   requestId?: Id<"registrationGroupRequests">;
 };
 type EnrollmentActions = {
   reserve: ReturnType<typeof useMutation<typeof api.registration.reserve>>;
   saveOrganization: ReturnType<
     typeof useMutation<typeof api.registrationGroups.saveOrganization>
+  >;
+  completeOrganization: ReturnType<
+    typeof useMutation<
+      typeof api.registrationGroups.completeOrganizationBilling
+    >
   >;
   createInvoice: ReturnType<
     typeof useMutation<typeof api.registrationGroups.createInvoice>
@@ -1187,6 +1221,21 @@ async function performEnrollment(
   if (input.payment === "invoice") {
     await attachInvoice(input, act, outcome, organizationId);
   }
+  if (organizationId && input.organizationBilling) {
+    try {
+      await act.completeOrganization({
+        id: organizationId,
+        ...input.organizationBilling,
+      });
+    } catch (error) {
+      outcome.warning = [
+        outcome.warning,
+        `The organization's billing details were not updated: ${errorText(error)}`,
+      ]
+        .filter(Boolean)
+        .join(" ");
+    }
+  }
   if (input.requestId) {
     try {
       await act.updateRequest({
@@ -1228,18 +1277,10 @@ function useWizardState(prefill?: EnrollmentPrefill) {
     contactEmail: prefill?.contactEmail ?? "",
     phone: prefill?.phone ?? "",
   });
-  const [purchaserName, setPurchaserName] = useState(
-    prefill?.contactName ?? ""
-  );
-  const [purchaserEmail, setPurchaserEmail] = useState(
-    prefill?.contactEmail ?? ""
-  );
+  const [purchaser, setPurchaser] = useState<Purchaser>(emptyPurchaser);
   const [payment, setPayment] = useState<Payment>("invoice");
-  const [invoice, setInvoice] = useState<InvoiceDraft>({
-    ...emptyInvoiceDraft,
-    billToName: prefill?.organization ?? "",
-    billToEmail: prefill?.contactEmail ?? "",
-  });
+  const [invoice, setInvoice] = useState<InvoiceDraft>(emptyInvoiceDraft);
+  const [saveBillingTo, setSaveBillingTo] = useState("");
   const [reason, setReason] = useState("");
   return {
     step,
@@ -1274,14 +1315,20 @@ function useWizardState(prefill?: EnrollmentPrefill) {
     setOrganizationId,
     newOrganization,
     setNewOrganization,
-    purchaserName,
-    setPurchaserName,
-    purchaserEmail,
-    setPurchaserEmail,
+    purchaserName: purchaser.name,
+    setPurchaserName: (name: string) => setPurchaser((p) => ({ ...p, name })),
+    purchaserEmail: purchaser.email,
+    setPurchaserEmail: (email: string) =>
+      setPurchaser((p) => ({ ...p, email })),
+    setPurchaser,
     payment,
     setPayment,
     invoice,
     setInvoice,
+    saveToOrganization:
+      organizationId !== "" && saveBillingTo === organizationId,
+    setSaveToOrganization: (on: boolean) =>
+      setSaveBillingTo(on ? organizationId : ""),
     reason,
     setReason,
   };
@@ -1289,7 +1336,17 @@ function useWizardState(prefill?: EnrollmentPrefill) {
 type Wizard = ReturnType<typeof useWizardState>;
 type Offering = ReturnType<typeof useOffering>;
 
-function deriveWizard(w: Wizard, offering: Offering, rows: RosterRow[]) {
+function deriveWizard(
+  w: Wizard,
+  offering: Offering,
+  rows: RosterRow[],
+  organizations: Doc<"registrationOrganizations">[] | undefined
+) {
+  const organization =
+    w.organizationId === "new"
+      ? w.newOrganization
+      : organizations?.find((o) => o._id === w.organizationId);
+  const missingBilling = missingOrganizationBilling(organization, w.invoice);
   const ready = rows.filter((r) => !r.issue);
   const attendees: Attendee[] = ready.map((r) => ({
     name: r.name,
@@ -1322,7 +1379,19 @@ function deriveWizard(w: Wizard, offering: Offering, rows: RosterRow[]) {
     payment: w.payment,
     invoice: w.invoice,
   });
-  return { ready, attendees, estimate, estimateError, available, validity };
+  return {
+    ready,
+    attendees,
+    estimate,
+    estimateError,
+    available,
+    validity,
+    organization,
+    missingBilling: {
+      ...missingBilling,
+      organizationName: organization?.name ?? "",
+    },
+  };
 }
 type Derived = ReturnType<typeof deriveWizard>;
 
@@ -1406,6 +1475,7 @@ function StepBody({
       return (
         <BillingStep
           invoice={w.invoice}
+          missingBilling={derived.missingBilling}
           newOrganization={w.newOrganization}
           organizationId={w.organizationId}
           organizations={organizations}
@@ -1413,6 +1483,7 @@ function StepBody({
           purchaserEmail={w.purchaserEmail}
           purchaserName={w.purchaserName}
           reason={w.reason}
+          saveToOrganization={w.saveToOrganization}
           setInvoice={w.setInvoice}
           setNewOrganization={w.setNewOrganization}
           setOrganizationId={w.setOrganizationId}
@@ -1420,6 +1491,7 @@ function StepBody({
           setPurchaserEmail={w.setPurchaserEmail}
           setPurchaserName={w.setPurchaserName}
           setReason={w.setReason}
+          setSaveToOrganization={w.setSaveToOrganization}
         />
       );
     default:
@@ -1508,6 +1580,9 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
   const actions: EnrollmentActions = {
     reserve: useMutation(api.registration.reserve),
     saveOrganization: useMutation(api.registrationGroups.saveOrganization),
+    completeOrganization: useMutation(
+      api.registrationGroups.completeOrganizationBilling
+    ),
     createInvoice: useMutation(api.registrationGroups.createInvoice),
     issue: useAction(api.registrationInvoiceActions.issue),
     updateRequest: useMutation(api.registrationGroups.updateGroupRequest),
@@ -1519,7 +1594,29 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
       ),
     [w.rosterText, w.removed]
   );
-  const derived = deriveWizard(w, offering, rows);
+  const derived = deriveWizard(w, offering, rows, organizations);
+  const requester = {
+    name: prefill?.organization ?? "",
+    contactName: prefill?.contactName ?? "",
+    contactEmail: prefill?.contactEmail ?? "",
+    address: "",
+  };
+  usePrefill(
+    {
+      ...invoicePrefill(requester),
+      ...invoicePrefill(derived.organization),
+    },
+    w.setInvoice,
+    emptyInvoiceDraft
+  );
+  usePrefill(
+    {
+      ...purchaserPrefill(requester),
+      ...purchaserPrefill(derived.organization),
+    },
+    w.setPurchaser,
+    emptyPurchaser
+  );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [result, setResult] = useState<Result | null>(null);
@@ -1544,6 +1641,12 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
             course,
             sessionId: w.mode === "session" ? session?._id : undefined,
             attendees: derived.attendees,
+            organizationBilling:
+              w.payment === "invoice" &&
+              w.saveToOrganization &&
+              derived.missingBilling.labels.length > 0
+                ? derived.missingBilling.patch
+                : undefined,
             requestId: linkedRequest,
           },
           actions,
@@ -1569,6 +1672,7 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
           w.setRemoved([]);
           w.setCoupon("");
           w.setReason("");
+          w.setSaveToOrganization(false);
         }}
         result={result}
       />
