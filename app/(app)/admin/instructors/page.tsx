@@ -1,9 +1,8 @@
 "use client";
 
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { Suspense, useState } from "react";
 import { IndependentOversight } from "@/components/admin/aligned";
-import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
@@ -14,7 +13,6 @@ import { ConfirmDialog } from "./confirm-dialog";
 import { InstructorsTable } from "./instructors-table";
 import { Invitations } from "./invitations";
 import { AccessDenied, LoadingAdminPanel } from "./loading-states";
-import type { ProfileWithUser } from "./types";
 import { useAdminAuth } from "./use-admin-auth";
 import { useAdminProfiles } from "./use-admin-profiles";
 import { useInstructorActions } from "./use-instructor-actions";
@@ -36,29 +34,14 @@ function AdminInstructorsContent() {
     actionMessage,
     error: actionError,
     toggleInstructorStatus,
+    setAlignment,
     initiateRejectUser,
     confirmRejectUser,
     cancelRejectUser,
     confirmDialogState,
   } = useInstructorActions(profiles, setProfiles);
 
-  const saveAlignment = useMutation(api.aligned.setAlignment);
-  const [alignment, setAlignment] = useState({ message: "", error: "" });
-  const error = fetchError || actionError || alignment.error;
-  async function setAligned(profile: ProfileWithUser, aligned: boolean) {
-    const who = profile.userEmail || "Instructor";
-    try {
-      await saveAlignment({ userId: profile.userId as Id<"users">, aligned });
-      setAlignment({
-        message: aligned
-          ? `${who} is now aligned with our Training Site.`
-          : `Removed alignment for ${who}. Their independent sessions stay visible below.`,
-        error: "",
-      });
-    } catch (err) {
-      setAlignment({ message: "", error: errorText(err) });
-    }
-  }
+  const error = fetchError || actionError;
   const [sessionsFor, setSessionsFor] = useState<Id<"users"> | "">("");
   const owners = useQuery(
     api.aligned.sessionOwners,
@@ -108,14 +91,11 @@ function AdminInstructorsContent() {
           title="Instructors"
         />
 
-        <AlertMessages
-          actionMessage={alignment.message || actionMessage}
-          error={error}
-        />
+        <AlertMessages actionMessage={actionMessage} error={error} />
 
         <InstructorsTable
           onRejectUser={initiateRejectUser}
-          onSetAlignment={setAligned}
+          onSetAlignment={setAlignment}
           onShowSessions={(userId) => {
             setSessionsFor(userId as Id<"users">);
             document

@@ -280,13 +280,21 @@ export const sessionOwners = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const sessions = await ctx.db.query("independentSessions").collect();
-    const ids = [...new Set(sessions.map((s) => s.instructorId))];
-    const users = await Promise.all(ids.map((id) => ctx.db.get(id)));
-    return ids.map((userId, i) => ({
-      userId,
-      name: displayName(users[i] ?? null),
-    }));
+    const profiles = await ctx.db.query("profiles").collect();
+    const owners = await Promise.all(
+      profiles.map(async ({ userId }) => {
+        const session = await ctx.db
+          .query("independentSessions")
+          .withIndex("by_instructorId_and_start", (q) =>
+            q.eq("instructorId", userId)
+          )
+          .first();
+        return session
+          ? { userId, name: displayName(await ctx.db.get(userId)) }
+          : null;
+      })
+    );
+    return owners.filter((owner) => owner !== null);
   },
 });
 
