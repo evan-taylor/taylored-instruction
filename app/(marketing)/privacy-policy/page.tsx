@@ -156,24 +156,23 @@ export default async function PrivacyPolicyPage() {
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
             SMS notifications
           </h3>
-          <p>
-            If you opt in to receive SMS messages from us, you will receive
-            account alerts and promotional messages. Consent is not a condition
-            of purchase. Message frequency varies. Message and data rates may
-            apply. We may also send you messages about training opportunities
-            and important updates.
-          </p>
           <p className="mb-4">
-            To stop receiving messages, text <strong>STOP</strong> or{" "}
-            <strong>UNSUBSCRIBE</strong>. For help, text <strong>HELP</strong>.
-            You can also contact us at 360-685-8199 or
+            Taylored Instruction sends text messages only to families who opt
+            in, and only about their own classes and account: class
+            cancellations and schedule changes, class and lesson reminders,
+            registration and waitlist updates, invoice and payment reminders,
+            class announcements from staff, and replies from staff. We never
+            send marketing or promotional texts. Message frequency varies.
+            Message and data rates may apply. Reply STOP to opt out or HELP for
+            help. We never sell or share your mobile number or your choice to
+            get texts with third parties or affiliates for marketing or
+            promotional purposes. Full text message terms:{" "}
             <a
               className="text-primary hover:underline"
-              href="mailto:info@tayloredinstruction.com"
+              href="https://taylored-instruction.soljio.com/sms-terms"
             >
-              info@tayloredinstruction.com
+              https://taylored-instruction.soljio.com/sms-terms
             </a>
-            . Mobile opt-in information is never shared with third parties.
           </p>
 
           <h3 className="mt-4 mb-3 font-semibold text-text text-xl">
@@ -254,11 +253,10 @@ export default async function PrivacyPolicyPage() {
             By providing your phone number and agreeing to receive texts, you
             consent to receive text messages from Taylored Instruction, from
             360-685-8199 regarding account notification and customer care.
-            Consent is not a condition of purchase. You will receive account
-            alerts and promotional messages. Message frequency varies. Message
-            &amp; data rates may apply. You can reply STOP to unsubscribe at any
-            time or HELP for assistance. You can also contact us at 360-685-8199
-            or{" "}
+            Consent is not a condition of purchase. Message frequency varies.
+            Message &amp; data rates may apply. You can reply STOP to
+            unsubscribe at any time or HELP for assistance. You can also contact
+            us at 360-685-8199 or{" "}
             <a
               className="text-primary hover:underline"
               href="mailto:info@tayloredinstruction.com"
@@ -318,8 +316,8 @@ export default async function PrivacyPolicyPage() {
           </h2>
           <ul className="mb-4 list-inside list-disc text-text-light">
             <li>
-              <strong>Opt-Out:</strong> You can opt-out of marketing emails or
-              SMS notifications at any time by replying <strong>STOP</strong> or{" "}
+              <strong>Opt-Out:</strong> You can opt-out of SMS notifications or
+              marketing emails at any time by replying <strong>STOP</strong> or{" "}
               <strong>UNSUBSCRIBE</strong> to any message or contacting us
               directly. For help, reply <strong>HELP</strong>.
             </li>

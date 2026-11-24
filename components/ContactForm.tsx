@@ -220,10 +220,10 @@ export function ContactForm() {
             from 360-685-8199.
           </Label>
           <p className="text-muted-foreground text-xs">
-            Message frequency varies and may include appointment reminders,
-            course information, or promotional messages. Message and data rates
-            may apply. Reply STOP at any time to unsubscribe or HELP for
-            assistance. Contact support at 360-685-8199. See our{" "}
+            Message frequency varies and may include appointment reminders or
+            course information. Message and data rates may apply. Reply STOP at
+            any time to unsubscribe or HELP for assistance. Contact support at
+            360-685-8199. See our{" "}
             <a className="text-blue-500" href="/privacy-policy">
               Privacy Policy
             </a>{" "}
