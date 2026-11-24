@@ -871,3 +871,52 @@ describe("delivery safeguards", () => {
     ).rejects.toThrow("Invalid date");
   });
 });
+
+describe("aligned instructors", () => {
+  it("track certifications and get reminders while their alignment is active", async () => {
+    const w = await world();
+    const { alex, grant } = await w.t.run(async (ctx) => {
+      const id = await ctx.db.insert("users", {
+        email: "alex@example.test",
+        firstName: "Alex",
+        emailVerificationTime: Date.now(),
+      });
+      const grantId = await ctx.db.insert("alignedInstructors", {
+        userId: id,
+        email: "alex@example.test",
+        courseIds: [],
+        grantedBy: w.ids.admin,
+        grantedAt: Date.now(),
+      });
+      return { alex: id, grant: grantId };
+    });
+    const aligned = w.t.withIdentity({ subject: `${alex}|session` });
+    const cert = await aligned.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: addDays(TODAY, 90),
+    });
+    expect(
+      (await aligned.query(api.instructorCertifications.mine, {}))
+        ?.certifications[0]?.id
+    ).toBe(cert);
+    const report = await w.admin.query(api.instructorCertifications.report, {});
+    expect(report.instructors.map((i) => i.name)).toContain("Alex");
+    expect(
+      await w.t.mutation(internal.instructorCertifications.runReminders, {
+        today: TODAY,
+      })
+    ).toBe(1);
+    await drain(w.t);
+    expect((await w.reminders())[0]?.recipient).toBe("alex@example.test");
+
+    await w.t.run((ctx) => ctx.db.patch(grant, { revokedAt: Date.now() }));
+    await expect(
+      aligned.mutation(api.instructorCertifications.save, {
+        ...bls,
+        expiresOn: "2030-01-01",
+      })
+    ).rejects.toThrow("Forbidden");
+    const after = await w.admin.query(api.instructorCertifications.report, {});
+    expect(after.instructors.map((i) => i.name)).not.toContain("Alex");
+  });
+});

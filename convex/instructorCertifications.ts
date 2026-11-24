@@ -41,6 +41,7 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { activeAlignment } from "./aligned";
 import { CERTIFICATE_SIGNATURES } from "./registrationCertificates";
 
 const MAX_ATTEMPTS = 3;
@@ -100,16 +101,18 @@ async function requireAdmin(ctx: QueryCtx) {
 }
 
 /**
- * Who can hold instructor certifications. Every instructor role belongs
- * here: employed instructors today, aligned independent instructors once
- * that role exists. Certifications are keyed to the user, never the role.
+ * Who can hold instructor certifications: employed instructors and aligned
+ * independent instructors. Certifications are keyed to the user, never the role.
  */
 async function isActiveInstructor(ctx: QueryCtx, userId: Id<"users">) {
   const profile = await ctx.db
     .query("profiles")
     .withIndex("by_user", (q) => q.eq("userId", userId))
     .first();
-  return Boolean(profile?.isInstructor && !profile.deactivatedAt);
+  if (profile?.isInstructor && !profile.deactivatedAt) {
+    return true;
+  }
+  return (await activeAlignment(ctx, userId)) !== null;
 }
 
 function displayName(user: Doc<"users"> | null) {
@@ -122,10 +125,19 @@ async function instructorDirectory(ctx: QueryCtx) {
     .query("profiles")
     .withIndex("by_instructor_status", (q) => q.eq("isInstructor", true))
     .collect();
-  const active = profiles.filter((profile) => !profile.deactivatedAt);
-  const users = await Promise.all(
-    active.map((profile) => ctx.db.get(profile.userId))
+  const grants = await ctx.db.query("alignedInstructors").collect();
+  const aligned = await Promise.all(
+    grants.map(async (grant) =>
+      (await activeAlignment(ctx, grant.userId)) ? grant.userId : null
+    )
   );
+  const ids = new Set([
+    ...profiles
+      .filter((profile) => !profile.deactivatedAt)
+      .map((profile) => profile.userId),
+    ...aligned.filter((id) => id !== null),
+  ]);
+  const users = await Promise.all([...ids].map((id) => ctx.db.get(id)));
   return users
     .filter((user): user is Doc<"users"> => user !== null)
     .map((user) => ({
