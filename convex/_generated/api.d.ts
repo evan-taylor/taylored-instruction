@@ -14,6 +14,7 @@ import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
 import type * as http from "../http.js";
+import type * as instructorCertifications from "../instructorCertifications.js";
 import type * as instructorInvitations from "../instructorInvitations.js";
 import type * as mcp from "../mcp.js";
 import type * as migration from "../migration.js";
@@ -57,6 +58,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   crons: typeof crons;
   http: typeof http;
+  instructorCertifications: typeof instructorCertifications;
   instructorInvitations: typeof instructorInvitations;
   mcp: typeof mcp;
   migration: typeof migration;

@@ -17,4 +17,17 @@ crons.interval(
   { minutes: 5 },
   internal.registrationExternal.reconcileRefunds
 );
+// 16:00 UTC is 8 or 9 a.m. in the Pacific time zone.
+crons.daily(
+  "Instructor certification reminders",
+  { hourUTC: 16, minuteUTC: 0 },
+  internal.instructorCertifications.runReminders,
+  {}
+);
+crons.weekly(
+  "Instructor certification staff digest",
+  { dayOfWeek: "monday", hourUTC: 16, minuteUTC: 15 },
+  internal.instructorCertifications.runDigest,
+  {}
+);
 export default crons;

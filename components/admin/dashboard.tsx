@@ -69,6 +69,61 @@ function AttentionRow({
   );
 }
 
+const CERTIFICATION_WINDOWS = [
+  { key: "expired", label: "Expired", href: "status=expired" },
+  { key: "within30", label: "Next 30 days", href: "status=expiring&within=30" },
+  { key: "within60", label: "Next 60 days", href: "status=expiring&within=60" },
+  { key: "within90", label: "Next 90 days", href: "status=expiring&within=90" },
+] as const;
+
+function CertificationsCard() {
+  const counts = useQuery(api.instructorCertifications.expiringSummary);
+  return (
+    <Card>
+      <CardHeader>
+        <div>
+          <CardTitle>Instructor certifications</CardTitle>
+          <CardDescription>
+            Expired cards and cards expiring soon, so renewals happen on time.
+          </CardDescription>
+        </div>
+        <Button href="/admin/certifications" size="xs" variant="ghost">
+          Full report
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {counts ? (
+          <ul className="grid list-none grid-cols-2 gap-3 p-0 sm:grid-cols-4">
+            {CERTIFICATION_WINDOWS.map((window) => (
+              <li key={window.key}>
+                <Link
+                  className="block rounded-lg border border-slate-200 px-4 py-3 transition-colors hover:border-primary/40 hover:bg-slate-50"
+                  href={`/admin/certifications?${window.href}`}
+                >
+                  <span className="block font-medium text-slate-500 text-xs uppercase tracking-wide">
+                    {window.label}
+                  </span>
+                  <span
+                    className={
+                      window.key === "expired" && counts.expired
+                        ? "mt-1 block font-semibold text-2xl text-rose-700 tabular-nums"
+                        : "mt-1 block font-semibold text-2xl text-slate-900 tabular-nums"
+                    }
+                  >
+                    {counts[window.key]}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Skeleton className="h-20" />
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function AdminDashboard() {
   const summary = useQuery(api.registrationDashboard.summary);
   const origin = typeof window === "undefined" ? "" : window.location.origin;
@@ -314,6 +369,7 @@ export function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+      <CertificationsCard />
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader>
