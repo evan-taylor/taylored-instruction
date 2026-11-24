@@ -186,9 +186,16 @@ export async function enqueue(
  * keep settledAt and become settled or exception, never expired.
  */
 export function isAbandonedOrder(
-  order: Pick<Doc<"registrationOrders">, "status" | "settledAt">
+  order: Pick<
+    Doc<"registrationOrders">,
+    "status" | "settledAt" | "releasedBeforePayment"
+  >
 ) {
-  return order.status === "expired" && order.settledAt === undefined;
+  return (
+    order.status === "expired" &&
+    order.settledAt === undefined &&
+    order.releasedBeforePayment === undefined
+  );
 }
 /** A seat canceled with its abandoned order; it was never a real enrollment. */
 async function isAbandonedSeat(ctx: QueryCtx, seat: Doc<"registrationSeats">) {
@@ -591,6 +598,39 @@ export async function scheduleEmails(
     })
   );
 }
+/**
+ * Confirms one attendee: grants their materials through the normal
+ * fulfillment path and queues the confirmation and scheduled emails.
+ * Settlement and release-before-payment share it so each runs at most once.
+ */
+export async function activateSeat(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats">,
+  session: Doc<"registrationSessions"> | null,
+  config: Doc<"registrationCourses">["settings"],
+  now: number
+) {
+  await ctx.db.patch(seat._id, { state: "active", settledAt: now });
+  const active = { ...seat, state: "active" as const, settledAt: now };
+  await seat.snapshot.materials.reduce(async (before, attachment) => {
+    await before;
+    // The confirmation includes every material ready at signup.
+    await grantMaterial(ctx, active, attachment, false);
+  }, Promise.resolve());
+  const confirmation =
+    config.confirmationEmail ?? defaultConfirmation(!session);
+  await enqueue(ctx, {
+    key: `confirmation:${seat._id}`,
+    kind: "email",
+    recipient: seat.email,
+    subject: confirmation.subject,
+    body: confirmation.body,
+    due: now,
+    seatId: seat._id,
+    sessionId: session?._id,
+  });
+  await scheduleEmails(ctx, active, session, config, true);
+}
 export async function settle(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">,
@@ -676,26 +716,11 @@ export async function settle(
     .collect();
   await seats.reduce(async (previous, seat) => {
     await previous;
-    await ctx.db.patch(seat._id, { state: "active", settledAt: now });
-    const paid = { ...seat, settledAt: now };
-    await seat.snapshot.materials.reduce(async (before, attachment) => {
-      await before;
-      // The confirmation includes every material ready at signup.
-      await grantMaterial(ctx, paid, attachment, false);
-    }, Promise.resolve());
-    const confirmation =
-      config.confirmationEmail ?? defaultConfirmation(!session);
-    await enqueue(ctx, {
-      key: `confirmation:${seat._id}`,
-      kind: "email",
-      recipient: seat.email,
-      subject: confirmation.subject,
-      body: confirmation.body,
-      due: now,
-      seatId: seat._id,
-      sessionId: session?._id,
-    });
-    await scheduleEmails(ctx, paid, session, config, true);
+    // Seats released before payment already have their access and emails.
+    if (seat.state === "active" && seat.settledAt) {
+      return;
+    }
+    await activateSeat(ctx, seat, session, config, now);
   }, Promise.resolve());
   await enqueue(ctx, {
     key: `receipt:${order._id}`,

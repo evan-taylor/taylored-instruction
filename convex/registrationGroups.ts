@@ -316,6 +316,26 @@ async function openInvoice(
     )
     .first();
 }
+/**
+ * Voiding the invoice behind released access leaves attendees active with
+ * nothing left to collect. Access is kept; the order is flagged for staff.
+ */
+async function flagReleasedAccess(
+  ctx: MutationCtx,
+  invoice: Doc<"registrationInvoices">,
+  actor: string,
+  reason: string
+) {
+  const order = await ctx.db.get(invoice.orderId);
+  if (!(order?.releasedBeforePayment && order.status === "unpaid")) {
+    return;
+  }
+  const detail = `${invoice.number} voided while access stays released: ${reason}`;
+  await ctx.db.patch(order._id, {
+    releaseFollowUp: { at: Date.now(), actor, reason: detail },
+  });
+  await audit(ctx, actor, "released-access-follow-up", order._id, detail);
+}
 export const createInvoice = mutation({
   args: {
     orderId: v.id("registrationOrders"),
@@ -382,6 +402,9 @@ export const createInvoice = mutation({
     });
     if (args.organizationId && order.organizationId !== args.organizationId) {
       await ctx.db.patch(order._id, { organizationId: args.organizationId });
+    }
+    if (order.releaseFollowUp) {
+      await ctx.db.patch(order._id, { releaseFollowUp: undefined });
     }
     await audit(
       ctx,
@@ -676,6 +699,7 @@ export const invoiceClosedEvent = internalMutation({
     if (invoice.status === "open" || invoice.status === "draft") {
       await ctx.db.patch(invoice._id, { status: "void", voidedAt: Date.now() });
       await audit(ctx, "system", "invoice-voided", invoice._id, args.type);
+      await flagReleasedAccess(ctx, invoice, "system", `Stripe ${args.type}`);
     }
     await ctx.db.insert("registrationEvents", {
       eventId: args.eventId,
@@ -766,6 +790,7 @@ export const voidInvoice = mutation({
       invoice._id,
       `${invoice.number}: ${args.reason.trim()}`
     );
+    await flagReleasedAccess(ctx, invoice, actor.userId, args.reason.trim());
     return null;
   },
 });

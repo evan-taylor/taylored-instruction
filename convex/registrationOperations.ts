@@ -24,6 +24,7 @@ import {
   certificateStatusValidator,
 } from "./registrationCertificates";
 import {
+  activateSeat,
   activeSeatMaterials,
   assignCode,
   audit,
@@ -900,6 +901,92 @@ export const recordPayment = mutation({
     return null;
   },
 });
+/**
+ * Gives attendees on an invoiced, unpaid order their access, materials, and
+ * confirmation emails now. The order stays unpaid and the invoice stays
+ * collectable; settling it later skips everything already released.
+ */
+export const releaseUnpaidAccess = mutation({
+  args: {
+    orderId: v.id("registrationOrders"),
+    /** Attendees to release; omit to release every held attendee. */
+    seatIds: v.optional(v.array(v.id("registrationSeats"))),
+    reason: v.string(),
+  },
+  returns: v.object({ released: v.number(), alreadyReleased: v.number() }),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    const reason = args.reason.trim();
+    if (!reason) {
+      throw new ConvexError("Reason required");
+    }
+    const order = await ctx.db.get(args.orderId);
+    if (order?.status !== "unpaid" || order.materialSeatId) {
+      throw new ConvexError(
+        "Access can only be released on an unpaid registration order"
+      );
+    }
+    const invoices = await ctx.db
+      .query("registrationInvoices")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .take(BATCH);
+    if (!invoices.some((i) => i.status === "open" || i.status === "draft")) {
+      throw new ConvexError(
+        "Create an invoice first so the balance stays collectable after access is released"
+      );
+    }
+    const { session, config } = await offering(
+      ctx,
+      order.courseId,
+      order.sessionId
+    );
+    if (session?.state === "canceled") {
+      throw new ConvexError("This session is canceled");
+    }
+    const seats = await ctx.db
+      .query("registrationSeats")
+      .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
+      .collect();
+    const requested = args.seatIds ? new Set(args.seatIds) : null;
+    const chosen = requested
+      ? seats.filter((seat) => requested.has(seat._id))
+      : seats.filter(
+          (seat) => seat.state === "held" || seat.state === "active"
+        );
+    if (requested && chosen.length !== requested.size) {
+      throw new ConvexError("Choose attendees on this order");
+    }
+    if (chosen.some((s) => s.state !== "held" && s.state !== "active")) {
+      throw new ConvexError(
+        "Canceled or transferred attendees cannot be released"
+      );
+    }
+    const held = chosen.filter((seat) => seat.state === "held");
+    if (held.length === 0) {
+      return { released: 0, alreadyReleased: chosen.length };
+    }
+    const now = Date.now();
+    // Sequential so keycodes are assigned in a stable order.
+    await held.reduce(async (previous, seat) => {
+      await previous;
+      await activateSeat(ctx, seat, session, config, now);
+    }, Promise.resolve());
+    await ctx.db.patch(order._id, {
+      releasedBeforePayment: { at: now, actor: actor.userId, reason },
+    });
+    await audit(
+      ctx,
+      actor.userId,
+      "released-before-payment",
+      order._id,
+      `${held.map((seat) => seat.name).join(", ")}: ${reason}`
+    );
+    return {
+      released: held.length,
+      alreadyReleased: chosen.length - held.length,
+    };
+  },
+});
 export const restoreCoupon = mutation({
   args: { orderId: v.id("registrationOrders"), reason: v.string() },
   returns: v.null(),
@@ -1382,7 +1469,8 @@ export const orders = query({
       : ordered.filter((q) =>
           q.or(
             q.neq(q.field("status"), "expired"),
-            q.neq(q.field("settledAt"), undefined)
+            q.neq(q.field("settledAt"), undefined),
+            q.neq(q.field("releasedBeforePayment"), undefined)
           )
         )
     ).paginate(args.paginationOpts);

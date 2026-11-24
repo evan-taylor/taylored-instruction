@@ -123,6 +123,11 @@ async function editableOrder(
     );
   }
   if (order.status === "unpaid") {
+    if (seat.state === "active") {
+      throw new ConvexError(
+        "Access was released before payment. Edit materials after the order is paid."
+      );
+    }
     if (seat.transferredFrom) {
       throw new ConvexError(
         "Settle the transfer balance before editing materials so the transfer credit is preserved"

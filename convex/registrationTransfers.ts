@@ -214,6 +214,7 @@ export const transfer = mutation({
         "Choose a settled active registration and a different open session"
       );
     }
+    const sourceOrder = await paidSourceOrder(ctx, source);
     const { config } = await offering(ctx, target.courseId, target._id);
     if (target.reserved >= target.capacity) {
       throw new ConvexError("Target session is full");
@@ -258,10 +259,6 @@ export const transfer = mutation({
     }
     if (difference < 0 && args.choice === "collect") {
       throw new ConvexError("Choose refund or keep for a lower-price transfer");
-    }
-    const sourceOrder = await ctx.db.get(source.orderId);
-    if (!sourceOrder) {
-      throw new ConvexError("Original order missing");
     }
     const adjustment = args.choice === "keep" ? 0 : difference;
     const total = Math.max(0, adjustment);
@@ -371,6 +368,20 @@ export const transfer = mutation({
     return { orderId, seatId, adjustment };
   },
 });
+
+/** Seats released before payment have no payment to carry to a new session. */
+async function paidSourceOrder(ctx: QueryCtx, seat: Doc<"registrationSeats">) {
+  const order = await ctx.db.get(seat.orderId);
+  if (!order) {
+    throw new ConvexError("Original order missing");
+  }
+  if (order.status === "unpaid" || order.status === "hold") {
+    throw new ConvexError(
+      "Access was released before payment. Transfer this attendee after the order is paid."
+    );
+  }
+  return order;
+}
 
 async function previousTransfer(
   ctx: QueryCtx,

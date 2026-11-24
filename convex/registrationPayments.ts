@@ -291,6 +291,12 @@ async function validatePayment(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">
 ) {
+  // A lapsed card hold releases the order, which would revoke released access.
+  if (order.releasedBeforePayment) {
+    throw new ConvexError(
+      "Access was released before payment. Collect this balance with an invoice or record an offline payment."
+    );
+  }
   const { course, session, config } = await offering(
     ctx,
     order.courseId,

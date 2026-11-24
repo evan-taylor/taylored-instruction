@@ -1114,6 +1114,138 @@ function RequestPayment({ order }: { order: Order }) {
   );
 }
 
+/** Who released access early, when and why, plus any follow-up it needs. */
+function ReleasedNotice({ order }: { order: Order }) {
+  const released = order.releasedBeforePayment;
+  const followUp =
+    order.status === "unpaid" ? order.releaseFollowUp : undefined;
+  const actors = useQuery(
+    api.registrationOperations.activityActors,
+    released ? { ids: [released.actor] } : "skip"
+  );
+  if (!released) {
+    return null;
+  }
+  const by = actors?.[0]?.label ?? "staff";
+  return (
+    <div className="space-y-2">
+      <Notice tone="info">
+        <p className="font-medium">Released before payment</p>
+        <p>
+          {by} released attendee access on {formatDateTime(released.at)}:{" "}
+          {released.reason}
+        </p>
+        {order.status === "unpaid" ? (
+          <p className="text-xs">
+            The order stays awaiting payment. Paying the invoice sends only the
+            receipt; materials and confirmations are not sent again.
+          </p>
+        ) : null}
+      </Notice>
+      {followUp ? (
+        <Notice tone="warning">
+          <p className="font-medium">Follow-up needed</p>
+          <p>
+            {followUp.reason}. Attendees keep their access. Invoice again,
+            record a payment, or cancel the attendees.
+          </p>
+        </Notice>
+      ) : null}
+    </div>
+  );
+}
+
+/** Gives invoiced attendees their access now, leaving the invoice open. */
+function ReleaseAccess({ order }: { order: Order }) {
+  const release = useMutation(api.registrationOperations.releaseUnpaidAccess);
+  const seats = useQuery(api.registrationOperations.orderSeats, {
+    orderId: order._id,
+  });
+  const invoices = useQuery(api.registrationGroups.orderInvoices, {
+    orderId: order._id,
+  });
+  const [open, setOpen] = useState(false);
+  const [chosen, setChosen] = useState<Id<"registrationSeats">[]>([]);
+  const [message, setMessage] = useState("");
+  if (!(seats && invoices) || order.status !== "unpaid") {
+    return null;
+  }
+  const invoice = invoices.find(
+    (i) => i.status === "open" || i.status === "draft"
+  );
+  const held = seats.filter((seat) => seat.state === "held");
+  if (!invoice || held.length === 0) {
+    return null;
+  }
+  return (
+    <div className="space-y-2">
+      <Button
+        onClick={() => {
+          setChosen(held.map((seat) => seat._id));
+          setOpen(true);
+        }}
+        size="sm"
+        type="button"
+        variant="secondary"
+      >
+        Release access before payment
+      </Button>
+      <p className="text-slate-500 text-xs">
+        Gives attendees their portal access, materials, and confirmation emails
+        now. Invoice {invoice.number} stays open and collectable.
+      </p>
+      <ResultNotice message={message} />
+      <ReasonDialog
+        confirmLabel="Release access"
+        description={`Activates the chosen attendees, delivers their materials and keycodes, and sends their confirmation emails. The order stays unpaid and ${invoice.number} stays open. When it is paid, only the receipt is sent.`}
+        onClose={() => setOpen(false)}
+        onConfirm={async (reason) => {
+          if (chosen.length === 0) {
+            throw new Error("Choose at least one attendee to release.");
+          }
+          const result = await release({
+            orderId: order._id,
+            seatIds: chosen.length === held.length ? undefined : chosen,
+            reason,
+          });
+          setMessage(
+            `Access released for ${pluralize(result.released, "attendee")}. ${invoice.number} stays open.`
+          );
+        }}
+        open={open}
+        title="Release access before payment"
+      >
+        {held.length > 1 ? (
+          <fieldset className="space-y-2 border-0 p-0">
+            <legend className="mb-1 font-medium text-slate-900 text-sm">
+              Attendees
+            </legend>
+            {held.map((seat) => (
+              <Toggle
+                checked={chosen.includes(seat._id)}
+                description={seat.email}
+                key={seat._id}
+                label={seat.name}
+                onChange={(on) =>
+                  setChosen((current) =>
+                    on
+                      ? [...current, seat._id]
+                      : current.filter((id) => id !== seat._id)
+                  )
+                }
+              />
+            ))}
+          </fieldset>
+        ) : (
+          <p className="text-slate-700 text-sm">
+            Releases {held[0]?.name} ({held[0]?.email}).
+          </p>
+        )}
+      </ReasonDialog>
+    </div>
+  );
+}
+
 function UnpaidActions({ order }: { order: Order }) {
   const record = useMutation(api.registrationOperations.recordPayment);
   const [dialog, setDialog] = useState<"offline" | "waived" | null>(null);
@@ -1140,7 +1272,10 @@ function UnpaidActions({ order }: { order: Order }) {
           Waive payment
         </Button>
       </div>
-      {order.total > 0 ? <RequestPayment order={order} /> : null}
+      {order.total > 0 && !order.releasedBeforePayment ? (
+        <RequestPayment order={order} />
+      ) : null}
+      <ReleaseAccess order={order} />
       <ResultNotice message={message} />
       <ReasonDialog
         confirmLabel="Record payment"
@@ -1281,14 +1416,18 @@ export function OrderPayments({ order }: { order: Order }) {
   const coupon = Boolean(order.couponId) && order.status === "settled";
   if (!(unpaid || refundableCard || coupon)) {
     return (
-      <p className="text-slate-500 text-sm">
-        No payment actions are available while this order is{" "}
-        <StatusBadge status={order.status} />.
-      </p>
+      <div className="space-y-3">
+        <ReleasedNotice order={order} />
+        <p className="text-slate-500 text-sm">
+          No payment actions are available while this order is{" "}
+          <StatusBadge status={order.status} />.
+        </p>
+      </div>
     );
   }
   return (
     <div className="space-y-5">
+      <ReleasedNotice order={order} />
       {unpaid ? <UnpaidActions order={order} /> : null}
       {refundableCard ? <RefundForm order={order} /> : null}
       {coupon ? <RestoreCoupon order={order} /> : null}
