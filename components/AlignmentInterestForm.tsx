@@ -358,10 +358,10 @@ const AlignmentInterestForm: React.FC = () => {
             from 360-685-8199.
           </Label>
           <p className="text-slate-500 text-xs">
-            Message frequency varies and may include appointment reminders,
-            course information, or promotional messages. Message and data rates
-            may apply. Reply STOP at any time to unsubscribe or HELP for
-            assistance. Contact support at 360-685-8199. Please review our{" "}
+            Message frequency varies and may include appointment reminders or
+            course information. Message and data rates may apply. Reply STOP at
+            any time to unsubscribe or HELP for assistance. Contact support at
+            360-685-8199. Please review our{" "}
             <a
               className="text-primary hover:underline"
               href="/privacy-policy"

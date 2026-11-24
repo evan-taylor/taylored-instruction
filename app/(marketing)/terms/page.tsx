@@ -182,11 +182,10 @@ export default async function TermsPage() {
 
           <p>
             By providing your phone number and agreeing to receive texts, you
-            consent to receive promotional and account-related SMS messages from
-            Taylored Instruction at 360-685-8199. You will receive account
-            alerts and promotional messages. Message frequency varies, but you
-            can expect up to 4 messages per month. Message and data rates may
-            apply. Consent is not a condition of purchase.
+            consent to receive account-related SMS messages from Taylored
+            Instruction at 360-685-8199. Message frequency varies, but you can
+            expect up to 4 messages per month. Message and data rates may apply.
+            Consent is not a condition of purchase.
           </p>
           <p>
             To stop receiving messages, text <strong>STOP</strong>. For help,
