@@ -37,10 +37,12 @@ export const alignedTables = {
     instructorNames: v.array(v.string()),
     outcomeDefinitions: v.array(outcome),
     state: v.union(v.literal("scheduled"), v.literal("canceled")),
+    studentCount: v.number(),
     updatedAt: v.number(),
   })
     .index("by_instructorId_and_start", ["instructorId", "start"])
-    .index("by_start", ["start"]),
+    .index("by_start", ["start"])
+    .index("by_courseId", ["courseId"]),
   independentStudents: defineTable({
     sessionId: v.id("independentSessions"),
     instructorId: v.id("users"),

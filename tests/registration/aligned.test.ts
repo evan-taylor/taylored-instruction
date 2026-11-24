@@ -227,9 +227,9 @@ describe("granting aligned access", () => {
       userId: ids.alice,
       active: false,
     });
-    await expect(alice.query(api.aligned.mySessions, {})).rejects.toThrow(
-      "Active aligned instructor access required"
-    );
+    await expect(
+      alice.query(api.aligned.mySessions, { paginationOpts: PAGE })
+    ).rejects.toThrow("Active aligned instructor access required");
     await expect(
       alice.query(api.aligned.sessionDetail, { sessionId })
     ).rejects.toThrow("Session not found");
@@ -239,8 +239,9 @@ describe("granting aligned access", () => {
     expect((await alice.query(api.profiles.getProfile, {}))?.is_aligned).toBe(
       false
     );
-    const oversight = await admin.query(api.aligned.allSessions, {
+    const { page: oversight } = await admin.query(api.aligned.allSessions, {
       instructorId: ids.alice,
+      paginationOpts: PAGE,
     });
     expect(oversight.map((s) => s._id)).toEqual([sessionId]);
     expect(oversight[0]?.owner.email).toBe("alice@example.test");
@@ -248,9 +249,13 @@ describe("granting aligned access", () => {
       userId: ids.alice,
       active: true,
     });
-    expect(await as(ids.alice).query(api.aligned.mySessions, {})).toHaveLength(
-      1
-    );
+    expect(
+      (
+        await as(ids.alice).query(api.aligned.mySessions, {
+          paginationOpts: PAGE,
+        })
+      ).page
+    ).toHaveLength(1);
   });
 
   it("keeps an employed-instructor invitation separate from alignment", async () => {
@@ -262,7 +267,7 @@ describe("granting aligned access", () => {
     const profile = await as(ids.student).query(api.profiles.getProfile, {});
     expect(profile).toMatchObject({ is_instructor: true, is_aligned: false });
     await expect(
-      as(ids.student).query(api.aligned.mySessions, {})
+      as(ids.student).query(api.aligned.mySessions, { paginationOpts: PAGE })
     ).rejects.toThrow("Active aligned instructor access required");
   });
 });
@@ -297,7 +302,10 @@ describe("aligned instructor boundaries", () => {
     const { ids, bob, sessionId, studentId } = await world();
     const attempts = [
       bob.query(api.aligned.sessionDetail, { sessionId }),
-      bob.query(api.aligned.sessionActivity, { sessionId }),
+      bob.query(api.aligned.sessionActivity, {
+        sessionId,
+        paginationOpts: PAGE,
+      }),
       bob.mutation(api.aligned.updateSession, {
         sessionId,
         courseId: ids.bls,
@@ -340,7 +348,9 @@ describe("aligned instructor boundaries", () => {
         "Session not found"
       );
     }
-    expect(await bob.query(api.aligned.mySessions, {})).toEqual([]);
+    expect(
+      (await bob.query(api.aligned.mySessions, { paginationOpts: PAGE })).page
+    ).toEqual([]);
   });
 
   it("cannot move another session's students through their own session", async () => {
@@ -390,7 +400,7 @@ describe("aligned instructor boundaries", () => {
         email: "jane@example.test",
       }),
       alice.query(api.registration.sessions, { paginationOpts: PAGE }),
-      alice.query(api.aligned.allSessions, {}),
+      alice.query(api.aligned.allSessions, { paginationOpts: PAGE }),
       alice.query(api.aligned.instructors, {}),
       alice.query(api.instructorInvitations.list, {}),
     ];
@@ -456,7 +466,10 @@ describe("independent rosters", () => {
       completion: "complete",
     });
     expect(after.owner?.email).toBe("alice@example.test");
-    const log = await admin.query(api.aligned.sessionActivity, { sessionId });
+    const { page: log } = await admin.query(api.aligned.sessionActivity, {
+      sessionId,
+      paginationOpts: PAGE,
+    });
     expect(log.map((row) => row.action)).toEqual([
       "student-edited",
       "outcome-edited",
@@ -609,6 +622,127 @@ it("parses pasted rosters with names, emails, and phones in any order", () => {
       email: "old@example.test",
       phone: "",
       issue: "Already on this roster",
+    },
+  ]);
+});
+
+describe("keeping independent records consistent", () => {
+  it("keeps archived courses editable, clears results on a course change, and counts students", async () => {
+    const { t, ids, bob, admin } = await world();
+    const start = Date.now() + 3 * DAY;
+    const input = {
+      courseId: ids.bls,
+      start,
+      end: start + 3_600_000,
+      timeZone: "America/Los_Angeles",
+      location: "Bob's gym",
+      instructorNames: [],
+    };
+    const sessionId = await bob.mutation(api.aligned.createSession, input);
+    await bob.mutation(api.aligned.addStudents, {
+      sessionId,
+      students: [
+        { firstName: "A", lastName: "One", email: "a@example.test" },
+        { firstName: "B", lastName: "Two", email: "b@example.test" },
+      ],
+    });
+    const roster = await bob.query(api.aligned.sessionDetail, { sessionId });
+    const [first, second] = roster.students;
+    await bob.mutation(api.aligned.removeStudent, {
+      studentId: second?._id as Id<"independentStudents">,
+    });
+    await bob.mutation(api.aligned.recordOutcome, {
+      studentId: first?._id as Id<"independentStudents">,
+      fieldId: "skills",
+      value: "Pass",
+    });
+    const { page } = await bob.query(api.aligned.mySessions, {
+      paginationOpts: PAGE,
+    });
+    expect(page.find((s) => s._id === sessionId)?.studentCount).toBe(1);
+
+    await t.run((ctx) => ctx.db.patch(ids.bls, { publication: "archived" }));
+    await bob.mutation(api.aligned.updateSession, {
+      sessionId,
+      ...input,
+      location: "Bob's new gym",
+    });
+    await expect(
+      bob.mutation(api.aligned.createSession, input)
+    ).rejects.toThrow("Course not available");
+
+    await bob.mutation(api.aligned.updateSession, {
+      sessionId,
+      ...input,
+      courseId: ids.heartsaver,
+    });
+    const moved = await bob.query(api.aligned.sessionDetail, { sessionId });
+    expect(moved.session.title).toBe("HEARTSAVER");
+    expect(moved.students[0]?.outcomes).toEqual([]);
+    expect(moved.students[0]?.completion).not.toBe("complete");
+    const { page: log } = await admin.query(api.aligned.sessionActivity, {
+      sessionId,
+      paginationOpts: PAGE,
+    });
+    expect(log[0]?.action).toBe("session-edited");
+    expect(log[1]?.action).toBe("results-cleared");
+  });
+
+  it("pages through older sessions", async () => {
+    const { alice } = await world();
+    const first = await alice.query(api.aligned.mySessions, {
+      paginationOpts: { numItems: 1, cursor: null },
+    });
+    expect(first.page).toHaveLength(1);
+  });
+
+  it("refuses to delete a course aligned instructors use", async () => {
+    const { t, ids, admin } = await world();
+    await expect(
+      admin.mutation(api.registration.deleteCourse, { id: ids.heartsaver })
+    ).rejects.toThrow("Aligned instructors use this template");
+    const unused = await t.run((ctx) =>
+      ctx.db.insert("registrationCourses", {
+        slug: "unused",
+        title: "UNUSED",
+        description: "Test",
+        delivery: "scheduled",
+        publication: "published",
+        settings,
+        enrollmentOpen: true,
+        revision: 1,
+      })
+    );
+    await admin.mutation(api.registration.deleteCourse, { id: unused });
+    expect(await t.run((ctx) => ctx.db.get(unused))).toBeNull();
+  });
+
+  it("shows approved courses on the pending invitation", async () => {
+    const { t, ids, admin } = await world();
+    const carol = await t.run((ctx) =>
+      ctx.db.insert("users", {
+        email: "carol@example.test",
+        emailVerificationTime: Date.now(),
+      })
+    );
+    await admin.mutation(api.instructorInvitations.inviteAligned, {
+      email: "carol@example.test",
+      courseIds: [ids.bls, ids.heartsaver],
+    });
+    const mine = await t
+      .withIdentity({ subject: `${carol}|session` })
+      .query(api.instructorInvitations.mine, {});
+    expect(mine?.courses).toEqual(["BLS", "HEARTSAVER"]);
+  });
+});
+
+it("strips quotes around pasted fields after trimming", () => {
+  expect(parseStudents('"Jane Doe", "jane@example.test"', [])).toEqual([
+    {
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane@example.test",
+      phone: "",
     },
   ]);
 });

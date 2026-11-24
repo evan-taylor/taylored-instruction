@@ -73,7 +73,13 @@ function instructorStatus(
   );
 }
 
-function AcceptInvitation({ aligned }: { aligned: boolean }) {
+function AcceptInvitation({
+  aligned,
+  courses,
+}: {
+  aligned: boolean;
+  courses: string[];
+}) {
   const acceptInvitation = useMutation(api.instructorInvitations.accept);
   const [accepting, setAccepting] = useState(false);
   const [acceptError, setAcceptError] = useState<string | null>(null);
@@ -84,6 +90,11 @@ function AcceptInvitation({ aligned }: { aligned: boolean }) {
           ? "Your alignment with our Training Site is approved. Accept to open the independent instructor portal, where you schedule your own classes, keep rosters, and export them for card issuing, plus eCard purchasing."
           : "You’ve been invited to teach with Taylored Instruction. Accept to unlock instructor tools, eCard purchasing, and your assigned sessions."}
       </p>
+      {courses.length ? (
+        <p className="text-slate-600 text-sm">
+          Approved courses: {courses.join(", ")}
+        </p>
+      ) : null}
       {acceptError ? <Notice tone="danger">{acceptError}</Notice> : null}
       <Button
         disabled={accepting}
@@ -203,7 +214,10 @@ export default function MyAccountPage() {
           {invitation || !(isInstructor || isAligned) ? (
             <CardFooter className="flex flex-col items-start gap-3">
               {invitation ? (
-                <AcceptInvitation aligned={invitation.kind === "aligned"} />
+                <AcceptInvitation
+                  aligned={invitation.kind === "aligned"}
+                  courses={invitation.courses}
+                />
               ) : (
                 <p className="text-slate-600 text-sm">
                   Instructor access is by invitation. If you teach with Taylored

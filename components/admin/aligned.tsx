@@ -1,9 +1,11 @@
 "use client";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { useState } from "react";
 import { errorText } from "@/components/registration/errors";
 import {
   IndependentSessionDetail,
+  LoadMore,
+  PAGE_SIZE,
   SessionTable,
 } from "@/components/registration/independent";
 import { Button } from "@/components/ui/Button";
@@ -409,9 +411,15 @@ export function AlignedAdmin() {
   const courses = useQuery(api.aligned.courseOptions);
   const instructors = useQuery(api.aligned.instructors);
   const [instructorId, setInstructorId] = useState<Id<"users"> | "">("");
-  const sessions = useQuery(api.aligned.allSessions, {
-    instructorId: instructorId || undefined,
-  });
+  const {
+    results: sessions,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.aligned.allSessions,
+    { instructorId: instructorId || undefined },
+    { initialNumItems: PAGE_SIZE }
+  );
   if (courses === undefined || instructors === undefined) {
     return <Skeleton className="h-96" />;
   }
@@ -456,13 +464,14 @@ export function AlignedAdmin() {
           </Field>
         </CardHeader>
         <CardContent>
-          {sessions === undefined ? <Skeleton className="h-32" /> : null}
-          {sessions?.length === 0 ? (
+          {status === "LoadingFirstPage" ? <Skeleton className="h-32" /> : null}
+          {status !== "LoadingFirstPage" && sessions.length === 0 ? (
             <EmptyState title="No independent sessions" />
           ) : null}
-          {sessions?.length ? (
+          {sessions.length ? (
             <SessionTable hrefBase="/admin/aligned" sessions={sessions} />
           ) : null}
+          <LoadMore loadMore={loadMore} status={status} />
         </CardContent>
       </Card>
     </div>

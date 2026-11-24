@@ -12,6 +12,8 @@ type InstructorInvitationEmailProps = {
   email: string;
   /** Independent instructors aligned with our Training Site. */
   aligned?: boolean;
+  /** Course titles an aligned instructor is approved to teach. */
+  courses?: string[];
 };
 
 const BENEFITS = {
@@ -32,6 +34,7 @@ export default function InstructorInvitationEmail({
   signInUrl,
   email,
   aligned = false,
+  courses = [],
 }: InstructorInvitationEmailProps) {
   return (
     <EmailLayout
@@ -46,6 +49,12 @@ export default function InstructorInvitationEmail({
           ? "Your Taylored Instruction alignment is approved"
           : "You’re invited to teach with Taylored Instruction"}
       </Title>
+      {courses.length ? (
+        <>
+          <Paragraph>You’re approved to teach:</Paragraph>
+          <BulletList items={courses} />
+        </>
+      ) : null}
       <Paragraph>
         Sign in with <strong>{email}</strong>, then choose “Accept invitation”
         on your account page. Once you accept, you can:

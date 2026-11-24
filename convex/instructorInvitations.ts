@@ -98,8 +98,19 @@ async function send(ctx: MutationCtx, row: Doc<"instructorInvitations">) {
       email: row.email,
       attempt,
       kind: row.kind,
+      courses: await courseTitles(ctx, row.courseIds),
     }
   );
+}
+
+async function courseTitles(
+  ctx: QueryCtx,
+  courseIds: Id<"registrationCourses">[] | undefined
+) {
+  const courses = await Promise.all(
+    (courseIds ?? []).map((id) => ctx.db.get(id))
+  );
+  return courses.flatMap((course) => (course ? [course.title] : []));
 }
 
 /** True when an account holding this email already has active instructor access. */
@@ -321,6 +332,7 @@ export const mine = query({
       id: v.id("instructorInvitations"),
       createdAt: v.number(),
       kind: v.optional(v.literal("aligned")),
+      courses: v.array(v.string()),
     }),
     v.null()
   ),
@@ -331,7 +343,12 @@ export const mine = query({
     }
     const pending = await pendingFor(ctx, me.email, "any");
     return pending
-      ? { id: pending._id, createdAt: pending.createdAt, kind: pending.kind }
+      ? {
+          id: pending._id,
+          createdAt: pending.createdAt,
+          kind: pending.kind,
+          courses: await courseTitles(ctx, pending.courseIds),
+        }
       : null;
   },
 });
@@ -394,11 +411,12 @@ export const sendInvitationEmail = internalAction({
     email: v.string(),
     attempt: v.number(),
     kind: v.optional(v.literal("aligned")),
+    courses: v.optional(v.array(v.string())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     try {
-      await deliver(args.email, args.kind);
+      await deliver(args.email, args.kind, args.courses ?? []);
       await ctx.runMutation(internal.instructorInvitations.recordSend, {
         id: args.id,
         attempt: args.attempt,
@@ -430,7 +448,7 @@ const COPY = {
   },
 };
 
-async function deliver(email: string, kind: InvitationKind) {
+async function deliver(email: string, kind: InvitationKind, courses: string[]) {
   const copy = COPY[kind ?? "instructor"];
   const { AUTH_EMAIL_FROM: from, SITE_URL: site } = process.env;
   if (!(from && site && process.env.RESEND_API_KEY)) {
@@ -448,10 +466,12 @@ async function deliver(email: string, kind: InvitationKind) {
         signInUrl,
         email,
         aligned: kind === "aligned",
+        courses,
       })
     ),
     text: [
       copy.intro,
+      ...(courses.length ? [`Approved courses: ${courses.join(", ")}.`] : []),
       `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks ${copy.unlocks}.`,
       "No password is needed: we email you a one-time code when you sign in.",
       `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,

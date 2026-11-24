@@ -1,5 +1,5 @@
 "use client";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
 import { CreditCard, MapPin, Plus } from "lucide-react";
 import Link from "next/link";
 import { type ReactNode, useState } from "react";
@@ -67,6 +67,7 @@ const ACTION_LABELS: Record<string, string> = {
   "student-removed": "Removed student",
   attendance: "Attendance",
   "outcome-edited": "Recorded result",
+  "results-cleared": "Cleared results",
 };
 
 function Shell({ children }: { children: ReactNode }) {
@@ -356,8 +357,43 @@ function SessionForm({
 
 /* ---------------------------- Session list --------------------------- */
 
+export const PAGE_SIZE = 50;
+
+export function LoadMore({
+  status,
+  loadMore,
+}: {
+  status: "LoadingFirstPage" | "CanLoadMore" | "LoadingMore" | "Exhausted";
+  loadMore: (count: number) => void;
+}) {
+  if (status !== "CanLoadMore" && status !== "LoadingMore") {
+    return null;
+  }
+  return (
+    <div className="flex justify-center pt-3">
+      <Button
+        disabled={status === "LoadingMore"}
+        onClick={() => loadMore(PAGE_SIZE)}
+        size="sm"
+        type="button"
+        variant="secondary"
+      >
+        {status === "LoadingMore" ? "Loading…" : "Load older"}
+      </Button>
+    </div>
+  );
+}
+
 export function IndependentSessions() {
-  const sessions = useQuery(api.aligned.mySessions);
+  const {
+    results: sessions,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.aligned.mySessions,
+    {},
+    { initialNumItems: PAGE_SIZE }
+  );
   const portal = useQuery(api.aligned.portal);
   const create = useMutation(api.aligned.createSession);
   const [open, setOpen] = useState(false);
@@ -396,14 +432,17 @@ export function IndependentSessions() {
           you teach.
         </Notice>
       ) : null}
-      {sessions === undefined ? <Loading label="Loading sessions…" /> : null}
-      {sessions?.length === 0 ? (
+      {status === "LoadingFirstPage" ? (
+        <Loading label="Loading sessions…" />
+      ) : null}
+      {status !== "LoadingFirstPage" && sessions.length === 0 ? (
         <EmptyState
           description="Create a session for each class you teach, then add your students."
           title="No independent sessions yet"
         />
       ) : null}
-      {sessions?.length ? <SessionTable sessions={sessions} /> : null}
+      {sessions.length ? <SessionTable sessions={sessions} /> : null}
+      <LoadMore loadMore={loadMore} status={status} />
       <SessionForm
         courses={courses}
         initial={emptyForm()}
@@ -424,10 +463,7 @@ export function SessionTable({
   sessions,
   hrefBase = "/instructor/independent",
 }: {
-  sessions: (Session & {
-    studentCount: number;
-    owner?: { name: string; email: string };
-  })[];
+  sessions: (Session & { owner?: { name: string; email: string } })[];
   hrefBase?: string;
 }) {
   return (
@@ -920,6 +956,7 @@ function OutcomeInput({
         onBlur={async (event) => {
           const input = event.currentTarget;
           if (draft === undefined || !input.value) {
+            setDraft(undefined);
             return;
           }
           if (!input.validity.valid) {
@@ -929,6 +966,7 @@ function OutcomeInput({
           await save(input.valueAsNumber);
         }}
         onChange={(event) => setDraft(event.target.value)}
+        step="any"
         type="number"
         value={draft ?? String(current ?? "")}
       />
@@ -1246,16 +1284,50 @@ function activityDetail(action: string, detail: string) {
       return `${parsed.student}: ${parsed.field} ${parsed.previous ?? "—"} → ${parsed.value}`;
     }
     if (action === "student-edited") {
-      return `${parsed.student}: ${Object.keys(parsed.changed as object).join(", ")}`;
+      const changed = Object.entries(parsed.changed as Record<string, string>)
+        .map(([key, value]) => `${key} → ${value || "—"}`)
+        .join(", ");
+      return `${parsed.student}: ${changed}`;
     }
-    return [parsed.course, parsed.location].filter(Boolean).join(" · ");
+    const session = parsed as {
+      course?: string;
+      start?: number;
+      end?: number;
+      timeZone?: string;
+      location?: string;
+      instructors?: string[];
+    };
+    return [
+      session.course,
+      session.start && session.end && session.timeZone
+        ? when({
+            start: session.start,
+            end: session.end,
+            timeZone: session.timeZone,
+          })
+        : "",
+      session.location,
+      session.instructors?.length
+        ? `Instructors: ${session.instructors.join(", ")}`
+        : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
   } catch {
     return detail;
   }
 }
 
 function ActivityLog({ sessionId }: { sessionId: Id<"independentSessions"> }) {
-  const rows = useQuery(api.aligned.sessionActivity, { sessionId });
+  const {
+    results: rows,
+    status,
+    loadMore,
+  } = usePaginatedQuery(
+    api.aligned.sessionActivity,
+    { sessionId },
+    { initialNumItems: PAGE_SIZE }
+  );
   return (
     <Card>
       <CardHeader>
@@ -1268,7 +1340,7 @@ function ActivityLog({ sessionId }: { sessionId: Id<"independentSessions"> }) {
         </div>
       </CardHeader>
       <CardContent>
-        {rows?.length ? (
+        {rows.length ? (
           <ol className="divide-y divide-slate-100 text-sm">
             {rows.map((row) => (
               <li className="flex flex-col gap-0.5 py-2" key={row._id}>
@@ -1287,9 +1359,10 @@ function ActivityLog({ sessionId }: { sessionId: Id<"independentSessions"> }) {
           </ol>
         ) : (
           <p className="text-slate-500 text-sm">
-            {rows === undefined ? "Loading…" : "No activity yet."}
+            {status === "LoadingFirstPage" ? "Loading…" : "No activity yet."}
           </p>
         )}
+        <LoadMore loadMore={loadMore} status={status} />
       </CardContent>
     </Card>
   );

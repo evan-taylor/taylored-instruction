@@ -25,7 +25,7 @@ export type PastedStudent = {
 export function parseStudentLine(line: string): PastedStudent | null {
   const fields = line
     .split(SPLIT)
-    .map((field) => field.replace(QUOTES, "").trim())
+    .map((field) => field.trim().replace(QUOTES, "").trim())
     .filter(Boolean);
   if (!fields.length) {
     return null;

@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { paginationOptsValidator } from "convex/server";
 import { ConvexError, type Infer, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { completion } from "../shared/registration/domain";
@@ -15,7 +16,6 @@ import { attendanceStatus } from "./alignedSchema";
 const MAX_STUDENTS = 200;
 const MAX_INSTRUCTOR_NAMES = 10;
 const LIST_LIMIT = 200;
-const ACTIVITY_LIMIT = 100;
 const MAX_TEXT = 200;
 const MAX_EMAIL = 254;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
@@ -191,15 +191,20 @@ function studentCompletion(
   return completion(session.outcomeDefinitions, student.outcomes);
 }
 
-async function studentCount(
+/** Whether independent sessions or alignment grants still use this course. */
+export async function courseInUse(
   ctx: QueryCtx,
-  sessionId: Id<"independentSessions">
+  courseId: Id<"registrationCourses">
 ) {
-  const students = await ctx.db
-    .query("independentStudents")
-    .withIndex("by_sessionId", (q) => q.eq("sessionId", sessionId))
-    .take(MAX_STUDENTS);
-  return students.length;
+  const session = await ctx.db
+    .query("independentSessions")
+    .withIndex("by_courseId", (q) => q.eq("courseId", courseId))
+    .first();
+  if (session) {
+    return true;
+  }
+  const grants = await ctx.db.query("alignedInstructors").collect();
+  return grants.some((grant) => grant.courseIds.includes(courseId));
 }
 
 /* ---------------------------- Staff: grants ---------------------------- */
@@ -361,60 +366,52 @@ export const portal = query({
   },
 });
 
-async function withCounts(
-  ctx: QueryCtx,
-  sessions: Doc<"independentSessions">[]
-) {
-  return await Promise.all(
-    sessions.map(async (session) => ({
-      ...session,
-      studentCount: await studentCount(ctx, session._id),
-    }))
-  );
-}
-
 export const mySessions = query({
-  args: {},
-  handler: async (ctx) => {
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, { paginationOpts }) => {
     const { userId } = await requireAligned(ctx);
-    const sessions = await ctx.db
+    return await ctx.db
       .query("independentSessions")
       .withIndex("by_instructorId_and_start", (q) =>
         q.eq("instructorId", userId)
       )
       .order("desc")
-      .take(LIST_LIMIT);
-    return await withCounts(ctx, sessions);
+      .paginate(paginationOpts);
   },
 });
 
 export const allSessions = query({
-  args: { instructorId: v.optional(v.id("users")) },
-  handler: async (ctx, { instructorId }) => {
+  args: {
+    instructorId: v.optional(v.id("users")),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { instructorId, paginationOpts }) => {
     await requireAdmin(ctx);
-    const sessions = instructorId
+    const result = instructorId
       ? await ctx.db
           .query("independentSessions")
           .withIndex("by_instructorId_and_start", (q) =>
             q.eq("instructorId", instructorId)
           )
           .order("desc")
-          .take(LIST_LIMIT)
+          .paginate(paginationOpts)
       : await ctx.db
           .query("independentSessions")
           .withIndex("by_start")
           .order("desc")
-          .take(LIST_LIMIT);
-    const counted = await withCounts(ctx, sessions);
-    return await Promise.all(
-      counted.map(async (session) => {
-        const owner = await ctx.db.get(session.instructorId);
-        return {
-          ...session,
-          owner: { name: displayName(owner), email: owner?.email ?? "" },
-        };
-      })
-    );
+          .paginate(paginationOpts);
+    return {
+      ...result,
+      page: await Promise.all(
+        result.page.map(async (session) => {
+          const owner = await ctx.db.get(session.instructorId);
+          return {
+            ...session,
+            owner: { name: displayName(owner), email: owner?.email ?? "" },
+          };
+        })
+      ),
+    };
   },
 });
 
@@ -447,14 +444,18 @@ export const sessionDetail = query({
 });
 
 export const sessionActivity = query({
-  args: { sessionId: v.id("independentSessions") },
-  handler: async (ctx, { sessionId }) => {
+  args: {
+    sessionId: v.id("independentSessions"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { sessionId, paginationOpts }) => {
     await sessionAccess(ctx, sessionId);
-    const rows = await ctx.db
+    const result = await ctx.db
       .query("independentActivity")
       .withIndex("by_sessionId_and_at", (q) => q.eq("sessionId", sessionId))
       .order("desc")
-      .take(ACTIVITY_LIMIT);
+      .paginate(paginationOpts);
+    const rows = result.page;
     const actors = new Map(
       await Promise.all(
         [...new Set(rows.map((r) => r.actor))].map(
@@ -462,13 +463,16 @@ export const sessionActivity = query({
         )
       )
     );
-    return rows.map((r) => ({
-      _id: r._id,
-      action: r.action,
-      detail: r.detail,
-      at: r.at,
-      actor: actors.get(r.actor) ?? "Unknown",
-    }));
+    return {
+      ...result,
+      page: rows.map((r) => ({
+        _id: r._id,
+        action: r.action,
+        detail: r.detail,
+        at: r.at,
+        actor: actors.get(r.actor) ?? "Unknown",
+      })),
+    };
   },
 });
 
@@ -487,6 +491,7 @@ async function sessionFields(
   ctx: QueryCtx,
   owner: Id<"users">,
   alignment: Doc<"alignedInstructors"> | null,
+  current: Doc<"independentSessions"> | null,
   input: {
     courseId: Id<"registrationCourses">;
     start: number;
@@ -496,10 +501,13 @@ async function sessionFields(
     instructorNames: string[];
   }
 ) {
-  if (alignment && !alignment.courseIds.includes(input.courseId)) {
-    throw new ConvexError("You are not aligned to teach this course");
+  const course =
+    current?.courseId === input.courseId
+      ? await ctx.db.get(input.courseId)
+      : await newCourse(ctx, alignment, input.courseId);
+  if (!course) {
+    throw new ConvexError("Course not found");
   }
-  const course = await teachableCourse(ctx, input.courseId);
   if (
     !(Number.isFinite(input.start) && Number.isFinite(input.end)) ||
     input.end <= input.start
@@ -529,6 +537,18 @@ async function sessionFields(
   };
 }
 
+/** Archived courses stay on existing sessions; only new choices must be teachable. */
+async function newCourse(
+  ctx: QueryCtx,
+  alignment: Doc<"alignedInstructors"> | null,
+  courseId: Id<"registrationCourses">
+) {
+  if (alignment && !alignment.courseIds.includes(courseId)) {
+    throw new ConvexError("You are not aligned to teach this course");
+  }
+  return await teachableCourse(ctx, courseId);
+}
+
 export const createSession = mutation({
   args: sessionInput,
   returns: v.id("independentSessions"),
@@ -538,6 +558,7 @@ export const createSession = mutation({
       ctx,
       userId,
       alignment,
+      null,
       args
     );
     const id = await ctx.db.insert("independentSessions", {
@@ -545,6 +566,7 @@ export const createSession = mutation({
       instructorId: userId,
       outcomeDefinitions: recordableOutcomes(course),
       state: "scheduled",
+      studentCount: 0,
     });
     const created = await ctx.db.get(id);
     if (created) {
@@ -578,14 +600,18 @@ export const updateSession = mutation({
       ctx,
       row.instructorId,
       alignment,
+      row,
       input
     );
-    await ctx.db.patch(sessionId, {
-      ...fields,
-      ...(course._id === row.courseId
-        ? {}
-        : { outcomeDefinitions: recordableOutcomes(course) }),
-    });
+    if (course._id === row.courseId) {
+      await ctx.db.patch(sessionId, fields);
+    } else {
+      await ctx.db.patch(sessionId, {
+        ...fields,
+        outcomeDefinitions: recordableOutcomes(course),
+      });
+      await clearResults(ctx, row, actor);
+    }
     const updated = await ctx.db.get(sessionId);
     if (updated) {
       await log(ctx, updated, actor, "session-edited", describe(updated));
@@ -593,6 +619,32 @@ export const updateSession = mutation({
     return null;
   },
 });
+
+/** Results belong to the course they were recorded under, so a course change clears them. */
+async function clearResults(
+  ctx: MutationCtx,
+  session: Doc<"independentSessions">,
+  actor: Id<"users">
+) {
+  const students = await ctx.db
+    .query("independentStudents")
+    .withIndex("by_sessionId", (q) => q.eq("sessionId", session._id))
+    .take(MAX_STUDENTS);
+  const graded = students.filter((student) => student.outcomes.length);
+  if (!graded.length) {
+    return;
+  }
+  await Promise.all(
+    graded.map((student) => ctx.db.patch(student._id, { outcomes: [] }))
+  );
+  await log(
+    ctx,
+    session,
+    actor,
+    "results-cleared",
+    `Course changed from ${session.title}: ${graded.map((s) => s.email).join(", ")}`
+  );
+}
 
 export const setCanceled = mutation({
   args: { sessionId: v.id("independentSessions"), canceled: v.boolean() },
@@ -671,6 +723,9 @@ export const addStudents = mutation({
         })
       )
     );
+    await ctx.db.patch(sessionId, {
+      studentCount: existing.length + rows.length,
+    });
     await log(
       ctx,
       row,
@@ -756,6 +811,9 @@ export const removeStudent = mutation({
     } = await studentAccess(ctx, studentId);
     editable(row);
     await ctx.db.delete(studentId);
+    await ctx.db.patch(row._id, {
+      studentCount: Math.max(0, row.studentCount - 1),
+    });
     await log(
       ctx,
       row,
