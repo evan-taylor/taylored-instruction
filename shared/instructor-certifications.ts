@@ -225,6 +225,7 @@ type Supersedable = {
   id: string;
   userId: string;
   agency: string;
+  agencyOther?: string;
   type: string;
   typeOther?: string;
   expiresOn: string;
@@ -241,6 +242,9 @@ export function supersededIds(rows: Supersedable[]) {
     const key = [
       row.userId,
       row.agency,
+      row.agency === "other"
+        ? (row.agencyOther ?? "").trim().toLowerCase()
+        : "",
       row.type,
       row.type === "other" ? (row.typeOther ?? "").trim().toLowerCase() : "",
     ].join("|");

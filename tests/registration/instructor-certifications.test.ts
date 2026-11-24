@@ -695,3 +695,179 @@ describe("permissions", () => {
     ).toBeNull();
   });
 });
+
+function idempotencyKeys() {
+  return vi
+    .mocked(globalThis.fetch)
+    .mock.calls.map(([, init]) =>
+      new Headers((init as RequestInit).headers).get("Idempotency-Key")
+    );
+}
+
+describe("delivery safeguards", () => {
+  it("cancels a queued reminder when a newer card replaces it or the instructor leaves", async () => {
+    const w = await world();
+    await w.ana.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: addDays(TODAY, 7),
+    });
+    await w.ben.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: addDays(TODAY, 7),
+    });
+    await w.t.mutation(internal.instructorCertifications.runReminders, {
+      today: TODAY,
+    });
+    await w.ana.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: addDays(TODAY, 700),
+    });
+    await w.t.run(async (ctx) => {
+      const profile = await ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", w.ids.ben))
+        .unique();
+      if (profile) {
+        await ctx.db.patch(profile._id, { deactivatedAt: "2027-01-01" });
+      }
+    });
+    await drain(w.t);
+    expect((await w.reminders()).map((r) => r.state)).toEqual([
+      "canceled",
+      "canceled",
+    ]);
+    expect(sentTo()).toHaveLength(0);
+  });
+
+  it("retries an interrupted send with the same key and content", async () => {
+    const w = await world();
+    await w.ana.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: addDays(TODAY, 7),
+    });
+    await w.t.mutation(internal.instructorCertifications.runReminders, {
+      today: TODAY,
+    });
+    await w.t.run(async (ctx) => {
+      const [row] = await ctx.db
+        .query("instructorCertificationReminders")
+        .collect();
+      if (row) {
+        await ctx.db.patch(row._id, {
+          state: "sending",
+          attempts: 1,
+          claimedAt: Date.now(),
+        });
+      }
+    });
+    await drain(w.t);
+    expect(
+      await w.t.mutation(internal.instructorCertifications.runReminders, {
+        today: TODAY,
+      })
+    ).toBe(0);
+    await w.t.run(async (ctx) => {
+      const [row] = await ctx.db
+        .query("instructorCertificationReminders")
+        .collect();
+      if (row) {
+        await ctx.db.patch(row._id, { claimedAt: Date.now() - 16 * 60_000 });
+      }
+    });
+    expect(
+      await w.t.mutation(internal.instructorCertifications.runReminders, {
+        today: addDays(TODAY, 1),
+      })
+    ).toBe(1);
+    await drain(w.t);
+    const [reminder] = await w.reminders();
+    expect([reminder?.state, reminder?.attempts]).toEqual(["sent", 2]);
+    expect(idempotencyKeys()).toEqual([
+      `certification-reminder:${reminder?._id}`,
+    ]);
+    expect(sentTo().map((m) => m.subject)).toEqual([
+      "Your BLS Instructor certification expires in 7 days",
+    ]);
+  });
+
+  it("retries a failed digest with identical content", async () => {
+    const w = await world();
+    await w.ana.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: addDays(TODAY, 10),
+    });
+    vi.mocked(globalThis.fetch).mockImplementationOnce(
+      async () => new Response("down", { status: 500 })
+    );
+    await w.t.mutation(internal.instructorCertifications.runDigest, {
+      today: TODAY,
+    });
+    await drain(w.t);
+    const [digest] = await w.t.run((ctx) =>
+      ctx.db.query("instructorCertificationDigests").collect()
+    );
+    expect([digest?.state, digest?.attempts]).toEqual(["sent", 2]);
+    const keys = idempotencyKeys();
+    expect(keys).toHaveLength(2);
+    expect(new Set(keys).size).toBe(1);
+  });
+
+  it("clears staff verification when an instructor removes the card", async () => {
+    const w = await world();
+    const id = await w.ana.mutation(api.instructorCertifications.save, {
+      ...bls,
+      expiresOn: "2028-01-01",
+    });
+    await w.ana.action(api.instructorCertifications.uploadCard, {
+      id,
+      name: "card.pdf",
+      bytes: new TextEncoder().encode("%PDF-1.4 card").buffer,
+    });
+    await w.admin.mutation(api.instructorCertifications.setVerified, {
+      id,
+      verified: true,
+    });
+    await w.ana.mutation(api.instructorCertifications.removeCard, { id });
+    const [row] =
+      (await w.ana.query(api.instructorCertifications.mine, {}))
+        ?.certifications ?? [];
+    expect(row?.verified).toBeNull();
+  });
+
+  it("keeps cards from different custom agencies apart", () => {
+    const rows = [
+      {
+        id: "a",
+        userId: "u",
+        agency: "other",
+        agencyOther: "NSC",
+        type: "bls-instructor",
+        expiresOn: "2027-01-01",
+      },
+      {
+        id: "b",
+        userId: "u",
+        agency: "other",
+        agencyOther: "ASHI",
+        type: "bls-instructor",
+        expiresOn: "2028-01-01",
+      },
+      {
+        id: "c",
+        userId: "u",
+        agency: "other",
+        agencyOther: "ashi ",
+        type: "bls-instructor",
+        expiresOn: "2029-01-01",
+      },
+    ];
+    expect([...supersededIds(rows)]).toEqual(["b"]);
+  });
+
+  it("rejects a malformed report date", async () => {
+    const w = await world();
+    await expect(
+      w.ana.query(api.instructorCertifications.mine, { today: "tomorrow" })
+    ).rejects.toThrow("Invalid date");
+  });
+});

@@ -23,6 +23,7 @@ import {
   CERTIFICATION_AGENCIES,
   CERTIFICATION_TYPES,
   type CertificationAgency,
+  certificationToday,
   formatCertificationDate,
   typeLabel,
 } from "@/shared/instructor-certifications";
@@ -32,6 +33,16 @@ export type CertificationRow = NonNullable<
 >["certifications"][number];
 
 const ACCEPT = "application/pdf,image/jpeg,image/png";
+
+/** Today's Pacific date, updated when it rolls over so open pages re-query. */
+export function useCertificationToday() {
+  const [today, setToday] = useState(() => certificationToday());
+  useEffect(() => {
+    const timer = setInterval(() => setToday(certificationToday()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
+  return today;
+}
 
 export function CertificationStatusBadge({
   daysLeft,
@@ -110,12 +121,17 @@ export function CertificationForm({
   const upload = useAction(api.instructorCertifications.uploadCard);
   const formId = useId();
   const [form, setForm] = useState<FormState>(() => toForm(certification));
+  // Set once a new record is saved, so retrying a failed upload updates it.
+  const [savedId, setSavedId] = useState<
+    Id<"instructorCertifications"> | undefined
+  >();
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (open) {
       setForm(toForm(certification));
+      setSavedId(undefined);
       setFile(null);
       setError("");
     }
@@ -128,7 +144,7 @@ export function CertificationForm({
     setError("");
     try {
       const id = await save({
-        id: certification?.id,
+        id: certification?.id ?? savedId,
         userId,
         agency: form.agency,
         agencyOther: form.agency === "other" ? form.agencyOther : undefined,
@@ -138,6 +154,7 @@ export function CertificationForm({
         issuedOn: form.issuedOn,
         expiresOn: form.expiresOn,
       });
+      setSavedId(id);
       if (file) {
         await upload({ id, name: file.name, bytes: await file.arrayBuffer() });
       }
@@ -448,7 +465,8 @@ export function CertificationList({
 
 /** The instructor's own certifications on their account page. */
 export function MyCertificationsCard() {
-  const mine = useQuery(api.instructorCertifications.mine);
+  const today = useCertificationToday();
+  const mine = useQuery(api.instructorCertifications.mine, { today });
   if (mine === null) {
     return null;
   }

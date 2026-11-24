@@ -133,7 +133,10 @@ const instructorCertificationReminders = defineTable({
   ),
   attempts: v.number(),
   recipient: v.string(),
+  /** The date the reminder was queued; its email text is fixed to that day. */
+  queuedOn: v.string(),
   createdAt: v.number(),
+  claimedAt: v.optional(v.number()),
   sentAt: v.optional(v.number()),
   deliveredTo: v.optional(v.string()),
   providerId: v.optional(v.string()),
@@ -162,6 +165,7 @@ const instructorCertificationDigests = defineTable({
   week: v.string(),
   recipient: v.string(),
   count: v.number(),
+  attempts: v.number(),
   state: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
   createdAt: v.number(),
   sentAt: v.optional(v.number()),

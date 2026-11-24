@@ -10,6 +10,7 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useCertificationToday } from "@/components/certifications/certifications";
 import {
   formatDateTime,
   formatRelative,
@@ -77,7 +78,10 @@ const CERTIFICATION_WINDOWS = [
 ] as const;
 
 function CertificationsCard() {
-  const counts = useQuery(api.instructorCertifications.expiringSummary);
+  const today = useCertificationToday();
+  const counts = useQuery(api.instructorCertifications.expiringSummary, {
+    today,
+  });
   return (
     <Card>
       <CardHeader>

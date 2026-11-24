@@ -44,6 +44,25 @@ import {
 import { CERTIFICATE_SIGNATURES } from "./registrationCertificates";
 
 const MAX_ATTEMPTS = 3;
+/** A send still claimed after this long was interrupted and may be retried. */
+const CLAIM_TIMEOUT_MS = 15 * 60 * 1000;
+const DIGEST_RETRY_MS = 60 * 60 * 1000;
+
+const todayArg = { today: v.optional(v.string()) };
+
+/**
+ * The calendar date a query reports against. Clients pass their own Pacific
+ * date so open pages re-query when it rolls over at midnight.
+ */
+function reportDate(today: string | undefined) {
+  if (today === undefined) {
+    return certificationToday();
+  }
+  if (!isCalendarDate(today)) {
+    throw new ConvexError("Invalid date");
+  }
+  return today;
+}
 const TEXT_LIMIT = 80;
 
 const agencyValidator = v.union(
@@ -253,8 +272,8 @@ async function certificationsOf(ctx: QueryCtx, userId: Id<"users">) {
 
 /** The signed-in instructor's own certifications; null for anyone who can't hold them. */
 export const mine = query({
-  args: {},
-  handler: async (ctx) => {
+  args: todayArg,
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
       return null;
@@ -263,7 +282,7 @@ export const mine = query({
     if (!(me.admin || (await isActiveInstructor(ctx, me.userId)))) {
       return null;
     }
-    const today = certificationToday();
+    const today = reportDate(args.today);
     return {
       today,
       certifications: await rows(
@@ -510,10 +529,12 @@ export const removeCard = mutation({
       return null;
     }
     await ctx.storage.delete(certification.card.storageId);
+    const unverify = !me.admin && certification.verifiedAt !== undefined;
     await ctx.db.patch(id, {
       card: undefined,
       updatedAt: Date.now(),
       updatedBy: me.userId,
+      ...(unverify ? { verifiedAt: undefined, verifiedBy: undefined } : {}),
     });
     await log(ctx, {
       userId: certification.userId,
@@ -528,10 +549,10 @@ export const removeCard = mutation({
 
 /** Every active instructor and their certifications, for the staff report. */
 export const report = query({
-  args: {},
-  handler: async (ctx) => {
+  args: todayArg,
+  handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const today = certificationToday();
+    const today = reportDate(args.today);
     const instructors = await instructorDirectory(ctx);
     const perInstructor = await Promise.all(
       instructors.map(async (instructor) => {
@@ -574,10 +595,10 @@ export const report = query({
 
 /** One instructor's certifications, reminder history and audit log. */
 export const forInstructor = query({
-  args: { userId: v.id("users") },
-  handler: async (ctx, { userId }) => {
+  args: { userId: v.id("users"), ...todayArg },
+  handler: async (ctx, { userId, today: day }) => {
     await requireAdmin(ctx);
-    const today = certificationToday();
+    const today = reportDate(day);
     const user = await ctx.db.get(userId);
     const [certifications, reminders, activity] = await Promise.all([
       certificationsOf(ctx, userId),
@@ -665,10 +686,10 @@ async function currentCertifications(
 
 /** Counts for the admin dashboard card. */
 export const expiringSummary = query({
-  args: {},
-  handler: async (ctx) => {
+  args: todayArg,
+  handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    const today = certificationToday();
+    const today = reportDate(args.today);
     const current = await currentCertifications(ctx, addDays(today, 90));
     return expiringCounts(
       current.map((row) => row.expiresOn),
@@ -707,10 +728,13 @@ export const runReminders = internalMutation({
               .eq("threshold", threshold)
           )
           .unique();
-        if (
-          existing &&
-          !(existing.state === "failed" && existing.attempts < MAX_ATTEMPTS)
-        ) {
+        const interrupted =
+          existing?.state === "sending" &&
+          (existing.claimedAt ?? 0) < Date.now() - CLAIM_TIMEOUT_MS;
+        const retry =
+          (existing?.state === "failed" || interrupted) &&
+          existing.attempts < MAX_ATTEMPTS;
+        if (existing && !retry) {
           return 0;
         }
         const user = await ctx.db.get(certification.userId);
@@ -727,6 +751,7 @@ export const runReminders = internalMutation({
               state: "pending",
               attempts: 0,
               recipient: user.email,
+              queuedOn: today,
               createdAt: Date.now(),
             });
         if (existing) {
@@ -752,7 +777,17 @@ export const claimReminder = internalMutation({
       return null;
     }
     const certification = await ctx.db.get(reminder.certificationId);
-    if (certification?.expiresOn !== reminder.expiresOn) {
+    // Renewed, replaced by a newer card, or the instructor left since queueing.
+    const stillOwed =
+      certification?.expiresOn === reminder.expiresOn &&
+      (await isActiveInstructor(ctx, certification.userId)) &&
+      !supersededIds(
+        (await certificationsOf(ctx, certification.userId)).map((row) => ({
+          ...row,
+          id: row._id,
+        }))
+      ).has(certification._id);
+    if (!(certification && stillOwed)) {
       await ctx.db.patch(id, { state: "canceled" });
       return null;
     }
@@ -760,16 +795,17 @@ export const claimReminder = internalMutation({
     await ctx.db.patch(id, {
       state: "sending",
       attempts: reminder.attempts + 1,
+      claimedAt: Date.now(),
     });
     return {
       recipient: reminder.recipient,
-      attempt: reminder.attempts + 1,
       name: user?.firstName || displayName(user),
       certification: typeLabel(certification.type, certification.typeOther),
       agency: agencyLabel(certification.agency, certification.agencyOther),
       number: certification.number,
       expiresOn: formatCertificationDate(certification.expiresOn),
-      daysLeft: daysUntil(certification.expiresOn, certificationToday()),
+      // Fixed at queue time so a retry sends identical content under the same key.
+      daysLeft: daysUntil(certification.expiresOn, reminder.queuedOn),
     };
   },
 });
@@ -843,7 +879,7 @@ export const sendReminder = internalAction({
       return null;
     }
     try {
-      const { recipient, attempt, ...props } = reminder;
+      const { recipient, ...props } = reminder;
       const profileUrl = `${siteOrigin()}/my-account#certifications`;
       const subject = certificationReminderSubject(props);
       const delivery = await deliver({
@@ -858,7 +894,7 @@ export const sendReminder = internalAction({
           `Once you renew, enter the new expiration date and upload the new card at ${profileUrl}.`,
           `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
         ].join("\n\n"),
-        idempotencyKey: `certification-reminder:${id}:${attempt}`,
+        idempotencyKey: `certification-reminder:${id}`,
       });
       await ctx.runMutation(internal.instructorCertifications.recordReminder, {
         id,
@@ -914,6 +950,7 @@ export const runDigest = internalMutation({
       week: today,
       recipient: process.env.REGISTRATION_ADMIN_EMAIL ?? ADMIN_EMAILS[0],
       count: rowsForDigest.length,
+      attempts: 0,
       state: "pending",
       createdAt: Date.now(),
     });
@@ -938,16 +975,33 @@ export const digestRecipient = internalQuery({
   },
 });
 
+/** A failed send is retried hourly with identical content, up to MAX_ATTEMPTS. */
 export const recordDigest = internalMutation({
   args: {
     id: v.id("instructorCertificationDigests"),
+    rows: v.array(digestRow),
     error: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { id, error }) => {
-    await ctx.db.patch(
-      id,
-      error ? { state: "failed", error } : { state: "sent", sentAt: Date.now() }
+  handler: async (ctx, { id, rows: digest, error }) => {
+    const row = await ctx.db.get(id);
+    if (!row) {
+      return null;
+    }
+    const attempts = row.attempts + 1;
+    if (!error) {
+      await ctx.db.patch(id, { attempts, state: "sent", sentAt: Date.now() });
+      return null;
+    }
+    if (attempts >= MAX_ATTEMPTS) {
+      await ctx.db.patch(id, { attempts, state: "failed", error });
+      return null;
+    }
+    await ctx.db.patch(id, { attempts, error });
+    await ctx.scheduler.runAfter(
+      DIGEST_RETRY_MS,
+      internal.instructorCertifications.sendDigest,
+      { id, rows: digest }
     );
     return null;
   },
@@ -987,10 +1041,12 @@ export const sendDigest = internalAction({
       });
       await ctx.runMutation(internal.instructorCertifications.recordDigest, {
         id,
+        rows: digest,
       });
     } catch (error) {
       await ctx.runMutation(internal.instructorCertifications.recordDigest, {
         id,
+        rows: digest,
         error: error instanceof Error ? error.message : "Email failed",
       });
     }

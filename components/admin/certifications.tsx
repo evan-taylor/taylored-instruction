@@ -7,6 +7,7 @@ import {
   CertificationForm,
   CertificationList,
   CertificationStatusBadge,
+  useCertificationToday,
 } from "@/components/certifications/certifications";
 import { formatDateTime } from "@/components/registration/format";
 import { Button } from "@/components/ui/Button";
@@ -76,9 +77,10 @@ function InstructorDetail({
   userId: Id<"users"> | null;
   onClose: () => void;
 }) {
+  const today = useCertificationToday();
   const detail = useQuery(
     api.instructorCertifications.forInstructor,
-    userId ? { userId } : "skip"
+    userId ? { userId, today } : "skip"
   );
   return (
     <Modal
@@ -222,7 +224,8 @@ function AddForInstructor({
 }
 
 export function CertificationsAdmin() {
-  const report = useQuery(api.instructorCertifications.report);
+  const today = useCertificationToday();
+  const report = useQuery(api.instructorCertifications.report, { today });
   const params = useSearchParams();
   const [userId, setUserId] = useState("");
   const [agency, setAgency] = useState("");
