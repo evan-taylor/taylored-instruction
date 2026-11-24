@@ -933,11 +933,11 @@ function OutcomeInput({
     (o) => o.fieldId === definition.id && o.version === definition.version
   )?.value;
   const [draft, setDraft] = useState<string>();
-  async function save(value: string | number) {
+  async function save(value: string | number, submitted: string) {
     onError("");
     try {
       await record({ studentId: student._id, fieldId: definition.id, value });
-      setDraft((latest) => (latest === String(value) ? undefined : latest));
+      setDraft((latest) => (latest === submitted ? undefined : latest));
     } catch (failure) {
       onError(errorText(failure));
       if (definition.type !== "percentage") {
@@ -963,7 +963,7 @@ function OutcomeInput({
             onError("Enter a score from 0 to 100.");
             return;
           }
-          await save(input.valueAsNumber);
+          await save(input.valueAsNumber, input.value);
         }}
         onChange={(event) => setDraft(event.target.value)}
         step="any"
@@ -979,7 +979,7 @@ function OutcomeInput({
       disabled={disabled}
       onChange={async (event) => {
         setDraft(event.target.value);
-        await save(event.target.value);
+        await save(event.target.value, event.target.value);
       }}
       value={draft ?? String(current ?? "")}
     >
