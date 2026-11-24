@@ -267,7 +267,7 @@ function MoreActions({
           Stop teaching for us
         </MenuItem>
       ) : null}
-      {profile.isInstructor || profile.alignment ? null : (
+      {profile.isInstructor || profile.alignment || ownsSessions ? null : (
         <MenuItem
           danger
           icon={Trash2}

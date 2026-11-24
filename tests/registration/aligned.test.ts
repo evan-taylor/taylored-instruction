@@ -919,6 +919,27 @@ describe("one instructor record", () => {
     ).toBe(false);
   });
 
+  it("keeps the record of anyone with independent sessions on file", async () => {
+    const { t, ids, admin } = await world();
+    await admin.mutation(api.aligned.setAlignment, {
+      userId: ids.alice,
+      aligned: false,
+    });
+    const profile = await t.run((ctx) =>
+      ctx.db
+        .query("profiles")
+        .withIndex("by_user", (q) => q.eq("userId", ids.alice))
+        .first()
+    );
+    await expect(
+      admin.mutation(api.admin.deleteUserAndProfile, {
+        profileId: profile?._id as Id<"profiles">,
+      })
+    ).rejects.toThrow("independent sessions on file");
+    const owners = await admin.query(api.aligned.sessionOwners, {});
+    expect(owners.map((o) => o.userId)).toContain(ids.alice);
+  });
+
   it("keeps an invitation's access when it is re-sent by email alone", async () => {
     const { t, admin } = await world();
     await admin.mutation(api.instructorInvitations.invite, {

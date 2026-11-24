@@ -275,6 +275,18 @@ export const setAlignment = mutation({
   },
 });
 
+/** Whether this person owns any independent session, retained or canceled. */
+export async function ownsIndependentSessions(
+  ctx: QueryCtx,
+  userId: Id<"users">
+) {
+  const session = await ctx.db
+    .query("independentSessions")
+    .withIndex("by_instructorId_and_start", (q) => q.eq("instructorId", userId))
+    .first();
+  return session !== null;
+}
+
 /** Everyone who owns an independent session, aligned now or not, for oversight filters. */
 export const sessionOwners = query({
   args: {},
@@ -282,17 +294,11 @@ export const sessionOwners = query({
     await requireAdmin(ctx);
     const profiles = await ctx.db.query("profiles").collect();
     const owners = await Promise.all(
-      profiles.map(async ({ userId }) => {
-        const session = await ctx.db
-          .query("independentSessions")
-          .withIndex("by_instructorId_and_start", (q) =>
-            q.eq("instructorId", userId)
-          )
-          .first();
-        return session
+      profiles.map(async ({ userId }) =>
+        (await ownsIndependentSessions(ctx, userId))
           ? { userId, name: displayName(await ctx.db.get(userId)) }
-          : null;
-      })
+          : null
+      )
     );
     return owners.filter((owner) => owner !== null);
   },
