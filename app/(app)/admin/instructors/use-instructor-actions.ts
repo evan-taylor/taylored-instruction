@@ -81,7 +81,9 @@ export function useInstructorActions(
       );
 
       setActionMessage(
-        `Instructor status successfully ${currentStatus ? "revoked" : "approved"}. ${currentStatus ? "" : emailStatus}`
+        currentStatus
+          ? "Stopped teaching for us. Any alignment with our Training Site is unchanged."
+          : `Approved to teach for us. ${emailStatus}`
       );
     } catch (err) {
       const message = errorText(err);
