@@ -329,9 +329,11 @@ export function ContactForm() {
         </Button>
       </div>
       <p className="text-muted-foreground text-xs">
-        By providing a telephone number and submitting this form you are
-        consenting to be contacted by SMS text message. Message &amp; data rates
-        may apply. You can reply STOP to opt-out of further messaging.
+        By submitting this form, you agree that we may contact you by email or
+        phone about your inquiry. We send text messages only if you check the
+        box above to receive text messages from Taylored Instruction sent from
+        360-685-8199. Message and data rates may apply. Reply STOP at any time
+        to unsubscribe or HELP for assistance.
       </p>
     </form>
   );
