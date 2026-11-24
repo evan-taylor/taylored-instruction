@@ -875,20 +875,18 @@ describe("delivery safeguards", () => {
 describe("aligned instructors", () => {
   it("track certifications and get reminders while their alignment is active", async () => {
     const w = await world();
-    const { alex, grant } = await w.t.run(async (ctx) => {
+    const { alex, profile } = await w.t.run(async (ctx) => {
       const id = await ctx.db.insert("users", {
         email: "alex@example.test",
         firstName: "Alex",
         emailVerificationTime: Date.now(),
       });
-      const grantId = await ctx.db.insert("alignedInstructors", {
+      const profileId = await ctx.db.insert("profiles", {
         userId: id,
-        email: "alex@example.test",
-        courseIds: [],
-        grantedBy: w.ids.admin,
-        grantedAt: Date.now(),
+        isInstructor: false,
+        alignment: { since: Date.now(), by: w.ids.admin },
       });
-      return { alex: id, grant: grantId };
+      return { alex: id, profile: profileId };
     });
     const aligned = w.t.withIdentity({ subject: `${alex}|session` });
     const cert = await aligned.mutation(api.instructorCertifications.save, {
@@ -909,7 +907,7 @@ describe("aligned instructors", () => {
     await drain(w.t);
     expect((await w.reminders())[0]?.recipient).toBe("alex@example.test");
 
-    await w.t.run((ctx) => ctx.db.patch(grant, { revokedAt: Date.now() }));
+    await w.t.run((ctx) => ctx.db.patch(profile, { alignment: undefined }));
     await expect(
       aligned.mutation(api.instructorCertifications.save, {
         ...bls,

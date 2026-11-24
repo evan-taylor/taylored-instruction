@@ -18,12 +18,7 @@ export function InstructorNavigation() {
     return null;
   }
   const links = [
-    ...(isInstructor || admin
-      ? [{ label: "Sessions & rosters", href: "/instructor/sessions" }]
-      : []),
-    ...(isAligned
-      ? [{ label: "Independent sessions", href: "/instructor/independent" }]
-      : []),
+    { label: "My classes", href: "/instructor/sessions" },
     ...(isInstructor || isAligned
       ? [{ label: "Purchase eCards", href: "/ecards" }]
       : []),
@@ -46,7 +41,10 @@ export function InstructorNavigation() {
       <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-3">
         {links.map((link) => {
           const active =
-            pathname === link.href || pathname?.startsWith(`${link.href}/`);
+            pathname === link.href ||
+            pathname?.startsWith(`${link.href}/`) ||
+            (link.href === "/instructor/sessions" &&
+              pathname?.startsWith("/instructor/independent"));
           return (
             <Link
               aria-current={active ? "page" : undefined}

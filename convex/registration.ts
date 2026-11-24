@@ -311,7 +311,7 @@ export const deleteCourse = mutation({
     }
     if (await courseInUse(ctx, id)) {
       throw new ConvexError(
-        "Aligned instructors use this template. Remove it from their alignments and sessions, or archive it instead."
+        "Independent sessions use this template. Archive it instead."
       );
     }
     await ctx.db.delete(id);

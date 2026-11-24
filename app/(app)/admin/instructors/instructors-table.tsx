@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Trash2, UserMinus } from "lucide-react";
+import { ClipboardList, Search, Trash2, Unlink, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -20,13 +20,34 @@ type InstructorsTableProps = {
     currentStatus: boolean
   ) => void;
   onRejectUser: (profileId: string, userEmail: string | null) => void;
+  /** Marks or clears "aligned with our Training Site" on the record. */
+  onSetAlignment: (profile: ProfileWithUser, aligned: boolean) => void;
+  onShowSessions: (userId: string) => void;
+  /** Users who own independent sessions, aligned now or not. */
+  sessionOwners: Set<string>;
 };
-type StatusFilter = "all" | "approved" | "pending";
+type StatusFilter = "all" | "teaches" | "aligned" | "none";
+
+function matches(profile: ProfileWithUser, status: StatusFilter) {
+  switch (status) {
+    case "teaches":
+      return profile.isInstructor;
+    case "aligned":
+      return profile.alignment !== null;
+    case "none":
+      return !(profile.isInstructor || profile.alignment);
+    default:
+      return true;
+  }
+}
 
 export function InstructorsTable({
   profiles,
   onToggleStatus,
   onRejectUser,
+  onSetAlignment,
+  onShowSessions,
+  sessionOwners,
 }: InstructorsTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -38,10 +59,11 @@ export function InstructorsTable({
       />
     );
   }
-  const approved = profiles.filter((profile) => profile.isInstructor).length;
+  const count = (filter: StatusFilter) =>
+    profiles.filter((profile) => matches(profile, filter)).length;
   const needle = search.trim().toLowerCase();
   const rows = profiles.filter((profile) => {
-    if (status !== "all" && profile.isInstructor !== (status === "approved")) {
+    if (!matches(profile, status)) {
       return false;
     }
     return (
@@ -59,12 +81,9 @@ export function InstructorsTable({
           onChange={setStatus}
           tabs={[
             { id: "all", label: "All", count: profiles.length },
-            { id: "approved", label: "Approved", count: approved },
-            {
-              id: "pending",
-              label: "Not approved",
-              count: profiles.length - approved,
-            },
+            { id: "teaches", label: "Teach for us", count: count("teaches") },
+            { id: "aligned", label: "Aligned", count: count("aligned") },
+            { id: "none", label: "No access", count: count("none") },
           ]}
           value={status}
         />
@@ -98,7 +117,8 @@ export function InstructorsTable({
             <THead>
               <tr>
                 <TH>Instructor</TH>
-                <TH>Status</TH>
+                <TH>Teaches for us</TH>
+                <TH>Aligned with our Training Site</TH>
                 <TH>Last sign-in</TH>
                 <TH className="text-right">
                   <span className="sr-only">Actions</span>
@@ -123,11 +143,16 @@ export function InstructorsTable({
                     </TD>
                     <TD>
                       {profile.isInstructor ? (
-                        <Badge tone="success">Approved</Badge>
+                        <Badge tone="success">Teaches for us</Badge>
                       ) : (
-                        <Badge tone="warning">Not approved</Badge>
+                        <span className="text-slate-400 text-sm">No</span>
                       )}
                     </TD>
+                    <AlignmentCell
+                      email={email}
+                      onSetAlignment={onSetAlignment}
+                      profile={profile}
+                    />
                     <TD
                       className={
                         profile.lastLogin
@@ -141,7 +166,7 @@ export function InstructorsTable({
                       <div className="flex items-center justify-end gap-1">
                         {profile.isInstructor ? null : (
                           <Button
-                            aria-label={`Approve ${email}`}
+                            aria-label={`Approve ${email} to teach for us`}
                             onClick={() =>
                               onToggleStatus(profile.id, profile.userId, false)
                             }
@@ -149,32 +174,18 @@ export function InstructorsTable({
                             type="button"
                             variant="secondary"
                           >
-                            Approve
+                            Approve to teach
                           </Button>
                         )}
-                        <RowMenu label={`More actions for ${email}`}>
-                          {profile.isInstructor ? (
-                            <MenuItem
-                              danger
-                              icon={UserMinus}
-                              onSelect={() =>
-                                onToggleStatus(profile.id, profile.userId, true)
-                              }
-                            >
-                              Revoke approval
-                            </MenuItem>
-                          ) : (
-                            <MenuItem
-                              danger
-                              icon={Trash2}
-                              onSelect={() =>
-                                onRejectUser(profile.id, profile.userEmail)
-                              }
-                            >
-                              Reject and delete account
-                            </MenuItem>
-                          )}
-                        </RowMenu>
+                        <MoreActions
+                          email={email}
+                          onRejectUser={onRejectUser}
+                          onSetAlignment={onSetAlignment}
+                          onShowSessions={onShowSessions}
+                          onToggleStatus={onToggleStatus}
+                          ownsSessions={sessionOwners.has(profile.userId)}
+                          profile={profile}
+                        />
                       </div>
                     </TD>
                   </TR>
@@ -185,5 +196,86 @@ export function InstructorsTable({
         )}
       </TabPanel>
     </div>
+  );
+}
+
+function AlignmentCell({
+  profile,
+  email,
+  onSetAlignment,
+}: {
+  profile: ProfileWithUser;
+  email: string;
+  onSetAlignment: InstructorsTableProps["onSetAlignment"];
+}) {
+  return (
+    <TD>
+      {profile.alignment ? (
+        <Badge tone="primary">Aligned</Badge>
+      ) : (
+        <Button
+          aria-label={`Mark ${email} aligned`}
+          onClick={() => onSetAlignment(profile, true)}
+          size="xs"
+          type="button"
+          variant="ghost"
+        >
+          Mark aligned
+        </Button>
+      )}
+    </TD>
+  );
+}
+
+function MoreActions({
+  profile,
+  email,
+  onToggleStatus,
+  onRejectUser,
+  onShowSessions,
+  onSetAlignment,
+  ownsSessions,
+}: Pick<
+  InstructorsTableProps,
+  "onToggleStatus" | "onRejectUser" | "onShowSessions" | "onSetAlignment"
+> & { profile: ProfileWithUser; email: string; ownsSessions: boolean }) {
+  return (
+    <RowMenu label={`More actions for ${email}`}>
+      {profile.alignment || ownsSessions ? (
+        <MenuItem
+          icon={ClipboardList}
+          onSelect={() => onShowSessions(profile.userId)}
+        >
+          Independent sessions
+        </MenuItem>
+      ) : null}
+      {profile.alignment ? (
+        <MenuItem
+          danger
+          icon={Unlink}
+          onSelect={() => onSetAlignment(profile, false)}
+        >
+          Remove alignment
+        </MenuItem>
+      ) : null}
+      {profile.isInstructor ? (
+        <MenuItem
+          danger
+          icon={UserMinus}
+          onSelect={() => onToggleStatus(profile.id, profile.userId, true)}
+        >
+          Stop teaching for us
+        </MenuItem>
+      ) : null}
+      {profile.isInstructor || profile.alignment || ownsSessions ? null : (
+        <MenuItem
+          danger
+          icon={Trash2}
+          onSelect={() => onRejectUser(profile.id, profile.userEmail)}
+        >
+          Reject and delete account
+        </MenuItem>
+      )}
+    </RowMenu>
   );
 }

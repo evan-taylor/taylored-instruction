@@ -12,10 +12,10 @@ import {
   query,
 } from "./_generated/server";
 import { attendanceStatus } from "./alignedSchema";
+import { audit } from "./registrationHelpers";
 
 const MAX_STUDENTS = 200;
 const MAX_INSTRUCTOR_NAMES = 10;
-const LIST_LIMIT = 200;
 const MAX_TEXT = 200;
 const MAX_EMAIL = 254;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
@@ -48,20 +48,27 @@ async function requireAdmin(ctx: QueryCtx) {
   return me.userId;
 }
 
-/** The caller's active alignment grant, or null. */
+/**
+ * One person has one instructor record (their profile). It is active while not
+ * deactivated and they teach for us, are aligned with our Training Site, or both.
+ */
+export function isActiveInstructorRecord(profile: Doc<"profiles"> | null) {
+  return Boolean(
+    profile &&
+      !profile.deactivatedAt &&
+      (profile.isInstructor || profile.alignment)
+  );
+}
+
+/** The alignment on this person's active instructor record, or null. */
 export async function activeAlignment(ctx: QueryCtx, userId: Id<"users">) {
-  const row = await ctx.db
-    .query("alignedInstructors")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .unique();
-  if (!row || row.revokedAt !== undefined) {
-    return null;
-  }
   const profile = await ctx.db
     .query("profiles")
     .withIndex("by_user", (q) => q.eq("userId", userId))
     .first();
-  return profile?.deactivatedAt ? null : row;
+  return profile?.alignment && !profile.deactivatedAt
+    ? profile.alignment
+    : null;
 }
 
 async function requireAligned(ctx: QueryCtx) {
@@ -191,7 +198,7 @@ function studentCompletion(
   return completion(session.outcomeDefinitions, student.outcomes);
 }
 
-/** Whether independent sessions or alignment grants still use this course. */
+/** Whether independent sessions still use this course. */
 export async function courseInUse(
   ctx: QueryCtx,
   courseId: Id<"registrationCourses">
@@ -200,176 +207,110 @@ export async function courseInUse(
     .query("independentSessions")
     .withIndex("by_courseId", (q) => q.eq("courseId", courseId))
     .first();
-  if (session) {
-    return true;
-  }
-  const grants = await ctx.db.query("alignedInstructors").collect();
-  return grants.some((grant) => grant.courseIds.includes(courseId));
+  return session !== null;
 }
 
-/* ---------------------------- Staff: grants ---------------------------- */
+/** Every course an aligned instructor may schedule: our active scheduled courses. */
+async function teachableCourses(ctx: QueryCtx) {
+  const courses = await ctx.db.query("registrationCourses").collect();
+  return courses
+    .filter((c) => c.delivery === "scheduled" && c.publication !== "archived")
+    .map((c) => ({ id: c._id, title: c.title }))
+    .sort((a, b) => a.title.localeCompare(b.title));
+}
+
+/* -------------------------- Staff: alignment -------------------------- */
 
 export const courseOptions = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const courses = await ctx.db.query("registrationCourses").collect();
-    return courses
-      .filter((c) => c.delivery === "scheduled" && c.publication !== "archived")
-      .map((c) => ({ id: c._id, title: c.title }))
-      .sort((a, b) => a.title.localeCompare(b.title));
+    return await teachableCourses(ctx);
   },
 });
 
-export const instructors = query({
+/** Staff mark an instructor record aligned with our Training Site, or clear it. */
+export const setAlignment = mutation({
+  args: { userId: v.id("users"), aligned: v.boolean() },
+  returns: v.null(),
+  handler: async (ctx, { userId, aligned }) => {
+    const adminId = await requireAdmin(ctx);
+    const profile = await ctx.db
+      .query("profiles")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+    if (!profile) {
+      throw new ConvexError(
+        "No instructor record yet. Send them an invitation first."
+      );
+    }
+    if (Boolean(profile.alignment) === aligned) {
+      return null;
+    }
+    await ctx.db.patch(profile._id, {
+      alignment: aligned ? { since: Date.now(), by: adminId } : undefined,
+      updatedAt: new Date().toISOString(),
+    });
+    const user = await ctx.db.get(userId);
+    if (!aligned && user?.email) {
+      const email = user.email.trim().toLowerCase();
+      const invitations = await ctx.db
+        .query("instructorInvitations")
+        .withIndex("by_email", (q) => q.eq("email", email))
+        .collect();
+      await Promise.all(
+        invitations
+          .filter((row) => !(row.acceptedAt || row.revokedAt))
+          .map((row) => ctx.db.patch(row._id, { revokedAt: Date.now() }))
+      );
+    }
+    await audit(
+      ctx,
+      adminId,
+      aligned ? "instructor-aligned" : "instructor-alignment-removed",
+      userId,
+      user?.email ?? ""
+    );
+    return null;
+  },
+});
+
+/** Whether this person owns any independent session, retained or canceled. */
+export async function ownsIndependentSessions(
+  ctx: QueryCtx,
+  userId: Id<"users">
+) {
+  const session = await ctx.db
+    .query("independentSessions")
+    .withIndex("by_instructorId_and_start", (q) => q.eq("instructorId", userId))
+    .first();
+  return session !== null;
+}
+
+/** Everyone who owns an independent session, aligned now or not, for oversight filters. */
+export const sessionOwners = query({
   args: {},
   handler: async (ctx) => {
     await requireAdmin(ctx);
-    const rows = await ctx.db.query("alignedInstructors").collect();
-    return await Promise.all(
-      rows.map(async (row) => {
-        const [user, courses, sessions] = await Promise.all([
-          ctx.db.get(row.userId),
-          Promise.all(row.courseIds.map((id) => ctx.db.get(id))),
-          ctx.db
-            .query("independentSessions")
-            .withIndex("by_instructorId_and_start", (q) =>
-              q.eq("instructorId", row.userId)
-            )
-            .take(LIST_LIMIT),
-        ]);
-        return {
-          userId: row.userId,
-          email: row.email,
-          name: displayName(user),
-          courses: courses
-            .filter((c) => c !== null)
-            .map((c) => ({ id: c._id, title: c.title })),
-          grantedAt: row.grantedAt,
-          revokedAt: row.revokedAt,
-          sessionCount: sessions.length,
-        };
-      })
+    const profiles = await ctx.db.query("profiles").collect();
+    const owners = await Promise.all(
+      profiles.map(async ({ userId }) =>
+        (await ownsIndependentSessions(ctx, userId))
+          ? { userId, name: displayName(await ctx.db.get(userId)) }
+          : null
+      )
     );
+    return owners.filter((owner) => owner !== null);
   },
 });
-
-export async function validCourseIds(
-  ctx: QueryCtx,
-  courseIds: Id<"registrationCourses">[]
-) {
-  const unique = [...new Set(courseIds)];
-  if (!unique.length) {
-    throw new ConvexError("Choose at least one course");
-  }
-  await Promise.all(unique.map((id) => teachableCourse(ctx, id)));
-  return unique;
-}
-
-export const updateCourses = mutation({
-  args: {
-    userId: v.id("users"),
-    courseIds: v.array(v.id("registrationCourses")),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    const row = await ctx.db
-      .query("alignedInstructors")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .unique();
-    if (!row) {
-      throw new ConvexError("Aligned instructor not found");
-    }
-    await ctx.db.patch(row._id, {
-      courseIds: await validCourseIds(ctx, args.courseIds),
-    });
-    return null;
-  },
-});
-
-export const setAccess = mutation({
-  args: { userId: v.id("users"), active: v.boolean() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const adminId = await requireAdmin(ctx);
-    const row = await ctx.db
-      .query("alignedInstructors")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .unique();
-    if (!row) {
-      throw new ConvexError("Aligned instructor not found");
-    }
-    await ctx.db.patch(
-      row._id,
-      args.active
-        ? { revokedAt: undefined, revokedBy: undefined }
-        : { revokedAt: Date.now(), revokedBy: adminId }
-    );
-    if (!args.active) {
-      const pending = await ctx.db
-        .query("instructorInvitations")
-        .withIndex("by_email", (q) => q.eq("email", row.email))
-        .collect();
-      await Promise.all(
-        pending
-          .filter((i) => i.kind === "aligned" && !(i.acceptedAt || i.revokedAt))
-          .map((i) => ctx.db.patch(i._id, { revokedAt: Date.now() }))
-      );
-    }
-    return null;
-  },
-});
-
-/** Called when an aligned invitation is accepted. */
-export async function grantAlignment(
-  ctx: MutationCtx,
-  invitation: Doc<"instructorInvitations">,
-  userId: Id<"users">
-) {
-  const existing = await ctx.db
-    .query("alignedInstructors")
-    .withIndex("by_userId", (q) => q.eq("userId", userId))
-    .unique();
-  const courseIds = await validCourseIds(ctx, invitation.courseIds ?? []).catch(
-    () => {
-      throw new ConvexError(
-        "The courses on this invitation are no longer available. Ask us to send an updated invitation."
-      );
-    }
-  );
-  const grant = {
-    email: invitation.email,
-    courseIds,
-    grantedBy: invitation.invitedBy,
-    grantedAt: Date.now(),
-    revokedAt: undefined,
-    revokedBy: undefined,
-  };
-  if (existing) {
-    await ctx.db.patch(existing._id, grant);
-  } else {
-    await ctx.db.insert("alignedInstructors", { userId, ...grant });
-  }
-}
 
 /* ------------------------- Sessions: listing -------------------------- */
 
 export const portal = query({
   args: {},
   handler: async (ctx) => {
-    const { alignment } = await requireAligned(ctx);
-    const courses = await Promise.all(
-      alignment.courseIds.map((id) => ctx.db.get(id))
-    );
-    return {
-      courses: courses
-        .filter(
-          (c): c is Doc<"registrationCourses"> =>
-            c !== null && c.publication !== "archived"
-        )
-        .map((c) => ({ id: c._id, title: c.title })),
-    };
+    await requireAligned(ctx);
+    return { courses: await teachableCourses(ctx) };
   },
 });
 
@@ -497,7 +438,6 @@ const sessionInput = {
 async function sessionFields(
   ctx: QueryCtx,
   owner: Id<"users">,
-  alignment: Doc<"alignedInstructors"> | null,
   current: Doc<"independentSessions"> | null,
   input: {
     courseId: Id<"registrationCourses">;
@@ -511,7 +451,7 @@ async function sessionFields(
   const course =
     current?.courseId === input.courseId
       ? await ctx.db.get(input.courseId)
-      : await newCourse(ctx, alignment, input.courseId);
+      : await teachableCourse(ctx, input.courseId);
   if (!course) {
     throw new ConvexError("Course not found");
   }
@@ -544,30 +484,12 @@ async function sessionFields(
   };
 }
 
-/** Archived courses stay on existing sessions; only new choices must be teachable. */
-async function newCourse(
-  ctx: QueryCtx,
-  alignment: Doc<"alignedInstructors"> | null,
-  courseId: Id<"registrationCourses">
-) {
-  if (alignment && !alignment.courseIds.includes(courseId)) {
-    throw new ConvexError("You are not aligned to teach this course");
-  }
-  return await teachableCourse(ctx, courseId);
-}
-
 export const createSession = mutation({
   args: sessionInput,
   returns: v.id("independentSessions"),
   handler: async (ctx, args) => {
-    const { userId, alignment } = await requireAligned(ctx);
-    const { course, fields } = await sessionFields(
-      ctx,
-      userId,
-      alignment,
-      null,
-      args
-    );
+    const { userId } = await requireAligned(ctx);
+    const { course, fields } = await sessionFields(ctx, userId, null, args);
     const id = await ctx.db.insert("independentSessions", {
       ...fields,
       instructorId: userId,
@@ -598,15 +520,11 @@ export const updateSession = mutation({
   args: { sessionId: v.id("independentSessions"), ...sessionInput },
   returns: v.null(),
   handler: async (ctx, { sessionId, ...input }) => {
-    const { actor, session: row, admin } = await sessionAccess(ctx, sessionId);
+    const { actor, session: row } = await sessionAccess(ctx, sessionId);
     editable(row);
-    const alignment = admin
-      ? null
-      : await activeAlignment(ctx, row.instructorId);
     const { course, fields } = await sessionFields(
       ctx,
       row.instructorId,
-      alignment,
       row,
       input
     );

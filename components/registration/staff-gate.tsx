@@ -9,8 +9,15 @@ import { isAdminEmail } from "@/lib/admin";
  * Holds staff-only screens until the signed-in profile is known, so their
  * queries never run unauthenticated and throw into the error boundary.
  */
-export function StaffGate({ children }: { children: ReactNode }) {
-  const { loading, session, isInstructor, email } = useProfile();
+export function StaffGate({
+  children,
+  aligned = false,
+}: {
+  children: ReactNode;
+  /** Also admit instructors aligned with our Training Site. */
+  aligned?: boolean;
+}) {
+  const { loading, session, isInstructor, isAligned, email } = useProfile();
   if (loading) {
     return (
       <div
@@ -41,7 +48,7 @@ export function StaffGate({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!(isInstructor || isAdminEmail(email))) {
+  if (!(isInstructor || isAdminEmail(email) || (aligned && isAligned))) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center sm:px-6">
         <h1 className="font-bold text-2xl text-slate-900">

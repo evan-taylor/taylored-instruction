@@ -33,25 +33,14 @@ export function workspaceLinks(
       { label: "Sessions", href: "/admin/sessions" },
       { label: "Registrations", href: "/admin/registrations", secondary: true },
       { label: "Groups & invoices", href: "/admin/groups", secondary: true },
-      { label: "Instructors", href: "/admin/instructors", secondary: true },
-      {
-        label: "Aligned instructors",
-        href: "/admin/aligned",
-        secondary: true,
-      }
+      { label: "Instructors", href: "/admin/instructors", secondary: true }
     );
   }
   if (instructor || admin || aligned) {
     links.push({ label: "Teaching", type: "divider" });
   }
-  if (instructor || admin) {
-    links.push({ label: "My teaching sessions", href: "/instructor/sessions" });
-  }
-  if (aligned) {
-    links.push({
-      label: "Independent sessions",
-      href: "/instructor/independent",
-    });
+  if (instructor || admin || aligned) {
+    links.push({ label: "My classes", href: "/instructor/sessions" });
   }
   if (instructor || aligned) {
     links.push({ label: "Purchase eCards", href: "/ecards" });

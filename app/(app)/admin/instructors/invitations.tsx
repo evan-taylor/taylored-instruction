@@ -63,12 +63,12 @@ function InvitationStatus({
 
 /** Invite instructors by email and track who has accepted. */
 export function Invitations() {
-  const invitations = useQuery(api.instructorInvitations.list)?.filter(
-    (row) => row.kind !== "aligned"
-  );
+  const invitations = useQuery(api.instructorInvitations.list);
   const invite = useMutation(api.instructorInvitations.invite);
   const revoke = useMutation(api.instructorInvitations.revoke);
   const [email, setEmail] = useState("");
+  const [teaches, setTeaches] = useState(true);
+  const [aligned, setAligned] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
   const [showPast, setShowPast] = useState(false);
@@ -80,16 +80,21 @@ export function Invitations() {
   );
   const pastCount = (invitations?.length ?? 0) - pendingCount;
 
-  async function send(target: string) {
+  async function send(
+    target: string,
+    access: { teaches: boolean; aligned: boolean }
+  ) {
     setBusy(true);
     setMessage(null);
     try {
-      await invite({ email: target });
+      await invite({ email: target, ...access });
       setMessage({
         text: `Invitation queued for ${target}. Delivery status appears in the list below.`,
         tone: "success",
       });
       setEmail("");
+      setTeaches(true);
+      setAligned(false);
     } catch (error) {
       setMessage({ text: errorText(error), tone: "danger" });
     } finally {
@@ -103,18 +108,20 @@ export function Invitations() {
         <div>
           <CardTitle>Invite an instructor</CardTitle>
           <CardDescription>
-            They sign in with this email, accept the invitation on their account
-            page, and instructor access is granted. Nobody can become an
-            instructor without one.
+            For someone without an instructor record yet. They sign in with this
+            email and accept on their account page, which creates their record
+            with the access you choose. Nobody gets instructor access without
+            one.
           </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-5">
         {message ? <Notice tone={message.tone}>{message.text}</Notice> : null}
         <form
+          className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            send(email);
+            send(email, { teaches, aligned });
           }}
         >
           <Field label="Email address">
@@ -132,7 +139,7 @@ export function Invitations() {
                 />
                 <Button
                   className="min-h-10 shrink-0"
-                  disabled={busy}
+                  disabled={busy || !(teaches || aligned)}
                   size="sm"
                   type="submit"
                 >
@@ -141,12 +148,35 @@ export function Invitations() {
               </div>
             )}
           </Field>
+          <div className="flex flex-col gap-2 sm:flex-row sm:gap-6">
+            <label className="flex items-center gap-2 text-slate-700 text-sm">
+              <input
+                checked={teaches}
+                className="h-4 w-4 rounded border-slate-300"
+                disabled={busy}
+                onChange={(e) => setTeaches(e.target.checked)}
+                type="checkbox"
+              />
+              Teaches for us
+            </label>
+            <label className="flex items-center gap-2 text-slate-700 text-sm">
+              <input
+                checked={aligned}
+                className="h-4 w-4 rounded border-slate-300"
+                disabled={busy}
+                onChange={(e) => setAligned(e.target.checked)}
+                type="checkbox"
+              />
+              Aligned with our Training Site
+            </label>
+          </div>
         </form>
         {visible?.length ? (
           <Table>
             <THead>
               <tr>
                 <TH>Email</TH>
+                <TH>Access</TH>
                 <TH>Status</TH>
                 <TH>Invited</TH>
                 <TH className="text-right">Actions</TH>
@@ -158,6 +188,14 @@ export function Invitations() {
                 return (
                   <TR key={row.id}>
                     <TD className="font-medium text-slate-900">{row.email}</TD>
+                    <TD className="text-slate-600 text-sm">
+                      {[
+                        row.teaches ? "Teaches for us" : null,
+                        row.aligned ? "Aligned with our Training Site" : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </TD>
                     <TD>
                       <InvitationStatus
                         acceptedAt={row.acceptedAt}
@@ -180,7 +218,12 @@ export function Invitations() {
                           <Button
                             aria-label={`Resend invitation to ${row.email}`}
                             disabled={busy}
-                            onClick={() => send(row.email)}
+                            onClick={() =>
+                              send(row.email, {
+                                teaches: row.teaches,
+                                aligned: row.aligned,
+                              })
+                            }
                             size="xs"
                             type="button"
                             variant="secondary"

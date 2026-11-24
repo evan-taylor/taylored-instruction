@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { mutation, query } from "./_generated/server";
+import { ownsIndependentSessions } from "./aligned";
 import { auth } from "./auth";
 import { revokeInvitationsFor } from "./instructorInvitations";
 
@@ -40,6 +41,9 @@ export const getAllInstructors = query({
           id: profile._id,
           userId: profile.userId,
           is_instructor: profile.isInstructor,
+          alignment: profile.alignment
+            ? { since: profile.alignment.since }
+            : null,
           updated_at: profile.updatedAt,
           last_login: profile.lastLogin,
           user_email: user?.email || null,
@@ -115,6 +119,11 @@ export const deleteUserAndProfile = mutation({
     const profile = await ctx.db.get(args.profileId);
     if (!profile) {
       throw new ConvexError("Profile not found");
+    }
+    if (await ownsIndependentSessions(ctx, profile.userId)) {
+      throw new ConvexError(
+        "This person has independent sessions on file. Keep their record, with no access, so staff can still review those sessions."
+      );
     }
 
     await ctx.db.delete(args.profileId);

@@ -21,12 +21,12 @@ it("keeps approved eCard access distinct from administrator access", () => {
   expect(guest).toEqual(["/alignment", "/registrations", "/login"]);
 });
 
-it("gives aligned instructors their portal and eCards but not our sessions", () => {
+it("gives aligned instructors one classes area and eCards but no admin", () => {
   const aligned = workspaceLinks(true, false, false, true).map(
     (item) => item.href
   );
-  expect(aligned).toContain("/instructor/independent");
+  expect(aligned).toContain("/instructor/sessions");
   expect(aligned).toContain("/ecards");
-  expect(aligned).not.toContain("/instructor/sessions");
-  expect(aligned).not.toContain("/admin/aligned");
+  expect(aligned).not.toContain("/instructor/independent");
+  expect(aligned).not.toContain("/admin/instructors");
 });

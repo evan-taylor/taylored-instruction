@@ -4,6 +4,7 @@ import { useState } from "react";
 import { sendInstructorApprovalEmail } from "@/app/actions/send-instructor-approval-email";
 import { errorText } from "@/components/registration/errors";
 import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
 import type { ProfileWithUser } from "./types";
 
 export function useInstructorActions(
@@ -23,6 +24,7 @@ export function useInstructorActions(
   const deleteUserAndProfileMutation = useMutation(
     api.admin.deleteUserAndProfile
   );
+  const setAlignmentMutation = useMutation(api.aligned.setAlignment);
 
   const sendApprovalEmailIfNeeded = async (
     profileId: string,
@@ -81,7 +83,9 @@ export function useInstructorActions(
       );
 
       setActionMessage(
-        `Instructor status successfully ${currentStatus ? "revoked" : "approved"}. ${currentStatus ? "" : emailStatus}`
+        currentStatus
+          ? "Stopped teaching for us. Any alignment with our Training Site is unchanged."
+          : `Approved to teach for us. ${emailStatus}`
       );
     } catch (err) {
       const message = errorText(err);
@@ -124,6 +128,25 @@ export function useInstructorActions(
     }
   };
 
+  const setAlignment = async (profile: ProfileWithUser, aligned: boolean) => {
+    setActionMessage(null);
+    setError(null);
+    const who = profile.userEmail || "Instructor";
+    try {
+      await setAlignmentMutation({
+        userId: profile.userId as Id<"users">,
+        aligned,
+      });
+      setActionMessage(
+        aligned
+          ? `${who} is now aligned with our Training Site.`
+          : `Removed alignment for ${who}. Their independent sessions stay visible below.`
+      );
+    } catch (err) {
+      setError(`Failed to update alignment: ${errorText(err)}`);
+    }
+  };
+
   const cancelRejectUser = () => {
     setConfirmDialogState({ isOpen: false, userId: null, userEmail: null });
   };
@@ -133,6 +156,7 @@ export function useInstructorActions(
     error,
     setError,
     toggleInstructorStatus,
+    setAlignment,
     initiateRejectUser,
     confirmRejectUser,
     cancelRejectUser,

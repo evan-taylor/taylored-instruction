@@ -9,11 +9,15 @@ export const attendanceStatus = v.union(
 );
 
 /**
- * Independent instructors aligned with our Training Site. They run their own
- * classes and only record rosters here; these tables never touch registration
- * sessions, seats, orders, materials, or email.
+ * Independent sessions run by instructors aligned with our Training Site. They
+ * only record rosters here; these tables never touch registration sessions,
+ * seats, orders, materials, or email. Alignment itself lives on the profile.
  */
 export const alignedTables = {
+  /**
+   * Legacy alignment grants from before alignment moved onto profiles. Only
+   * alignmentMigration reads it; drop the table once that has run everywhere.
+   */
   alignedInstructors: defineTable({
     userId: v.id("users"),
     email: v.string(),
