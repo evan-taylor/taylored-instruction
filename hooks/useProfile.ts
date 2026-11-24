@@ -8,6 +8,7 @@ type Profile = {
   userId: string;
   email: string | null;
   is_instructor: boolean;
+  is_aligned: boolean;
   updated_at: string | null | undefined;
   last_login?: string | null | undefined;
 };
@@ -16,6 +17,8 @@ type UseProfileReturn = {
   session: { user: { id: string; email?: string } } | null;
   profile: Profile | null;
   isInstructor: boolean;
+  /** Independent instructor aligned with our Training Site. */
+  isAligned: boolean;
   loading: boolean;
   error: string | null;
   userId: string | undefined;
@@ -29,6 +32,7 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
   const loading = authToken === undefined || profile === undefined;
   const isAuthenticated = authToken !== null;
   const isInstructor = profile?.is_instructor ?? false;
+  const isAligned = profile?.is_aligned ?? false;
 
   const session = isAuthenticated
     ? {
@@ -43,6 +47,7 @@ export function useProfile(_initialUserId?: string): UseProfileReturn {
     session,
     profile: profile || null,
     isInstructor,
+    isAligned,
     loading,
     error: null,
     userId: profile?.userId,

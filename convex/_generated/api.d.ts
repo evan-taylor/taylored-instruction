@@ -10,6 +10,8 @@
 
 import type * as ResendOTP from "../ResendOTP.js";
 import type * as admin from "../admin.js";
+import type * as aligned from "../aligned.js";
+import type * as alignedSchema from "../alignedSchema.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
@@ -54,6 +56,8 @@ import type {
 declare const fullApi: ApiFromModules<{
   ResendOTP: typeof ResendOTP;
   admin: typeof admin;
+  aligned: typeof aligned;
+  alignedSchema: typeof alignedSchema;
   analytics: typeof analytics;
   auth: typeof auth;
   crons: typeof crons;

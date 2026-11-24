@@ -75,7 +75,8 @@ const getDropdownLinkClass = (href: string, pathname: string) => {
 const generateNavLinks = (
   isLoggedIn: boolean,
   isInstructor: boolean,
-  isAdmin: boolean
+  isAdmin: boolean,
+  isAligned: boolean
 ): NavTopLevelLink[] => [
   {
     label: "About us",
@@ -148,8 +149,10 @@ const generateNavLinks = (
   },
   {
     label:
-      isLoggedIn && (isInstructor || isAdmin) ? "Workspace" : "Instructors",
-    dropdown: workspaceLinks(isLoggedIn, isInstructor, isAdmin),
+      isLoggedIn && (isInstructor || isAdmin || isAligned)
+        ? "Workspace"
+        : "Instructors",
+    dropdown: workspaceLinks(isLoggedIn, isInstructor, isAdmin, isAligned),
   },
 ];
 
@@ -162,7 +165,7 @@ export const Header = () => {
   const _pathname = usePathname() ?? ""; // Provide default empty string if null
 
   // --- Authentication State ---
-  const { session, isInstructor, email } = useProfile();
+  const { session, isInstructor, isAligned, email } = useProfile();
   const { signOut } = useAuthActions();
   const router = useRouter();
 
@@ -183,7 +186,8 @@ export const Header = () => {
   const currentNavLinks = generateNavLinks(
     isLoggedIn,
     isInstructor,
-    isAdminEmail(email)
+    isAdminEmail(email),
+    isAligned
   );
 
   // Close dropdown when clicking outside

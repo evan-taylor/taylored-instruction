@@ -63,7 +63,9 @@ function InvitationStatus({
 
 /** Invite instructors by email and track who has accepted. */
 export function Invitations() {
-  const invitations = useQuery(api.instructorInvitations.list);
+  const invitations = useQuery(api.instructorInvitations.list)?.filter(
+    (row) => row.kind !== "aligned"
+  );
   const invite = useMutation(api.instructorInvitations.invite);
   const revoke = useMutation(api.instructorInvitations.revoke);
   const [email, setEmail] = useState("");

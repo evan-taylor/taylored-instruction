@@ -9,6 +9,7 @@ import {
   Bot,
   Building2,
   CalendarDays,
+  ClipboardList,
   ExternalLink,
   GraduationCap,
   KeyRound,
@@ -63,6 +64,11 @@ const NAV: { group?: string; items: NavItem[] }[] = [
         label: "Certifications",
         href: "/admin/certifications",
         icon: BadgeCheck,
+      },
+      {
+        label: "Aligned instructors",
+        href: "/admin/aligned",
+        icon: ClipboardList,
       },
       {
         label: "Materials & keycodes",

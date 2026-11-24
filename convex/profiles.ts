@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { isAdminEmail } from "../shared/adminEmails";
 import { type MutationCtx, mutation, query } from "./_generated/server";
+import { activeAlignment } from "./aligned";
 import { auth } from "./auth";
 import { revokeInvitationsFor } from "./instructorInvitations";
 
@@ -22,6 +23,9 @@ export const getProfile = query({
     }
 
     const user = await ctx.db.get(userId);
+    const aligned =
+      user?.emailVerificationTime !== undefined &&
+      (await activeAlignment(ctx, userId)) !== null;
 
     // Every signed-in account resolves here, with or without an instructor
     // profile: admin access comes from the email allowlist, and students have
@@ -31,6 +35,7 @@ export const getProfile = query({
       userId,
       email: user?.email ?? null,
       is_instructor: existingProfile?.isInstructor ?? false,
+      is_aligned: aligned,
       updated_at: existingProfile?.updatedAt ?? null,
       last_login: existingProfile?.lastLogin ?? null,
     };

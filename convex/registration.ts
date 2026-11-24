@@ -36,6 +36,7 @@ import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { courseInUse } from "./aligned";
 import {
   audit,
   enqueue,
@@ -306,6 +307,11 @@ export const deleteCourse = mutation({
     if (coupon) {
       throw new ConvexError(
         "Remove this template from its coupons before deleting it, or archive it instead."
+      );
+    }
+    if (await courseInUse(ctx, id)) {
+      throw new ConvexError(
+        "Aligned instructors use this template. Remove it from their alignments and sessions, or archive it instead."
       );
     }
     await ctx.db.delete(id);

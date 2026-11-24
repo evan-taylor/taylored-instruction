@@ -12,6 +12,7 @@ const isDebugRoute = createRouteMatcher(["/debug-auth"]);
 const isProtectedRoute = createRouteMatcher([
   "/my-account(.*)",
   "/instructor/sessions(.*)",
+  "/instructor/independent(.*)",
   "/ecards(.*)",
   "/admin(.*)",
   "/onboarding(.*)",

@@ -8,20 +8,27 @@ import { cn } from "@/lib/utils";
 
 export function InstructorNavigation() {
   const pathname = usePathname();
-  const { session, isInstructor, email } = useProfile();
+  const { session, isInstructor, isAligned, email } = useProfile();
   const admin = isAdminEmail(email);
   const workspaceRoute =
     pathname?.startsWith("/instructor/") ||
     pathname?.startsWith("/ecards") ||
     pathname === "/my-account";
-  if (!(session && (isInstructor || admin) && workspaceRoute)) {
+  if (!(session && (isInstructor || admin || isAligned) && workspaceRoute)) {
     return null;
   }
   const links = [
-    { label: "Sessions & rosters", href: "/instructor/sessions" },
+    ...(isInstructor || admin
+      ? [{ label: "Sessions & rosters", href: "/instructor/sessions" }]
+      : []),
+    ...(isAligned
+      ? [{ label: "Independent sessions", href: "/instructor/independent" }]
+      : []),
+    ...(isInstructor || isAligned
+      ? [{ label: "Purchase eCards", href: "/ecards" }]
+      : []),
     ...(isInstructor
       ? [
-          { label: "Purchase eCards", href: "/ecards" },
           {
             label: "Instructor resources",
             href: "https://docs.tayloredinstruction.com/",

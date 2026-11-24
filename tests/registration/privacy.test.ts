@@ -27,6 +27,7 @@ it("keeps sensitive registration and staff routes private", () => {
     "/registrations",
     "/api/registration/payment",
     "/instructor/sessions",
+    "/instructor/independent/abc123",
     "/admin",
     "/admin/registrations",
   ]) {
