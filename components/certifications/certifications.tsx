@@ -2,7 +2,7 @@
 import { useAction, useMutation, useQuery } from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import { BadgeCheck, FileText, Plus } from "lucide-react";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -125,11 +125,15 @@ export function CertificationForm({
   const [savedId, setSavedId] = useState<
     Id<"instructorCertifications"> | undefined
   >();
+  // Bumped on every open, so a save still running from a closed form can't
+  // write its result into the next one.
+  const session = useRef(0);
   const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (open) {
+      session.current += 1;
       setForm(toForm(certification));
       setSavedId(undefined);
       setFile(null);
@@ -140,6 +144,7 @@ export function CertificationForm({
     setForm((previous) => ({ ...previous, ...patch }));
 
   const submit = async () => {
+    const started = session.current;
     setBusy(true);
     setError("");
     try {
@@ -154,13 +159,18 @@ export function CertificationForm({
         issuedOn: form.issuedOn,
         expiresOn: form.expiresOn,
       });
+      if (session.current !== started) {
+        return;
+      }
       setSavedId(id);
       if (file) {
         await upload({ id, name: file.name, bytes: await file.arrayBuffer() });
       }
       onClose();
     } catch (failure) {
-      setError(errorText(failure));
+      if (session.current === started) {
+        setError(errorText(failure));
+      }
     } finally {
       setBusy(false);
     }
@@ -171,7 +181,12 @@ export function CertificationForm({
       description="Enter the details exactly as they appear on the card."
       footer={
         <>
-          <Button onClick={onClose} size="sm" variant="secondary">
+          <Button
+            disabled={busy}
+            onClick={onClose}
+            size="sm"
+            variant="secondary"
+          >
             Cancel
           </Button>
           <Button disabled={busy} form={formId} size="sm" type="submit">
