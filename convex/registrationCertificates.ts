@@ -134,7 +134,7 @@ export const attach = internalMutation({
   },
 });
 
-const SIGNATURES = [
+export const CERTIFICATE_SIGNATURES = [
   { bytes: [37, 80, 68, 70, 45], type: "application/pdf" },
   { bytes: [255, 216, 255], type: "image/jpeg" },
   { bytes: [137, 80, 78, 71, 13, 10, 26, 10], type: "image/png" },
@@ -155,7 +155,7 @@ export const upload = action({
       throw new ConvexError("The certificate must be 3 MB or smaller");
     }
     const header = new DataView(bytes);
-    const format = SIGNATURES.find(
+    const format = CERTIFICATE_SIGNATURES.find(
       (signature) =>
         signature.bytes.length <= header.byteLength &&
         signature.bytes.every((byte, index) => header.getUint8(index) === byte)

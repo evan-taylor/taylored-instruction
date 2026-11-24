@@ -4,6 +4,7 @@ import { useAuthActions, useAuthToken } from "@convex-dev/auth/react";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { MyCertificationsCard } from "@/components/certifications/certifications";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -197,6 +198,7 @@ export default function MyAccountPage() {
             </CardFooter>
           )}
         </Card>
+        <MyCertificationsCard />
         {linkGroups.map((group) => (
           <Card key={group.title}>
             <CardHeader>

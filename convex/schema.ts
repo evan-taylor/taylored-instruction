@@ -80,6 +80,98 @@ const mcpTokens = defineTable({
   .index("by_hash", ["hash"])
   .index("by_userId", ["userId"]);
 
+const certificationFile = v.object({
+  storageId: v.id("_storage"),
+  name: v.string(),
+  type: v.string(),
+  size: v.number(),
+  uploadedAt: v.number(),
+  uploadedBy: v.id("users"),
+});
+
+/**
+ * An instructor's own teaching credential (not a student completion
+ * certificate). Keyed to the user, so every kind of instructor can hold one.
+ */
+const instructorCertifications = defineTable({
+  userId: v.id("users"),
+  agency: v.union(v.literal("arc"), v.literal("aha"), v.literal("other")),
+  agencyOther: v.optional(v.string()),
+  type: v.string(),
+  typeOther: v.optional(v.string()),
+  number: v.optional(v.string()),
+  /** Calendar dates as YYYY-MM-DD; a card is valid through its expiration date. */
+  issuedOn: v.string(),
+  expiresOn: v.string(),
+  card: v.optional(certificationFile),
+  verifiedAt: v.optional(v.number()),
+  verifiedBy: v.optional(v.id("users")),
+  createdAt: v.number(),
+  createdBy: v.id("users"),
+  updatedAt: v.number(),
+  updatedBy: v.id("users"),
+})
+  .index("by_userId", ["userId"])
+  .index("by_expiresOn", ["expiresOn"]);
+
+/**
+ * One row per reminder threshold for one expiration date. The row is the
+ * idempotency key: reruns find it and never send twice, and a renewal (new
+ * expiresOn) starts a fresh set.
+ */
+const instructorCertificationReminders = defineTable({
+  certificationId: v.id("instructorCertifications"),
+  userId: v.id("users"),
+  expiresOn: v.string(),
+  threshold: v.number(),
+  state: v.union(
+    v.literal("pending"),
+    v.literal("sending"),
+    v.literal("sent"),
+    v.literal("failed"),
+    v.literal("canceled")
+  ),
+  attempts: v.number(),
+  recipient: v.string(),
+  /** The date the reminder was queued; its email text is fixed to that day. */
+  queuedOn: v.string(),
+  createdAt: v.number(),
+  claimedAt: v.optional(v.number()),
+  sentAt: v.optional(v.number()),
+  deliveredTo: v.optional(v.string()),
+  providerId: v.optional(v.string()),
+  error: v.optional(v.string()),
+})
+  .index("by_certificationId_and_expiresOn_and_threshold", [
+    "certificationId",
+    "expiresOn",
+    "threshold",
+  ])
+  .index("by_userId", ["userId"]);
+
+const instructorCertificationActivity = defineTable({
+  userId: v.id("users"),
+  certificationId: v.optional(v.id("instructorCertifications")),
+  actor: v.id("users"),
+  action: v.string(),
+  detail: v.string(),
+  at: v.number(),
+})
+  .index("by_userId_and_at", ["userId", "at"])
+  .index("by_at", ["at"]);
+
+/** One weekly staff digest per week start date, so a rerun never resends. */
+const instructorCertificationDigests = defineTable({
+  week: v.string(),
+  recipient: v.string(),
+  count: v.number(),
+  attempts: v.number(),
+  state: v.union(v.literal("pending"), v.literal("sent"), v.literal("failed")),
+  createdAt: v.number(),
+  sentAt: v.optional(v.number()),
+  error: v.optional(v.string()),
+}).index("by_week", ["week"]);
+
 const schema = defineSchema({
   ...authTables,
   ...registrationTables,
@@ -94,6 +186,11 @@ const schema = defineSchema({
     .index("phone", ["phone"]),
 
   mcpTokens,
+
+  instructorCertifications,
+  instructorCertificationReminders,
+  instructorCertificationActivity,
+  instructorCertificationDigests,
 
   onboarding_steps: onboardingSteps,
   seo_pages: seoPages,
