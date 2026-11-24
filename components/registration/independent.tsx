@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { CourseCombobox } from "@/components/ui/course-combobox";
 import { ConfirmDialog, Modal } from "@/components/ui/dialog";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import {
@@ -200,6 +201,10 @@ function SessionForm({
     setForm((current) => ({ ...current, [key]: value }));
 
   async function submit() {
+    if (!form.courseId) {
+      setMessage("Choose a course.");
+      return;
+    }
     const start = fromLocalInput(form.start, form.timeZone);
     const end = fromLocalInput(form.end, form.timeZone);
     if (Number.isNaN(start) || Number.isNaN(end)) {
@@ -242,22 +247,14 @@ function SessionForm({
       >
         <Field label="Course" required>
           {(props) => (
-            <Select
+            <CourseCombobox
               {...props}
+              courses={courses}
               disabled={busy}
-              onChange={(event) => set("courseId")(event.target.value)}
-              required
+              onChange={set("courseId")}
+              placeholder="Search courses"
               value={form.courseId}
-            >
-              <option disabled value="">
-                Choose a course…
-              </option>
-              {courses.map((course) => (
-                <option key={course.id} value={course.id}>
-                  {course.title}
-                </option>
-              ))}
-            </Select>
+            />
           )}
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -436,8 +433,8 @@ export function IndependentSessions() {
       </div>
       {portal && !courses.length ? (
         <Notice tone="warning">
-          No courses are on your alignment yet. Contact us to add the courses
-          you teach.
+          No courses are open for independent sessions yet. Contact us if you
+          need one added.
         </Notice>
       ) : null}
       {status === "LoadingFirstPage" ? (
