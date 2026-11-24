@@ -16,6 +16,8 @@ import { allocateRefund } from "./registrationRefundAllocation";
 
 const PENDING_REFUND =
   "Wait for pending refunds to finish before transferring this registration";
+const UNPAID_SOURCE =
+  "Access was released before payment. Transfer this attendee after the order is paid.";
 
 async function retainedCredit(
   ctx: QueryCtx,
@@ -376,9 +378,7 @@ async function paidSourceOrder(ctx: QueryCtx, seat: Doc<"registrationSeats">) {
     throw new ConvexError("Original order missing");
   }
   if (order.status === "unpaid" || order.status === "hold") {
-    throw new ConvexError(
-      "Access was released before payment. Transfer this attendee after the order is paid."
-    );
+    throw new ConvexError(UNPAID_SOURCE);
   }
   return order;
 }
@@ -598,6 +598,15 @@ export const preview = query({
     );
     if (!priced) {
       throw new ConvexError("Unable to price transfer");
+    }
+    const sourceOrder = await ctx.db.get(seat.orderId);
+    if (sourceOrder?.status === "unpaid" || sourceOrder?.status === "hold") {
+      return {
+        original: 0,
+        destination: priced.total,
+        difference: 0,
+        blocked: UNPAID_SOURCE,
+      };
     }
     let credit: number;
     try {

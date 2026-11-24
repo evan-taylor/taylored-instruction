@@ -679,7 +679,9 @@ export async function settle(
       source !== "transfer" &&
       source !== "invoice")
   ) {
-    await release(ctx, order, "Session canceled");
+    if (!order.releasedBeforePayment) {
+      await release(ctx, order, "Session canceled");
+    }
     await ctx.db.patch(order._id, {
       status: "exception",
       paymentIntent,

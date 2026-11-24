@@ -404,6 +404,49 @@ describe("Release access before payment", () => {
     );
   });
 
+  it("keeps released access when payment lands on a since-disabled coupon", async () => {
+    const f = await fixture();
+    const { orderId, invoiceId } = await invoicedOrder(f);
+    await f.t.run(async (ctx) => {
+      const couponId = await ctx.db.insert("registrationCoupons", {
+        code: "YMCA10",
+        type: "percent",
+        amount: 10,
+        materialIds: [],
+        allMaterials: false,
+        courseIds: [],
+        expires: Date.now() + DAY,
+        limit: 10,
+        reserved: 1,
+        consumed: 0,
+        disabled: false,
+      });
+      await ctx.db.patch(orderId, { couponId, couponUses: 1 });
+    });
+    await release(f, { orderId, reason: "Early access" });
+    const released = await fulfillment(f, orderId);
+    await f.t.run(async (ctx) => {
+      const order = await ctx.db.get(orderId);
+      if (order?.couponId) {
+        await ctx.db.patch(order.couponId, { disabled: true });
+      }
+    });
+
+    await f.adminClient.mutation(api.registrationGroups.recordInvoicePayment, {
+      id: invoiceId,
+      reason: "Check #2001",
+    });
+    const paid = await fulfillment(f, orderId);
+    expect(paid.order?.status).toBe("exception");
+    expect(paid.seats.map((s) => s.state)).toEqual(["active"]);
+    expect(paid.entitlements.map((e) => e.state)).toEqual(
+      released.entitlements.map((e) => e.state)
+    );
+    expect(paid.assigned.map((c) => c._id)).toEqual(
+      released.assigned.map((c) => c._id)
+    );
+  });
+
   it("keeps access and flags follow-up when the invoice is voided, and never hides the order", async () => {
     const f = await fixture();
     const { orderId, invoiceId } = await invoicedOrder(f);

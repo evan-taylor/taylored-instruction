@@ -1137,8 +1137,9 @@ function ReleasedNotice({ order }: { order: Order }) {
         </p>
         {order.status === "unpaid" ? (
           <p className="text-xs">
-            The order stays awaiting payment. Paying the invoice sends only the
-            receipt; materials and confirmations are not sent again.
+            The order stays awaiting payment. Paying the invoice sends the
+            receipt and activates anyone still held; released attendees do not
+            get their materials or confirmations again.
           </p>
         ) : null}
       </Notice>
@@ -1197,7 +1198,7 @@ function ReleaseAccess({ order }: { order: Order }) {
       <ResultNotice message={message} />
       <ReasonDialog
         confirmLabel="Release access"
-        description={`Activates the chosen attendees, delivers their materials and keycodes, and sends their confirmation emails. The order stays unpaid and ${invoice.number} stays open. When it is paid, only the receipt is sent.`}
+        description={`Activates the chosen attendees, delivers their materials and keycodes, and sends their confirmation emails. The order stays unpaid and ${invoice.number} stays open. When it is paid, released attendees are skipped and anyone still held is activated.`}
         onClose={() => setOpen(false)}
         onConfirm={async (reason) => {
           if (chosen.length === 0) {
@@ -1205,7 +1206,7 @@ function ReleaseAccess({ order }: { order: Order }) {
           }
           const result = await release({
             orderId: order._id,
-            seatIds: chosen.length === held.length ? undefined : chosen,
+            seatIds: chosen,
             reason,
           });
           setMessage(

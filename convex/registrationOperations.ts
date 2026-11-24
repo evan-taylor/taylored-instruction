@@ -926,11 +926,14 @@ export const releaseUnpaidAccess = mutation({
         "Access can only be released on an unpaid registration order"
       );
     }
-    const invoices = await ctx.db
+    const invoice = await ctx.db
       .query("registrationInvoices")
       .withIndex("by_orderId", (q) => q.eq("orderId", order._id))
-      .take(BATCH);
-    if (!invoices.some((i) => i.status === "open" || i.status === "draft")) {
+      .filter((q) =>
+        q.or(q.eq(q.field("status"), "draft"), q.eq(q.field("status"), "open"))
+      )
+      .first();
+    if (!invoice) {
       throw new ConvexError(
         "Create an invoice first so the balance stays collectable after access is released"
       );
