@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardList, Search, Trash2, UserMinus } from "lucide-react";
+import { ClipboardList, Search, Trash2, Unlink, UserMinus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +20,11 @@ type InstructorsTableProps = {
     currentStatus: boolean
   ) => void;
   onRejectUser: (profileId: string, userEmail: string | null) => void;
-  /** Quick edit of the "aligned with our Training Site" attribute. */
-  onEditAlignment: (profile: ProfileWithUser) => void;
+  /** Marks or clears "aligned with our Training Site" on the record. */
+  onSetAlignment: (profile: ProfileWithUser, aligned: boolean) => void;
   onShowSessions: (userId: string) => void;
+  /** Users who own independent sessions, aligned now or not. */
+  sessionOwners: Set<string>;
 };
 type StatusFilter = "all" | "teaches" | "aligned" | "none";
 
@@ -43,8 +45,9 @@ export function InstructorsTable({
   profiles,
   onToggleStatus,
   onRejectUser,
-  onEditAlignment,
+  onSetAlignment,
   onShowSessions,
+  sessionOwners,
 }: InstructorsTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<StatusFilter>("all");
@@ -147,7 +150,7 @@ export function InstructorsTable({
                     </TD>
                     <AlignmentCell
                       email={email}
-                      onEdit={onEditAlignment}
+                      onSetAlignment={onSetAlignment}
                       profile={profile}
                     />
                     <TD
@@ -177,8 +180,10 @@ export function InstructorsTable({
                         <MoreActions
                           email={email}
                           onRejectUser={onRejectUser}
+                          onSetAlignment={onSetAlignment}
                           onShowSessions={onShowSessions}
                           onToggleStatus={onToggleStatus}
+                          ownsSessions={sessionOwners.has(profile.userId)}
                           profile={profile}
                         />
                       </div>
@@ -197,34 +202,20 @@ export function InstructorsTable({
 function AlignmentCell({
   profile,
   email,
-  onEdit,
+  onSetAlignment,
 }: {
   profile: ProfileWithUser;
   email: string;
-  onEdit: (profile: ProfileWithUser) => void;
+  onSetAlignment: InstructorsTableProps["onSetAlignment"];
 }) {
   return (
     <TD>
       {profile.alignment ? (
-        <div className="flex flex-col items-start gap-1">
-          <button
-            aria-label={`Edit alignment for ${email}`}
-            className="rounded-md focus-visible:ring-2 focus-visible:ring-primary"
-            onClick={() => onEdit(profile)}
-            type="button"
-          >
-            <Badge tone="primary">Aligned</Badge>
-          </button>
-          <span className="text-slate-500 text-xs">
-            {profile.alignment.courses
-              .map((course) => course.title)
-              .join(", ") || "No active courses"}
-          </span>
-        </div>
+        <Badge tone="primary">Aligned</Badge>
       ) : (
         <Button
           aria-label={`Mark ${email} aligned`}
-          onClick={() => onEdit(profile)}
+          onClick={() => onSetAlignment(profile, true)}
           size="xs"
           type="button"
           variant="ghost"
@@ -242,18 +233,29 @@ function MoreActions({
   onToggleStatus,
   onRejectUser,
   onShowSessions,
+  onSetAlignment,
+  ownsSessions,
 }: Pick<
   InstructorsTableProps,
-  "onToggleStatus" | "onRejectUser" | "onShowSessions"
-> & { profile: ProfileWithUser; email: string }) {
+  "onToggleStatus" | "onRejectUser" | "onShowSessions" | "onSetAlignment"
+> & { profile: ProfileWithUser; email: string; ownsSessions: boolean }) {
   return (
     <RowMenu label={`More actions for ${email}`}>
-      {profile.alignment ? (
+      {profile.alignment || ownsSessions ? (
         <MenuItem
           icon={ClipboardList}
           onSelect={() => onShowSessions(profile.userId)}
         >
           Independent sessions
+        </MenuItem>
+      ) : null}
+      {profile.alignment ? (
+        <MenuItem
+          danger
+          icon={Unlink}
+          onSelect={() => onSetAlignment(profile, false)}
+        >
+          Remove alignment
         </MenuItem>
       ) : null}
       {profile.isInstructor ? (

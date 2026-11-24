@@ -35,23 +35,13 @@ export const getAllInstructors = query({
 
     const profilesWithUsers = await Promise.all(
       profiles.map(async (profile) => {
-        const [user, courses] = await Promise.all([
-          ctx.db.get(profile.userId),
-          Promise.all(
-            (profile.alignment?.courseIds ?? []).map((id) => ctx.db.get(id))
-          ),
-        ]);
+        const user = await ctx.db.get(profile.userId);
         return {
           id: profile._id,
           userId: profile.userId,
           is_instructor: profile.isInstructor,
           alignment: profile.alignment
-            ? {
-                since: profile.alignment.since,
-                courses: courses.flatMap((course) =>
-                  course ? [{ id: course._id, title: course.title }] : []
-                ),
-              }
+            ? { since: profile.alignment.since }
             : null,
           updated_at: profile.updatedAt,
           last_login: profile.lastLogin,

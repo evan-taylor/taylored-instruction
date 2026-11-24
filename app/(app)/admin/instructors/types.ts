@@ -1,8 +1,5 @@
-import type { Id } from "@/convex/_generated/dataModel";
-
 export type Alignment = {
   since: number;
-  courses: { id: Id<"registrationCourses">; title: string }[];
 };
 
 export type ProfileWithUser = {

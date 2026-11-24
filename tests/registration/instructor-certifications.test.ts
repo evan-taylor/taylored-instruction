@@ -884,7 +884,7 @@ describe("aligned instructors", () => {
       const profileId = await ctx.db.insert("profiles", {
         userId: id,
         isInstructor: false,
-        alignment: { courseIds: [], since: Date.now(), by: w.ids.admin },
+        alignment: { since: Date.now(), by: w.ids.admin },
       });
       return { alex: id, profile: profileId };
     });

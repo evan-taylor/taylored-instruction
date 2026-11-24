@@ -82,10 +82,10 @@ function instructorStatus(
 
 function AcceptInvitation({
   teaches,
-  courses,
+  aligned,
 }: {
   teaches: boolean;
-  courses: string[];
+  aligned: boolean;
 }) {
   const acceptInvitation = useMutation(api.instructorInvitations.accept);
   const [accepting, setAccepting] = useState(false);
@@ -97,12 +97,10 @@ function AcceptInvitation({
           ? "You’ve been invited to teach with Taylored Instruction. Accept to unlock instructor tools, eCard purchasing, and your assigned sessions."
           : "Your alignment with our Training Site is approved. Accept to schedule your own independent classes, keep their rosters, and export them for card issuing, plus eCard purchasing."}
       </p>
-      {courses.length ? (
+      {teaches && aligned ? (
         <p className="text-slate-600 text-sm">
-          {teaches
-            ? "You’re also aligned with our Training Site for: "
-            : "Aligned courses: "}
-          {courses.join(", ")}
+          You’re also aligned with our Training Site, so you can run your own
+          independent classes for any of our courses.
         </p>
       ) : null}
       {acceptError ? <Notice tone="danger">{acceptError}</Notice> : null}
@@ -228,7 +226,7 @@ export default function MyAccountPage() {
             <CardFooter className="flex flex-col items-start gap-3">
               {invitation ? (
                 <AcceptInvitation
-                  courses={invitation.courses}
+                  aligned={invitation.aligned}
                   teaches={invitation.teaches}
                 />
               ) : (

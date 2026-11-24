@@ -1,11 +1,9 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { Suspense, useState } from "react";
-import {
-  AlignmentEditor,
-  IndependentOversight,
-} from "@/components/admin/aligned";
+import { IndependentOversight } from "@/components/admin/aligned";
+import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { PageHeader } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
@@ -44,22 +42,38 @@ function AdminInstructorsContent() {
     confirmDialogState,
   } = useInstructorActions(profiles, setProfiles);
 
-  const error = fetchError || actionError;
-  const courses = useQuery(
-    api.aligned.courseOptions,
+  const saveAlignment = useMutation(api.aligned.setAlignment);
+  const [alignment, setAlignment] = useState({ message: "", error: "" });
+  const error = fetchError || actionError || alignment.error;
+  async function setAligned(profile: ProfileWithUser, aligned: boolean) {
+    const who = profile.userEmail || "Instructor";
+    try {
+      await saveAlignment({ userId: profile.userId as Id<"users">, aligned });
+      setAlignment({
+        message: aligned
+          ? `${who} is now aligned with our Training Site.`
+          : `Removed alignment for ${who}. Their independent sessions stay visible below.`,
+        error: "",
+      });
+    } catch (err) {
+      setAlignment({ message: "", error: errorText(err) });
+    }
+  }
+  const [sessionsFor, setSessionsFor] = useState<Id<"users"> | "">("");
+  const owners = useQuery(
+    api.aligned.sessionOwners,
     isAdmin && !adminAccessCheckInProgress ? {} : "skip"
   );
-  const [editing, setEditing] = useState<ProfileWithUser | null>(null);
-  const [lastCourses, setLastCourses] = useState<Id<"registrationCourses">[]>(
-    []
-  );
-  const [sessionsFor, setSessionsFor] = useState<Id<"users"> | "">("");
-  const aligned = profiles
-    .filter((profile) => profile.alignment)
-    .map((profile) => ({
-      userId: profile.userId as Id<"users">,
-      name: profile.userName || profile.userEmail || "Unknown",
-    }));
+  const ownerIds = new Set<string>(owners?.map((o) => o.userId));
+  const oversightChoices = [
+    ...profiles
+      .filter((profile) => profile.alignment && !ownerIds.has(profile.userId))
+      .map((profile) => ({
+        userId: profile.userId as Id<"users">,
+        name: profile.userName || profile.userEmail || "Unknown",
+      })),
+    ...(owners ?? []),
+  ].sort((a, b) => a.name.localeCompare(b.name));
 
   if (profileLoading || adminAccessCheckInProgress) {
     return <LoadingAdminPanel />;
@@ -90,15 +104,18 @@ function AdminInstructorsContent() {
               Assign to sessions
             </Button>
           }
-          description="One record per instructor. Mark whether they teach for us, whether they are aligned with our Training Site and for which courses, or both. Aligned instructors run independent sessions."
+          description="One record per instructor. Mark whether they teach for us, whether they are aligned with our Training Site, or both. Aligned instructors run independent sessions for any of our courses."
           title="Instructors"
         />
 
-        <AlertMessages actionMessage={actionMessage} error={error} />
+        <AlertMessages
+          actionMessage={alignment.message || actionMessage}
+          error={error}
+        />
 
         <InstructorsTable
-          onEditAlignment={setEditing}
           onRejectUser={initiateRejectUser}
+          onSetAlignment={setAligned}
           onShowSessions={(userId) => {
             setSessionsFor(userId as Id<"users">);
             document
@@ -107,32 +124,16 @@ function AdminInstructorsContent() {
           }}
           onToggleStatus={toggleInstructorStatus}
           profiles={profiles}
+          sessionOwners={ownerIds}
         />
 
-        <Invitations courses={courses ?? []} />
+        <Invitations />
 
         <IndependentOversight
           instructorId={sessionsFor}
-          instructors={aligned}
+          instructors={oversightChoices}
           onInstructor={setSessionsFor}
         />
-
-        {editing && courses ? (
-          <AlignmentEditor
-            courses={courses}
-            current={editing.alignment?.courses.map((c) => c.id) ?? null}
-            key={editing.id}
-            name={editing.userName || editing.userEmail || "this instructor"}
-            onClose={() => setEditing(null)}
-            onSaved={(ids) => {
-              if (ids.length) {
-                setLastCourses(ids);
-              }
-            }}
-            suggested={lastCourses}
-            userId={editing.userId as Id<"users">}
-          />
-        ) : null}
       </div>
     </>
   );

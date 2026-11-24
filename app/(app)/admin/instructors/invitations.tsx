@@ -2,7 +2,6 @@
 
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
-import { type CourseOption, CoursePicker } from "@/components/admin/aligned";
 import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
@@ -62,18 +61,14 @@ function InvitationStatus({
   );
 }
 
-type CourseId = Id<"registrationCourses">;
-
 /** Invite instructors by email and track who has accepted. */
-export function Invitations({ courses }: { courses: CourseOption[] }) {
+export function Invitations() {
   const invitations = useQuery(api.instructorInvitations.list);
   const invite = useMutation(api.instructorInvitations.invite);
   const revoke = useMutation(api.instructorInvitations.revoke);
   const [email, setEmail] = useState("");
   const [teaches, setTeaches] = useState(true);
   const [aligned, setAligned] = useState(false);
-  const [courseIds, setCourseIds] = useState<CourseId[]>([]);
-  const titles = new Map(courses.map((c) => [c.id, c.title]));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<Message>(null);
   const [showPast, setShowPast] = useState(false);
@@ -87,7 +82,7 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
 
   async function send(
     target: string,
-    access: { teaches: boolean; courseIds: CourseId[] }
+    access: { teaches: boolean; aligned: boolean }
   ) {
     setBusy(true);
     setMessage(null);
@@ -100,7 +95,6 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
       setEmail("");
       setTeaches(true);
       setAligned(false);
-      setCourseIds([]);
     } catch (error) {
       setMessage({ text: errorText(error), tone: "danger" });
     } finally {
@@ -127,7 +121,7 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
           className="space-y-4"
           onSubmit={(e) => {
             e.preventDefault();
-            send(email, { teaches, courseIds: aligned ? courseIds : [] });
+            send(email, { teaches, aligned });
           }}
         >
           <Field label="Email address">
@@ -145,11 +139,7 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
                 />
                 <Button
                   className="min-h-10 shrink-0"
-                  disabled={
-                    busy ||
-                    !(teaches || aligned) ||
-                    (aligned && !courseIds.length)
-                  }
+                  disabled={busy || !(teaches || aligned)}
                   size="sm"
                   type="submit"
                 >
@@ -180,14 +170,6 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
               Aligned with our Training Site
             </label>
           </div>
-          {aligned ? (
-            <CoursePicker
-              courses={courses}
-              disabled={busy}
-              onChange={setCourseIds}
-              selected={courseIds}
-            />
-          ) : null}
         </form>
         {visible?.length ? (
           <Table>
@@ -209,11 +191,7 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
                     <TD className="text-slate-600 text-sm">
                       {[
                         row.teaches ? "Teaches for us" : null,
-                        row.courseIds?.length
-                          ? `Aligned: ${row.courseIds
-                              .map((id) => titles.get(id) ?? "Archived course")
-                              .join(", ")}`
-                          : null,
+                        row.aligned ? "Aligned with our Training Site" : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}
@@ -243,7 +221,7 @@ export function Invitations({ courses }: { courses: CourseOption[] }) {
                             onClick={() =>
                               send(row.email, {
                                 teaches: row.teaches,
-                                courseIds: row.courseIds ?? [],
+                                aligned: row.aligned,
                               })
                             }
                             size="xs"

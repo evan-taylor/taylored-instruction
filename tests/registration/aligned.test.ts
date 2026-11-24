@@ -139,20 +139,16 @@ async function world() {
   });
   const as = (id: Id<"users">) => t.withIdentity({ subject: `${id}|session` });
   const admin = as(ids.admin);
-  async function align(
-    id: Id<"users">,
-    email: string,
-    courseIds: Id<"registrationCourses">[]
-  ) {
+  async function align(id: Id<"users">, email: string) {
     await admin.mutation(api.instructorInvitations.invite, {
       teaches: false,
       email,
-      courseIds,
+      aligned: true,
     });
     await as(id).mutation(api.instructorInvitations.accept, {});
   }
-  await align(ids.alice, "alice@example.test", [ids.bls]);
-  await align(ids.bob, "bob@example.test", [ids.bls, ids.heartsaver]);
+  await align(ids.alice, "alice@example.test");
+  await align(ids.bob, "bob@example.test");
   const alice = as(ids.alice);
   const bob = as(ids.bob);
   const start = Date.now() + 2 * DAY;
@@ -210,25 +206,24 @@ describe("aligned with our Training Site", () => {
       alice.mutation(api.instructorInvitations.invite, {
         teaches: false,
         email: "friend@example.test",
-        courseIds: [ids.bls],
+        aligned: true,
       })
     ).rejects.toThrow("Admin access required");
     await expect(
       alice.mutation(api.aligned.setAlignment, {
         userId: ids.alice,
-        courseIds: [ids.bls, ids.heartsaver],
+        aligned: true,
       })
     ).rejects.toThrow("Admin access required");
     await expect(
       admin.mutation(api.instructorInvitations.invite, {
         teaches: false,
         email: "new@example.test",
-        courseIds: [ids.archived],
       })
-    ).rejects.toThrow("Course not available");
+    ).rejects.toThrow("Choose whether they teach for us");
     await admin.mutation(api.aligned.setAlignment, {
       userId: ids.alice,
-      courseIds: null,
+      aligned: false,
     });
     await expect(
       alice.query(api.aligned.mySessions, { paginationOpts: PAGE })
@@ -250,7 +245,7 @@ describe("aligned with our Training Site", () => {
     expect(oversight[0]?.owner.email).toBe("alice@example.test");
     await admin.mutation(api.aligned.setAlignment, {
       userId: ids.alice,
-      courseIds: [ids.bls],
+      aligned: true,
     });
     expect(
       (
@@ -276,19 +271,29 @@ describe("aligned with our Training Site", () => {
 });
 
 describe("aligned instructor boundaries", () => {
-  it("limits session creation to their aligned courses", async () => {
+  it("schedules any active course we have, and nothing archived", async () => {
     const { ids, alice } = await world();
     const start = Date.now() + DAY;
+    const input = {
+      start,
+      end: start + 3_600_000,
+      timeZone: "America/Los_Angeles",
+      location: "Somewhere",
+      instructorNames: [],
+    };
+    await alice.mutation(api.aligned.createSession, {
+      ...input,
+      courseId: ids.heartsaver,
+    });
     await expect(
       alice.mutation(api.aligned.createSession, {
-        courseId: ids.heartsaver,
-        start,
-        end: start + 3_600_000,
-        timeZone: "America/Los_Angeles",
-        location: "Somewhere",
-        instructorNames: [],
+        ...input,
+        courseId: ids.archived,
       })
-    ).rejects.toThrow("not aligned to teach this course");
+    ).rejects.toThrow("Course not available");
+    expect(
+      (await alice.query(api.aligned.portal, {})).courses.map((c) => c.title)
+    ).toEqual(["BLS", "HEARTSAVER"]);
     await expect(
       alice.mutation(api.aligned.createSession, {
         courseId: ids.bls,
@@ -699,11 +704,20 @@ describe("keeping independent records consistent", () => {
     expect(first.page).toHaveLength(1);
   });
 
-  it("refuses to delete a course aligned instructors use", async () => {
-    const { t, ids, admin } = await world();
+  it("refuses to delete a course independent sessions use", async () => {
+    const { t, ids, admin, bob } = await world();
+    const start = Date.now() + DAY;
+    await bob.mutation(api.aligned.createSession, {
+      courseId: ids.heartsaver,
+      start,
+      end: start + 3_600_000,
+      timeZone: "America/Los_Angeles",
+      location: "Bob's gym",
+      instructorNames: [],
+    });
     await expect(
       admin.mutation(api.registration.deleteCourse, { id: ids.heartsaver })
-    ).rejects.toThrow("Aligned instructors use this template");
+    ).rejects.toThrow("Independent sessions use this template");
     const unused = await t.run((ctx) =>
       ctx.db.insert("registrationCourses", {
         slug: "unused",
@@ -720,8 +734,8 @@ describe("keeping independent records consistent", () => {
     expect(await t.run((ctx) => ctx.db.get(unused))).toBeNull();
   });
 
-  it("shows approved courses on the pending invitation", async () => {
-    const { t, ids, admin } = await world();
+  it("shows the approved access on the pending invitation", async () => {
+    const { t, admin } = await world();
     const carol = await t.run((ctx) =>
       ctx.db.insert("users", {
         email: "carol@example.test",
@@ -731,12 +745,12 @@ describe("keeping independent records consistent", () => {
     await admin.mutation(api.instructorInvitations.invite, {
       teaches: false,
       email: "carol@example.test",
-      courseIds: [ids.bls, ids.heartsaver],
+      aligned: true,
     });
     const mine = await t
       .withIdentity({ subject: `${carol}|session` })
       .query(api.instructorInvitations.mine, {});
-    expect(mine?.courses).toEqual(["BLS", "HEARTSAVER"]);
+    expect(mine).toMatchObject({ teaches: false, aligned: true });
   });
 });
 
@@ -751,27 +765,28 @@ it("strips quotes around pasted fields after trimming", () => {
   ]);
 });
 
-it("keeps an invitation pending when its courses were archived", async () => {
-  const { t, ids, admin } = await world();
-  const dee = await t.run((ctx) =>
-    ctx.db.insert("users", {
+it("accepts a legacy course-carrying invitation as aligned", async () => {
+  const { t, ids } = await world();
+  const dee = await t.run(async (ctx) => {
+    const id = await ctx.db.insert("users", {
       email: "dee@example.test",
       emailVerificationTime: Date.now(),
-    })
-  );
-  await admin.mutation(api.instructorInvitations.invite, {
-    teaches: false,
-    email: "dee@example.test",
-    courseIds: [ids.heartsaver],
+    });
+    await ctx.db.insert("instructorInvitations", {
+      email: "dee@example.test",
+      invitedBy: ids.admin,
+      createdAt: Date.now(),
+      teaches: false,
+      courseIds: [ids.archived],
+    });
+    return id;
   });
-  await t.run((ctx) =>
-    ctx.db.patch(ids.heartsaver, { publication: "archived" })
-  );
   const asDee = t.withIdentity({ subject: `${dee}|session` });
-  await expect(
-    asDee.mutation(api.instructorInvitations.accept, {})
-  ).rejects.toThrow("no longer available");
-  expect(await asDee.query(api.instructorInvitations.mine, {})).not.toBeNull();
+  await asDee.mutation(api.instructorInvitations.accept, {});
+  expect(await asDee.query(api.profiles.getProfile, {})).toMatchObject({
+    is_instructor: false,
+    is_aligned: true,
+  });
 });
 
 describe("one instructor record", () => {
@@ -780,7 +795,7 @@ describe("one instructor record", () => {
     await admin.mutation(api.instructorInvitations.invite, {
       email: "student@example.test",
       teaches: true,
-      courseIds: [ids.bls],
+      aligned: true,
     });
     const both = as(ids.student);
     await both.mutation(api.instructorInvitations.accept, {});
@@ -841,18 +856,18 @@ describe("one instructor record", () => {
     await expect(
       alice.mutation(api.aligned.setAlignment, {
         userId: ids.employed,
-        courseIds: [ids.bls],
+        aligned: true,
       })
     ).rejects.toThrow("Admin access required");
     await expect(
       admin.mutation(api.aligned.setAlignment, {
         userId: ids.student,
-        courseIds: [ids.bls],
+        aligned: true,
       })
     ).rejects.toThrow("No instructor record yet");
     await admin.mutation(api.aligned.setAlignment, {
       userId: ids.employed,
-      courseIds: [ids.bls, ids.heartsaver],
+      aligned: true,
     });
     expect(await employed.query(api.profiles.getProfile, {})).toMatchObject({
       is_instructor: true,
@@ -865,10 +880,7 @@ describe("one instructor record", () => {
       (r) => r.userId === ids.employed
     );
     expect(row?.is_instructor).toBe(true);
-    expect(row?.alignment?.courses.map((c) => c.title)).toEqual([
-      "BLS",
-      "HEARTSAVER",
-    ]);
+    expect(row?.alignment).toEqual({ since: expect.any(Number) });
     const audit = await t.run((ctx) =>
       ctx.db.query("registrationActivity").collect()
     );
@@ -876,9 +888,56 @@ describe("one instructor record", () => {
     await expect(
       admin.mutation(api.instructorInvitations.invite, {
         email: "employed@example.test",
-        courseIds: [ids.bls],
+        aligned: true,
       })
     ).rejects.toThrow("already an approved instructor or aligned");
+  });
+
+  it("cancels pending invitations when alignment is removed", async () => {
+    const { t, ids, as, admin } = await world();
+    await t.run((ctx) =>
+      ctx.db.insert("profiles", { userId: ids.student, isInstructor: false })
+    );
+    await admin.mutation(api.instructorInvitations.invite, {
+      email: "student@example.test",
+      teaches: false,
+      aligned: true,
+    });
+    await admin.mutation(api.aligned.setAlignment, {
+      userId: ids.student,
+      aligned: true,
+    });
+    await admin.mutation(api.aligned.setAlignment, {
+      userId: ids.student,
+      aligned: false,
+    });
+    await expect(
+      as(ids.student).mutation(api.instructorInvitations.accept, {})
+    ).rejects.toThrow("No pending invitation");
+    expect(
+      (await as(ids.student).query(api.profiles.getProfile, {}))?.is_aligned
+    ).toBe(false);
+  });
+
+  it("keeps an invitation's access when it is re-sent by email alone", async () => {
+    const { t, admin } = await world();
+    await admin.mutation(api.instructorInvitations.invite, {
+      email: "frank@example.test",
+      teaches: false,
+      aligned: true,
+    });
+    await admin.mutation(api.instructorInvitations.invite, {
+      email: "frank@example.test",
+    });
+    const rows = await t.run((ctx) =>
+      ctx.db
+        .query("instructorInvitations")
+        .withIndex("by_email", (q) => q.eq("email", "frank@example.test"))
+        .collect()
+    );
+    expect(rows).toEqual([
+      expect.objectContaining({ teaches: false, aligned: true }),
+    ]);
   });
 
   it("migrates legacy grants and invitations idempotently, with a dry run", async () => {
@@ -917,6 +976,18 @@ describe("one instructor record", () => {
         kind: "aligned",
         courseIds: [ids.bls],
       });
+      await ctx.db.insert("instructorInvitations", {
+        email: "both@example.test",
+        invitedBy: ids.admin,
+        createdAt: 5500,
+      });
+      await ctx.db.insert("instructorInvitations", {
+        email: "both@example.test",
+        invitedBy: ids.admin,
+        createdAt: 6000,
+        kind: "aligned",
+        courseIds: [ids.bls],
+      });
       return { erin };
     });
     const snapshot = () =>
@@ -925,11 +996,13 @@ describe("one instructor record", () => {
         profiles: await ctx.db.query("profiles").collect(),
         invitations: (
           await ctx.db.query("instructorInvitations").collect()
-        ).map(({ email, kind, teaches, courseIds }) => ({
+        ).map(({ email, kind, teaches, aligned, courseIds, revokedAt }) => ({
           email,
           kind,
           teaches,
+          aligned,
           courseIds,
+          revokedAt,
         })),
       }));
     const before = await snapshot();
@@ -941,7 +1014,8 @@ describe("one instructor record", () => {
       aligned: ["erin@example.test", "employed@example.test"],
       skippedRevoked: ["student@example.test"],
       createdProfiles: ["erin@example.test"],
-      invitations: ["pending@example.test"],
+      invitations: ["pending@example.test", "both@example.test"],
+      mergedInvitations: ["both@example.test"],
     });
     expect(await snapshot()).toEqual(before);
 
@@ -949,18 +1023,30 @@ describe("one instructor record", () => {
     const after = await snapshot();
     expect(after.grants).toBe(0);
     const byUser = new Map(after.profiles.map((p) => [p.userId, p]));
-    expect(byUser.get(legacy.erin)).toMatchObject({
-      isInstructor: false,
-      alignment: { courseIds: [ids.heartsaver], since: 1000, by: ids.admin },
+    expect(byUser.get(legacy.erin)).toMatchObject({ isInstructor: false });
+    expect(byUser.get(legacy.erin)?.alignment).toEqual({
+      since: 1000,
+      by: ids.admin,
     });
-    expect(byUser.get(ids.employed)).toMatchObject({ isInstructor: true });
-    expect(byUser.get(ids.employed)?.alignment?.courseIds).toEqual([ids.bls]);
+    expect(byUser.get(ids.employed)).toMatchObject({
+      isInstructor: true,
+      alignment: { since: 2000, by: ids.admin },
+    });
     expect(byUser.get(ids.student)).toBeUndefined();
     const pending = after.invitations.find(
       (i) => i.email === "pending@example.test"
     );
-    expect(pending?.teaches).toBe(false);
+    expect(pending).toMatchObject({ teaches: false, aligned: true });
     expect(pending?.kind).toBeUndefined();
+    expect(pending?.courseIds).toBeUndefined();
+    const both = after.invitations.filter(
+      (i) => i.email === "both@example.test"
+    );
+    const live = both.filter((i) => i.revokedAt === undefined);
+    expect(live).toHaveLength(1);
+    expect(live[0]?.aligned).toBe(true);
+    expect(live[0]?.kind).toBeUndefined();
+    expect(live[0]?.teaches).not.toBe(false);
 
     expect(
       await t.mutation(internal.alignmentMigration.run, { dryRun: false })
@@ -970,6 +1056,7 @@ describe("one instructor record", () => {
       skippedRevoked: [],
       createdProfiles: [],
       invitations: [],
+      mergedInvitations: [],
     });
     expect(await snapshot()).toEqual(after);
   });

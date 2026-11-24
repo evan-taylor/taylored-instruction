@@ -12,8 +12,8 @@ type InstructorInvitationEmailProps = {
   email: string;
   /** Accepting makes them teach for us. */
   teaches?: boolean;
-  /** Courses they are aligned with our Training Site for; empty when not aligned. */
-  courses?: string[];
+  /** Accepting marks them aligned with our Training Site. */
+  aligned?: boolean;
 };
 
 const TEACHING = [
@@ -30,9 +30,8 @@ export default function InstructorInvitationEmail({
   signInUrl,
   email,
   teaches = true,
-  courses = [],
+  aligned = false,
 }: InstructorInvitationEmailProps) {
-  const aligned = courses.length > 0;
   const alignedOnly = aligned && !teaches;
   return (
     <EmailLayout
@@ -48,10 +47,10 @@ export default function InstructorInvitationEmail({
           : "You’re invited to teach with Taylored Instruction"}
       </Title>
       {aligned ? (
-        <>
-          <Paragraph>You’re aligned with our Training Site to teach:</Paragraph>
-          <BulletList items={courses} />
-        </>
+        <Paragraph>
+          You’re aligned with our Training Site, so you can run your own classes
+          for any of our courses.
+        </Paragraph>
       ) : null}
       <Paragraph>
         Sign in with <strong>{email}</strong>, then choose “Accept invitation”
@@ -81,5 +80,5 @@ export default function InstructorInvitationEmail({
 InstructorInvitationEmail.PreviewProps = {
   signInUrl: "https://tayloredinstruction.com/my-account",
   email: "jordan@example.com",
-  courses: ["BLS Provider"],
+  aligned: true,
 } satisfies InstructorInvitationEmailProps;
