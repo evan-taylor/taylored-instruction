@@ -61,11 +61,17 @@ function instructorStatus(
   isAligned: boolean,
   requested: boolean
 ) {
-  if (isInstructor) {
-    return <Badge tone="success">Approved instructor</Badge>;
-  }
-  if (isAligned) {
-    return <Badge tone="success">Aligned independent instructor</Badge>;
+  if (isInstructor || isAligned) {
+    return (
+      <span className="flex flex-wrap gap-1">
+        {isInstructor ? (
+          <Badge tone="success">Teaches for Taylored Instruction</Badge>
+        ) : null}
+        {isAligned ? (
+          <Badge tone="primary">Aligned with our Training Site</Badge>
+        ) : null}
+      </span>
+    );
   }
   return requested ? (
     <Badge tone="warning">Not approved</Badge>
@@ -75,10 +81,10 @@ function instructorStatus(
 }
 
 function AcceptInvitation({
-  aligned,
+  teaches,
   courses,
 }: {
-  aligned: boolean;
+  teaches: boolean;
   courses: string[];
 }) {
   const acceptInvitation = useMutation(api.instructorInvitations.accept);
@@ -87,13 +93,16 @@ function AcceptInvitation({
   return (
     <>
       <p className="text-slate-900 text-sm">
-        {aligned
-          ? "Your alignment with our Training Site is approved. Accept to open the independent instructor portal, where you schedule your own classes, keep rosters, and export them for card issuing, plus eCard purchasing."
-          : "You’ve been invited to teach with Taylored Instruction. Accept to unlock instructor tools, eCard purchasing, and your assigned sessions."}
+        {teaches
+          ? "You’ve been invited to teach with Taylored Instruction. Accept to unlock instructor tools, eCard purchasing, and your assigned sessions."
+          : "Your alignment with our Training Site is approved. Accept to schedule your own independent classes, keep their rosters, and export them for card issuing, plus eCard purchasing."}
       </p>
       {courses.length ? (
         <p className="text-slate-600 text-sm">
-          Approved courses: {courses.join(", ")}
+          {teaches
+            ? "You’re also aligned with our Training Site for: "
+            : "Aligned courses: "}
+          {courses.join(", ")}
         </p>
       ) : null}
       {acceptError ? <Notice tone="danger">{acceptError}</Notice> : null}
@@ -219,8 +228,8 @@ export default function MyAccountPage() {
             <CardFooter className="flex flex-col items-start gap-3">
               {invitation ? (
                 <AcceptInvitation
-                  aligned={invitation.kind === "aligned"}
                   courses={invitation.courses}
+                  teaches={invitation.teaches}
                 />
               ) : (
                 <p className="text-slate-600 text-sm">

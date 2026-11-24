@@ -10,48 +10,46 @@ import { EmailLayout } from "./components/layout";
 type InstructorInvitationEmailProps = {
   signInUrl: string;
   email: string;
-  /** Independent instructors aligned with our Training Site. */
-  aligned?: boolean;
-  /** Course titles an aligned instructor is approved to teach. */
+  /** Accepting makes them teach for us. */
+  teaches?: boolean;
+  /** Courses they are aligned with our Training Site for; empty when not aligned. */
   courses?: string[];
 };
 
-const BENEFITS = {
-  instructor: [
-    "Open your assigned sessions and rosters",
-    "Buy digital eCards for your students",
-    "Reach instructor resources and documentation",
-  ],
-  aligned: [
-    "Schedule your own independent classes",
-    "Keep rosters, attendance, and results for each class",
-    "Export ARC and AHA rosters to issue cards",
-    "Buy digital eCards for your students",
-  ],
-};
+const TEACHING = [
+  "Open your assigned sessions and rosters",
+  "Reach instructor resources and documentation",
+];
+const INDEPENDENT = [
+  "Schedule your own independent classes",
+  "Keep rosters, attendance, and results for each class",
+  "Export ARC and AHA rosters to issue cards",
+];
 
 export default function InstructorInvitationEmail({
   signInUrl,
   email,
-  aligned = false,
+  teaches = true,
   courses = [],
 }: InstructorInvitationEmailProps) {
+  const aligned = courses.length > 0;
+  const alignedOnly = aligned && !teaches;
   return (
     <EmailLayout
       preview={
-        aligned
+        alignedOnly
           ? "Sign in and accept your alignment to open the independent instructor portal."
           : "Sign in and accept your invitation to unlock instructor tools."
       }
     >
       <Title>
-        {aligned
+        {alignedOnly
           ? "Your Taylored Instruction alignment is approved"
           : "You’re invited to teach with Taylored Instruction"}
       </Title>
-      {courses.length ? (
+      {aligned ? (
         <>
-          <Paragraph>You’re approved to teach:</Paragraph>
+          <Paragraph>You’re aligned with our Training Site to teach:</Paragraph>
           <BulletList items={courses} />
         </>
       ) : null}
@@ -59,7 +57,13 @@ export default function InstructorInvitationEmail({
         Sign in with <strong>{email}</strong>, then choose “Accept invitation”
         on your account page. Once you accept, you can:
       </Paragraph>
-      <BulletList items={aligned ? BENEFITS.aligned : BENEFITS.instructor} />
+      <BulletList
+        items={[
+          ...(teaches ? TEACHING : []),
+          ...(aligned ? INDEPENDENT : []),
+          "Buy digital eCards for your students",
+        ]}
+      />
       <PrimaryButton href={signInUrl}>Sign in and accept</PrimaryButton>
       <Note>
         No password needed: we email you a one-time code when you sign in. The
@@ -77,4 +81,5 @@ export default function InstructorInvitationEmail({
 InstructorInvitationEmail.PreviewProps = {
   signInUrl: "https://tayloredinstruction.com/my-account",
   email: "jordan@example.com",
+  courses: ["BLS Provider"],
 } satisfies InstructorInvitationEmailProps;

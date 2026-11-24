@@ -107,9 +107,9 @@ export function AlignedGate({ children }: { children: ReactNode }) {
           {session ? "Aligned instructor access required" : "Sign in required"}
         </h1>
         <p className="mt-2 text-slate-600">
-          The independent instructor portal is for instructors aligned with our
-          Training Site. Apply on the alignment page; once approved you’ll get
-          an invitation to accept on your account page.
+          Independent sessions are for instructors aligned with our Training
+          Site. Apply on the alignment page; once we mark your instructor record
+          aligned, they appear under My classes.
         </p>
         <div className="mt-6 flex justify-center gap-2">
           <Button href={session ? "/my-account" : "/login"}>
@@ -400,32 +400,40 @@ export function IndependentSessions() {
   const [formKey, setFormKey] = useState(0);
   const courses = portal?.courses ?? [];
   return (
-    <Shell>
-      <PageHeader
-        actions={
-          <>
-            <Button href="/ecards" size="sm" variant="secondary">
-              <CreditCard aria-hidden="true" className="h-4 w-4" />
-              Purchase eCards
-            </Button>
-            <Button
-              disabled={!courses.length}
-              onClick={() => {
-                setFormKey((key) => key + 1);
-                setOpen(true);
-              }}
-              size="sm"
-              type="button"
-            >
-              <Plus aria-hidden="true" className="h-4 w-4" />
-              New session
-            </Button>
-          </>
-        }
-        description="Classes you teach independently under our Training Site alignment. Keep each roster and its results here, then export it to issue cards."
-        eyebrow="Aligned instructor"
-        title="Independent sessions"
-      />
+    <section aria-labelledby="independent-heading" className="space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h2
+            className="font-semibold text-lg text-slate-900"
+            id="independent-heading"
+          >
+            Independent sessions
+          </h2>
+          <p className="text-slate-600 text-sm">
+            Classes you teach on your own under our Training Site alignment.
+            Keep each roster and its results here, then export it to issue
+            cards.
+          </p>
+        </div>
+        <div className="flex shrink-0 gap-2">
+          <Button href="/ecards" size="sm" variant="secondary">
+            <CreditCard aria-hidden="true" className="h-4 w-4" />
+            Purchase eCards
+          </Button>
+          <Button
+            disabled={!courses.length}
+            onClick={() => {
+              setFormKey((key) => key + 1);
+              setOpen(true);
+            }}
+            size="sm"
+            type="button"
+          >
+            <Plus aria-hidden="true" className="h-4 w-4" />
+            New session
+          </Button>
+        </div>
+      </div>
       {portal && !courses.length ? (
         <Notice tone="warning">
           No courses are on your alignment yet. Contact us to add the courses
@@ -455,7 +463,7 @@ export function IndependentSessions() {
         open={open}
         title="New independent session"
       />
-    </Shell>
+    </section>
   );
 }
 
@@ -1376,7 +1384,7 @@ export function IndependentSessionPage({
   return (
     <Shell>
       <IndependentSessionDetail
-        backHref="/instructor/independent"
+        backHref="/instructor/sessions"
         sessionId={sessionId}
       />
     </Shell>

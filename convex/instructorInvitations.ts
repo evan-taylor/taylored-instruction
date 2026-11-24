@@ -16,10 +16,8 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
-import { activeAlignment, grantAlignment, validCourseIds } from "./aligned";
+import { alignmentCourseIds, isActiveInstructorRecord } from "./aligned";
 import { auth } from "./auth";
-
-type InvitationKind = Doc<"instructorInvitations">["kind"];
 
 const invitation = v.object({
   id: v.id("instructorInvitations"),
@@ -30,9 +28,14 @@ const invitation = v.object({
   revokedAt: v.optional(v.number()),
   sentAt: v.optional(v.number()),
   sendError: v.optional(v.string()),
-  kind: v.optional(v.literal("aligned")),
+  teaches: v.boolean(),
   courseIds: v.optional(v.array(v.id("registrationCourses"))),
 });
+
+/** Whether accepting makes them teach for us. Legacy aligned-only rows do not. */
+function teachesFor(row: Doc<"instructorInvitations">) {
+  return row.teaches ?? row.kind !== "aligned";
+}
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 
@@ -63,22 +66,12 @@ async function verifiedEmail(ctx: QueryCtx) {
   return { userId, email: user.email.trim().toLowerCase() };
 }
 
-async function pendingFor(
-  ctx: QueryCtx,
-  email: string,
-  kind?: InvitationKind | "any"
-) {
+async function pendingFor(ctx: QueryCtx, email: string) {
   const rows = await ctx.db
     .query("instructorInvitations")
     .withIndex("by_email", (q) => q.eq("email", email))
     .collect();
-  return (
-    rows.find(
-      (row) =>
-        !(row.acceptedAt || row.revokedAt) &&
-        (kind === "any" || row.kind === kind)
-    ) ?? null
-  );
+  return rows.find((row) => !(row.acceptedAt || row.revokedAt)) ?? null;
 }
 
 async function send(ctx: MutationCtx, row: Doc<"instructorInvitations">) {
@@ -97,7 +90,7 @@ async function send(ctx: MutationCtx, row: Doc<"instructorInvitations">) {
       id: row._id,
       email: row.email,
       attempt,
-      kind: row.kind,
+      teaches: teachesFor(row),
       courses: await courseTitles(ctx, row.courseIds),
     }
   );
@@ -113,8 +106,8 @@ async function courseTitles(
   return courses.flatMap((course) => (course ? [course.title] : []));
 }
 
-/** True when an account holding this email already has active instructor access. */
-async function isApprovedInstructor(ctx: QueryCtx, email: string) {
+/** True when an account holding this email already has an active instructor record. */
+async function hasInstructorRecord(ctx: QueryCtx, email: string) {
   const byEmail = await ctx.db
     .query("users")
     .withIndex("email", (q) => q.eq("email", email))
@@ -140,10 +133,15 @@ async function isApprovedInstructor(ctx: QueryCtx, email: string) {
         .first()
     )
   );
-  return profiles.some((p) => p?.isInstructor && !p.deactivatedAt);
+  return profiles.some(isActiveInstructorRecord);
 }
 
-async function grantInstructor(ctx: MutationCtx, userId: Id<"users">) {
+/** Accepting fills in the person's single instructor record. */
+async function grantAccess(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+  row: Doc<"instructorInvitations">
+) {
   const now = new Date().toISOString();
   const profile = await ctx.db
     .query("profiles")
@@ -152,9 +150,27 @@ async function grantInstructor(ctx: MutationCtx, userId: Id<"users">) {
   if (profile?.deactivatedAt) {
     throw new ConvexError("This account has been disabled. Contact us.");
   }
+  const teaches = teachesFor(row);
+  const courseIds = row.courseIds?.length
+    ? await alignmentCourseIds(ctx, row.courseIds).catch(() => {
+        throw new ConvexError(
+          "The courses on this invitation are no longer available. Ask us to send an updated invitation."
+        );
+      })
+    : null;
+  const alignment = courseIds
+    ? {
+        courseIds: [
+          ...new Set([...(profile?.alignment?.courseIds ?? []), ...courseIds]),
+        ],
+        since: profile?.alignment?.since ?? Date.now(),
+        by: profile?.alignment?.by ?? row.invitedBy,
+      }
+    : profile?.alignment;
   if (profile) {
     await ctx.db.patch(profile._id, {
-      isInstructor: true,
+      isInstructor: profile.isInstructor || teaches,
+      alignment,
       updatedAt: now,
       lastLogin: now,
     });
@@ -162,7 +178,8 @@ async function grantInstructor(ctx: MutationCtx, userId: Id<"users">) {
   }
   await ctx.db.insert("profiles", {
     userId,
-    isInstructor: true,
+    isInstructor: teaches,
+    alignment,
     updatedAt: now,
     lastLogin: now,
     notifiedAt: now,
@@ -188,60 +205,37 @@ export async function revokeInvitationsFor(ctx: MutationCtx, email: string) {
 
 /**
  * Admin sends (or re-sends) an instructor invitation. One pending invitation
- * exists per email; inviting again re-sends the same one.
+ * exists per email; inviting again updates and re-sends the same one.
+ * Accepting can make them teach for us, mark them aligned with our Training
+ * Site for the chosen courses, or both.
  */
 export const invite = mutation({
-  args: { email: v.string() },
-  returns: v.id("instructorInvitations"),
-  handler: async (ctx, args) => {
-    const invitedBy = await admin(ctx);
-    const email = normalize(args.email);
-    if (await isApprovedInstructor(ctx, email)) {
-      throw new ConvexError("That person is already an approved instructor");
-    }
-    const pending = await pendingFor(ctx, email);
-    const id =
-      pending?._id ??
-      (await ctx.db.insert("instructorInvitations", {
-        email,
-        invitedBy,
-        createdAt: Date.now(),
-      }));
-    const row = await ctx.db.get(id);
-    if (row) {
-      await send(ctx, row);
-    }
-    return id;
-  },
-});
-
-/**
- * Admin invites an independent instructor aligned with our Training Site.
- * Accepting grants the independent-session portal and eCard purchasing for
- * the chosen courses, never instructor access to our own sessions.
- */
-export const inviteAligned = mutation({
   args: {
     email: v.string(),
-    courseIds: v.array(v.id("registrationCourses")),
+    teaches: v.optional(v.boolean()),
+    courseIds: v.optional(v.array(v.id("registrationCourses"))),
   },
   returns: v.id("instructorInvitations"),
   handler: async (ctx, args) => {
     const invitedBy = await admin(ctx);
     const email = normalize(args.email);
-    const courseIds = await validCourseIds(ctx, args.courseIds);
-    const account = await ctx.db
-      .query("users")
-      .withIndex("email", (q) => q.eq("email", email))
-      .first();
-    if (account && (await activeAlignment(ctx, account._id))) {
+    const teaches = args.teaches ?? true;
+    const courseIds = args.courseIds?.length
+      ? await alignmentCourseIds(ctx, args.courseIds)
+      : undefined;
+    if (!(teaches || courseIds)) {
       throw new ConvexError(
-        "That person is already aligned; edit their courses instead"
+        "Choose whether they teach for us, are aligned with our Training Site, or both"
       );
     }
-    const pending = await pendingFor(ctx, email, "aligned");
+    if (await hasInstructorRecord(ctx, email)) {
+      throw new ConvexError(
+        "That person is already an approved instructor or aligned with our Training Site. Change their access in the instructor list."
+      );
+    }
+    const pending = await pendingFor(ctx, email);
     if (pending) {
-      await ctx.db.patch(pending._id, { courseIds });
+      await ctx.db.patch(pending._id, { teaches, courseIds, kind: undefined });
     }
     const id =
       pending?._id ??
@@ -249,7 +243,7 @@ export const inviteAligned = mutation({
         email,
         invitedBy,
         createdAt: Date.now(),
-        kind: "aligned",
+        teaches,
         courseIds,
       }));
     const row = await ctx.db.get(id);
@@ -318,7 +312,7 @@ export const list = query({
       revokedAt: row.revokedAt,
       sentAt: row.sentAt,
       sendError: row.sendError,
-      kind: row.kind,
+      teaches: teachesFor(row),
       courseIds: row.courseIds,
     }));
   },
@@ -331,7 +325,7 @@ export const mine = query({
     v.object({
       id: v.id("instructorInvitations"),
       createdAt: v.number(),
-      kind: v.optional(v.literal("aligned")),
+      teaches: v.boolean(),
       courses: v.array(v.string()),
     }),
     v.null()
@@ -341,12 +335,12 @@ export const mine = query({
     if (!me) {
       return null;
     }
-    const pending = await pendingFor(ctx, me.email, "any");
+    const pending = await pendingFor(ctx, me.email);
     return pending
       ? {
           id: pending._id,
           createdAt: pending.createdAt,
-          kind: pending.kind,
+          teaches: teachesFor(pending),
           courses: await courseTitles(ctx, pending.courseIds),
         }
       : null;
@@ -365,7 +359,7 @@ export const accept = mutation({
     if (!me) {
       throw new ConvexError("Sign in with a verified email first");
     }
-    const pending = await pendingFor(ctx, me.email, "any");
+    const pending = await pendingFor(ctx, me.email);
     if (!pending) {
       throw new ConvexError("No pending invitation for this email");
     }
@@ -373,11 +367,7 @@ export const accept = mutation({
       acceptedAt: Date.now(),
       acceptedBy: me.userId,
     });
-    if (pending.kind === "aligned") {
-      await grantAlignment(ctx, pending, me.userId);
-    } else {
-      await grantInstructor(ctx, me.userId);
-    }
+    await grantAccess(ctx, me.userId, pending);
     return null;
   },
 });
@@ -410,13 +400,19 @@ export const sendInvitationEmail = internalAction({
     id: v.id("instructorInvitations"),
     email: v.string(),
     attempt: v.number(),
+    teaches: v.optional(v.boolean()),
+    /** Legacy: queued before teaches existed. */
     kind: v.optional(v.literal("aligned")),
     courses: v.optional(v.array(v.string())),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     try {
-      await deliver(args.email, args.kind, args.courses ?? []);
+      await deliver(
+        args.email,
+        args.teaches ?? args.kind !== "aligned",
+        args.courses ?? []
+      );
       await ctx.runMutation(internal.instructorInvitations.recordSend, {
         id: args.id,
         attempt: args.attempt,
@@ -433,23 +429,25 @@ export const sendInvitationEmail = internalAction({
   },
 });
 
-const COPY = {
-  instructor: {
-    subject: "You’re invited to teach with Taylored Instruction",
-    intro: "You’re invited to teach with Taylored Instruction.",
-    unlocks: "instructor tools, eCard purchasing, and your assigned sessions",
-  },
-  aligned: {
-    subject: "Your Taylored Instruction alignment is approved",
-    intro:
-      "Your alignment with the Taylored Instruction Training Site is approved.",
-    unlocks:
-      "the independent instructor portal, where you schedule your own classes, keep rosters, and export them for card issuing, plus eCard purchasing",
-  },
-};
+const TEACHING = "instructor tools and your assigned sessions";
+const INDEPENDENT =
+  "the independent instructor portal, where you schedule your own classes, keep rosters, and export them for card issuing";
 
-async function deliver(email: string, kind: InvitationKind, courses: string[]) {
-  const copy = COPY[kind ?? "instructor"];
+async function deliver(email: string, teaches: boolean, courses: string[]) {
+  const aligned = courses.length > 0;
+  const subject =
+    aligned && !teaches
+      ? "Your Taylored Instruction alignment is approved"
+      : "You’re invited to teach with Taylored Instruction";
+  const intro =
+    aligned && !teaches
+      ? "Your alignment with the Taylored Instruction Training Site is approved."
+      : "You’re invited to teach with Taylored Instruction.";
+  const unlocks = [
+    ...(teaches ? [TEACHING] : []),
+    ...(aligned ? [INDEPENDENT] : []),
+    "eCard purchasing",
+  ].join(", plus ");
   const { AUTH_EMAIL_FROM: from, SITE_URL: site } = process.env;
   if (!(from && site && process.env.RESEND_API_KEY)) {
     throw new Error("Configure AUTH_EMAIL_FROM, SITE_URL, and RESEND_API_KEY");
@@ -460,19 +458,19 @@ async function deliver(email: string, kind: InvitationKind, courses: string[]) {
     from,
     to: [registrationRecipient(email)],
     replyTo: SUPPORT_EMAIL,
-    subject: copy.subject,
+    subject,
     html: renderEmailHtml(
       createElement(InstructorInvitationEmail, {
         signInUrl,
         email,
-        aligned: kind === "aligned",
+        teaches,
         courses,
       })
     ),
     text: [
-      copy.intro,
-      ...(courses.length ? [`Approved courses: ${courses.join(", ")}.`] : []),
-      `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks ${copy.unlocks}.`,
+      intro,
+      ...(aligned ? [`Aligned courses: ${courses.join(", ")}.`] : []),
+      `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks ${unlocks}.`,
       "No password is needed: we email you a one-time code when you sign in.",
       `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
     ].join("\n\n"),

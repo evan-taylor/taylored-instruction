@@ -24,8 +24,6 @@ const ICONS: Record<string, typeof LogOut> = {
   "/admin": LayoutDashboard,
   "/admin/sessions": CalendarDays,
   "/instructor/sessions": ClipboardList,
-  "/instructor/independent": ClipboardList,
-  "/admin/aligned": GraduationCap,
   "/ecards": CreditCard,
   "https://docs.tayloredinstruction.com/": BookOpen,
   "/registrations": Ticket,

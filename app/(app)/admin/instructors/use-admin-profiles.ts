@@ -1,12 +1,13 @@
 import { useQuery } from "convex/react";
 import { useState } from "react";
 import { api } from "@/convex/_generated/api";
-import type { ProfileWithUser } from "./types";
+import type { Alignment, ProfileWithUser } from "./types";
 
 type ConvexProfile = {
   id: string;
   userId: string;
   is_instructor: boolean;
+  alignment: Alignment | null;
   updated_at: string | null | undefined;
   last_login: string | null | undefined;
   user_email: string | null;
@@ -21,6 +22,7 @@ function mapConvexProfileToLocal(
     id: convexProfile.id,
     userId: convexProfile.userId,
     isInstructor: convexProfile.is_instructor,
+    alignment: convexProfile.alignment,
     updatedAt: convexProfile.updated_at ?? null,
     lastLogin: convexProfile.last_login ?? null,
     userEmail: convexProfile.user_email,

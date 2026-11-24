@@ -1,5 +1,5 @@
 "use client";
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import { useMutation, usePaginatedQuery } from "convex/react";
 import { useState } from "react";
 import { errorText } from "@/components/registration/errors";
 import {
@@ -9,7 +9,6 @@ import {
   SessionTable,
 } from "@/components/registration/independent";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -18,30 +17,25 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Modal } from "@/components/ui/dialog";
-import { Field, Select, TextInput } from "@/components/ui/field";
+import { Field, Select } from "@/components/ui/field";
 import {
   EmptyState,
-  PageHeader,
   ResultNotice,
   Skeleton,
 } from "@/components/ui/page-header";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 
 type CourseId = Id<"registrationCourses">;
+export type CourseOption = { id: CourseId; title: string };
 
-function when(ms: number) {
-  return new Date(ms).toLocaleDateString("en-US");
-}
-
-function CoursePicker({
+export function CoursePicker({
   courses,
   selected,
   onChange,
   disabled,
 }: {
-  courses: { id: CourseId; title: string }[];
+  courses: CourseOption[];
   selected: CourseId[];
   onChange: (next: CourseId[]) => void;
   disabled?: boolean;
@@ -49,7 +43,7 @@ function CoursePicker({
   return (
     <fieldset className="space-y-2">
       <legend className="font-medium text-slate-700 text-sm">
-        Courses they may teach under our alignment
+        Courses aligned with our Training Site
       </legend>
       <div className="grid gap-2 sm:grid-cols-2">
         {courses.map((course) => (
@@ -78,191 +72,64 @@ function CoursePicker({
   );
 }
 
-function InviteAligned({
+/**
+ * Quick edit for the "aligned with our Training Site" part of an instructor
+ * record. A new alignment starts from the courses chosen last time, so marking
+ * several instructors in a row is one click each.
+ */
+export function AlignmentEditor({
+  userId,
+  name,
+  current,
   courses,
+  suggested,
+  onClose,
+  onSaved,
 }: {
-  courses: { id: CourseId; title: string }[];
+  userId: Id<"users">;
+  name: string;
+  current: CourseId[] | null;
+  courses: CourseOption[];
+  suggested: CourseId[];
+  onClose: () => void;
+  onSaved: (courseIds: CourseId[]) => void;
 }) {
-  const invitations = useQuery(api.instructorInvitations.list)?.filter(
-    (row) => row.kind === "aligned" && !(row.acceptedAt || row.revokedAt)
+  const save = useMutation(api.aligned.setAlignment);
+  const available = (ids: CourseId[]) =>
+    ids.filter((id) => courses.some((c) => c.id === id));
+  const kept = current ? available(current) : [];
+  const dropped = (current?.length ?? 0) - kept.length;
+  const [selected, setSelected] = useState(
+    current ? kept : available(suggested)
   );
-  const invite = useMutation(api.instructorInvitations.inviteAligned);
-  const revoke = useMutation(api.instructorInvitations.revoke);
-  const [email, setEmail] = useState("");
-  const [selected, setSelected] = useState<CourseId[]>([]);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const titles = new Map(courses.map((c) => [c.id, c.title]));
-
-  async function send(target: string, courseIds: CourseId[]) {
+  async function submit(courseIds: CourseId[] | null) {
     setBusy(true);
     setMessage("");
     try {
-      await invite({ email: target, courseIds });
-      setMessage(`Alignment invitation queued for ${target}.`);
-      setEmail("");
-      setSelected([]);
+      await save({ userId, courseIds });
+      onSaved(courseIds ?? []);
+      onClose();
     } catch (error) {
       setMessage(errorText(error));
     } finally {
       setBusy(false);
     }
   }
-
   return (
-    <Card>
-      <CardHeader>
-        <div>
-          <CardTitle>Approve an aligned instructor</CardTitle>
-          <CardDescription>
-            After you approve an /alignment request, invite the instructor here.
-            They sign in with this email and accept on their account page. That
-            opens the independent session portal and eCard purchasing, but not
-            our sessions, customers, or orders.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <form
-          className="space-y-4"
-          onSubmit={async (event) => {
-            event.preventDefault();
-            await send(email, selected);
-          }}
-        >
-          <Field label="Email address" required>
-            {(props) => (
-              <TextInput
-                {...props}
-                autoComplete="off"
-                disabled={busy}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                type="email"
-                value={email}
-              />
-            )}
-          </Field>
-          <CoursePicker
-            courses={courses}
-            disabled={busy}
-            onChange={setSelected}
-            selected={selected}
-          />
-          <div className="flex justify-end">
-            <Button disabled={busy || !selected.length} size="sm" type="submit">
-              {busy ? "Sending…" : "Send alignment invitation"}
-            </Button>
-          </div>
-        </form>
-        <ResultNotice message={message} />
-        {invitations?.length ? (
-          <Table>
-            <THead>
-              <TR>
-                <TH>Pending invitation</TH>
-                <TH>Courses</TH>
-                <TH>Status</TH>
-                <TH className="text-right">Actions</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {invitations.map((row) => (
-                <TR key={row.id}>
-                  <TD className="font-medium text-slate-900">{row.email}</TD>
-                  <TD className="text-slate-600 text-sm">
-                    {(row.courseIds ?? [])
-                      .map((id) => titles.get(id) ?? "Archived course")
-                      .join(", ")}
-                  </TD>
-                  <TD>
-                    {row.sendError ? (
-                      <Badge tone="danger">Send failed</Badge>
-                    ) : (
-                      <Badge tone="warning">
-                        {row.sentAt
-                          ? `Emailed ${when(row.sentAt)}`
-                          : "Sending…"}
-                      </Badge>
-                    )}
-                  </TD>
-                  <TD className="whitespace-nowrap text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        aria-label={`Resend alignment invitation to ${row.email}`}
-                        disabled={busy}
-                        onClick={() => send(row.email, row.courseIds ?? [])}
-                        size="xs"
-                        type="button"
-                        variant="secondary"
-                      >
-                        Resend
-                      </Button>
-                      <Button
-                        aria-label={`Revoke alignment invitation for ${row.email}`}
-                        disabled={busy}
-                        onClick={async () => {
-                          try {
-                            await revoke({ id: row.id });
-                          } catch (error) {
-                            setMessage(errorText(error));
-                          }
-                        }}
-                        size="xs"
-                        type="button"
-                        variant="danger"
-                      >
-                        Revoke
-                      </Button>
-                    </div>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        ) : null}
-      </CardContent>
-    </Card>
-  );
-}
-
-function EditCourses({
-  userId,
-  name,
-  current,
-  courses,
-  onClose,
-}: {
-  userId: Id<"users">;
-  name: string;
-  current: CourseId[];
-  courses: { id: CourseId; title: string }[];
-  onClose: () => void;
-}) {
-  const update = useMutation(api.aligned.updateCourses);
-  const available = current.filter((id) => courses.some((c) => c.id === id));
-  const dropped = current.length - available.length;
-  const [selected, setSelected] = useState(available);
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  return (
-    <Modal onClose={onClose} open title={`Courses for ${name}`}>
+    <Modal onClose={onClose} open title={`Alignment for ${name}`}>
       <form
         className="space-y-4"
         onSubmit={async (event) => {
           event.preventDefault();
-          setBusy(true);
-          setMessage("");
-          try {
-            await update({ userId, courseIds: selected });
-            onClose();
-          } catch (error) {
-            setMessage(errorText(error));
-          } finally {
-            setBusy(false);
-          }
+          await submit(selected);
         }}
       >
+        <p className="text-slate-600 text-sm">
+          Aligned instructors can run private independent sessions for these
+          courses, keep their rosters here, and export them to issue cards.
+        </p>
         <CoursePicker
           courses={courses}
           disabled={busy}
@@ -272,154 +139,48 @@ function EditCourses({
         {dropped ? (
           <p className="text-slate-600 text-sm">
             {dropped === 1
-              ? "One assigned course is archived and will be removed when you save."
-              : `${dropped} assigned courses are archived and will be removed when you save.`}
+              ? "One aligned course is archived and will be removed when you save."
+              : `${dropped} aligned courses are archived and will be removed when you save.`}
           </p>
         ) : null}
         <ResultNotice message={message} />
-        <div className="flex justify-end gap-2">
-          <Button onClick={onClose} type="button" variant="secondary">
-            Close
-          </Button>
-          <Button disabled={busy || !selected.length} type="submit">
-            Save courses
-          </Button>
+        <div className="flex flex-wrap justify-between gap-2">
+          {current ? (
+            <Button
+              disabled={busy}
+              onClick={() => submit(null)}
+              type="button"
+              variant="danger"
+            >
+              Remove alignment
+            </Button>
+          ) : (
+            <span />
+          )}
+          <div className="flex gap-2">
+            <Button onClick={onClose} type="button" variant="secondary">
+              Cancel
+            </Button>
+            <Button disabled={busy || !selected.length} type="submit">
+              {current ? "Save courses" : "Mark aligned"}
+            </Button>
+          </div>
         </div>
       </form>
     </Modal>
   );
 }
 
-type AlignedRow = NonNullable<
-  ReturnType<typeof useQuery<typeof api.aligned.instructors>>
->[number];
-
-function InstructorList({
-  rows,
-  courses,
-  onFilter,
+/** Staff oversight of every independent session, filterable by instructor. */
+export function IndependentOversight({
+  instructors,
+  instructorId,
+  onInstructor,
 }: {
-  rows: AlignedRow[];
-  courses: { id: CourseId; title: string }[];
-  onFilter: (id: Id<"users">) => void;
+  instructors: { userId: Id<"users">; name: string }[];
+  instructorId: Id<"users"> | "";
+  onInstructor: (id: Id<"users"> | "") => void;
 }) {
-  const setAccess = useMutation(api.aligned.setAccess);
-  const [editing, setEditing] = useState<AlignedRow | null>(null);
-  const [message, setMessage] = useState("");
-  return (
-    <Card>
-      <CardHeader>
-        <div>
-          <CardTitle>Aligned instructors</CardTitle>
-          <CardDescription>
-            Revoking access keeps their sessions and rosters here for oversight.
-          </CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <ResultNotice message={message} />
-        {rows.length ? (
-          <Table>
-            <THead>
-              <TR>
-                <TH>Instructor</TH>
-                <TH>Courses</TH>
-                <TH>Sessions</TH>
-                <TH>Status</TH>
-                <TH className="text-right">Actions</TH>
-              </TR>
-            </THead>
-            <TBody>
-              {rows.map((row) => (
-                <TR key={row.userId}>
-                  <TD>
-                    <div className="font-medium text-slate-900">{row.name}</div>
-                    {row.name === row.email ? null : (
-                      <div className="text-slate-500 text-xs">{row.email}</div>
-                    )}
-                  </TD>
-                  <TD className="text-slate-600 text-sm">
-                    {row.courses.map((c) => c.title).join(", ") || "None"}
-                  </TD>
-                  <TD>
-                    <Button
-                      onClick={() => onFilter(row.userId)}
-                      size="xs"
-                      type="button"
-                      variant="ghost"
-                    >
-                      {row.sessionCount} sessions
-                    </Button>
-                  </TD>
-                  <TD>
-                    {row.revokedAt ? (
-                      <Badge tone="neutral">
-                        Revoked {when(row.revokedAt)}
-                      </Badge>
-                    ) : (
-                      <Badge tone="success">
-                        Active since {when(row.grantedAt)}
-                      </Badge>
-                    )}
-                  </TD>
-                  <TD className="whitespace-nowrap text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button
-                        onClick={() => setEditing(row)}
-                        size="xs"
-                        type="button"
-                        variant="secondary"
-                      >
-                        Courses
-                      </Button>
-                      <Button
-                        aria-label={`${row.revokedAt ? "Restore" : "Revoke"} access for ${row.name}`}
-                        onClick={async () => {
-                          setMessage("");
-                          try {
-                            await setAccess({
-                              userId: row.userId,
-                              active: Boolean(row.revokedAt),
-                            });
-                          } catch (error) {
-                            setMessage(errorText(error));
-                          }
-                        }}
-                        size="xs"
-                        type="button"
-                        variant={row.revokedAt ? "secondary" : "danger"}
-                      >
-                        {row.revokedAt ? "Restore" : "Revoke"}
-                      </Button>
-                    </div>
-                  </TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
-        ) : (
-          <p className="text-slate-500 text-sm">
-            No aligned instructors yet. Invite one above.
-          </p>
-        )}
-      </CardContent>
-      {editing ? (
-        <EditCourses
-          courses={courses}
-          current={editing.courses.map((c) => c.id)}
-          name={editing.name}
-          onClose={() => setEditing(null)}
-          userId={editing.userId}
-        />
-      ) : null}
-    </Card>
-  );
-}
-
-export function AlignedAdmin() {
-  const courses = useQuery(api.aligned.courseOptions);
-  const instructors = useQuery(api.aligned.instructors);
-  const [instructorId, setInstructorId] = useState<Id<"users"> | "">("");
   const {
     results: sessions,
     status,
@@ -429,61 +190,49 @@ export function AlignedAdmin() {
     { instructorId: instructorId || undefined },
     { initialNumItems: PAGE_SIZE }
   );
-  if (courses === undefined || instructors === undefined) {
-    return <Skeleton className="h-96" />;
-  }
   return (
-    <div className="space-y-6">
-      <PageHeader
-        description="Independent instructors aligned with our Training Site run their own classes and buy eCards from us. We oversee their sessions and rosters here."
-        title="Aligned instructors"
-      />
-      <InviteAligned courses={courses} />
-      <InstructorList
-        courses={courses}
-        onFilter={setInstructorId}
-        rows={instructors}
-      />
-      <Card>
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <CardTitle>Independent sessions</CardTitle>
-            <CardDescription>
-              Private classes. They never appear on the public schedule, orders,
-              revenue, or emails.
-            </CardDescription>
-          </div>
-          <Field className="sm:w-72" label="Instructor">
-            {(props) => (
-              <Select
-                {...props}
-                onChange={(event) =>
-                  setInstructorId(event.target.value as Id<"users"> | "")
-                }
-                value={instructorId}
-              >
-                <option value="">All aligned instructors</option>
-                {instructors.map((row) => (
-                  <option key={row.userId} value={row.userId}>
-                    {row.name}
-                  </option>
-                ))}
-              </Select>
-            )}
-          </Field>
-        </CardHeader>
-        <CardContent>
-          {status === "LoadingFirstPage" ? <Skeleton className="h-32" /> : null}
-          {status !== "LoadingFirstPage" && sessions.length === 0 ? (
-            <EmptyState title="No independent sessions" />
-          ) : null}
-          {sessions.length ? (
-            <SessionTable hrefBase="/admin/aligned" sessions={sessions} />
-          ) : null}
-          <LoadMore loadMore={loadMore} status={status} />
-        </CardContent>
-      </Card>
-    </div>
+    <Card id="independent-sessions">
+      <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <CardTitle>Independent sessions</CardTitle>
+          <CardDescription>
+            Private classes aligned instructors run on their own. They never
+            appear on the public schedule, orders, revenue, or emails.
+          </CardDescription>
+        </div>
+        <Field className="sm:w-72" label="Instructor">
+          {(props) => (
+            <Select
+              {...props}
+              onChange={(event) =>
+                onInstructor(event.target.value as Id<"users"> | "")
+              }
+              value={instructorId}
+            >
+              <option value="">All aligned instructors</option>
+              {instructors.map((row) => (
+                <option key={row.userId} value={row.userId}>
+                  {row.name}
+                </option>
+              ))}
+            </Select>
+          )}
+        </Field>
+      </CardHeader>
+      <CardContent>
+        {status === "LoadingFirstPage" ? <Skeleton className="h-32" /> : null}
+        {status !== "LoadingFirstPage" && sessions.length === 0 ? (
+          <EmptyState title="No independent sessions" />
+        ) : null}
+        {sessions.length ? (
+          <SessionTable
+            hrefBase="/admin/instructors/independent"
+            sessions={sessions}
+          />
+        ) : null}
+        <LoadMore loadMore={loadMore} status={status} />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -494,7 +243,7 @@ export function AlignedSessionAdmin({
 }) {
   return (
     <IndependentSessionDetail
-      backHref="/admin/aligned"
+      backHref="/admin/instructors#independent-sessions"
       oversight
       sessionId={sessionId}
     />

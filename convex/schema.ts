@@ -208,9 +208,12 @@ const schema = defineSchema({
     attempt: v.optional(v.number()),
     sentAt: v.optional(v.number()),
     sendError: v.optional(v.string()),
-    /** "aligned" invitations grant the independent-instructor portal instead of instructor access. */
-    kind: v.optional(v.literal("aligned")),
+    /** Accepting makes them teach for us (`profiles.isInstructor`). Absent means true. */
+    teaches: v.optional(v.boolean()),
+    /** Accepting marks them aligned with our Training Site for these courses. */
     courseIds: v.optional(v.array(v.id("registrationCourses"))),
+    /** Legacy aligned-only invitations; alignmentMigration rewrites them to teaches: false. */
+    kind: v.optional(v.literal("aligned")),
   }).index("by_email", ["email"]),
 
   ...alignedTables,
@@ -222,6 +225,17 @@ const schema = defineSchema({
     lastLogin: v.optional(v.string()),
     notifiedAt: v.optional(v.string()),
     deactivatedAt: v.optional(v.string()),
+    /**
+     * Aligned with our Training Site: may run independent sessions for these
+     * courses. Independent of isInstructor, which means they teach for us.
+     */
+    alignment: v.optional(
+      v.object({
+        courseIds: v.array(v.id("registrationCourses")),
+        since: v.number(),
+        by: v.id("users"),
+      })
+    ),
   })
     .index("by_user", ["userId"])
     .index("by_instructor_status", ["isInstructor"])

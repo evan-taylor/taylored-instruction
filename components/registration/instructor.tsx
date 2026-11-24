@@ -63,104 +63,110 @@ const ROSTER_PAGE_SIZE = 50;
 
 /* ---------------------------- Session list --------------------------- */
 
-export function InstructorSessions() {
+/** Our sessions this instructor is assigned to teach. */
+export function AssignedSessions() {
   const sessions = useAssignedSessions();
   return (
-    <div className="bg-slate-50">
-      <div className="mx-auto max-w-5xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
-        <PageHeader
-          description="Sessions you are assigned to teach. Open a roster to record attendance and outcomes."
-          eyebrow="Instructor"
-          title="Assigned sessions"
-        />
-        {sessions === undefined ? (
-          <div aria-busy="true" className="space-y-3" role="status">
-            <span className="sr-only">Loading sessions…</span>
-            <Skeleton className="h-14" />
-            <Skeleton className="h-14" />
-          </div>
-        ) : null}
-        {sessions?.length === 0 ? (
-          <EmptyState
-            description="When an administrator assigns you to a session it will appear here."
-            title="No assigned sessions"
-          />
-        ) : null}
-        {sessions?.length ? (
-          <Card>
-            <CardContent className="p-0">
-              <Table wrapperClassName="rounded-none border-0">
-                <THead>
-                  <TR>
-                    <TH>Starts</TH>
-                    <TH>Session</TH>
-                    <TH>Seats</TH>
-                    <TH>Status</TH>
-                    <TH className="text-right">Roster</TH>
-                  </TR>
-                </THead>
-                <TBody>
-                  {sessions.map((s) => (
-                    <TR key={s._id}>
-                      <TD className="whitespace-nowrap">
-                        <div className="font-medium text-slate-900">
-                          {formatWeekday(s.firstStart, s.timeZone)}
-                        </div>
-                        <div className="text-slate-500 text-xs">
-                          {formatRelative(s.firstStart)}
-                        </div>
-                      </TD>
-                      <TD>
-                        <Link
-                          className="font-medium text-slate-900 hover:text-primary"
-                          href={`/instructor/sessions/${s._id}`}
-                        >
-                          {s.title}
-                        </Link>
-                        <div className="text-slate-500 text-xs">
-                          {pluralize(s.meetings.length, "meeting")} ·{" "}
-                          {shortZone(s.timeZone, s.firstStart)}
-                        </div>
-                        <div className="flex items-start gap-1 text-slate-500 text-xs">
-                          <MapPin
-                            aria-hidden="true"
-                            className="mt-0.5 h-3 w-3 shrink-0"
-                          />
-                          {[
-                            ...new Set(
-                              s.meetings.map((m) => parsePlace(m.location).name)
-                            ),
-                          ].join(" · ")}
-                        </div>
-                      </TD>
-                      <TD>
-                        <Meter
-                          label={`${s.reserved} of ${s.capacity} seats reserved`}
-                          max={s.capacity}
-                          value={s.reserved}
-                        />
-                      </TD>
-                      <TD>
-                        <StatusBadge status={s.state} />
-                      </TD>
-                      <TD className="text-right">
-                        <Button
-                          href={`/instructor/sessions/${s._id}`}
-                          size="xs"
-                          variant="secondary"
-                        >
-                          Open roster
-                        </Button>
-                      </TD>
-                    </TR>
-                  ))}
-                </TBody>
-              </Table>
-            </CardContent>
-          </Card>
-        ) : null}
+    <section aria-labelledby="assigned-heading" className="space-y-4">
+      <div>
+        <h2
+          className="font-semibold text-lg text-slate-900"
+          id="assigned-heading"
+        >
+          Assigned by Taylored Instruction
+        </h2>
+        <p className="text-slate-600 text-sm">
+          Our sessions you are assigned to teach. Open a roster to record
+          attendance and outcomes.
+        </p>
       </div>
-    </div>
+      {sessions === undefined ? (
+        <div aria-busy="true" className="space-y-3" role="status">
+          <span className="sr-only">Loading sessions…</span>
+          <Skeleton className="h-14" />
+          <Skeleton className="h-14" />
+        </div>
+      ) : null}
+      {sessions?.length === 0 ? (
+        <EmptyState
+          description="When an administrator assigns you to a session it will appear here."
+          title="No assigned sessions"
+        />
+      ) : null}
+      {sessions?.length ? (
+        <Card>
+          <CardContent className="p-0">
+            <Table wrapperClassName="rounded-none border-0">
+              <THead>
+                <TR>
+                  <TH>Starts</TH>
+                  <TH>Session</TH>
+                  <TH>Seats</TH>
+                  <TH>Status</TH>
+                  <TH className="text-right">Roster</TH>
+                </TR>
+              </THead>
+              <TBody>
+                {sessions.map((s) => (
+                  <TR key={s._id}>
+                    <TD className="whitespace-nowrap">
+                      <div className="font-medium text-slate-900">
+                        {formatWeekday(s.firstStart, s.timeZone)}
+                      </div>
+                      <div className="text-slate-500 text-xs">
+                        {formatRelative(s.firstStart)}
+                      </div>
+                    </TD>
+                    <TD>
+                      <Link
+                        className="font-medium text-slate-900 hover:text-primary"
+                        href={`/instructor/sessions/${s._id}`}
+                      >
+                        {s.title}
+                      </Link>
+                      <div className="text-slate-500 text-xs">
+                        {pluralize(s.meetings.length, "meeting")} ·{" "}
+                        {shortZone(s.timeZone, s.firstStart)}
+                      </div>
+                      <div className="flex items-start gap-1 text-slate-500 text-xs">
+                        <MapPin
+                          aria-hidden="true"
+                          className="mt-0.5 h-3 w-3 shrink-0"
+                        />
+                        {[
+                          ...new Set(
+                            s.meetings.map((m) => parsePlace(m.location).name)
+                          ),
+                        ].join(" · ")}
+                      </div>
+                    </TD>
+                    <TD>
+                      <Meter
+                        label={`${s.reserved} of ${s.capacity} seats reserved`}
+                        max={s.capacity}
+                        value={s.reserved}
+                      />
+                    </TD>
+                    <TD>
+                      <StatusBadge status={s.state} />
+                    </TD>
+                    <TD className="text-right">
+                      <Button
+                        href={`/instructor/sessions/${s._id}`}
+                        size="xs"
+                        variant="secondary"
+                      >
+                        Open roster
+                      </Button>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </CardContent>
+        </Card>
+      ) : null}
+    </section>
   );
 }
 

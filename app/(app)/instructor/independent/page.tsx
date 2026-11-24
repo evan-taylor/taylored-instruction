@@ -1,18 +1,5 @@
-import type { Metadata } from "next";
-import {
-  AlignedGate,
-  IndependentSessions,
-} from "@/components/registration/independent";
-
-export const metadata: Metadata = {
-  title: "Independent Sessions | Taylored Instruction",
-  robots: { index: false, follow: false },
-};
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <AlignedGate>
-      <IndependentSessions />
-    </AlignedGate>
-  );
+  redirect("/instructor/sessions");
 }
