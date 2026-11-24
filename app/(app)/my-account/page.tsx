@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MyCertificationsCard } from "@/components/certifications/certifications";
+import { errorText } from "@/components/registration/errors";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -103,9 +104,12 @@ function AcceptInvitation({
           setAcceptError(null);
           try {
             await acceptInvitation();
-          } catch {
+          } catch (error) {
             setAcceptError(
-              "We couldn’t accept the invitation. Try again in a moment."
+              errorText(
+                error,
+                "We couldn’t accept the invitation. Try again in a moment."
+              )
             );
           } finally {
             setAccepting(false);

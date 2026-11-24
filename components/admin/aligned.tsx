@@ -240,7 +240,9 @@ function EditCourses({
   onClose: () => void;
 }) {
   const update = useMutation(api.aligned.updateCourses);
-  const [selected, setSelected] = useState(current);
+  const available = current.filter((id) => courses.some((c) => c.id === id));
+  const dropped = current.length - available.length;
+  const [selected, setSelected] = useState(available);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   return (
@@ -267,6 +269,13 @@ function EditCourses({
           onChange={setSelected}
           selected={selected}
         />
+        {dropped ? (
+          <p className="text-slate-600 text-sm">
+            {dropped === 1
+              ? "One assigned course is archived and will be removed when you save."
+              : `${dropped} assigned courses are archived and will be removed when you save.`}
+          </p>
+        ) : null}
         <ResultNotice message={message} />
         <div className="flex justify-end gap-2">
           <Button onClick={onClose} type="button" variant="secondary">

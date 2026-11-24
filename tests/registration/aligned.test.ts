@@ -746,3 +746,25 @@ it("strips quotes around pasted fields after trimming", () => {
     },
   ]);
 });
+
+it("keeps an invitation pending when its courses were archived", async () => {
+  const { t, ids, admin } = await world();
+  const dee = await t.run((ctx) =>
+    ctx.db.insert("users", {
+      email: "dee@example.test",
+      emailVerificationTime: Date.now(),
+    })
+  );
+  await admin.mutation(api.instructorInvitations.inviteAligned, {
+    email: "dee@example.test",
+    courseIds: [ids.heartsaver],
+  });
+  await t.run((ctx) =>
+    ctx.db.patch(ids.heartsaver, { publication: "archived" })
+  );
+  const asDee = t.withIdentity({ subject: `${dee}|session` });
+  await expect(
+    asDee.mutation(api.instructorInvitations.accept, {})
+  ).rejects.toThrow("no longer available");
+  expect(await asDee.query(api.instructorInvitations.mine, {})).not.toBeNull();
+});

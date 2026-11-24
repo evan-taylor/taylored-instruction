@@ -331,9 +331,16 @@ export async function grantAlignment(
     .query("alignedInstructors")
     .withIndex("by_userId", (q) => q.eq("userId", userId))
     .unique();
+  const courseIds = await validCourseIds(ctx, invitation.courseIds ?? []).catch(
+    () => {
+      throw new ConvexError(
+        "The courses on this invitation are no longer available. Ask us to send an updated invitation."
+      );
+    }
+  );
   const grant = {
     email: invitation.email,
-    courseIds: invitation.courseIds ?? [],
+    courseIds,
     grantedBy: invitation.invitedBy,
     grantedAt: Date.now(),
     revokedAt: undefined,

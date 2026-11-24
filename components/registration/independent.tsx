@@ -937,7 +937,7 @@ function OutcomeInput({
     onError("");
     try {
       await record({ studentId: student._id, fieldId: definition.id, value });
-      setDraft(undefined);
+      setDraft((latest) => (latest === String(value) ? undefined : latest));
     } catch (failure) {
       onError(errorText(failure));
       if (definition.type !== "percentage") {
