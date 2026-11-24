@@ -15,7 +15,8 @@ export type WorkspaceLink =
 export function workspaceLinks(
   signedIn: boolean,
   instructor: boolean,
-  admin: boolean
+  admin: boolean,
+  aligned = false
 ): WorkspaceLink[] {
   if (!signedIn) {
     return [
@@ -32,23 +33,34 @@ export function workspaceLinks(
       { label: "Sessions", href: "/admin/sessions" },
       { label: "Registrations", href: "/admin/registrations", secondary: true },
       { label: "Groups & invoices", href: "/admin/groups", secondary: true },
-      { label: "Instructors", href: "/admin/instructors", secondary: true }
-    );
-  }
-  if (instructor || admin) {
-    links.push(
-      { label: "Teaching", type: "divider" },
-      { label: "My teaching sessions", href: "/instructor/sessions" }
-    );
-  }
-  if (instructor) {
-    links.push(
-      { label: "Purchase eCards", href: "/ecards" },
+      { label: "Instructors", href: "/admin/instructors", secondary: true },
       {
-        label: "Instructor resources",
-        href: "https://docs.tayloredinstruction.com/",
+        label: "Aligned instructors",
+        href: "/admin/aligned",
+        secondary: true,
       }
     );
+  }
+  if (instructor || admin || aligned) {
+    links.push({ label: "Teaching", type: "divider" });
+  }
+  if (instructor || admin) {
+    links.push({ label: "My teaching sessions", href: "/instructor/sessions" });
+  }
+  if (aligned) {
+    links.push({
+      label: "Independent sessions",
+      href: "/instructor/independent",
+    });
+  }
+  if (instructor || aligned) {
+    links.push({ label: "Purchase eCards", href: "/ecards" });
+  }
+  if (instructor) {
+    links.push({
+      label: "Instructor resources",
+      href: "https://docs.tayloredinstruction.com/",
+    });
   }
   links.push(
     { label: "My account", type: "divider" },

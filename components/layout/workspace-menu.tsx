@@ -24,6 +24,8 @@ const ICONS: Record<string, typeof LogOut> = {
   "/admin": LayoutDashboard,
   "/admin/sessions": CalendarDays,
   "/instructor/sessions": ClipboardList,
+  "/instructor/independent": ClipboardList,
+  "/admin/aligned": GraduationCap,
   "/ecards": CreditCard,
   "https://docs.tayloredinstruction.com/": BookOpen,
   "/registrations": Ticket,
@@ -41,12 +43,12 @@ function triggerLabel(signedIn: boolean, staff: boolean) {
 
 /** Desktop header menu for the signed-in person's workspace, account, and sign-out. */
 export function WorkspaceMenu({ onOpen }: { onOpen?: () => void }) {
-  const { session, isInstructor, email } = useProfile();
+  const { session, isInstructor, isAligned, email } = useProfile();
   const { signOut } = useAuthActions();
   const router = useRouter();
   const signedIn = Boolean(session);
   const admin = isAdminEmail(email);
-  const links = workspaceLinks(signedIn, isInstructor, admin).filter(
+  const links = workspaceLinks(signedIn, isInstructor, admin, isAligned).filter(
     (link) => link.type === "divider" || !link.secondary
   );
   return (
@@ -62,7 +64,10 @@ export function WorkspaceMenu({ onOpen }: { onOpen?: () => void }) {
           className="group flex items-center text-text transition-colors duration-200 hover:text-primary data-[state=open]:text-primary"
           type="button"
         >
-          {triggerLabel(signedIn, signedIn && (isInstructor || admin))}
+          {triggerLabel(
+            signedIn,
+            signedIn && (isInstructor || admin || isAligned)
+          )}
           <ChevronDown
             aria-hidden="true"
             className="ml-1 transition-transform duration-200 group-data-[state=open]:rotate-180"

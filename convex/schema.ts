@@ -2,6 +2,7 @@ import { authTables } from "@convex-dev/auth/server";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
+import { alignedTables } from "./alignedSchema";
 import { registrationTables } from "./registrationSchema";
 
 const onboardingSteps = defineTable({
@@ -207,7 +208,12 @@ const schema = defineSchema({
     attempt: v.optional(v.number()),
     sentAt: v.optional(v.number()),
     sendError: v.optional(v.string()),
+    /** "aligned" invitations grant the independent-instructor portal instead of instructor access. */
+    kind: v.optional(v.literal("aligned")),
+    courseIds: v.optional(v.array(v.id("registrationCourses"))),
   }).index("by_email", ["email"]),
+
+  ...alignedTables,
 
   profiles: defineTable({
     userId: v.id("users"), // Reference to auth users table

@@ -37,10 +37,11 @@ type CartItem = {
 export default function ECardsPage() {
   const router = useRouter();
   const posthog = usePostHog();
-  const { isInstructor, loading, session } = useProfile();
+  const { isInstructor, isAligned, loading, session } = useProfile();
+  const canBuyEcards = isInstructor || isAligned;
   const ecardProducts = useQuery(
     api.products.getEcardProducts,
-    session && isInstructor ? {} : "skip"
+    session && canBuyEcards ? {} : "skip"
   );
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,10 +112,10 @@ export default function ECardsPage() {
 
     if (!session) {
       router.push("/login");
-    } else if (!isInstructor) {
+    } else if (!canBuyEcards) {
       router.push("/my-account");
     }
-  }, [loading, session, isInstructor, router]);
+  }, [loading, session, canBuyEcards, router]);
 
   const fetchStripePrices = useCallback(async (priceIds: string[]) => {
     const priceResponse = await fetch("/api/get-stripe-prices", {
@@ -200,7 +201,7 @@ export default function ECardsPage() {
 
   // Effect: Fetch Stripe prices when idsKey changes (fetch-and-cache only)
   useEffect(() => {
-    if (loading || !session || !isInstructor) {
+    if (loading || !session || !canBuyEcards) {
       return;
     }
 
@@ -254,17 +255,17 @@ export default function ECardsPage() {
   }, [
     loading,
     session,
-    isInstructor,
+    canBuyEcards,
     idsKey,
     fetchStripePrices,
     parseErrorMessage,
   ]);
 
   useEffect(() => {
-    if (!(loading || (session && isInstructor))) {
+    if (!(loading || (session && canBuyEcards))) {
       setIsLoading(false);
     }
-  }, [loading, session, isInstructor]);
+  }, [loading, session, canBuyEcards]);
 
   const getImageUrl = (imageUrl: string | null): string => {
     if (!imageUrl || imageUrl.trim() === "") {
@@ -489,7 +490,7 @@ export default function ECardsPage() {
     );
   }
 
-  if (!isInstructor) {
+  if (!canBuyEcards) {
     return (
       <div className="container mx-auto flex items-center justify-center px-4 py-8">
         <div className="text-center">

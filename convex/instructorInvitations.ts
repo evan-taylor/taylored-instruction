@@ -7,7 +7,7 @@ import { isAdminEmail } from "../shared/adminEmails";
 import { SUPPORT_EMAIL } from "../shared/email";
 import { registrationRecipient } from "../shared/registration/environment";
 import { internal } from "./_generated/api";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   internalAction,
   internalMutation,
@@ -16,7 +16,10 @@ import {
   type QueryCtx,
   query,
 } from "./_generated/server";
+import { activeAlignment, grantAlignment, validCourseIds } from "./aligned";
 import { auth } from "./auth";
+
+type InvitationKind = Doc<"instructorInvitations">["kind"];
 
 const invitation = v.object({
   id: v.id("instructorInvitations"),
@@ -27,6 +30,8 @@ const invitation = v.object({
   revokedAt: v.optional(v.number()),
   sentAt: v.optional(v.number()),
   sendError: v.optional(v.string()),
+  kind: v.optional(v.literal("aligned")),
+  courseIds: v.optional(v.array(v.id("registrationCourses"))),
 });
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
@@ -58,12 +63,43 @@ async function verifiedEmail(ctx: QueryCtx) {
   return { userId, email: user.email.trim().toLowerCase() };
 }
 
-async function pendingFor(ctx: QueryCtx, email: string) {
+async function pendingFor(
+  ctx: QueryCtx,
+  email: string,
+  kind?: InvitationKind | "any"
+) {
   const rows = await ctx.db
     .query("instructorInvitations")
     .withIndex("by_email", (q) => q.eq("email", email))
     .collect();
-  return rows.find((row) => !(row.acceptedAt || row.revokedAt)) ?? null;
+  return (
+    rows.find(
+      (row) =>
+        !(row.acceptedAt || row.revokedAt) &&
+        (kind === "any" || row.kind === kind)
+    ) ?? null
+  );
+}
+
+async function send(ctx: MutationCtx, row: Doc<"instructorInvitations">) {
+  // Each send is numbered so a slow earlier attempt cannot overwrite the
+  // outcome of a resend that finished after it.
+  const attempt = (row.attempt ?? 0) + 1;
+  await ctx.db.patch(row._id, {
+    attempt,
+    sentAt: undefined,
+    sendError: undefined,
+  });
+  await ctx.scheduler.runAfter(
+    0,
+    internal.instructorInvitations.sendInvitationEmail,
+    {
+      id: row._id,
+      email: row.email,
+      attempt,
+      kind: row.kind,
+    }
+  );
 }
 
 /** True when an account holding this email already has active instructor access. */
@@ -160,19 +196,55 @@ export const invite = mutation({
         invitedBy,
         createdAt: Date.now(),
       }));
-    // Each send is numbered so a slow earlier attempt cannot overwrite the
-    // outcome of a resend that finished after it.
-    const attempt = (pending?.attempt ?? 0) + 1;
-    await ctx.db.patch(id, {
-      attempt,
-      sentAt: undefined,
-      sendError: undefined,
-    });
-    await ctx.scheduler.runAfter(
-      0,
-      internal.instructorInvitations.sendInvitationEmail,
-      { id, email, attempt }
-    );
+    const row = await ctx.db.get(id);
+    if (row) {
+      await send(ctx, row);
+    }
+    return id;
+  },
+});
+
+/**
+ * Admin invites an independent instructor aligned with our Training Site.
+ * Accepting grants the independent-session portal and eCard purchasing for
+ * the chosen courses, never instructor access to our own sessions.
+ */
+export const inviteAligned = mutation({
+  args: {
+    email: v.string(),
+    courseIds: v.array(v.id("registrationCourses")),
+  },
+  returns: v.id("instructorInvitations"),
+  handler: async (ctx, args) => {
+    const invitedBy = await admin(ctx);
+    const email = normalize(args.email);
+    const courseIds = await validCourseIds(ctx, args.courseIds);
+    const account = await ctx.db
+      .query("users")
+      .withIndex("email", (q) => q.eq("email", email))
+      .first();
+    if (account && (await activeAlignment(ctx, account._id))) {
+      throw new ConvexError(
+        "That person is already aligned; edit their courses instead"
+      );
+    }
+    const pending = await pendingFor(ctx, email, "aligned");
+    if (pending) {
+      await ctx.db.patch(pending._id, { courseIds });
+    }
+    const id =
+      pending?._id ??
+      (await ctx.db.insert("instructorInvitations", {
+        email,
+        invitedBy,
+        createdAt: Date.now(),
+        kind: "aligned",
+        courseIds,
+      }));
+    const row = await ctx.db.get(id);
+    if (row) {
+      await send(ctx, row);
+    }
     return id;
   },
 });
@@ -235,6 +307,8 @@ export const list = query({
       revokedAt: row.revokedAt,
       sentAt: row.sentAt,
       sendError: row.sendError,
+      kind: row.kind,
+      courseIds: row.courseIds,
     }));
   },
 });
@@ -243,7 +317,11 @@ export const list = query({
 export const mine = query({
   args: {},
   returns: v.union(
-    v.object({ id: v.id("instructorInvitations"), createdAt: v.number() }),
+    v.object({
+      id: v.id("instructorInvitations"),
+      createdAt: v.number(),
+      kind: v.optional(v.literal("aligned")),
+    }),
     v.null()
   ),
   handler: async (ctx) => {
@@ -251,8 +329,10 @@ export const mine = query({
     if (!me) {
       return null;
     }
-    const pending = await pendingFor(ctx, me.email);
-    return pending ? { id: pending._id, createdAt: pending.createdAt } : null;
+    const pending = await pendingFor(ctx, me.email, "any");
+    return pending
+      ? { id: pending._id, createdAt: pending.createdAt, kind: pending.kind }
+      : null;
   },
 });
 
@@ -268,7 +348,7 @@ export const accept = mutation({
     if (!me) {
       throw new ConvexError("Sign in with a verified email first");
     }
-    const pending = await pendingFor(ctx, me.email);
+    const pending = await pendingFor(ctx, me.email, "any");
     if (!pending) {
       throw new ConvexError("No pending invitation for this email");
     }
@@ -276,7 +356,11 @@ export const accept = mutation({
       acceptedAt: Date.now(),
       acceptedBy: me.userId,
     });
-    await grantInstructor(ctx, me.userId);
+    if (pending.kind === "aligned") {
+      await grantAlignment(ctx, pending, me.userId);
+    } else {
+      await grantInstructor(ctx, me.userId);
+    }
     return null;
   },
 });
@@ -309,11 +393,12 @@ export const sendInvitationEmail = internalAction({
     id: v.id("instructorInvitations"),
     email: v.string(),
     attempt: v.number(),
+    kind: v.optional(v.literal("aligned")),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     try {
-      await deliver(args.email);
+      await deliver(args.email, args.kind);
       await ctx.runMutation(internal.instructorInvitations.recordSend, {
         id: args.id,
         attempt: args.attempt,
@@ -330,7 +415,23 @@ export const sendInvitationEmail = internalAction({
   },
 });
 
-async function deliver(email: string) {
+const COPY = {
+  instructor: {
+    subject: "You’re invited to teach with Taylored Instruction",
+    intro: "You’re invited to teach with Taylored Instruction.",
+    unlocks: "instructor tools, eCard purchasing, and your assigned sessions",
+  },
+  aligned: {
+    subject: "Your Taylored Instruction alignment is approved",
+    intro:
+      "Your alignment with the Taylored Instruction Training Site is approved.",
+    unlocks:
+      "the independent instructor portal, where you schedule your own classes, keep rosters, and export them for card issuing, plus eCard purchasing",
+  },
+};
+
+async function deliver(email: string, kind: InvitationKind) {
+  const copy = COPY[kind ?? "instructor"];
   const { AUTH_EMAIL_FROM: from, SITE_URL: site } = process.env;
   if (!(from && site && process.env.RESEND_API_KEY)) {
     throw new Error("Configure AUTH_EMAIL_FROM, SITE_URL, and RESEND_API_KEY");
@@ -341,13 +442,17 @@ async function deliver(email: string) {
     from,
     to: [registrationRecipient(email)],
     replyTo: SUPPORT_EMAIL,
-    subject: "You’re invited to teach with Taylored Instruction",
+    subject: copy.subject,
     html: renderEmailHtml(
-      createElement(InstructorInvitationEmail, { signInUrl, email })
+      createElement(InstructorInvitationEmail, {
+        signInUrl,
+        email,
+        aligned: kind === "aligned",
+      })
     ),
     text: [
-      "You’re invited to teach with Taylored Instruction.",
-      `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks instructor tools, eCard purchasing, and your assigned sessions.`,
+      copy.intro,
+      `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks ${copy.unlocks}.`,
       "No password is needed: we email you a one-time code when you sign in.",
       `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
     ].join("\n\n"),

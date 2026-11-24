@@ -37,15 +37,54 @@ const ARC_COLUMNS = [
   },
 ] as const;
 
+/** Agency export for a registration session, built from its active seats. */
 export function AgencyRosterExport({
   session,
 }: {
   session: Doc<"registrationSessions">;
 }) {
   const convex = useConvex();
+  return (
+    <AgencyExport
+      courseEnd={Math.max(
+        session.firstStart,
+        ...session.meetings.map((meeting) => meeting.end)
+      )}
+      fileId={session._id}
+      load={() =>
+        collectAgencyAttendees((cursor) =>
+          convex.query(api.registrationOperations.roster, {
+            sessionId: session._id,
+            paginationOpts: { numItems: 100, cursor },
+          })
+        )
+      }
+      timeZone={session.timeZone}
+    />
+  );
+}
+
+/**
+ * Reviews and downloads an ARC CSV or AHA XLS roster. `load` supplies the
+ * attendees; edits in the dialog apply only to the download.
+ */
+export function AgencyExport({
+  courseEnd,
+  fileId,
+  load,
+  timeZone,
+  description = "Includes all active attendees, regardless of table selection or search. Held, cancelled, and transferred seats are excluded.",
+}: {
+  courseEnd: number;
+  fileId: string;
+  load: () => Promise<AgencyAttendee[]>;
+  timeZone: string;
+  description?: string;
+}) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [succeeded, setSucceeded] = useState(false);
   const [format, setFormat] = useState("arc");
   const [attendees, setAttendees] = useState<AgencyAttendee[]>([]);
   const [courseDate, setCourseDate] = useState("");
@@ -55,21 +94,11 @@ export function AgencyRosterExport({
     setOpen(true);
     setBusy(true);
     setMessage("");
+    setSucceeded(false);
     setAttendees([]);
-    const end = Math.max(
-      session.firstStart,
-      ...session.meetings.map((meeting) => meeting.end)
-    );
-    setCourseDate(agencyCourseDate(end, session.timeZone));
+    setCourseDate(agencyCourseDate(courseEnd, timeZone));
     try {
-      setAttendees(
-        await collectAgencyAttendees((cursor) =>
-          convex.query(api.registrationOperations.roster, {
-            sessionId: session._id,
-            paginationOpts: { numItems: 100, cursor },
-          })
-        )
-      );
+      setAttendees(await load());
     } catch (error) {
       setMessage(errorText(error));
     } finally {
@@ -80,6 +109,7 @@ export function AgencyRosterExport({
   async function download() {
     setBusy(true);
     setMessage("");
+    setSucceeded(false);
     try {
       const blob =
         format === "arc"
@@ -92,11 +122,12 @@ export function AgencyRosterExport({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${format}-roster-${session._id}.${format === "arc" ? "csv" : "xls"}`;
+      anchor.download = `${format}-roster-${fileId}.${format === "arc" ? "csv" : "xls"}`;
       document.body.append(anchor);
       anchor.click();
       anchor.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setSucceeded(true);
       setMessage(
         `Exported ${attendees.length} attendees. ${format === "arc" ? "Fill in evaluation and any required reason using the portal’s allowed values before uploading." : "Review the workbook before uploading to AHA."}`
       );
@@ -120,7 +151,7 @@ export function AgencyRosterExport({
         Export agency roster
       </Button>
       <Modal
-        description="Includes all active attendees, regardless of table selection or search. Held, cancelled, and transferred seats are excluded."
+        description={description}
         onClose={() => setOpen(false)}
         open={open}
         size="xl"
@@ -172,8 +203,8 @@ export function AgencyRosterExport({
           </p>
           {format === "arc" ? (
             <p className="text-slate-600 text-sm">
-              Evaluation and reason start blank because the template does not
-              include the allowed values. Enter the exact values from ARC’s
+              Evaluation and reason must match ARC’s allowed values, which the
+              template does not list. Enter the exact values from ARC’s
               instructions here, or complete them in the CSV before uploading.
             </p>
           ) : null}
@@ -217,7 +248,10 @@ export function AgencyRosterExport({
           {busy || attendees.length ? null : (
             <p>No active attendees to export.</p>
           )}
-          <ResultNotice message={message} />
+          <ResultNotice
+            message={message}
+            tone={succeeded ? "success" : undefined}
+          />
           <div className="flex justify-end gap-2">
             <Button
               onClick={() => setOpen(false)}

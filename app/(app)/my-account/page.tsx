@@ -55,9 +55,16 @@ function LinkList({ links }: { links: QuickLink[] }) {
   );
 }
 
-function instructorStatus(isInstructor: boolean, requested: boolean) {
+function instructorStatus(
+  isInstructor: boolean,
+  isAligned: boolean,
+  requested: boolean
+) {
   if (isInstructor) {
     return <Badge tone="success">Approved instructor</Badge>;
+  }
+  if (isAligned) {
+    return <Badge tone="success">Aligned independent instructor</Badge>;
   }
   return requested ? (
     <Badge tone="warning">Not approved</Badge>
@@ -66,16 +73,50 @@ function instructorStatus(isInstructor: boolean, requested: boolean) {
   );
 }
 
+function AcceptInvitation({ aligned }: { aligned: boolean }) {
+  const acceptInvitation = useMutation(api.instructorInvitations.accept);
+  const [accepting, setAccepting] = useState(false);
+  const [acceptError, setAcceptError] = useState<string | null>(null);
+  return (
+    <>
+      <p className="text-slate-900 text-sm">
+        {aligned
+          ? "Your alignment with our Training Site is approved. Accept to open the independent instructor portal, where you schedule your own classes, keep rosters, and export them for card issuing, plus eCard purchasing."
+          : "You’ve been invited to teach with Taylored Instruction. Accept to unlock instructor tools, eCard purchasing, and your assigned sessions."}
+      </p>
+      {acceptError ? <Notice tone="danger">{acceptError}</Notice> : null}
+      <Button
+        disabled={accepting}
+        onClick={async () => {
+          setAccepting(true);
+          setAcceptError(null);
+          try {
+            await acceptInvitation();
+          } catch {
+            setAcceptError(
+              "We couldn’t accept the invitation. Try again in a moment."
+            );
+          } finally {
+            setAccepting(false);
+          }
+        }}
+        size="sm"
+        type="button"
+      >
+        {accepting ? "Accepting…" : "Accept invitation"}
+      </Button>
+    </>
+  );
+}
+
 export default function MyAccountPage() {
   const router = useRouter();
   const { signOut } = useAuthActions();
   const authToken = useAuthToken();
-  const { profile, loading, isInstructor, error, email } = useProfile();
+  const { profile, loading, isInstructor, isAligned, error, email } =
+    useProfile();
   const isAdmin = isAdminEmail(email);
   const invitation = useQuery(api.instructorInvitations.mine);
-  const acceptInvitation = useMutation(api.instructorInvitations.accept);
-  const [accepting, setAccepting] = useState(false);
-  const [acceptError, setAcceptError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && authToken === null) {
@@ -112,7 +153,7 @@ export default function MyAccountPage() {
   }
 
   const groups: { title: string; links: QuickLink[] }[] = [];
-  for (const item of workspaceLinks(true, isInstructor, isAdmin)) {
+  for (const item of workspaceLinks(true, isInstructor, isAdmin, isAligned)) {
     if (item.type === "divider") {
       groups.push({ title: item.label, links: [] });
     } else if (item.href !== "/my-account" && groups.length) {
@@ -150,44 +191,19 @@ export default function MyAccountPage() {
                 { label: "Email", value: email || "Not available" },
                 {
                   label: "Instructor status",
-                  value: instructorStatus(isInstructor, Boolean(profile?.id)),
+                  value: instructorStatus(
+                    isInstructor,
+                    isAligned,
+                    Boolean(profile?.id)
+                  ),
                 },
               ]}
             />
           </CardContent>
-          {isInstructor ? null : (
+          {invitation || !(isInstructor || isAligned) ? (
             <CardFooter className="flex flex-col items-start gap-3">
               {invitation ? (
-                <>
-                  <p className="text-slate-900 text-sm">
-                    You’ve been invited to teach with Taylored Instruction.
-                    Accept to unlock instructor tools, eCard purchasing, and
-                    your assigned sessions.
-                  </p>
-                  {acceptError ? (
-                    <Notice tone="danger">{acceptError}</Notice>
-                  ) : null}
-                  <Button
-                    disabled={accepting}
-                    onClick={async () => {
-                      setAccepting(true);
-                      setAcceptError(null);
-                      try {
-                        await acceptInvitation();
-                      } catch {
-                        setAcceptError(
-                          "We couldn’t accept the invitation. Try again in a moment."
-                        );
-                      } finally {
-                        setAccepting(false);
-                      }
-                    }}
-                    size="sm"
-                    type="button"
-                  >
-                    {accepting ? "Accepting…" : "Accept invitation"}
-                  </Button>
-                </>
+                <AcceptInvitation aligned={invitation.kind === "aligned"} />
               ) : (
                 <p className="text-slate-600 text-sm">
                   Instructor access is by invitation. If you teach with Taylored
@@ -196,7 +212,7 @@ export default function MyAccountPage() {
                 </p>
               )}
             </CardFooter>
-          )}
+          ) : null}
         </Card>
         <MyCertificationsCard />
         {linkGroups.map((group) => (

@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { query } from "./_generated/server";
+import { activeAlignment } from "./aligned";
 import { auth } from "./auth";
 
 export const getEcardProducts = query({
@@ -15,7 +16,8 @@ export const getEcardProducts = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
 
-    if (!profile?.isInstructor) {
+    const instructor = profile?.isInstructor && !profile.deactivatedAt;
+    if (!(instructor || (await activeAlignment(ctx, userId)))) {
       throw new ConvexError("Forbidden: Instructor access required");
     }
 

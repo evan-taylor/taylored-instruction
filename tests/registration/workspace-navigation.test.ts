@@ -20,3 +20,13 @@ it("keeps approved eCard access distinct from administrator access", () => {
   const guest = workspaceLinks(false, false, false).map((item) => item.href);
   expect(guest).toEqual(["/alignment", "/registrations", "/login"]);
 });
+
+it("gives aligned instructors their portal and eCards but not our sessions", () => {
+  const aligned = workspaceLinks(true, false, false, true).map(
+    (item) => item.href
+  );
+  expect(aligned).toContain("/instructor/independent");
+  expect(aligned).toContain("/ecards");
+  expect(aligned).not.toContain("/instructor/sessions");
+  expect(aligned).not.toContain("/admin/aligned");
+});
