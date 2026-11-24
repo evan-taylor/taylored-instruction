@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { CourseCombobox, courseOption } from "@/components/ui/course-combobox";
 import { ConfirmDialog, Modal } from "@/components/ui/dialog";
 import { Field, Money, Select, TextInput, Toggle } from "@/components/ui/field";
 import { MenuItem, MenuSeparator, RowMenu } from "@/components/ui/menu";
@@ -403,18 +404,15 @@ function SessionFilters({
       </Field>
       <Field label={<span className="sr-only">Course</span>}>
         {(props) => (
-          <Select
+          <CourseCombobox
             {...props}
-            onChange={(e) => onCourse(e.target.value)}
+            clearable
+            courses={courses.map(courseOption)}
+            onChange={onCourse}
+            placeholder="All courses"
+            showArchived
             value={courseId}
-          >
-            <option value="">All courses</option>
-            {courses.map((c) => (
-              <option key={c._id} value={c._id}>
-                {c.title}
-              </option>
-            ))}
-          </Select>
+          />
         )}
       </Field>
       <Field label={<span className="sr-only">Time range</span>}>
@@ -776,20 +774,15 @@ function ScheduleSection({
             required
           >
             {(props) => (
-              <Select
+              <CourseCombobox
                 {...props}
-                onChange={(e) => chooseCourse(e.target.value)}
-                value={draft.courseId ?? ""}
-              >
-                <option value="">Choose a course</option>
-                {courses
+                courses={courses
                   .filter((c) => c.delivery === "scheduled")
-                  .map((c) => (
-                    <option key={c._id} value={c._id}>
-                      {c.title}
-                    </option>
-                  ))}
-              </Select>
+                  .map(courseOption)}
+                onChange={chooseCourse}
+                placeholder="Choose a course"
+                value={draft.courseId ?? ""}
+              />
             )}
           </Field>
         )}

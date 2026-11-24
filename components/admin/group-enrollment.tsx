@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CopyButton } from "@/components/ui/copy-button";
+import { CourseCombobox, courseOption } from "@/components/ui/course-combobox";
 import {
   Field,
   Money,
@@ -222,20 +223,15 @@ function OfferingStep({
       ) : (
         <Field label="Course" required>
           {(p) => (
-            <Select
+            <CourseCombobox
               {...p}
-              onChange={(e) => setCourseId(e.target.value)}
+              courses={(courses ?? [])
+                .filter((c) => c.delivery === "self-paced")
+                .map(courseOption)}
+              onChange={setCourseId}
+              placeholder="Choose a self-paced course…"
               value={courseId}
-            >
-              <option value="">Choose a self-paced course…</option>
-              {courses
-                ?.filter((c) => c.delivery === "self-paced")
-                .map((c) => (
-                  <option key={c._id} value={c._id}>
-                    {c.title} · {c.publication}
-                  </option>
-                ))}
-            </Select>
+            />
           )}
         </Field>
       )}
