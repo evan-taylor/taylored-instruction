@@ -283,7 +283,19 @@ function UnpaidEnrollments({ orders }: { orders: Attention["unpaid"] }) {
         <TBody>
           {orders.map((o) => (
             <TR key={o._id}>
-              <TD>{orderLink(o._id, o.title)}</TD>
+              <TD>
+                {orderLink(o._id, o.title)}
+                {o.releaseFollowUp ? (
+                  <Badge className="mt-1" tone="danger">
+                    Invoice voided after access was released
+                  </Badge>
+                ) : null}
+                {o.releasedBeforePayment && !o.releaseFollowUp ? (
+                  <Badge className="mt-1" tone="info">
+                    Access released before payment
+                  </Badge>
+                ) : null}
+              </TD>
               <TD>
                 <div className="text-slate-900">{o.purchaserName}</div>
                 <div className="text-slate-500 text-xs">{o.purchaser}</div>

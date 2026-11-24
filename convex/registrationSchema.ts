@@ -11,6 +11,13 @@ import {
   sessionFields,
 } from "../shared/registration/validators";
 
+/** Who made an override on an order, when, and the reason they gave. */
+const staffNote = v.object({
+  at: v.number(),
+  actor: v.string(),
+  reason: v.string(),
+});
+
 export const registrationTables = {
   registrationInstructorAssignments: defineTable({
     sessionId: v.id("registrationSessions"),
@@ -147,6 +154,10 @@ export const registrationTables = {
     pricingNote: v.optional(v.string()),
     /** Sales tax collected by Stripe on top of `total`, recorded at settlement. */
     tax: v.optional(v.number()),
+    /** Staff gave attendees access while the order and its invoice stay unpaid. */
+    releasedBeforePayment: v.optional(staffNote),
+    /** The invoice behind released access was voided; staff must follow up. */
+    releaseFollowUp: v.optional(staffNote),
   })
     .index("by_requestKey", ["requestKey"])
     .index("by_parentOrderId", ["parentOrderId"])

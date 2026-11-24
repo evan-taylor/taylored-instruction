@@ -88,6 +88,7 @@ type Result = {
   total: number;
   status: string;
   invoiceUrl?: string;
+  released?: boolean;
   warning?: string;
 };
 
@@ -668,6 +669,8 @@ function BillingStep({
   setSaveToOrganization,
   reason,
   setReason,
+  releaseNow,
+  setReleaseNow,
 }: {
   organizations: Doc<"registrationOrganizations">[] | undefined;
   organizationId: Id<"registrationOrganizations"> | "new" | "";
@@ -687,13 +690,15 @@ function BillingStep({
   setSaveToOrganization: (v: boolean) => void;
   reason: string;
   setReason: (v: string) => void;
+  releaseNow: boolean;
+  setReleaseNow: (v: boolean) => void;
 }) {
   const options: { id: Payment; title: string; detail: string }[] = [
     {
       id: "invoice",
       title: "Send an invoice",
       detail:
-        "Net terms with a hosted pay link and PDF. Seats are reserved; materials release when it is paid.",
+        "Net terms with a hosted pay link and PDF. Seats are reserved; materials release when it is paid unless you release them now.",
     },
     {
       id: "offline",
@@ -826,6 +831,12 @@ function BillingStep({
           {payment === "invoice" ? (
             <>
               <InvoiceFields onChange={setInvoice} value={invoice} />
+              <Toggle
+                checked={releaseNow}
+                description="Attendees get portal access, materials, and confirmation emails right away. The invoice stays open and collectable."
+                label="Release materials now (don't wait for payment)"
+                onChange={setReleaseNow}
+              />
               {organizationId ? (
                 <SaveToOrganization
                   checked={saveToOrganization}
@@ -867,6 +878,7 @@ function ReviewStep({
   invoice,
   custom,
   tuition,
+  releaseNow,
 }: {
   title: string;
   seats: number;
@@ -878,9 +890,10 @@ function ReviewStep({
   invoice: InvoiceDraft;
   custom: boolean;
   tuition: number;
+  releaseNow: boolean;
 }) {
   const paymentLabel: Record<Payment, string> = {
-    invoice: `Invoice ${invoice.billToEmail} · ${invoice.dueDays === 0 ? "due on receipt" : `net ${invoice.dueDays}`}`,
+    invoice: `Invoice ${invoice.billToEmail} · ${invoice.dueDays === 0 ? "due on receipt" : `net ${invoice.dueDays}`}${releaseNow ? " · materials released now" : ""}`,
     offline: "Payment received offline; settle immediately",
     waived: "Payment waived; settle immediately",
     unpaid: "Hold seats unpaid",
@@ -977,6 +990,7 @@ function ResultPanel({
             {result.status === "settled"
               ? "paid and materials delivering"
               : "awaiting payment"}
+            {result.released ? " · access released, materials delivering" : ""}
           </p>
         </div>
         {result.invoiceUrl ? (
@@ -1129,6 +1143,7 @@ type EnrollmentInput = {
   organizationId: Id<"registrationOrganizations"> | "new" | "";
   newOrganization: OrganizationDraft;
   invoice: InvoiceDraft;
+  releaseNow: boolean;
   organizationBilling?: OrganizationBillingPatch;
   requestId?: Id<"registrationGroupRequests">;
 };
@@ -1148,6 +1163,9 @@ type EnrollmentActions = {
   issue: ReturnType<
     typeof useAction<typeof api.registrationInvoiceActions.issue>
   >;
+  releaseAccess: ReturnType<
+    typeof useMutation<typeof api.registrationOperations.releaseUnpaidAccess>
+  >;
   updateRequest: ReturnType<
     typeof useMutation<typeof api.registrationGroups.updateGroupRequest>
   >;
@@ -1163,15 +1181,35 @@ async function attachInvoice(
       "The order total is $0, so no invoice was created; the enrollment settled as free.";
     return;
   }
+  let invoiceId: Id<"registrationInvoices">;
   try {
-    const invoiceId = await act.createInvoice({
+    invoiceId = await act.createInvoice({
       orderId: outcome.orderId,
       ...input.invoice,
       organizationId,
     });
+  } catch (error) {
+    outcome.warning = `Enrollment saved, but the invoice could not be created: ${errorText(error)}. Create it from the Invoices tab.`;
+    return;
+  }
+  try {
     outcome.invoiceUrl = await act.issue({ id: invoiceId });
   } catch (error) {
-    outcome.warning = `Enrollment saved, but the invoice could not be sent: ${errorText(error)}. Create it from the Invoices tab.`;
+    outcome.warning = `Enrollment saved, but the invoice could not be sent: ${errorText(error)}. Send it from the Invoices tab.`;
+  }
+  if (!input.releaseNow) {
+    return;
+  }
+  try {
+    await act.releaseAccess({ orderId: outcome.orderId, reason: input.reason });
+    outcome.released = true;
+  } catch (error) {
+    outcome.warning = [
+      outcome.warning,
+      `Materials were not released: ${errorText(error)}. Release access from the order.`,
+    ]
+      .filter(Boolean)
+      .join(" ");
   }
 }
 async function performEnrollment(
@@ -1278,6 +1316,7 @@ function useWizardState(prefill?: EnrollmentPrefill) {
   const [invoice, setInvoice] = useState<InvoiceDraft>(emptyInvoiceDraft);
   const [saveBillingTo, setSaveBillingTo] = useState("");
   const [reason, setReason] = useState("");
+  const [releaseNow, setReleaseNow] = useState(false);
   return {
     step,
     setStep,
@@ -1327,6 +1366,8 @@ function useWizardState(prefill?: EnrollmentPrefill) {
       setSaveBillingTo(on ? organizationId : ""),
     reason,
     setReason,
+    releaseNow,
+    setReleaseNow,
   };
 }
 type Wizard = ReturnType<typeof useWizardState>;
@@ -1479,6 +1520,7 @@ function StepBody({
           purchaserEmail={w.purchaserEmail}
           purchaserName={w.purchaserName}
           reason={w.reason}
+          releaseNow={w.releaseNow}
           saveToOrganization={w.saveToOrganization}
           setInvoice={w.setInvoice}
           setNewOrganization={w.setNewOrganization}
@@ -1487,6 +1529,7 @@ function StepBody({
           setPurchaserEmail={w.setPurchaserEmail}
           setPurchaserName={w.setPurchaserName}
           setReason={w.setReason}
+          setReleaseNow={w.setReleaseNow}
           setSaveToOrganization={w.setSaveToOrganization}
         />
       );
@@ -1505,6 +1548,7 @@ function StepBody({
           overbook={w.overbook}
           payment={w.payment}
           purchaserEmail={w.purchaserEmail}
+          releaseNow={w.releaseNow}
           seats={derived.ready.length}
           title={session?.title ?? course?.title ?? ""}
           tuition={w.tuition}
@@ -1581,6 +1625,7 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
     ),
     createInvoice: useMutation(api.registrationGroups.createInvoice),
     issue: useAction(api.registrationInvoiceActions.issue),
+    releaseAccess: useMutation(api.registrationOperations.releaseUnpaidAccess),
     updateRequest: useMutation(api.registrationGroups.updateGroupRequest),
   };
   const rows = useMemo(
@@ -1668,6 +1713,7 @@ export function GroupEnrollment({ prefill }: { prefill?: EnrollmentPrefill }) {
           w.setRemoved([]);
           w.setCoupon("");
           w.setReason("");
+          w.setReleaseNow(false);
           w.setSaveToOrganization(false);
         }}
         result={result}

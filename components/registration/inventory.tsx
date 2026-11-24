@@ -297,7 +297,8 @@ function AssignDialog({
               <option value="">Choose a student…</option>
               {missing.results.map((e) => (
                 <option key={e._id} value={e._id}>
-                  {e.title} · paid {formatDateTime(e.paidAt)} · seat {e.seatId}
+                  {e.title} · granted {formatDateTime(e.paidAt)} · seat{" "}
+                  {e.seatId}
                 </option>
               ))}
             </Select>
@@ -369,7 +370,7 @@ function AssignNextDialog({
       <div className="space-y-4">
         {entitlement ? (
           <p className="text-slate-600 text-sm">
-            {entitlement.title} · paid {formatDateTime(entitlement.paidAt)}
+            {entitlement.title} · granted {formatDateTime(entitlement.paidAt)}
           </p>
         ) : null}
         {nextCode ? (
@@ -634,7 +635,7 @@ function QueueTable({
       <Table wrapperClassName="rounded-none border-0">
         <THead>
           <TR>
-            <TH>Paid</TH>
+            <TH>Granted</TH>
             <TH>Material</TH>
             <TH>Seat</TH>
             <TH className="text-right">Actions</TH>

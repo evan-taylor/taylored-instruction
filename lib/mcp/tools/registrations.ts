@@ -220,6 +220,33 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
   );
 
   server.registerTool(
+    "release_unpaid_access",
+    {
+      title: "Release access before payment",
+      description:
+        "Gives attendees on an unpaid order with an open or draft invoice their portal access, materials (including keycodes), and confirmation emails now, without settling the order. The invoice stays open and collectable; paying it later sends the receipt and activates anyone still held, without re-sending anything to released attendees. Pass seatIds to release specific attendees, or omit them to release everyone held on the order.",
+      inputSchema: {
+        orderId: id,
+        seatIds: z.array(id).optional(),
+        reason: z.string().min(1),
+      },
+      annotations: EXTERNAL,
+    },
+    (args) =>
+      run(async () => {
+        const result = await ctx.convex.mutation(
+          api.registrationOperations.releaseUnpaidAccess,
+          {
+            orderId: args.orderId as Id<"registrationOrders">,
+            seatIds: args.seatIds as Id<"registrationSeats">[] | undefined,
+            reason: args.reason,
+          }
+        );
+        return ok({ orderId: args.orderId, ...result });
+      })
+  );
+
+  server.registerTool(
     "restore_coupon",
     {
       title: "Restore coupon uses",

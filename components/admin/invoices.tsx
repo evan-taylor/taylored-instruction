@@ -411,7 +411,11 @@ function InvoiceActions({
         busy={busy}
         confirmLabel="Void invoice"
         danger
-        description="Voiding cancels this invoice and its payment link. The enrollment stays awaiting payment so you can invoice again or send a card payment link."
+        description={
+          row.order?.releasedBeforePayment
+            ? "Voiding cancels this invoice and its payment link. The enrollment stays awaiting payment so you can invoice again or record a payment."
+            : "Voiding cancels this invoice and its payment link. The enrollment stays awaiting payment so you can invoice again or send a card payment link."
+        }
         onClose={() => setDialog(null)}
         onConfirm={() =>
           run(async () => {
@@ -422,6 +426,14 @@ function InvoiceActions({
         open={dialog === "void"}
         title={`Void ${invoice.number}?`}
       >
+        {row.order?.releasedBeforePayment && row.order.status === "unpaid" ? (
+          <Notice className="mb-3" tone="warning">
+            Attendee access on this order was released before payment. Voiding
+            leaves their access, materials, and keycodes in place with nothing
+            left to collect. The order is flagged for follow-up in the attention
+            queue.
+          </Notice>
+        ) : null}
         <Field label="Reason" required>
           {(p) => (
             <TextInput
