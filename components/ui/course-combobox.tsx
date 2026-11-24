@@ -1,7 +1,7 @@
 "use client";
 import { Check, ChevronDown, X } from "lucide-react";
 import type * as React from "react";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { controlClass } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
 
@@ -75,6 +75,7 @@ export function CourseCombobox({
   const inputId = id ?? generated;
   const listId = `${inputId}-listbox`;
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState<string | null>(null);
   const [active, setActive] = useState(-1);
@@ -89,15 +90,17 @@ export function CourseCombobox({
   const activeCourse = open ? visible[active] : undefined;
   const optionId = (course: CourseOption) => `${listId}-${course.id}`;
 
+  const activeId = activeCourse ? optionId(activeCourse) : undefined;
+
+  useEffect(() => {
+    if (activeId) {
+      document.getElementById(activeId)?.scrollIntoView?.({ block: "nearest" });
+    }
+  }, [activeId]);
+
   const show = (index: number) => {
     setOpen(true);
     setActive(index);
-    const course = visible[index];
-    if (course) {
-      document
-        .getElementById(optionId(course))
-        ?.scrollIntoView?.({ block: "nearest" });
-    }
   };
   const close = () => {
     setOpen(false);
@@ -144,9 +147,7 @@ export function CourseCombobox({
   return (
     <div className="relative">
       <input
-        aria-activedescendant={
-          activeCourse ? optionId(activeCourse) : undefined
-        }
+        aria-activedescendant={activeId}
         aria-autocomplete="list"
         aria-controls={listId}
         aria-describedby={describedBy}
@@ -165,6 +166,7 @@ export function CourseCombobox({
           setQuery(event.target.value);
           setOpen(true);
           setActive(0);
+          listRef.current?.scrollTo?.({ top: 0 });
         }}
         onClick={() => {
           if (!open) {
@@ -179,11 +181,11 @@ export function CourseCombobox({
         type="text"
         value={query ?? selected?.title ?? ""}
       />
-      <span className="absolute inset-y-0 right-0 flex items-center gap-0.5 pr-2">
+      <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center gap-0.5 pr-2">
         {clearable && value && !disabled ? (
           <button
             aria-label="Clear course"
-            className="inline-flex h-7 pointer-coarse:h-9 pointer-coarse:w-9 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
+            className="pointer-events-auto inline-flex h-7 pointer-coarse:h-9 pointer-coarse:w-9 w-7 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-primary/30"
             onClick={() => {
               onChange("");
               close();
@@ -197,7 +199,7 @@ export function CourseCombobox({
         <ChevronDown
           aria-hidden="true"
           className={cn(
-            "pointer-events-none h-4 w-4 text-slate-400 transition-transform duration-150 ease-out",
+            "h-4 w-4 text-slate-400 transition-transform duration-150 ease-out",
             open && "rotate-180"
           )}
         />
@@ -213,6 +215,7 @@ export function CourseCombobox({
           className="max-h-64 overflow-y-auto p-1 empty:hidden"
           id={listId}
           onMouseDown={(event) => event.preventDefault()}
+          ref={listRef}
           role="listbox"
         >
           {visible.map((course, index) => {
