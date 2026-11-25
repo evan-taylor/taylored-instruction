@@ -1,5 +1,6 @@
 import type { Metadata, MetadataRoute } from "next";
 import { cacheLife, cacheTag } from "next/cache";
+import { getBlogRedirectTarget } from "@/lib/blogRedirects";
 
 const revnuApiBase = "https://revnu.com/api/content/v1";
 const listPageLimit = 200;
@@ -124,7 +125,8 @@ export async function getRevnuPosts() {
   cacheLife("minutes");
   cacheTag(REVNU_CACHE_TAG);
 
-  return await fetchAllRevnuPosts();
+  const posts = await fetchAllRevnuPosts();
+  return posts.filter((post) => !getBlogRedirectTarget(post.canonicalPath));
 }
 
 async function getRevnuPost(slug: string) {
@@ -165,8 +167,12 @@ export const rewriteRevnuBodyLinks = (html: string, postPaths: string[]) => {
   const knownPaths = new Set(postPaths);
   return html.replace(
     rootRelativeHrefPattern,
-    (match, path: string, suffix: string) =>
-      knownPaths.has(path) ? `href="${getRevnuPostHref(path)}${suffix}"` : match
+    (match, path: string, suffix: string) => {
+      const target = getBlogRedirectTarget(path) ?? path;
+      return knownPaths.has(target)
+        ? `href="${getRevnuPostHref(target)}${suffix}"`
+        : match;
+    }
   );
 };
 

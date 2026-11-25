@@ -104,6 +104,21 @@ describe("Revnu post list", () => {
     await expect(getRevnuPosts()).rejects.toThrow("429");
   });
 
+  it("leaves out posts that redirect to a kept post", async () => {
+    mockFetch(
+      listRoute([
+        summary("first-aid-training-for-teachers"),
+        summary("first-aid-certification-for-teachers"),
+      ])
+    );
+
+    const posts = await getRevnuPosts();
+
+    expect(posts.map((post) => post.slug)).toEqual([
+      "first-aid-training-for-teachers",
+    ]);
+  });
+
   it("skips Revnu when no key is configured", async () => {
     vi.stubEnv("REVNU_CONTENT_API_KEY", "");
     const fetchMock = mockFetch(() => ({ status: 200 }));
@@ -178,6 +193,15 @@ describe("Revnu body links", () => {
         '<a href="https://tayloredinstruction.com/blog">absolute</a>',
       ].join("")
     );
+  });
+
+  it("points links to a redirected post at the post that replaced it", () => {
+    const html =
+      '<a href="/first-aid-certification-for-teachers#kit">teachers</a>';
+
+    expect(
+      rewriteRevnuBodyLinks(html, ["/first-aid-training-for-teachers"])
+    ).toBe('<a href="/blog/first-aid-training-for-teachers#kit">teachers</a>');
   });
 });
 

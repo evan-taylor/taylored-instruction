@@ -1,4 +1,5 @@
 const { readPageLastModified } = require("./scripts/page-last-modified");
+const { blogRedirects } = require("./lib/blogRedirects.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -134,6 +135,13 @@ const nextConfig = {
         destination: "https://tayloredinstruction.com/:path*",
         permanent: true,
       },
+
+      // Near-duplicate blog posts consolidated into the post we keep.
+      ...Object.entries(blogRedirects).map(([from, to]) => ({
+        source: `/blog${from}`,
+        destination: `/blog${to}`,
+        permanent: true,
+      })),
 
       // Legacy WordPress feed/admin URLs.
       {
