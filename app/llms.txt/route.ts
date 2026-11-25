@@ -19,7 +19,7 @@ const getLlmsTxt = async () => {
   cacheTag(REVNU_CACHE_TAG);
 
   const [revnuPosts, courses] = await Promise.all([
-    getRevnuPosts().catch(() => []),
+    getRevnuPosts(),
     getCourses(),
   ]);
   return buildLlmsTxt(revnuPosts, courses);

@@ -3,6 +3,11 @@ import { cacheLife, cacheTag } from "next/cache";
 
 const revnuApiBase = "https://revnu.com/api/content/v1";
 const listPageLimit = 200;
+const maxConcurrentRequests = 4;
+const maxAttempts = 5;
+const baseRetryDelayMs = 1000;
+const maxBackoffDelayMs = 8000;
+const maxTotalRetryWaitMs = 30_000;
 const rootRelativeHrefPattern = /href="(\/[^"/][^"#?]*)([^"]*)"/g;
 const hovnAnchorPattern =
   /<a\s[^>]*href="https?:\/\/(?:[a-z0-9-]+\.)*hovn\.app[^"]*"[^>]*>/gi;
@@ -75,8 +80,94 @@ const getAuthHeaders = () => {
   return apiKey ? { Authorization: `Bearer ${apiKey}` } : null;
 };
 
-const fetchRevnu = (path: string, headers: Record<string, string>) =>
-  fetch(`${revnuApiBase}${path}`, { headers });
+let activeRequests = 0;
+const queuedRequests: (() => void)[] = [];
+
+const withRequestSlot = async <T>(request: () => Promise<T>) => {
+  if (activeRequests < maxConcurrentRequests) {
+    activeRequests += 1;
+  } else {
+    await new Promise<void>((resolve) => queuedRequests.push(resolve));
+  }
+  try {
+    return await request();
+  } finally {
+    const next = queuedRequests.shift();
+    if (next) {
+      next();
+    } else {
+      activeRequests -= 1;
+    }
+  }
+};
+
+const isRetryableStatus = (status: number) => status === 429 || status >= 500;
+
+const getRetryAfterMs = (header: string | null) => {
+  if (!header) {
+    return null;
+  }
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, seconds * 1000);
+  }
+  const retryAt = Date.parse(header);
+  return Number.isNaN(retryAt) ? null : Math.max(0, retryAt - Date.now());
+};
+
+type RevnuResult = {
+  ok: boolean;
+  status: number;
+  retryAfter: string | null;
+  data: unknown;
+};
+
+const requestRevnu = (path: string, headers: Record<string, string>) =>
+  withRequestSlot(async (): Promise<RevnuResult> => {
+    const response = await fetch(`${revnuApiBase}${path}`, { headers });
+    const { ok, status } = response;
+    if (!ok) {
+      await response.body?.cancel();
+      return {
+        ok,
+        status,
+        retryAfter: response.headers.get("Retry-After"),
+        data: null,
+      };
+    }
+    return { ok, status, retryAfter: null, data: await response.json() };
+  });
+
+const getRetryDelayMs = (retryAfter: string | null, attempt: number) =>
+  getRetryAfterMs(retryAfter) ??
+  Math.min(
+    baseRetryDelayMs * 2 ** (attempt - 1) * (0.5 + Math.random() / 2),
+    maxBackoffDelayMs
+  );
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Retries 429 and 5xx responses with backoff, honoring Retry-After. Once the
+// attempts or the wait budget run out it returns the failed result, so
+// callers still fail loudly instead of rendering an empty blog.
+const fetchRevnu = async (
+  path: string,
+  headers: Record<string, string>,
+  attempt = 1,
+  waitedMs = 0
+): Promise<RevnuResult> => {
+  const result = await requestRevnu(path, headers);
+  if (!isRetryableStatus(result.status) || attempt >= maxAttempts) {
+    return result;
+  }
+  const delayMs = getRetryDelayMs(result.retryAfter, attempt);
+  if (waitedMs + delayMs > maxTotalRetryWaitMs) {
+    return result;
+  }
+  await sleep(delayMs);
+  return fetchRevnu(path, headers, attempt + 1, waitedMs + delayMs);
+};
 
 const fetchRevnuPostPages = async (
   headers: Record<string, string>,
@@ -86,12 +177,11 @@ const fetchRevnuPostPages = async (
   if (cursor) {
     query.set("cursor", cursor);
   }
-  const response = await fetchRevnu(`/posts?${query}`, headers);
-  if (!response.ok) {
-    throw new Error(`Revnu post list request failed: ${response.status}`);
+  const result = await fetchRevnu(`/posts?${query}`, headers);
+  if (!result.ok) {
+    throw new Error(`Revnu post list request failed: ${result.status}`);
   }
-  const { posts, cursor: nextCursor } =
-    (await response.json()) as RevnuListResponse;
+  const { posts, cursor: nextCursor } = result.data as RevnuListResponse;
   return nextCursor
     ? [...posts, ...(await fetchRevnuPostPages(headers, nextCursor))]
     : posts;
@@ -110,17 +200,17 @@ export const fetchRevnuPost = async (
     return null;
   }
 
-  const response = await fetchRevnu(
+  const result = await fetchRevnu(
     `/posts/${encodeURIComponent(slug)}`,
     headers
   );
-  if (response.status === 404) {
+  if (result.status === 404) {
     return null;
   }
-  if (!response.ok) {
-    throw new Error(`Revnu post request failed: ${response.status}`);
+  if (!result.ok) {
+    throw new Error(`Revnu post request failed: ${result.status}`);
   }
-  return (await response.json()) as RevnuPostResponse;
+  return result.data as RevnuPostResponse;
 };
 
 export async function getRevnuPosts() {
