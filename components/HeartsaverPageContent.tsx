@@ -1,6 +1,17 @@
+import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import {
+  CERTIFICATION_FACTS,
+  ComparisonTable,
+  FaqSection,
+  QuickFacts,
+} from "@/components/ServicePageSections";
+import { heartsaverFAQs } from "@/lib/faqSchema";
+import { BLS_VS_CPR, COURSE_FORMATS } from "@/lib/service-comparisons";
+
+const linkClassName = "font-medium text-primary hover:underline";
 
 export default function HeartsaverPageContent() {
   return (
@@ -14,17 +25,30 @@ export default function HeartsaverPageContent() {
       }}
       title="American Heart Association Heartsaver First Aid CPR AED"
     >
+      <QuickFacts
+        facts={[
+          { label: "Certifying body", value: "American Heart Association" },
+          {
+            label: "Format",
+            value:
+              "In-person classroom, or blended (online part plus an in-person skills session)",
+          },
+          {
+            label: "Who it's for",
+            value:
+              "Anyone without medical training who needs CPR, AED or first aid certification for work or school",
+          },
+          ...CERTIFICATION_FACTS,
+        ]}
+      />
+
       <ClassPageSection title="Course overview">
         <p>
-          The American Heart Association Heartsaver courses are designed for
-          anyone with little or no medical training who needs CPR, AED, and
-          first aid knowledge to meet job, regulatory, or personal requirements.
-          This course covers essential lifesaving skills for workplace training
-          or personal preparedness.
-        </p>
-        <p>
-          <strong>Duration:</strong> Approximately 4 hours for in-person, or 1-2
-          hours for blended learning.
+          The American Heart Association Heartsaver courses are for anyone with
+          little or no medical training who needs CPR, AED and first aid skills
+          to meet a job, regulatory or personal requirement. Heartsaver First
+          Aid CPR AED covers all three. Heartsaver CPR AED covers CPR and AED
+          use only, so check which one your employer asks for.
         </p>
         <p>
           <strong>Audience:</strong> Teachers, coaches, daycare providers,
@@ -50,12 +74,29 @@ export default function HeartsaverPageContent() {
         </ul>
       </ClassPageSection>
 
+      <ClassPageSection title="What happens in class">
+        <p>
+          Heartsaver follows the AHA's practice-while-watching format. A short
+          video shows a skill, then you do it on a manikin while the instructor
+          coaches you. You practice adult, child and infant CPR, use an AED
+          trainer, and work through choking care. In the first aid portion you
+          practice controlling bleeding, applying a tourniquet and splinting,
+          and you talk through what to do for a heart attack, stroke, seizure,
+          allergic reaction or diabetic emergency.
+        </p>
+        <p>
+          The class assumes no background, so it starts with the basics: how to
+          check that a scene is safe, when to call 911, and how to tell whether
+          someone is breathing normally.
+        </p>
+      </ClassPageSection>
+
       <ClassPageSection title="Certification details">
         <p>
-          Upon successful completion of the course, participants will receive an
-          AHA Heartsaver certification eCard, valid for two years. To pass,
-          participants must demonstrate the required skills during hands-on
-          practice and pass a brief knowledge check.
+          To pass, you demonstrate the required skills to your instructor and
+          pass a brief knowledge check. You get your AHA Heartsaver eCard the
+          same day, and it is valid for 2 years. Renew before it expires by
+          taking the course again, in person or blended.
         </p>
       </ClassPageSection>
 
@@ -72,40 +113,45 @@ export default function HeartsaverPageContent() {
             practice and demonstrate what you&apos;ve learned.
           </li>
         </ul>
+        <p>
+          Class length depends on the format and course version, so check the
+          listing on the schedule for exact start and end times.
+        </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Frequently asked questions">
-        <div className="space-y-5">
-          <div>
-            <h3 className="mb-2 font-semibold text-lg text-slate-950">
-              Who should take a Heartsaver course?
-            </h3>
-            <p>
-              Anyone who needs basic CPR, AED, and first aid knowledge, whether
-              for work, school, or personal preparedness. This course is great
-              for people with no prior experience.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-2 font-semibold text-lg text-slate-950">
-              How long does the course take?
-            </h3>
-            <p>
-              The course typically lasts 4 hours in-person or 1-2 hours for
-              blended learning with additional online coursework.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-2 font-semibold text-lg text-slate-950">
-              Are there any prerequisites?
-            </h3>
-            <p>
-              No prior experience or medical knowledge is required to enroll in
-              a Heartsaver course.
-            </p>
-          </div>
-        </div>
+      <ComparisonTable comparison={BLS_VS_CPR} />
+      <ComparisonTable comparison={COURSE_FORMATS} />
+
+      <ClassPageSection title="Heartsaver or Red Cross?">
+        <p>
+          Heartsaver and{" "}
+          <Link className={linkClassName} href="/first-aid-cpr-aed">
+            Red Cross First Aid/CPR/AED
+          </Link>{" "}
+          cover similar skills. Take the one your employer or licensing agency
+          names. If they accept either, pick the date and location that suit
+          you. If you work in healthcare, you need{" "}
+          <Link className={linkClassName} href="/bls">
+            AHA BLS
+          </Link>{" "}
+          instead.
+        </p>
       </ClassPageSection>
+
+      <ClassPageSection title="Where we teach">
+        <p>
+          We teach Heartsaver in Vancouver, WA, and serve Camas, Portland, San
+          Luis Obispo and the surrounding areas. Each class on the schedule
+          lists its exact location. Schools, daycares and businesses can book a
+          private class at their site through{" "}
+          <Link className={linkClassName} href="/group-training">
+            group training
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+
+      <FaqSection faqs={heartsaverFAQs} />
     </ClassPageLayout>
   );
 }

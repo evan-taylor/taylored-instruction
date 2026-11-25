@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import BlsPageContent from "@/components/BlsPageContent";
+import { ahaBlsFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -65,6 +66,10 @@ export default async function BlsPage() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(ahaBlsFAQs))}
         type="application/ld+json"
       />
       <BlsPageContent />

@@ -1,6 +1,7 @@
 "use cache";
 
 import AhaInstructorTrainingPageContent from "@/components/AhaInstructorTrainingPageContent";
+import { ahaInstructorFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -74,6 +75,12 @@ const AhaInstructorTrainingPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(
+          getFAQSchema(ahaInstructorFAQs)
+        )}
         type="application/ld+json"
       />
       <AhaInstructorTrainingPageContent />

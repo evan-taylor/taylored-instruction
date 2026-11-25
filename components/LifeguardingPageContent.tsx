@@ -2,6 +2,14 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import {
+  CERTIFICATION_FACTS,
+  FaqSection,
+  QuickFacts,
+} from "@/components/ServicePageSections";
+import { lifeguardFAQs } from "@/lib/faqSchema";
+
+const linkClassName = "font-medium text-primary hover:underline";
 
 export default function LifeguardingPageContent() {
   return (
@@ -25,6 +33,23 @@ export default function LifeguardingPageContent() {
       ]}
       title="American Red Cross Lifeguarding"
     >
+      <QuickFacts
+        facts={[
+          { label: "Certifying body", value: "American Red Cross" },
+          {
+            label: "Format",
+            value:
+              "Blended: eLearning, then in-person classroom and in-water sessions",
+          },
+          {
+            label: "Who it's for",
+            value:
+              "Anyone 15 or older who wants to work as a pool or aquatic facility lifeguard",
+          },
+          ...CERTIFICATION_FACTS,
+        ]}
+      />
+
       <ClassPageSection title="Course purpose">
         <p>
           The primary purpose of the American Red Cross Lifeguarding program is
@@ -87,9 +112,38 @@ export default function LifeguardingPageContent() {
         </div>
       </ClassPageSection>
 
+      <ClassPageSection title="What you learn">
+        <ul className="list-disc space-y-2 pl-5">
+          <li>
+            Surveillance: scanning your zone and spotting a swimmer in trouble
+          </li>
+          <li>
+            Entries, approaches and rescues for active and passive victims in
+            shallow and deep water
+          </li>
+          <li>
+            Caring for a possible head, neck or spinal injury in the water
+          </li>
+          <li>Removing a victim from the water with a backboard</li>
+          <li>
+            CPR/AED for Professional Rescuers, including bag-valve-mask
+            ventilation and two-rescuer CPR
+          </li>
+          <li>First aid for injuries and sudden illness on the pool deck</li>
+        </ul>
+        <p>
+          You spend much of the course in the water, practicing rescues on other
+          students and working through emergency scenarios as a team. Passing
+          requires showing each skill to your instructor and passing the written
+          exams.
+        </p>
+      </ClassPageSection>
+
       <ClassPageSection title="Course length">
         <p>
-          Approximately 7 hours online, 25 hours in-person, including breaks.
+          Lifeguarding runs over several in-person sessions after the eLearning.
+          Session dates and times vary by class, so check the listing on the
+          schedule before you register and plan to attend every session.
         </p>
       </ClassPageSection>
 
@@ -103,15 +157,51 @@ export default function LifeguardingPageContent() {
           Complete the eLearning before the first in-person class session. The
           eLearning is sent in the confirmation email after registration. If you
           have questions, please{" "}
-          <Link
-            className="font-medium text-primary hover:underline"
-            href="/contact"
-          >
+          <Link className={linkClassName} href="/contact">
             contact us
           </Link>
           .
         </p>
       </ClassPageSection>
+
+      <ClassPageSection title="Certification and recertification">
+        <p>
+          When you pass, you get Red Cross Lifeguarding, CPR/AED for
+          Professional Rescuers and First Aid certificates the same day. All
+          three are valid for 2 years. If your certificate is still current, you
+          can take a shorter recertification course instead of the full course.
+          Our guide to{" "}
+          <Link
+            className={linkClassName}
+            href="/blog/lifeguard-recertification-requirements"
+          >
+            lifeguard recertification requirements
+          </Link>{" "}
+          covers the details.
+        </p>
+        <p>
+          Want to teach lifeguarding later? Lifeguards 17 and older can take the{" "}
+          <Link className={linkClassName} href="/lifeguarding-instructor">
+            Red Cross Lifeguarding Instructor course
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+
+      <ClassPageSection title="Where we teach">
+        <p>
+          We run lifeguarding classes in Vancouver, WA, and serve Camas,
+          Portland, San Luis Obispo and the surrounding areas. Each class on the
+          schedule lists its pool. Aquatic facilities that need to certify a
+          staff group can{" "}
+          <Link className={linkClassName} href="/group-training">
+            request group training
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+
+      <FaqSection faqs={lifeguardFAQs} />
     </ClassPageLayout>
   );
 }

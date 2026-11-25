@@ -1,6 +1,15 @@
+import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import {
+  CERTIFICATION_FACTS,
+  FaqSection,
+  QuickFacts,
+} from "@/components/ServicePageSections";
+import { ahaInstructorFAQs } from "@/lib/faqSchema";
+
+const linkClassName = "font-medium text-primary hover:underline";
 
 export default function AhaInstructorTrainingPageContent() {
   return (
@@ -15,6 +24,23 @@ export default function AhaInstructorTrainingPageContent() {
       subtitle="Build the skills to teach AHA BLS or Heartsaver courses in your community, workplace, or organization."
       title="American Heart Association Instructor Training"
     >
+      <QuickFacts
+        facts={[
+          { label: "Certifying body", value: "American Heart Association" },
+          {
+            label: "Format",
+            value:
+              "Online Instructor Essentials, an in-person course, then a monitored class",
+          },
+          {
+            label: "Who it's for",
+            value:
+              "Current AHA BLS or Heartsaver providers who want to teach that course",
+          },
+          ...CERTIFICATION_FACTS,
+        ]}
+      />
+
       <ClassPageSection title="Course overview">
         <p>
           The AHA Instructor Course trains individuals to effectively teach BLS
@@ -24,15 +50,12 @@ export default function AhaInstructorTrainingPageContent() {
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Duration and audience">
+      <ClassPageSection title="Format and audience">
         <ul className="list-disc space-y-2 pl-5">
           <li>
-            <strong>Blended learning:</strong> 2 hours online, 8 hours
-            in-person, excluding monitoring.
-          </li>
-          <li>
-            <strong>Total commitment:</strong> Approximately 12 hours, including
-            teaching your first course.
+            <strong>Format:</strong> Online Instructor Essentials, an in-person
+            instructor course, then a monitored first class. Session dates and
+            times vary, so check the listing on the schedule.
           </li>
           <li>
             <strong>Audience:</strong> Healthcare providers, workplace safety
@@ -90,38 +113,50 @@ export default function AhaInstructorTrainingPageContent() {
         </ul>
       </ClassPageSection>
 
-      <ClassPageSection title="Frequently asked questions">
-        <div className="space-y-5">
-          <div>
-            <h3 className="mb-2 font-semibold text-lg text-slate-950">
-              Who can become an AHA Instructor?
-            </h3>
-            <p>
-              Anyone with a current AHA Provider certification and a passion for
-              teaching lifesaving skills can become an AHA Instructor.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-2 font-semibold text-lg text-slate-950">
-              What disciplines can I teach?
-            </h3>
-            <p>
-              You can choose to teach BLS or Heartsaver courses, depending on
-              your interest and audience.
-            </p>
-          </div>
-          <div>
-            <h3 className="mb-2 font-semibold text-lg text-slate-950">
-              Can I teach independently?
-            </h3>
-            <p>
-              Instructors must align with an AHA Training Site or Training
-              Center. This affiliation ensures access to course completion cards
-              and administrative support.
-            </p>
-          </div>
-        </div>
+      <ClassPageSection title="What the in-person course covers">
+        <p>
+          You already know the skills, so the course is about teaching them. You
+          learn how AHA courses are structured, how to run the
+          practice-while-watching video format, how to coach students and
+          correct technique, and how to run skills tests and remediation the AHA
+          way. You practice teaching segments to the group and get feedback from
+          Training Faculty. You also learn course administration: rosters,
+          issuing eCards, and keeping equipment and materials current.
+        </p>
       </ClassPageSection>
+
+      <ClassPageSection title="Teaching through a Training Site">
+        <p>
+          Every AHA instructor teaches through an AHA Training Center or
+          Training Site, which issues cards and handles quality assurance.
+          Taylored Instruction is an AHA Training Site through the Resuscitation
+          Group, and our founder, Evan Taylor, is AHA Training Faculty. New
+          instructors can{" "}
+          <Link className={linkClassName} href="/alignment">
+            align with Taylored Instruction
+          </Link>{" "}
+          to teach in their workplace or community.
+        </p>
+        <p>
+          We teach in Vancouver, WA, and serve Camas, Portland, San Luis Obispo
+          and the surrounding areas. Not sure which provider course you need
+          first? See{" "}
+          <Link className={linkClassName} href="/bls">
+            AHA BLS
+          </Link>{" "}
+          or{" "}
+          <Link className={linkClassName} href="/heartsaver">
+            Heartsaver
+          </Link>
+          . If you'd rather teach Red Cross courses, see the{" "}
+          <Link className={linkClassName} href="/fa-cpr-aed-instructor">
+            Red Cross First Aid/CPR/AED Instructor course
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+
+      <FaqSection faqs={ahaInstructorFAQs} />
     </ClassPageLayout>
   );
 }

@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import BasicLifeSupportPageContent from "@/components/BasicLifeSupportPageContent";
+import { getFAQSchema, redCrossBlsFAQs } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -69,6 +70,10 @@ const BasicLifeSupportPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(redCrossBlsFAQs))}
         type="application/ld+json"
       />
       <BasicLifeSupportPageContent />

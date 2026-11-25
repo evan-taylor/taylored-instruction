@@ -2,7 +2,14 @@
 
 import { cacheLife } from "next/cache";
 import Image from "next/image";
+import Link from "next/link";
+import {
+  FaqSection,
+  type QuickFact,
+  QuickFacts,
+} from "@/components/ServicePageSections";
 import { Button } from "@/components/ui/Button";
+import { corporateFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -35,6 +42,39 @@ export const metadata = buildPageMetadata({
     eyebrow: "On-site team training",
   },
 });
+
+const CORPORATE_FACTS: QuickFact[] = [
+  {
+    label: "Certifying bodies",
+    value: "American Heart Association or American Red Cross",
+  },
+  {
+    label: "Format",
+    value:
+      "On-site at your workplace or at our Vancouver facility, in person or blended",
+  },
+  {
+    label: "Who it's for",
+    value:
+      "Businesses, schools, clinics, daycares and other teams that need staff certified",
+  },
+  { label: "Cards", value: "Valid for 2 years, issued as same-day eCards" },
+  {
+    label: "Service area",
+    value: "Vancouver, Camas, Portland, San Luis Obispo and surrounding areas",
+  },
+  {
+    label: "Pricing",
+    value: (
+      <Link
+        className="font-medium text-primary hover:underline"
+        href="/group-training"
+      >
+        Request a quote for your group
+      </Link>
+    ),
+  },
+];
 
 const AGENCY_COMPARISON = [
   {
@@ -106,6 +146,10 @@ export default async function CorporateTrainingPage() {
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
         type="application/ld+json"
       />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(corporateFAQs))}
+        type="application/ld+json"
+      />
       {/* Hero Section - Improved with better image handling and text styling */}
       <section className="relative flex min-h-[500px] items-center justify-center md:min-h-[600px]">
         <div className="absolute inset-0 h-full w-full overflow-hidden">
@@ -151,6 +195,10 @@ export default async function CorporateTrainingPage() {
       {/* Main Content Section - Better organized with visual elements */}
       <section className="bg-background py-16 md:py-24">
         <div className="container mx-auto max-w-6xl px-4 text-text">
+          <div className="mx-auto mb-16 max-w-4xl md:mb-24">
+            <QuickFacts facts={CORPORATE_FACTS} />
+          </div>
+
           {/* Why Choose Corporate CPR Training? - Added icons and better layout */}
           <div className="mb-16 md:mb-24">
             <div className="mb-10 text-center">
@@ -235,8 +283,7 @@ export default async function CorporateTrainingPage() {
                   for 2 years
                 </p>
                 <p className="text-text-light">
-                  <strong className="text-text">Duration:</strong> 4-5 hours
-                  (in-person)
+                  <strong className="text-text">Format:</strong> In-person
                 </p>
               </div>
 
@@ -257,8 +304,7 @@ export default async function CorporateTrainingPage() {
                   for 2 years
                 </p>
                 <p className="text-text-light">
-                  <strong className="text-text">Duration:</strong> 5-6 hours
-                  (in-person)
+                  <strong className="text-text">Format:</strong> In-person
                 </p>
               </div>
 
@@ -279,8 +325,8 @@ export default async function CorporateTrainingPage() {
                   for 2 years
                 </p>
                 <p className="text-text-light">
-                  <strong className="text-text">Duration:</strong> 4 hours
-                  (in-person)
+                  <strong className="text-text">Format:</strong> In-person or
+                  HeartCode BLS blended
                 </p>
               </div>
 
@@ -302,8 +348,8 @@ export default async function CorporateTrainingPage() {
                   for 2 years
                 </p>
                 <p className="text-text-light">
-                  <strong className="text-text">Duration:</strong> 2-3 hours
-                  (in-person)
+                  <strong className="text-text">Format:</strong> Blended (online
+                  part plus an in-person skills session)
                 </p>
               </div>
 
@@ -324,8 +370,8 @@ export default async function CorporateTrainingPage() {
                   for 2 years
                 </p>
                 <p className="text-text-light">
-                  <strong className="text-text">Duration:</strong> 4-5 hours
-                  (in-person or blended)
+                  <strong className="text-text">Format:</strong> In-person or
+                  blended
                 </p>
               </div>
 
@@ -346,8 +392,7 @@ export default async function CorporateTrainingPage() {
                   for 2 years
                 </p>
                 <p className="text-text-light">
-                  <strong className="text-text">Duration:</strong> 2-3 hours
-                  (in-person)
+                  <strong className="text-text">Format:</strong> In-person
                 </p>
               </div>
             </div>
@@ -453,59 +498,8 @@ export default async function CorporateTrainingPage() {
             </div>
           </div>
 
-          {/* FAQ - Better accordion style */}
-          <div className="mb-16 md:mb-24">
-            <div className="mb-10 text-center">
-              <h2 className="mb-4 font-bold text-3xl md:text-4xl">
-                Frequently asked questions
-              </h2>
-              <p className="mx-auto max-w-3xl text-lg text-text-light">
-                Get answers to common questions about our corporate training
-                programs.
-              </p>
-            </div>
-            <div className="mx-auto max-w-3xl divide-y divide-slate-200 overflow-hidden rounded-xl border border-slate-200 bg-white">
-              <div className="p-6">
-                <h4 className="font-semibold text-text text-xl">
-                  How many people can be trained at once?
-                </h4>
-                <p className="mt-3 text-text-light">
-                  Depending on the course, we can train groups of up to 20
-                  participants in a single session. For larger groups,
-                  we&apos;ll divide sessions to ensure quality instruction.
-                </p>
-              </div>
-
-              <div className="p-6">
-                <h4 className="font-semibold text-text text-xl">
-                  Do we need any equipment for the training?
-                </h4>
-                <p className="mt-3 text-text-light">
-                  No, we&apos;ll bring everything needed, including manikins,
-                  AED trainers, and course materials.
-                </p>
-              </div>
-
-              <div className="p-6">
-                <h4 className="font-semibold text-text text-xl">
-                  What is the cost of corporate training?
-                </h4>
-                <p className="mt-3 text-text-light">
-                  Pricing depends on group size, course type, and location.
-                  Contact us for a customized quote.
-                </p>
-              </div>
-
-              <div className="p-6">
-                <h4 className="font-semibold text-text text-xl">
-                  Can the training be tailored to our industry?
-                </h4>
-                <p className="mt-3 text-text-light">
-                  Yes! We&apos;ll incorporate scenarios relevant to your
-                  workplace to maximize engagement.
-                </p>
-              </div>
-            </div>
+          <div className="mx-auto mb-16 max-w-4xl md:mb-24">
+            <FaqSection faqs={corporateFAQs} />
           </div>
 
           {/* CTA - More engaging design */}

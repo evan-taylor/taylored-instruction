@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import WaterSafetyInstructorPageContent from "@/components/WaterSafetyInstructorPageContent";
+import { getFAQSchema, waterSafetyInstructorFAQs } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -68,6 +69,12 @@ export default async function Page() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbs)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(
+          getFAQSchema(waterSafetyInstructorFAQs)
+        )}
         type="application/ld+json"
       />
       <WaterSafetyInstructorPageContent />
