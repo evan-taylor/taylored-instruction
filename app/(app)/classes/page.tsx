@@ -8,10 +8,9 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const title =
-  "CPR, BLS, First Aid & Lifeguarding Classes | Vancouver WA | Taylored Instruction";
+const title = "CPR & BLS Classes in Vancouver, WA | Taylored Instruction";
 const description =
-  "Browse upcoming American Red Cross and AHA classes in Vancouver, WA and Clark County. See every date, location, and the full price, then register online in minutes.";
+  "Upcoming CPR, BLS, First Aid and lifeguarding classes in Vancouver, WA and Clark County. See every date, location and the full price, then register online.";
 
 export const metadata: Metadata = indexable(
   buildPageMetadata({
