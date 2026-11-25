@@ -11,6 +11,7 @@ import {
   EMAIL_ATTRIBUTION_WINDOW_MS,
   emailClick,
   registrationEmailCampaign,
+  withoutStaleEmailCredit,
 } from "../../shared/email-attribution";
 import { certificateEmail } from "../../shared/registration/certificate-email";
 
@@ -184,6 +185,25 @@ describe("email click memory", () => {
     rememberEmailClick(client, "", EMAIL_ATTRIBUTION_WINDOW_MS + 1);
     expect(store.email_campaign).toBeUndefined();
     expect(store.email_send).toBeUndefined();
+  });
+});
+
+describe("email credit expiry", () => {
+  it("strips expired credit from events and keeps live credit", () => {
+    const event = {
+      properties: {
+        email_campaign: "invoice",
+        email_send: "job1",
+        email_clicked_at: 0,
+        a: 1,
+      },
+    };
+    expect(
+      withoutStaleEmailCredit(event, EMAIL_ATTRIBUTION_WINDOW_MS).properties
+    ).toEqual(event.properties);
+    expect(
+      withoutStaleEmailCredit(event, EMAIL_ATTRIBUTION_WINDOW_MS + 1).properties
+    ).toEqual({ a: 1 });
   });
 });
 

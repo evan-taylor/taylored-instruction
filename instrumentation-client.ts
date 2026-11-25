@@ -11,6 +11,7 @@ import posthog from "posthog-js";
 import { rememberEmailClick } from "@/lib/email-attribution";
 import { getPostHogEnv } from "@/lib/posthog-env";
 import { analyticsSafeEvent } from "@/shared/analytics-urls";
+import { withoutStaleEmailCredit } from "@/shared/email-attribution";
 import { privateAnalyticsEvent } from "@/shared/registration/analytics";
 import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
 
@@ -29,9 +30,10 @@ if (posthogProjectToken && posthogHost) {
       if (!event) {
         return event;
       }
+      const credited = withoutStaleEmailCredit(event);
       return isPrivateRegistrationPath(window.location.pathname)
-        ? privateAnalyticsEvent(event)
-        : analyticsSafeEvent(event);
+        ? privateAnalyticsEvent(credited)
+        : analyticsSafeEvent(credited);
     },
     capture_pageleave: true,
     capture_exceptions: true,

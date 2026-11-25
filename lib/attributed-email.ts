@@ -9,5 +9,6 @@ export async function attributedEmail(element: ReactElement, campaign: string) {
     render(element),
     render(element, { plainText: true }),
   ]);
-  return attributeEmail({ html, text }, { campaign }, BUSINESS.url);
+  const origin = process.env.NEXT_PUBLIC_BASE_URL || BUSINESS.url;
+  return attributeEmail({ html, text }, { campaign }, new URL(origin).origin);
 }

@@ -490,8 +490,9 @@ async function certificateRouting(
 }
 
 /**
- * The send's campaign, and the purchaser's browser identity when the email
- * goes to the purchaser, so the send joins their PostHog timeline.
+ * The send's campaign, fixed by the step's schedule rather than the send
+ * time, and the purchaser's browser identity when the email goes to the
+ * purchaser, so the send joins their PostHog timeline.
  */
 async function emailAnalytics(
   ctx: MutationCtx,
@@ -500,11 +501,19 @@ async function emailAnalytics(
   session: Doc<"registrationSessions"> | null,
   agency: Doc<"studentCertificates">["agency"] | undefined
 ) {
-  const purchase = seat ? await ctx.db.get(seat.orderId) : null;
+  const billed = (await jobOrder(ctx, job, seat)).order;
+  const purchase = billed ?? (seat ? await ctx.db.get(seat.orderId) : null);
+  const course = session ? await ctx.db.get(session.courseId) : null;
+  const step =
+    course && session && job.stepId
+      ? effective(course.settings, session.overrides).emails.find(
+          (s) => s.id === job.stepId
+        )
+      : undefined;
   return {
     campaign: registrationEmailCampaign(job.key, {
       agency,
-      afterClass: Boolean(session && session.lastEnd <= Date.now()),
+      afterClass: step?.anchor === "last" && step.offsetMinutes >= 0,
     }),
     analytics:
       purchase?.purchaser.toLowerCase() === job.recipient.toLowerCase()

@@ -1,5 +1,6 @@
 "use client";
 import posthog from "posthog-js";
+import { emailCreditActive } from "@/shared/email-attribution";
 import {
   type RegistrationEvent,
   registrationProperties,
@@ -14,8 +15,11 @@ export function registrationAnalyticsContext() {
     if (!distinctId) {
       return;
     }
-    const emailCampaign = posthog.get_property("email_campaign");
-    const emailSend = posthog.get_property("email_send");
+    const credited = emailCreditActive(
+      posthog.get_property("email_clicked_at")
+    );
+    const emailCampaign = credited && posthog.get_property("email_campaign");
+    const emailSend = credited && posthog.get_property("email_send");
     return {
       distinctId,
       sessionId: posthog.get_session_id(),

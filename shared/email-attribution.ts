@@ -144,6 +144,29 @@ export function registrationEmailCampaign(
   return JOB_CAMPAIGNS[kind ?? ""] ?? "registration_email";
 }
 
+/** Whether a remembered click is still inside the attribution window. */
+export function emailCreditActive(clickedAt: unknown, now = Date.now()) {
+  return (
+    typeof clickedAt === "number" &&
+    now - clickedAt <= EMAIL_ATTRIBUTION_WINDOW_MS
+  );
+}
+
+/** Drops email credit from an event whose remembered click has expired. */
+export function withoutStaleEmailCredit<
+  T extends { properties: Record<string, unknown> },
+>(event: T, now = Date.now()): T {
+  const { email_campaign, email_send, email_clicked_at, ...rest } =
+    event.properties;
+  if (
+    email_campaign === undefined ||
+    emailCreditActive(email_clicked_at, now)
+  ) {
+    return event;
+  }
+  return { ...event, properties: rest };
+}
+
 /** The campaign and send id an email link carried, when the visit came from one. */
 export function emailClick(search: string): EmailAttribution | null {
   const params = new URLSearchParams(search);

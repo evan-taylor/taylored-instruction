@@ -1,8 +1,5 @@
 import type { PostHog } from "posthog-js";
-import {
-  EMAIL_ATTRIBUTION_WINDOW_MS,
-  emailClick,
-} from "@/shared/email-attribution";
+import { emailClick, emailCreditActive } from "@/shared/email-attribution";
 
 const KEYS = ["email_campaign", "email_send", "email_clicked_at"];
 
@@ -27,10 +24,7 @@ export function rememberEmailClick(
     return;
   }
   const clickedAt = posthog.get_property("email_clicked_at");
-  if (
-    typeof clickedAt === "number" &&
-    now - clickedAt > EMAIL_ATTRIBUTION_WINDOW_MS
-  ) {
+  if (clickedAt !== undefined && !emailCreditActive(clickedAt, now)) {
     for (const key of KEYS) {
       posthog.unregister(key);
     }
