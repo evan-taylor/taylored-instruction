@@ -78,6 +78,49 @@ status and uses a deterministic event UUID per checkout session. It is emitted
 when the success-page email endpoint retrieves that session, so it is not a
 replacement for webhook-based eCard reconciliation.
 
+## Email attribution
+
+Every outbound email runs through `attributeEmail` in
+`shared/email-attribution.ts`. First-party links (tayloredinstruction.com, its
+subdomains such as the feedback forms, and the deployment's `SITE_URL`) get
+`utm_source=email`, `utm_medium=email`, `utm_campaign=<campaign>` and, for
+queued registration mail and instructor reminders, `utm_content=<job id>`. The
+job id is an opaque Convex id; it ties a click to one send without carrying an
+address. Unsubscribe links, `/api` and `/email` routes, links with
+token/key/session/code-style parameters, `#key=value` fragments, external hosts
+(Google reviews, AHA, Red Cross, Stripe, file storage) and links that already
+carry UTMs are left untouched.
+
+Campaigns are static snake_case names. Registration mail derives its campaign
+from the job key: `post_class_aha`, `post_class_arc`, `cert_reminder_60d`,
+`cert_reminder_30d`, `cert_reminder_0d`, `registration_confirmation`,
+`payment_receipt`, `payment_request`, `invoice`, `invoice_reminder`,
+`waitlist_offer`, `class_reminder`, `class_followup`, `schedule_change`,
+`registration_canceled` and so on. Other senders use `instructor_cert_reminder`,
+`instructor_cert_digest`, `instructor_invitation`, `sign_in_code`,
+`contact_confirmation`, `alignment_confirmation`, `instructor_approval` and
+`ecard_order`. Internal staff notifications are not tagged.
+
+When a visit lands with `utm_source=email`, the browser registers
+`email_campaign` and `email_send` as PostHog super properties for 30 days
+(last click wins). Every later browser event carries them, and checkout passes
+them to Convex inside the analytics context, so `registration_reserved` and
+`registration_settled` carry `email_campaign`/`email_send` too. Delivered
+registration mail emits a personless `email_sent` event with the same
+`email_campaign` and `email_send`; its distinct id is the purchaser's browser
+id when the email went to the purchaser, otherwise `email_send:<job id>`.
+
+Conversions by email campaign: trend `registration_settled` broken down by
+`email_campaign`; divide by `email_sent` with the same breakdown for a rate.
+
+## URL hygiene
+
+Outside private routes, `analyticsSafeEvent` (`shared/analytics-urls.ts`) strips
+token/key/session/code-style query parameters and `#key=value` fragments from
+`$current_url`, `$referrer` and their `$initial_*` person counterparts before
+any event leaves the browser. This covers waitlist invitation fragments on
+`/s/<code>` and Stripe checkout session ids on `/ecards/success`.
+
 ## Configuration and release verification
 
 The browser uses the first-party `/ingest` rewrites; server SDKs use the direct
@@ -89,6 +132,10 @@ PostHog host. See the [PostHog Next.js proxy guide](https://posthog.com/docs/adv
   The public-token/host names are accepted as fallbacks, but Next.js env files do
   not configure the Convex deployment.
 - Backend events include `environment` from `REGISTRATION_MODE`.
+- The PostHog MCP's `switch-project` does not persist between calls, so
+  `execute-sql` keeps querying the token's default project (Soljio, 426455).
+  Read the Taylored Instruction project (228300) through the REST API with an
+  explicit `project_id`.
 - Deploy the optional Convex schema/function arguments before the frontend.
 - Verify one complete test registration in an isolated deployment: browser IDs
   match backend events, amounts match Stripe, replay/URLs/tokens stay excluded,

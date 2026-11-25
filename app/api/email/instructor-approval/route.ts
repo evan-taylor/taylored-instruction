@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import React from "react";
 import { z } from "zod";
 import InstructorApprovalEmail from "@/emails/InstructorApprovalEmail";
+import { attributedEmail } from "@/lib/attributed-email";
 import { getResendClient } from "@/lib/resend";
 import { SUPPORT_EMAIL } from "@/shared/email";
 
@@ -65,9 +66,12 @@ export async function POST(req: NextRequest) {
         to: [email],
         replyTo: SUPPORT_EMAIL,
         subject: "You're approved as an instructor at Taylored Instruction",
-        react: React.createElement(InstructorApprovalEmail, {
-          firstName: name,
-        }),
+        ...(await attributedEmail(
+          React.createElement(InstructorApprovalEmail, {
+            firstName: name,
+          }),
+          "instructor_approval"
+        )),
       });
 
       if (emailData.error) {

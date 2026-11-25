@@ -3,6 +3,7 @@
 import React from "react";
 import { z } from "zod";
 import InstructorApprovalEmail from "@/emails/InstructorApprovalEmail";
+import { attributedEmail } from "@/lib/attributed-email";
 import { getResendClient } from "@/lib/resend";
 import { SUPPORT_EMAIL } from "@/shared/email";
 
@@ -48,9 +49,12 @@ export async function sendInstructorApprovalEmail(
       to: [validatedEmail],
       replyTo: SUPPORT_EMAIL,
       subject: "You're approved as an instructor at Taylored Instruction",
-      react: React.createElement(InstructorApprovalEmail, {
-        firstName: validatedName,
-      }),
+      ...(await attributedEmail(
+        React.createElement(InstructorApprovalEmail, {
+          firstName: validatedName,
+        }),
+        "instructor_approval"
+      )),
     });
 
     if (emailData.error) {

@@ -13,6 +13,10 @@ import { renderEmailHtml } from "../emails/components/render";
 import { ADMIN_EMAILS, isAdminEmail } from "../shared/adminEmails";
 import { SUPPORT_EMAIL } from "../shared/email";
 import {
+  attributeEmail,
+  type EmailAttribution,
+} from "../shared/email-attribution";
+import {
   addDays,
   agencyLabel,
   agencyShortLabel,
@@ -843,7 +847,13 @@ async function deliver(message: {
   html: string;
   text: string;
   idempotencyKey: string;
+  attribution: EmailAttribution;
 }) {
+  const { html, text } = attributeEmail(
+    message,
+    message.attribution,
+    siteOrigin()
+  );
   const from = process.env.AUTH_EMAIL_FROM;
   if (!(from && process.env.RESEND_API_KEY)) {
     throw new Error("Configure AUTH_EMAIL_FROM and RESEND_API_KEY");
@@ -855,8 +865,8 @@ async function deliver(message: {
       to: [to],
       replyTo: SUPPORT_EMAIL,
       subject: message.subject,
-      html: message.html,
-      text: message.text,
+      html,
+      text,
     },
     { idempotencyKey: message.idempotencyKey }
   );
@@ -894,6 +904,7 @@ export const sendReminder = internalAction({
           `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
         ].join("\n\n"),
         idempotencyKey: `certification-reminder:${id}`,
+        attribution: { campaign: "instructor_cert_reminder", send: id },
       });
       await ctx.runMutation(internal.instructorCertifications.recordReminder, {
         id,
@@ -1037,6 +1048,7 @@ export const sendDigest = internalAction({
           `Full report: ${reportUrl}`,
         ].join("\n"),
         idempotencyKey: `certification-digest:${id}`,
+        attribution: { campaign: "instructor_cert_digest", send: id },
       });
       await ctx.runMutation(internal.instructorCertifications.recordDigest, {
         id,

@@ -5,7 +5,10 @@ import {
 import { ConvexError, v } from "convex/values";
 import { filter } from "convex-helpers/server/filter";
 import { doc } from "convex-helpers/validators";
-import { analyticsContext } from "../shared/registration/analytics-validator";
+import {
+  analyticsContext,
+  boundedAnalytics,
+} from "../shared/registration/analytics-validator";
 import { matchesCourse } from "../shared/registration/catalog";
 import type { Quote, Settings } from "../shared/registration/domain";
 import {
@@ -699,13 +702,7 @@ export const reserve = mutation({
     const total = seats.reduce((sum, seat) => sum + seat.total, 0);
     const expires = now + CHECKOUT_HOLD_MS;
     const id = await ctx.db.insert("registrationOrders", {
-      analytics:
-        !args.admin &&
-        args.analytics?.distinctId.length &&
-        args.analytics.distinctId.length <= 200 &&
-        (args.analytics.sessionId?.length ?? 0) <= 200
-          ? args.analytics
-          : undefined,
+      analytics: args.admin ? undefined : boundedAnalytics(args.analytics),
       requestKey: args.requestKey,
       purchaser,
       purchaserName: args.purchaserName,

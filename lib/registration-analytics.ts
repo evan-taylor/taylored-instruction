@@ -14,7 +14,14 @@ export function registrationAnalyticsContext() {
     if (!distinctId) {
       return;
     }
-    return { distinctId, sessionId: posthog.get_session_id() };
+    const emailCampaign = posthog.get_property("email_campaign");
+    const emailSend = posthog.get_property("email_send");
+    return {
+      distinctId,
+      sessionId: posthog.get_session_id(),
+      ...(typeof emailCampaign === "string" ? { emailCampaign } : {}),
+      ...(typeof emailSend === "string" ? { emailSend } : {}),
+    };
   } catch {
     /* Unavailable analytics must not prevent checkout. */
   }

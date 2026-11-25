@@ -1,4 +1,6 @@
 import { v } from "convex/values";
+import { registrationEmailCampaign } from "../shared/email-attribution";
+import { analyticsContext } from "../shared/registration/analytics-validator";
 import { BATCH, effective, formatMoney } from "../shared/registration/domain";
 import { calendar, formatSchedule } from "../shared/registration/schedule";
 import {
@@ -487,6 +489,30 @@ async function certificateRouting(
   };
 }
 
+/**
+ * The send's campaign, and the purchaser's browser identity when the email
+ * goes to the purchaser, so the send joins their PostHog timeline.
+ */
+async function emailAnalytics(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  seat: Doc<"registrationSeats"> | null,
+  session: Doc<"registrationSessions"> | null,
+  agency: Doc<"studentCertificates">["agency"] | undefined
+) {
+  const purchase = seat ? await ctx.db.get(seat.orderId) : null;
+  return {
+    campaign: registrationEmailCampaign(job.key, {
+      agency,
+      afterClass: Boolean(session && session.lastEnd <= Date.now()),
+    }),
+    analytics:
+      purchase?.purchaser.toLowerCase() === job.recipient.toLowerCase()
+        ? purchase.analytics
+        : undefined,
+  };
+}
+
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
   returns: v.union(
@@ -506,6 +532,8 @@ export const claim = internalMutation({
       link: v.optional(v.object({ label: v.string(), url: v.string() })),
       afterClass: v.boolean(),
       certificate: v.optional(certificateMailValidator),
+      campaign: v.string(),
+      analytics: v.optional(analyticsContext),
     }),
     v.null()
   ),
@@ -598,6 +626,7 @@ export const claim = internalMutation({
       link: job.link,
       afterClass,
       certificate,
+      ...(await emailAnalytics(ctx, job, seat, session, certificate?.agency)),
     };
   },
 });

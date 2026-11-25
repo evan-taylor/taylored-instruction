@@ -170,6 +170,53 @@ describe("Registration transactions", () => {
       expect(JSON.stringify(job.args)).not.toContain(args.requestKey);
     }
   });
+  it("credits the email a purchaser clicked through on reservation and settlement", async () => {
+    const f = await fixture();
+    const order = await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      analytics: {
+        distinctId: "browser-id",
+        emailCampaign: "cert_reminder_30d",
+        emailSend: "job123",
+      },
+    });
+    await f.t.mutation(internal.registrationPayments.attachCheckout, {
+      orderId: order.orderId,
+      session: "cs_email",
+      secret: "secret",
+    });
+    await f.t.mutation(internal.registrationPayments.paymentEvent, {
+      orderId: order.orderId,
+      session: "cs_email",
+      eventId: "evt_email",
+      amount: order.total,
+      currency: "usd",
+      paid: true,
+      live: false,
+      type: "checkout.session.completed",
+    });
+    const jobs = await f.t.run((ctx) =>
+      ctx.db.system.query("_scheduled_functions").collect()
+    );
+    const settled = jobs.find(
+      (job) =>
+        job.name.includes("captureAnalytics") &&
+        job.args[0].event === "registration_settled"
+    );
+    expect(settled?.args[0].properties).toMatchObject({
+      email_campaign: "cert_reminder_30d",
+      email_send: "job123",
+    });
+  });
+  it("drops browser analytics context with oversized fields", async () => {
+    const f = await fixture();
+    const order = await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      analytics: { distinctId: "browser-id", emailCampaign: "x".repeat(65) },
+    });
+    const saved = await f.t.run((ctx) => ctx.db.get(order.orderId));
+    expect(saved?.analytics).toBeUndefined();
+  });
   it("allows only staff to delete unused templates and preserves materials with an audit record", async () => {
     const f = await fixture();
     await f.t.run((ctx) => ctx.db.delete(f.session));

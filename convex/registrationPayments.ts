@@ -1,6 +1,9 @@
 import { ConvexError, v } from "convex/values";
 import { doc } from "convex-helpers/validators";
-import { analyticsContext } from "../shared/registration/analytics-validator";
+import {
+  analyticsContext,
+  boundedAnalytics,
+} from "../shared/registration/analytics-validator";
 import {
   BATCH,
   CHECKOUT_HOLD_MINUTES,
@@ -421,13 +424,9 @@ export const beginRequestedPayment = mutation({
         args.cancellationPolicy
       );
     }
-    if (
-      args.analytics?.distinctId.length &&
-      args.analytics.distinctId.length <= 200 &&
-      (args.analytics.sessionId?.length ?? 0) <= 200 &&
-      (order.status === "unpaid" || order.status === "hold")
-    ) {
-      await ctx.db.patch(order._id, { analytics: args.analytics });
+    const analytics = boundedAnalytics(args.analytics);
+    if (analytics && (order.status === "unpaid" || order.status === "hold")) {
+      await ctx.db.patch(order._id, { analytics });
     }
     if (order.status === "hold" && order.expires > Date.now()) {
       return { expires: order.expires };

@@ -8,7 +8,9 @@ import {
   replayIntegration,
 } from "@sentry/nextjs";
 import posthog from "posthog-js";
+import { rememberEmailClick } from "@/lib/email-attribution";
 import { getPostHogEnv } from "@/lib/posthog-env";
+import { analyticsSafeEvent } from "@/shared/analytics-urls";
 import { privateAnalyticsEvent } from "@/shared/registration/analytics";
 import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
 
@@ -24,10 +26,12 @@ if (posthogProjectToken && posthogHost) {
     person_profiles: "identified_only",
     capture_pageview: false,
     before_send: (event) => {
-      if (!(event && isPrivateRegistrationPath(window.location.pathname))) {
+      if (!event) {
         return event;
       }
-      return privateAnalyticsEvent(event);
+      return isPrivateRegistrationPath(window.location.pathname)
+        ? privateAnalyticsEvent(event)
+        : analyticsSafeEvent(event);
     },
     capture_pageleave: true,
     capture_exceptions: true,
@@ -35,6 +39,7 @@ if (posthogProjectToken && posthogHost) {
     defaults: "2025-05-24",
     debug: process.env.NODE_ENV === "development",
   });
+  rememberEmailClick(posthog, window.location.search);
 }
 
 export const onRouterTransitionStart = captureRouterTransitionStart;
