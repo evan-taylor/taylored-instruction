@@ -2,30 +2,13 @@ import { type FAQItem, getFAQSchema } from "@/lib/faqSchema";
 import { SITE_URL } from "@/lib/seo";
 import {
   getBreadcrumbSchema,
+  getLocalBusinessSchema,
   getServiceSchema,
   getWebPageSchema,
 } from "@/lib/structuredData";
 import { parsePlace } from "@/shared/registration/catalog";
 
 export const LOCATIONS_BASE_PATH = "/cpr-classes";
-
-export const CONTACT = {
-  phone: "(360) 685-8199",
-  phoneHref: "tel:+13606858199",
-  telephone: "+1-360-685-8199",
-  email: "info@tayloredinstruction.com",
-  hours: "9 AM to 7 PM, 7 days a week",
-} as const;
-
-export const COLAB_ADDRESS = {
-  name: "CoLab Coworking",
-  streetAddress: "915 Broadway St, Suite 100",
-  addressLocality: "Vancouver",
-  addressRegion: "WA",
-  postalCode: "98660",
-  latitude: 45.628_45,
-  longitude: -122.670_054,
-} as const;
 
 const COURSES = {
   bls: {
@@ -426,18 +409,7 @@ export function sessionsIn<T extends { meetings: Meeting[] }>(
   });
 }
 
-const DAYS = [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-];
-
 function placeSchema(location: CityPage) {
-  const url = locationUrl(location);
   if (location.schema === "service") {
     return getServiceSchema({
       name: `CPR and first aid training in ${locationName(location)}`,
@@ -447,40 +419,7 @@ function placeSchema(location: CityPage) {
       areaServed: location.areaServed,
     });
   }
-  return {
-    "@context": "https://schema.org",
-    "@type": "LocalBusiness",
-    "@id": `${SITE_URL}/#vancouver-wa`,
-    name: "Taylored Instruction",
-    url,
-    image: `${SITE_URL}/og-image.png`,
-    telephone: CONTACT.telephone,
-    email: CONTACT.email,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: COLAB_ADDRESS.streetAddress,
-      addressLocality: COLAB_ADDRESS.addressLocality,
-      addressRegion: COLAB_ADDRESS.addressRegion,
-      postalCode: COLAB_ADDRESS.postalCode,
-      addressCountry: "US",
-    },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: COLAB_ADDRESS.latitude,
-      longitude: COLAB_ADDRESS.longitude,
-    },
-    areaServed: location.areaServed.map((name) => ({
-      "@type": "AdministrativeArea",
-      name,
-    })),
-    openingHoursSpecification: {
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: DAYS,
-      opens: "09:00",
-      closes: "19:00",
-    },
-    parentOrganization: { "@id": `${SITE_URL}/#organization` },
-  };
+  return getLocalBusinessSchema();
 }
 
 /** WebPage, breadcrumb, FAQ and the local business or service node for one city page. */

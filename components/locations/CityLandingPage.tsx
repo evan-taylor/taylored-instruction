@@ -10,10 +10,9 @@ import {
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import type { api } from "@/convex/_generated/api";
+import { BUSINESS, formatBusinessAddress } from "@/lib/business";
 import {
   type CityPage,
-  COLAB_ADDRESS,
-  CONTACT,
   locationName,
   locationPath,
   sessionPlace,
@@ -237,10 +236,9 @@ export default function CityLandingPage({
             <address className="not-italic">
               Taylored Instruction
               <br />
-              {COLAB_ADDRESS.name}, {COLAB_ADDRESS.streetAddress}
+              {BUSINESS.address.placeName}
               <br />
-              {COLAB_ADDRESS.addressLocality}, {COLAB_ADDRESS.addressRegion}{" "}
-              {COLAB_ADDRESS.postalCode}
+              {formatBusinessAddress()}
             </address>
           ) : (
             <p>
@@ -250,16 +248,16 @@ export default function CityLandingPage({
           )}
           <p>
             Phone:{" "}
-            <a className={LINK} href={CONTACT.phoneHref}>
-              {CONTACT.phone}
+            <a className={LINK} href={BUSINESS.phone.href}>
+              {BUSINESS.phone.display}
             </a>
             <br />
             Email:{" "}
-            <a className={LINK} href={`mailto:${CONTACT.email}`}>
-              {CONTACT.email}
+            <a className={LINK} href={`mailto:${BUSINESS.email}`}>
+              {BUSINESS.email}
             </a>
             <br />
-            Hours: {CONTACT.hours}
+            Hours: {BUSINESS.hours.display}
           </p>
         </ClassPageSection>
 

@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import FirstAidCprAedPageContent from "@/components/FirstAidCprAedPageContent";
+import { firstAidFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -11,8 +12,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "First Aid/CPR/AED Certification | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "First Aid/CPR/AED Certification | Vancouver WA";
 const pageDescription =
   "American Red Cross First Aid, CPR, and AED certification classes in Vancouver WA, Clark County, and San Luis Obispo CA with blended and in-person options.";
 
@@ -20,7 +20,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/first-aid-cpr-aed",
-  ogType: "article",
   keywords: [
     "first aid CPR AED classes Vancouver WA",
     "Red Cross CPR certification Clark County",
@@ -71,6 +70,10 @@ const FirstAidCprAedPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(firstAidFAQs))}
         type="application/ld+json"
       />
       <FirstAidCprAedPageContent />

@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import BlsPageContent from "@/components/BlsPageContent";
+import { ahaBlsFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -12,15 +13,14 @@ import {
 } from "@/lib/structuredData";
 
 const pageTitle =
-  "AHA BLS Certification Course | Vancouver WA & San Luis Obispo CA";
+  "AHA BLS Certification in Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "American Heart Association BLS certification for healthcare professionals in Vancouver WA, Clark County, and San Luis Obispo CA with in-person and blended options.";
+  "American Heart Association BLS certification for healthcare professionals in Vancouver WA and San Luis Obispo CA, with in-person and blended options.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/bls",
-  ogType: "article",
   image: {
     title: "AHA BLS Certification Course",
     eyebrow: "American Heart Association",
@@ -65,6 +65,10 @@ export default async function BlsPage() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(ahaBlsFAQs))}
         type="application/ld+json"
       />
       <BlsPageContent />

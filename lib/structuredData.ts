@@ -3,73 +3,18 @@
  * Comprehensive schema markup for Taylored Instruction
  */
 
-import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
+import {
+  ACCREDITATION_PHRASE,
+  BUSINESS,
+  BUSINESS_SAME_AS,
+} from "@/lib/business";
 import { SITE_URL } from "@/lib/seo";
 
-type LocalBusinessSchema = {
-  "@context": string;
-  "@type": string;
+type SchemaNode = {
+  "@context": "https://schema.org";
+  "@type": string | string[];
   "@id": string;
-  name: string;
-  image: string;
-  description: string;
-  url: string;
-  telephone: string;
-  email: string;
-  address: {
-    "@type": string;
-    addressLocality: string;
-    addressRegion: string;
-    addressCountry: string;
-  };
-  geo?: {
-    "@type": string;
-    latitude: number;
-    longitude: number;
-  };
-  areaServed: Array<{
-    "@type": string;
-    name: string;
-  }>;
-  priceRange: string;
-  openingHoursSpecification?: {
-    "@type": string;
-    dayOfWeek: string[];
-    opens?: string;
-    closes?: string;
-  };
-  sameAs: string[];
-  aggregateRating?: {
-    "@type": string;
-    ratingValue: string;
-    reviewCount: string;
-  };
-};
-
-type OrganizationSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
-  name: string;
-  alternateName?: string;
-  url: string;
-  logo: string;
-  description: string;
-  email: string;
-  telephone: string;
-  address: {
-    "@type": string;
-    addressLocality: string;
-    addressRegion: string;
-    addressCountry: string;
-  };
-  founder: {
-    "@type": string;
-    name: string;
-    jobTitle: string;
-  };
-  sameAs: string[];
-  knowsAbout: string[];
+  [key: string]: unknown;
 };
 
 type CourseSchema = {
@@ -166,20 +111,6 @@ type ContactPageSchema = {
   inLanguage: string;
 };
 
-type PersonSchema = {
-  "@context": string;
-  "@type": string;
-  "@id": string;
-  name: string;
-  jobTitle: string;
-  worksFor: {
-    "@id": string;
-  };
-  email: string;
-  telephone: string;
-  url: string;
-};
-
 type ProductSchema = {
   "@context": string;
   "@type": string;
@@ -221,31 +152,63 @@ const AMPERSAND_REGEX = /&/g;
 const LINE_SEPARATOR_REGEX = /\u2028/g;
 const PARAGRAPH_SEPARATOR_REGEX = /\u2029/g;
 
-// Organization Schema - Main company information
-export const getOrganizationSchema = (): OrganizationSchema => ({
+const LOCAL_BUSINESS_ID = `${BASE_URL}/#localbusiness`;
+const PERSON_ID = `${BASE_URL}/about#evan-taylor`;
+
+const postalAddress = () => ({
+  "@type": "PostalAddress",
+  streetAddress: BUSINESS.address.streetAddress,
+  addressLocality: BUSINESS.address.locality,
+  addressRegion: BUSINESS.address.region,
+  postalCode: BUSINESS.address.postalCode,
+  addressCountry: BUSINESS.address.country,
+});
+
+const logoImage = () => ({
+  "@type": "ImageObject",
+  "@id": `${BASE_URL}/#logo`,
+  url: BUSINESS.logoUrl,
+  contentUrl: BUSINESS.logoUrl,
+  caption: BUSINESS.name,
+});
+
+const businessCredentials = () =>
+  BUSINESS.accreditations.map((accreditation) => ({
+    "@type": "EducationalOccupationalCredential",
+    name: accreditation.name,
+    credentialCategory: "Training provider authorization",
+    recognizedBy: {
+      "@type": "Organization",
+      name: accreditation.recognizedBy.name,
+      url: accreditation.recognizedBy.url,
+    },
+  }));
+
+export const getOrganizationSchema = (): SchemaNode => ({
   "@context": "https://schema.org",
   "@type": "EducationalOrganization",
   "@id": ORGANIZATION_ID,
-  name: "Taylored Instruction",
-  alternateName: "Taylored Instruction CPR Training",
-  url: "https://tayloredinstruction.com",
-  logo: "https://tayloredinstruction.com/horizontal-logo-black.png",
-  description:
-    "Taylored Instruction provides professional CPR, BLS, First Aid, Lifeguard training, and AED sales in Vancouver, WA and San Luis Obispo, CA. American Red Cross Licensed Training Provider and AHA Training Site.",
-  email: "evan@tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Vancouver",
-    addressRegion: "WA",
-    addressCountry: "US",
+  name: BUSINESS.name,
+  legalName: BUSINESS.legalName,
+  url: BASE_URL,
+  logo: logoImage(),
+  image: BUSINESS.imageUrl,
+  description: `${BUSINESS.name} teaches CPR, BLS, First Aid, Lifeguarding and instructor courses in Vancouver, WA, Portland, OR and San Luis Obispo, CA. ${ACCREDITATION_PHRASE}.`,
+  email: BUSINESS.email,
+  telephone: BUSINESS.phone.schema,
+  address: postalAddress(),
+  foundingDate: BUSINESS.foundingYear,
+  founder: { "@id": PERSON_ID },
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer service",
+    telephone: BUSINESS.phone.schema,
+    email: BUSINESS.email,
+    areaServed: "US",
+    availableLanguage: "English",
   },
-  founder: {
-    "@type": "Person",
-    name: "Evan Taylor",
-    jobTitle: "Instructor Trainer, Owner",
-  },
-  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
+  hasCredential: businessCredentials(),
+  sameAs: BUSINESS_SAME_AS,
   knowsAbout: [
     "CPR Training",
     "BLS Certification",
@@ -258,100 +221,38 @@ export const getOrganizationSchema = (): OrganizationSchema => ({
   ],
 });
 
-// Local Business Schema - Vancouver, WA
-export const getVancouverLocalBusinessSchema = (): LocalBusinessSchema => ({
+export const getLocalBusinessSchema = (): SchemaNode => ({
   "@context": "https://schema.org",
   "@type": "LocalBusiness",
-  "@id": "https://tayloredinstruction.com/#vancouver-wa",
-  name: "Taylored Instruction - Vancouver WA",
-  image: "https://tayloredinstruction.com/og-image.png",
-  description:
-    "Professional CPR, BLS, First Aid, and Lifeguard training in Vancouver, WA. American Red Cross Licensed Training Provider and AHA Training Site serving Clark County and surrounding areas.",
-  url: "https://tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  email: "evan@tayloredinstruction.com",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Vancouver",
-    addressRegion: "WA",
-    addressCountry: "US",
-  },
+  "@id": LOCAL_BUSINESS_ID,
+  name: BUSINESS.name,
+  url: BASE_URL,
+  image: BUSINESS.imageUrl,
+  logo: logoImage(),
+  description: `CPR, BLS, First Aid and Lifeguard training based in downtown Vancouver, WA, serving Vancouver, Camas, Portland, San Luis Obispo and surrounding areas. ${ACCREDITATION_PHRASE}.`,
+  telephone: BUSINESS.phone.schema,
+  email: BUSINESS.email,
+  address: postalAddress(),
   geo: {
     "@type": "GeoCoordinates",
-    latitude: 45.6387,
-    longitude: -122.6615,
+    latitude: BUSINESS.geo.latitude,
+    longitude: BUSINESS.geo.longitude,
   },
-  areaServed: [
-    { "@type": "City", name: "Vancouver, WA" },
-    { "@type": "City", name: "Camas, WA" },
-    { "@type": "City", name: "Washougal, WA" },
-    { "@type": "City", name: "Battle Ground, WA" },
-    { "@type": "City", name: "Ridgefield, WA" },
-    { "@type": "City", name: "La Center, WA" },
-    { "@type": "AdministrativeArea", name: "Clark County, WA" },
-    { "@type": "City", name: "Portland, OR" },
+  areaServed: BUSINESS.serviceArea.map((area) => ({
+    "@type": area.type,
+    name: area.name,
+  })),
+  openingHoursSpecification: [
+    {
+      "@type": "OpeningHoursSpecification",
+      dayOfWeek: [...BUSINESS.hours.days],
+      opens: BUSINESS.hours.opens,
+      closes: BUSINESS.hours.closes,
+    },
   ],
-  priceRange: "$$",
-  openingHoursSpecification: {
-    "@type": "OpeningHoursSpecification",
-    dayOfWeek: [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ],
-  },
-  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
-});
-
-// Local Business Schema - San Luis Obispo, CA
-export const getSLOLocalBusinessSchema = (): LocalBusinessSchema => ({
-  "@context": "https://schema.org",
-  "@type": "LocalBusiness",
-  "@id": "https://tayloredinstruction.com/#san-luis-obispo-ca",
-  name: "Taylored Instruction - San Luis Obispo CA",
-  image: "https://tayloredinstruction.com/og-image.png",
-  description:
-    "Seasonal CPR, BLS, First Aid, and Lifeguard training in San Luis Obispo, CA. Professional instruction from American Red Cross and AHA certified trainers.",
-  url: "https://tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
-  email: "evan@tayloredinstruction.com",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "San Luis Obispo",
-    addressRegion: "CA",
-    addressCountry: "US",
-  },
-  geo: {
-    "@type": "GeoCoordinates",
-    latitude: 35.2828,
-    longitude: -120.6596,
-  },
-  areaServed: [
-    { "@type": "City", name: "San Luis Obispo, CA" },
-    { "@type": "City", name: "Pismo Beach, CA" },
-    { "@type": "City", name: "Arroyo Grande, CA" },
-    { "@type": "City", name: "Morro Bay, CA" },
-    { "@type": "City", name: "Atascadero, CA" },
-    { "@type": "AdministrativeArea", name: "San Luis Obispo County, CA" },
-  ],
-  priceRange: "$$",
-  openingHoursSpecification: {
-    "@type": "OpeningHoursSpecification",
-    dayOfWeek: [
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday",
-      "Sunday",
-    ],
-  },
-  sameAs: ["https://tayloredinstruction.com", GOOGLE_BUSINESS_PROFILE_URL],
+  parentOrganization: { "@id": ORGANIZATION_ID },
+  hasCredential: businessCredentials(),
+  sameAs: BUSINESS_SAME_AS,
 });
 
 // Website Schema
@@ -453,18 +354,23 @@ export const getContactPageSchema = (): ContactPageSchema => ({
   inLanguage: "en-US",
 });
 
-export const getAboutPersonSchema = (): PersonSchema => ({
+export const getAboutPersonSchema = (): SchemaNode => ({
   "@context": "https://schema.org",
   "@type": "Person",
-  "@id": `${BASE_URL}/about#evan-taylor`,
-  name: "Evan Taylor",
-  jobTitle: "Owner, Instructor Trainer",
+  "@id": PERSON_ID,
+  name: BUSINESS.founder.name,
+  jobTitle: BUSINESS.founder.jobTitle,
+  image: BUSINESS.founder.imageUrl,
   worksFor: {
     "@id": ORGANIZATION_ID,
   },
-  email: "evan@tayloredinstruction.com",
-  telephone: "+1-360-685-8199",
   url: `${BASE_URL}/about`,
+  hasCredential: BUSINESS.founder.credentials.map((credential) => ({
+    "@type": "EducationalOccupationalCredential",
+    name: credential.name,
+    credentialCategory: "Instructor certification",
+    recognizedBy: { "@type": "Organization", name: credential.recognizedBy },
+  })),
 });
 
 export const getAedProductSchema = (): ProductSchema => ({

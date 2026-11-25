@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import HeartsaverPageContent from "@/components/HeartsaverPageContent";
+import { getFAQSchema, heartsaverFAQs } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -11,16 +12,14 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "AHA Heartsaver First Aid CPR AED | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "AHA Heartsaver First Aid CPR AED | Vancouver WA";
 const pageDescription =
-  "American Heart Association Heartsaver First Aid CPR AED certification in Vancouver WA, Clark County, and San Luis Obispo CA for workplace teams and community learners.";
+  "American Heart Association Heartsaver First Aid CPR AED certification in Vancouver WA and San Luis Obispo CA for workplace teams and community learners.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/heartsaver",
-  ogType: "article",
   keywords: [
     "AHA Heartsaver class Vancouver WA",
     "Heartsaver first aid CPR AED certification",
@@ -71,6 +70,10 @@ export default async function HeartsaverPage() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(heartsaverFAQs))}
         type="application/ld+json"
       />
       <HeartsaverPageContent />

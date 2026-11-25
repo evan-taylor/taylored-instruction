@@ -14,9 +14,19 @@ type Catalog = FunctionReturnType<
   typeof registrationApi.registration.upcomingClasses
 >;
 type UpcomingSession = Catalog["sessions"][number];
+type PriceConfig = {
+  tuition: number;
+  materials: { policy: string; cents: number }[];
+};
+/** A class as the public listings return it: no visibility flag, prices only. */
+type ListedClass = Omit<Offering, "unlisted" | "config"> & {
+  config: PriceConfig;
+};
 
 const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 const DESCRIPTION_LENGTH = 155;
+const TITLE_LENGTH = 60;
+const BRAND = " | Taylored Instruction";
 const INDEX = {
   index: true,
   follow: true,
@@ -74,6 +84,30 @@ export function snippet(text: string, fallback: string) {
   return `${cut.slice(0, stop > 60 ? stop : DESCRIPTION_LENGTH).trimEnd()}…`;
 }
 
+function clip(text: string, max: number) {
+  if (text.length <= max) {
+    return text;
+  }
+  const cut = text.slice(0, max - 1);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
+}
+
+/**
+ * The first head + tail that fits a search result title; otherwise the head is
+ * shortened so the last tail (the details that make the page unique) survives.
+ */
+function pageTitle(head: string, tails: string[]) {
+  const fit = tails.find(
+    (candidate) => head.length + candidate.length <= TITLE_LENGTH
+  );
+  if (fit !== undefined) {
+    return head + fit;
+  }
+  const tail = tails.at(-1) ?? "";
+  return clip(head, TITLE_LENGTH - tail.length) + tail;
+}
+
 function cityOf(location: string) {
   const { address } = parsePlace(location);
   const parts = address.split(",").map((p) => p.trim());
@@ -87,6 +121,14 @@ function cityOf(location: string) {
 
 function tuitionDollars(cents: number) {
   return (cents / 100).toFixed(2);
+}
+
+function shortDate(ms: number, timeZone?: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone,
+  }).format(new Date(ms));
 }
 
 function longDate(ms: number, timeZone?: string) {
@@ -138,7 +180,7 @@ function offerSchema(
 }
 
 /** Base price for one seat on an offering: tuition plus required materials. */
-function seatPrice(config: Offering["config"]) {
+function seatPrice(config: PriceConfig) {
   return (
     config.tuition +
     config.materials
@@ -147,29 +189,40 @@ function seatPrice(config: Offering["config"]) {
   );
 }
 
+/**
+ * A description unique to one class: its date, venue, and city lead, and the
+ * course description fills the rest of the snippet.
+ */
+function sessionDescription(offering: ListedClass) {
+  const first = ordered(offering.meetings).at(0);
+  const { name } = parsePlace(first?.location ?? "");
+  const city = first ? cityOf(first.location) : "";
+  const date = offering.firstStart
+    ? ` on ${longDate(offering.firstStart, offering.timeZone)}`
+    : "";
+  const venue = name === "Online" ? " online" : ` at ${name}`;
+  const where = first ? `${venue}${city ? ` in ${city}` : ""}` : "";
+  return snippet(
+    `${offering.title}${date}${where}. ${offering.description}`,
+    offering.title
+  );
+}
+
 /** Search-friendly metadata for one scheduled class. */
 export function sessionMetadata(offering: Offering): Metadata {
   const path = `/s/${offering.code ?? ""}`;
   const first = ordered(offering.meetings).at(0);
   const city = first ? cityOf(first.location) : "";
-  const date = offering.firstStart
-    ? longDate(offering.firstStart, offering.timeZone)
-    : "";
-  const title = [offering.title, city, date].filter(Boolean).join(" · ");
   const day = offering.firstStart
-    ? new Intl.DateTimeFormat("en-US", {
-        month: "long",
-        day: "numeric",
-        timeZone: offering.timeZone,
-      }).format(new Date(offering.firstStart))
+    ? shortDate(offering.firstStart, offering.timeZone)
     : "";
-  const description = snippet(
-    offering.description,
-    `Register for ${offering.title}${city ? ` in ${city}` : ""}. See dates, location, and full pricing before you register.`
-  );
+  const details = [city, day]
+    .filter(Boolean)
+    .map((part) => ` · ${part}`)
+    .join("");
   const base = buildPageMetadata({
-    title: `${title} | Taylored Instruction`,
-    description,
+    title: pageTitle(offering.title, [`${details}${BRAND}`, details]),
+    description: sessionDescription(offering),
     path,
     ogType: "website",
     keywords: [offering.title, city ? `${offering.title} ${city}` : ""].filter(
@@ -186,6 +239,63 @@ export function sessionMetadata(offering: Offering): Metadata {
     : { ...base, robots: { index: false, follow: true } };
 }
 
+function sessionOffer(offering: ListedClass) {
+  return offerSchema(
+    `${SITE_URL}/s/${offering.code ?? ""}`,
+    seatPrice(offering.config),
+    offering.available,
+    offering.state === "open"
+  );
+}
+
+/** EducationEvent markup for one scheduled class, read by event search. */
+function eventSchema(offering: ListedClass) {
+  const url = `${SITE_URL}/s/${offering.code ?? ""}`;
+  const meetings = ordered(offering.meetings);
+  const first = meetings.at(0);
+  const last = meetings.at(-1);
+  return {
+    "@context": "https://schema.org",
+    "@type": "EducationEvent",
+    "@id": `${url}#event`,
+    name: offering.title,
+    description: sessionDescription(offering),
+    url,
+    startDate: first ? new Date(first.start).toISOString() : undefined,
+    endDate: last ? new Date(last.end).toISOString() : undefined,
+    eventStatus:
+      offering.state === "canceled"
+        ? "https://schema.org/EventCancelled"
+        : "https://schema.org/EventScheduled",
+    eventAttendanceMode: ATTENDANCE_MODE[attendance(meetings)],
+    location: placeSchema(first?.location ?? ""),
+    organizer: { "@id": ORGANIZATION_ID },
+    performer: { "@id": ORGANIZATION_ID },
+    offers: sessionOffer(offering),
+    subEvent: meetings.map((m) => ({
+      "@type": "EducationEvent",
+      name: offering.title,
+      startDate: new Date(m.start).toISOString(),
+      endDate: new Date(m.end).toISOString(),
+      location: placeSchema(m.location),
+    })),
+  };
+}
+
+/** The class schedule as an ItemList of the events it shows. */
+export function classListSchema(offerings: ListedClass[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${SITE_URL}/classes#schedule`,
+    name: "Upcoming classes",
+    itemListElement: offerings.map((offering, index) => {
+      const { "@context": _context, ...event } = eventSchema(offering);
+      return { "@type": "ListItem", position: index + 1, item: event };
+    }),
+  };
+}
+
 /**
  * Event and Course markup for one scheduled class. Both are emitted: Google's
  * course carousel reads Course + CourseInstance, and event search reads
@@ -196,41 +306,10 @@ export function sessionSchemas(offering: Offering) {
   const meetings = ordered(offering.meetings);
   const first = meetings.at(0);
   const last = meetings.at(-1);
-  const price = seatPrice(offering.config);
-  const offers = offerSchema(
-    url,
-    price,
-    offering.available,
-    offering.state === "open"
-  );
-  const location = first ? placeSchema(first.location) : placeSchema("");
+  const offers = sessionOffer(offering);
+  const location = placeSchema(first?.location ?? "");
   const mode = attendance(meetings);
-  const event = {
-    "@context": "https://schema.org",
-    "@type": "EducationEvent",
-    "@id": `${url}#event`,
-    name: offering.title,
-    description: snippet(offering.description, offering.title),
-    url,
-    startDate: first ? new Date(first.start).toISOString() : undefined,
-    endDate: last ? new Date(last.end).toISOString() : undefined,
-    eventStatus:
-      offering.state === "canceled"
-        ? "https://schema.org/EventCancelled"
-        : "https://schema.org/EventScheduled",
-    eventAttendanceMode: ATTENDANCE_MODE[mode],
-    location,
-    organizer: { "@id": ORGANIZATION_ID },
-    performer: { "@id": ORGANIZATION_ID },
-    offers,
-    subEvent: meetings.map((m) => ({
-      "@type": "EducationEvent",
-      name: offering.title,
-      startDate: new Date(m.start).toISOString(),
-      endDate: new Date(m.end).toISOString(),
-      location: placeSchema(m.location),
-    })),
-  };
+  const event = eventSchema(offering);
   const course = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -296,6 +375,19 @@ export function courseSchemas(
 ) {
   const url = `${SITE_URL}/courses/${slug}`;
   const price = seatPrice(offering.config);
+  // An empty hasCourseInstance is invalid markup; a course with no open
+  // public dates simply omits it until one is scheduled.
+  const instances =
+    offering.delivery === "self-paced"
+      ? [
+          {
+            "@type": "CourseInstance",
+            name: offering.title,
+            courseMode: "Online",
+            offers: offerSchema(url, price, undefined),
+          },
+        ]
+      : courseInstances(sessions);
   const course = {
     "@context": "https://schema.org",
     "@type": "Course",
@@ -305,17 +397,7 @@ export function courseSchemas(
     url,
     provider: { "@id": ORGANIZATION_ID },
     offers: offerSchema(url, price, undefined),
-    hasCourseInstance:
-      offering.delivery === "self-paced"
-        ? [
-            {
-              "@type": "CourseInstance",
-              name: offering.title,
-              courseMode: "Online",
-              offers: offerSchema(url, price, undefined),
-            },
-          ]
-        : courseInstances(sessions),
+    ...(instances.length ? { hasCourseInstance: instances } : {}),
   };
   const breadcrumb = getBreadcrumbSchema([
     { name: "Home", url: SITE_URL },
@@ -323,6 +405,29 @@ export function courseSchemas(
     { name: offering.title, url },
   ]);
   return [course, breadcrumb];
+}
+
+/** Search-friendly metadata for a course page, placed in its next class's city. */
+export function courseMetadata(
+  offering: Offering,
+  sessions: UpcomingSession[],
+  slug: string
+): Metadata {
+  const first = sessions.at(0)?.meetings.at(0);
+  const city = first ? cityOf(first.location) : "";
+  const local = city ? [` in ${city}${BRAND}`, ` in ${city}`] : [];
+  return indexable(
+    buildPageMetadata({
+      title: pageTitle(offering.title, [...local, BRAND, ""]),
+      description: snippet(
+        offering.description,
+        `${offering.title} with Taylored Instruction. See upcoming dates and full pricing, then register online.`
+      ),
+      path: `/courses/${slug}`,
+      keywords: [offering.title],
+      image: { title: offering.title, eyebrow: "Classes & registration" },
+    })
+  );
 }
 
 /**

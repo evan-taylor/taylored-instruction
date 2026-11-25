@@ -1,13 +1,42 @@
 import Link from "next/link";
 import { FiFacebook, FiInstagram } from "react-icons/fi";
-import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
+import { BUSINESS } from "@/lib/business";
+import { LOCATIONS, locationName, locationPath } from "@/lib/locations";
+import {
+  AHA_COURSE_LINKS,
+  RED_CROSS_COURSE_LINKS,
+  type SiteLink,
+  TRAINING_SERVICE_LINKS,
+} from "@/lib/service-links";
+
+const LOCATION_LINKS = LOCATIONS.map((location) => ({
+  label: locationName(location),
+  href: locationPath(location),
+}));
+
+const COURSE_GROUPS = [
+  { label: "American Heart Association", links: AHA_COURSE_LINKS },
+  { label: "American Red Cross", links: RED_CROSS_COURSE_LINKS },
+];
+
+const FooterLinkList = ({ links }: { links: SiteLink[] }) => (
+  <ul className="space-y-2 text-slate-600 text-sm">
+    {links.map((link) => (
+      <li key={link.href}>
+        <Link className="transition-colors hover:text-primary" href={link.href}>
+          {link.label}
+        </Link>
+      </li>
+    ))}
+  </ul>
+);
 
 export const Footer = () => {
   return (
     <footer className="border-slate-200 border-t bg-slate-50 pt-16 pb-8 text-text-light">
       <div className="container mx-auto px-4">
-        {/* Footer Grid: Company, Links, Help, Social */}
-        <div className="mb-12 grid grid-cols-1 items-start gap-8 text-left sm:grid-cols-2 md:grid-cols-4">
+        {/* Footer Grid: Company, Courses, Services, Links, Help, Social */}
+        <div className="mb-12 grid grid-cols-1 items-start gap-8 text-left sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
           {/* About Us */}
           <div className="space-y-4">
             <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
@@ -19,6 +48,33 @@ export const Footer = () => {
               individual and organization with the skills they need to respond
               to emergencies with confidence.
             </p>
+          </div>
+
+          {/* Courses */}
+          <div className="space-y-4">
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              Courses
+            </h3>
+            {COURSE_GROUPS.map((group) => (
+              <div className="space-y-2" key={group.label}>
+                <p className="font-medium text-slate-500 text-xs">
+                  {group.label}
+                </p>
+                <FooterLinkList links={group.links} />
+              </div>
+            ))}
+          </div>
+
+          {/* Services */}
+          <div className="space-y-4">
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              Services
+            </h3>
+            <FooterLinkList links={TRAINING_SERVICE_LINKS} />
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              Locations
+            </h3>
+            <FooterLinkList links={LOCATION_LINKS} />
           </div>
 
           {/* Information Links */}
@@ -64,23 +120,23 @@ export const Footer = () => {
               <li>
                 <a
                   className="transition-colors hover:text-primary"
-                  href="mailto:info@tayloredinstruction.com"
+                  href={`mailto:${BUSINESS.email}`}
                 >
-                  info@tayloredinstruction.com
+                  {BUSINESS.email}
                 </a>
               </li>
               <li>
                 <a
                   className="transition-colors hover:text-primary"
-                  href="tel:3606588199"
+                  href={BUSINESS.phone.href}
                 >
-                  (360) 658-8199
+                  {BUSINESS.phone.display}
                 </a>
               </li>
               <li>
                 <a
                   className="transition-colors hover:text-primary"
-                  href={GOOGLE_BUSINESS_PROFILE_URL}
+                  href={BUSINESS.googleBusinessProfileUrl}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
@@ -99,7 +155,7 @@ export const Footer = () => {
               <a
                 aria-label="Facebook"
                 className="text-slate-500 transition-colors hover:text-primary"
-                href="https://www.facebook.com/tayloredinstruction.us"
+                href={BUSINESS.socials.facebook}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -108,7 +164,7 @@ export const Footer = () => {
               <a
                 aria-label="Instagram"
                 className="text-slate-500 transition-colors hover:text-primary"
-                href="https://www.instagram.com/taylored.instruction/"
+                href={BUSINESS.socials.instagram}
                 rel="noopener noreferrer"
                 target="_blank"
               >

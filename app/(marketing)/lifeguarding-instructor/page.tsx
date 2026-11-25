@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import LifeguardingInstructorPageContent from "@/components/LifeguardingInstructorPageContent";
+import { getFAQSchema, lifeguardInstructorFAQs } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -10,8 +11,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Red Cross Lifeguarding Instructor Course | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "Red Cross Lifeguarding Instructor Course | Vancouver WA";
 const pageDescription =
   "Become a certified American Red Cross Lifeguarding Instructor in Vancouver WA, Clark County, and San Luis Obispo CA with blended and in-person training.";
 
@@ -19,7 +19,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/lifeguarding-instructor",
-  ogType: "article",
   keywords: [
     "Red Cross lifeguarding instructor course",
     "LGI course Vancouver WA",
@@ -76,6 +75,12 @@ export default async function Page() {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(
+          getFAQSchema(lifeguardInstructorFAQs)
+        )}
         type="application/ld+json"
       />
       <LifeguardingInstructorPageContent />

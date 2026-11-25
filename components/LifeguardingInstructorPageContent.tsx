@@ -1,6 +1,15 @@
+import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import {
+  CERTIFICATION_FACTS,
+  FaqSection,
+  QuickFacts,
+} from "@/components/ServicePageSections";
+import { lifeguardInstructorFAQs } from "@/lib/faqSchema";
+
+const linkClassName = "font-medium text-primary hover:underline";
 
 export default function LifeguardingInstructorPageContent() {
   return (
@@ -16,6 +25,23 @@ export default function LifeguardingInstructorPageContent() {
       subtitle="Train to teach Red Cross Lifeguarding courses through blended online and in-person sessions led by an Instructor Trainer."
       title="American Red Cross Lifeguarding Instructor Course"
     >
+      <QuickFacts
+        facts={[
+          { label: "Certifying body", value: "American Red Cross" },
+          {
+            label: "Format",
+            value:
+              "Blended: online session, then in-person classroom and in-water sessions",
+          },
+          {
+            label: "Who it's for",
+            value:
+              "Current Red Cross lifeguards, 17 or older, who want to teach Lifeguarding",
+          },
+          ...CERTIFICATION_FACTS,
+        ]}
+      />
+
       <ClassPageSection title="Course overview">
         <p>
           The Lifeguarding Instructor course prepares instructor candidates to
@@ -54,13 +80,11 @@ export default function LifeguardingInstructorPageContent() {
           completed independently, followed by instructor-led classroom and
           in-water sessions.
         </p>
-        <ul className="list-disc space-y-2 pl-5">
-          <li>Online session: approximately 2 hours to complete.</li>
-          <li>
-            In-person sessions, including the precourse, include 16 hours of
-            instruction time. This does not include breaks or transitions.
-          </li>
-        </ul>
+        <p>
+          Session dates and times vary by class, so check the listing on the
+          schedule. Finish the online session before the precourse, because the
+          in-person sessions start with the prerequisite skill assessment.
+        </p>
         <p>
           Upon successful completion, participants earn the American Red Cross
           Lifeguarding Instructor certification.
@@ -136,6 +160,35 @@ export default function LifeguardingInstructorPageContent() {
           this grace period does not extend certification.
         </p>
       </ClassPageSection>
+
+      <ClassPageSection title="Who leads the course">
+        <p>
+          Lifeguarding Instructor courses are led by a Red Cross Lifeguarding
+          Instructor Trainer. Our founder, Evan Taylor, holds that rating, and
+          also trains Water Safety Instructors and First Aid/CPR/AED
+          instructors. Once you certify, you can teach through a Red Cross
+          Training Provider, and new instructors can{" "}
+          <Link className={linkClassName} href="/alignment">
+            align with Taylored Instruction
+          </Link>
+          .
+        </p>
+        <p>
+          We teach in Vancouver, WA, and serve Camas, Portland, San Luis Obispo
+          and the surrounding areas. Aquatic facilities can host a course for
+          their own staff; use the Host this course button above to get in
+          touch. For background, read{" "}
+          <Link
+            className={linkClassName}
+            href="/blog/how-to-become-lifeguard-instructor"
+          >
+            how to become a lifeguard instructor
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+
+      <FaqSection faqs={lifeguardInstructorFAQs} />
     </ClassPageLayout>
   );
 }

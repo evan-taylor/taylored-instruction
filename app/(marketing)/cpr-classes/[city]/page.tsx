@@ -89,13 +89,10 @@ export default async function CityPage(props: CityPageProps) {
 
   return (
     <>
-      {locationSchemas(location).map((schema) => (
-        <script
-          dangerouslySetInnerHTML={generateJSONLD(schema)}
-          key={schema["@type"]}
-          type="application/ld+json"
-        />
-      ))}
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(locationSchemas(location))}
+        type="application/ld+json"
+      />
       <CityLandingPage
         location={location}
         nearby={nearby}

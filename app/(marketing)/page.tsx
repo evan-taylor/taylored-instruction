@@ -5,13 +5,17 @@ import { AboutSection } from "@/components/home/AboutSection";
 import { CertificationsSection } from "@/components/home/CertificationsSection";
 import { Hero } from "@/components/home/Hero";
 import { ServicesSection } from "@/components/home/ServicesSection";
+import { ACCREDITATION_SHORT } from "@/lib/business";
 import { buildPageMetadata } from "@/lib/seo";
-import { generateJSONLD, getWebPageSchema } from "@/lib/structuredData";
+import {
+  generateJSONLD,
+  getLocalBusinessSchema,
+  getWebPageSchema,
+} from "@/lib/structuredData";
 
-const pageTitle =
-  "Taylored Instruction | CPR, BLS, First Aid & Lifeguard Training in Vancouver WA & San Luis Obispo CA";
+const pageTitle = "CPR & BLS Training in Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "Get certified in CPR, BLS, First Aid, and Lifeguarding with American Red Cross and AHA courses in Vancouver WA, Clark County, Portland metro, and San Luis Obispo County.";
+  "Get certified in CPR, BLS, First Aid, and Lifeguarding with American Red Cross and AHA courses in Vancouver WA, Clark County, and San Luis Obispo County.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,
@@ -29,7 +33,7 @@ export const metadata = buildPageMetadata({
   ],
   image: {
     title: "Professional CPR, BLS & Lifeguard Training",
-    eyebrow: "Red Cross & AHA certified",
+    eyebrow: ACCREDITATION_SHORT,
   },
 });
 
@@ -45,6 +49,10 @@ export default async function Home() {
     <>
       <script
         dangerouslySetInnerHTML={generateJSONLD(homePageSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getLocalBusinessSchema())}
         type="application/ld+json"
       />
       <Hero />
