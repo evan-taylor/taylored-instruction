@@ -381,7 +381,7 @@ const NavMenu = ({
 
           {link.dropdown ? (
             <div
-              className="absolute left-0 z-20 mt-2 w-64 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden"
+              className="absolute left-0 z-20 mt-2 max-h-[calc(100dvh-6rem)] w-64 origin-top-left overflow-y-auto overscroll-contain rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden"
               hidden={activeDropdown !== link.label}
               id={dropdownId("nav", link.label)}
             >
