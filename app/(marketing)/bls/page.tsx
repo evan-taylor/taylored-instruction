@@ -12,15 +12,14 @@ import {
 } from "@/lib/structuredData";
 
 const pageTitle =
-  "AHA BLS Certification Course | Vancouver WA & San Luis Obispo CA";
+  "AHA BLS Certification in Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "American Heart Association BLS certification for healthcare professionals in Vancouver WA, Clark County, and San Luis Obispo CA with in-person and blended options.";
+  "American Heart Association BLS certification for healthcare professionals in Vancouver WA and San Luis Obispo CA, with in-person and blended options.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/bls",
-  ogType: "article",
   image: {
     title: "AHA BLS Certification Course",
     eyebrow: "American Heart Association",
