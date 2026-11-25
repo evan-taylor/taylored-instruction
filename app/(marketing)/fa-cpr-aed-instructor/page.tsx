@@ -10,8 +10,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Red Cross First Aid/CPR/AED Instructor Course | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "Red Cross First Aid/CPR/AED Instructor | Vancouver WA";
 const pageDescription =
   "Become a certified American Red Cross First Aid/CPR/AED Instructor in Vancouver WA, Clark County, and San Luis Obispo CA.";
 
@@ -19,7 +18,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/fa-cpr-aed-instructor",
-  ogType: "article",
   keywords: [
     "Red Cross first aid CPR AED instructor course",
     "FA CPR AED instructor training Vancouver WA",

@@ -19,17 +19,6 @@ export type BuildPageMetadataInput = {
 export const SITE_URL = "https://tayloredinstruction.com";
 export const SITE_NAME = "Taylored Instruction";
 
-const BASE_KEYWORDS = [
-  "CPR training Vancouver WA",
-  "BLS certification Vancouver WA",
-  "First Aid training Vancouver WA",
-  "Lifeguard certification Vancouver WA",
-  "CPR classes San Luis Obispo CA",
-  "workplace safety training",
-  "American Red Cross training",
-  "American Heart Association training",
-];
-
 const dedupeKeywords = (keywords: string[]): string[] =>
   Array.from(
     new Set(keywords.map((keyword) => keyword.trim()).filter(Boolean))
@@ -57,7 +46,7 @@ export const buildPageMetadata = ({
   return {
     title,
     description,
-    keywords: dedupeKeywords([...BASE_KEYWORDS, ...keywords]),
+    keywords: dedupeKeywords(keywords),
     alternates: {
       canonical: canonicalUrl,
     },

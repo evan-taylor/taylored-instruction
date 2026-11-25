@@ -14,7 +14,7 @@ import {
 } from "@/lib/structuredData";
 
 const pageTitle =
-  "Contact Taylored Instruction | CPR, BLS, First Aid & Lifeguard Training";
+  "Contact Us | Vancouver WA CPR Classes | Taylored Instruction";
 const pageDescription =
   "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver WA and San Luis Obispo CA. Call (360) 685-8199.";
 

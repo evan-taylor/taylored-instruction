@@ -18,10 +18,9 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Corporate CPR Training | Vancouver WA & San Luis Obispo CA Workplace Safety";
+const pageTitle = "Corporate CPR Training, Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "On-site corporate CPR, BLS, and First Aid training for businesses, schools, and organizations in Vancouver WA, Clark County, Portland metro, and San Luis Obispo CA.";
+  "On-site corporate CPR, BLS, and First Aid training for businesses, schools, and organizations in Vancouver WA, Clark County, and San Luis Obispo CA.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,

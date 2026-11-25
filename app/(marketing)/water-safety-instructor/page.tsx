@@ -11,8 +11,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Red Cross Water Safety Instructor Course | Taylored Instruction";
+const pageTitle = "Red Cross Water Safety Instructor Course | Vancouver WA";
 const pageDescription =
   "Train to teach swimming and water safety with the American Red Cross Water Safety Instructor course. Explore prerequisites and upcoming WSI classes.";
 const path = "/water-safety-instructor";
@@ -21,7 +20,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path,
-  ogType: "article",
   keywords: [
     "Water Safety Instructor",
     "WSI course",

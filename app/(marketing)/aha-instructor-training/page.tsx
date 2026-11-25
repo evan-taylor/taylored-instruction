@@ -10,7 +10,8 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle = "AHA Instructor Training | Vancouver WA & San Luis Obispo CA";
+const pageTitle =
+  "AHA Instructor Course in Vancouver WA | Taylored Instruction";
 const pageDescription =
   "Become an American Heart Association BLS or Heartsaver instructor through Taylored Instruction in Vancouver WA and San Luis Obispo CA.";
 
@@ -18,7 +19,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/aha-instructor-training",
-  ogType: "article",
   keywords: [
     "AHA instructor training Vancouver WA",
     "BLS instructor course Clark County",

@@ -1,5 +1,7 @@
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { ALL_CLASSES, relatedCourseForPost } from "@/lib/related-course";
 import { type RevnuPostResponse, rewriteRevnuBodyLinks } from "@/lib/revnu";
 import { generateJSONLD } from "@/lib/structuredData";
 
@@ -22,6 +24,7 @@ export const RevnuPostArticle = ({
 }) => {
   const { post } = data;
   const publishedAt = new Date(post.publishedAt);
+  const course = relatedCourseForPost(post);
 
   return (
     <article className="bg-white">
@@ -79,6 +82,36 @@ export const RevnuPostArticle = ({
             __html: rewriteRevnuBodyLinks(post.body.html, postPaths),
           }}
         />
+      </section>
+
+      <section className="container mx-auto max-w-4xl px-4 pb-16">
+        <aside
+          aria-labelledby="take-the-class"
+          className="rounded-xl border border-slate-200 bg-slate-50 p-6 md:p-8"
+        >
+          <h2 className="font-bold text-2xl text-slate-900" id="take-the-class">
+            Take the class
+          </h2>
+          <Link
+            className="mt-3 inline-flex items-center gap-1.5 font-semibold text-lg text-primary underline-offset-2 hover:underline"
+            href={course.href}
+          >
+            {course.name}
+            <ArrowRight aria-hidden="true" className="h-4 w-4" />
+          </Link>
+          {course.href === ALL_CLASSES.href ? null : (
+            <p className="mt-2 text-slate-600">
+              Or{" "}
+              <Link
+                className="font-medium text-primary underline-offset-2 hover:underline"
+                href={ALL_CLASSES.href}
+              >
+                browse all upcoming classes
+              </Link>
+              .
+            </p>
+          )}
+        </aside>
       </section>
     </article>
   );
