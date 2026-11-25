@@ -9,6 +9,10 @@ import {
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
 import { action, internalAction } from "./_generated/server";
+import {
+  organizationCustomer,
+  stripeCustomerFor,
+} from "./registrationCustomers";
 
 const HOUR_S = 3600;
 const TAX_CODE_PAGE = 100;
@@ -74,18 +78,31 @@ export const issue = action({
     }
     const client = stripe();
     try {
-      const customer = await client.customers.create(
-        {
-          name: invoice.billToName,
-          email: invoice.billToEmail,
-          address: customerAddress(invoice),
-          metadata: { registrationInvoice: invoice._id },
-        },
-        { idempotencyKey: `registration-invoice-customer:${invoice._id}` }
+      const address = customerAddress(invoice);
+      const bill = {
+        name: invoice.billToName,
+        email: invoice.billToEmail,
+        address,
+      };
+      const customer = await stripeCustomerFor(
+        ctx,
+        client,
+        invoice.organizationId
+          ? {
+              ...(await organizationCustomer(ctx, invoice.organizationId)),
+              ...bill,
+            }
+          : bill
+      );
+      // Stripe Tax on the invoice reads the Customer's address; an
+      // organization's Customer is its bill-to, so it follows the invoice too.
+      await client.customers.update(
+        customer,
+        invoice.organizationId ? bill : { address }
       );
       const created = await client.invoices.create(
         {
-          customer: customer.id,
+          customer,
           collection_method: "send_invoice",
           due_date: Math.max(
             Math.ceil(invoice.dueAt / 1000),
@@ -132,7 +149,7 @@ export const issue = action({
         lines.map(({ seat, index, line }) =>
           client.invoiceItems.create(
             {
-              customer: customer.id,
+              customer,
               invoice: created.id,
               description: `${seat.attendee.name}: ${line.title}`,
               quantity: 1,
@@ -170,7 +187,7 @@ export const issue = action({
       await ctx.runMutation(internal.registrationGroups.attachStripeInvoice, {
         id: invoice._id,
         stripeInvoiceId: finalized.id,
-        stripeCustomerId: customer.id,
+        stripeCustomerId: customer,
         hostedUrl: finalized.hosted_invoice_url,
         pdfUrl: finalized.invoice_pdf ?? undefined,
         tax: Math.max(0, finalized.total - preTax),
