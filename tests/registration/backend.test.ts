@@ -3001,6 +3001,25 @@ it("marks scheduled steps sent after the class ends for the review request", asy
   if (!enrolled) {
     throw new Error("Missing attendee");
   }
+  const emailStep = (id: string, anchor: "first" | "last", offset: number) => ({
+    id,
+    anchor,
+    offsetMinutes: offset,
+    subject: id,
+    body: id,
+  });
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        tuition: 0,
+        emails: [
+          emailStep("reminder", "first", -60),
+          emailStep("follow-up", "last", 60),
+        ],
+      },
+    })
+  );
   const step = (stepId: string) =>
     f.t.run((ctx) =>
       ctx.db.insert("registrationJobs", {
@@ -3018,20 +3037,21 @@ it("marks scheduled steps sent after the class ends for the review request", asy
         scheduleRevision: 1,
       })
     );
-  const reminder = await step("reminder");
-  expect(
-    (await f.t.mutation(internal.registrationMail.claim, { id: reminder }))
-      ?.afterClass
-  ).toBe(false);
+  const afterClass = async (stepId: string) => {
+    const id = await step(stepId);
+    const message = await f.t.mutation(internal.registrationMail.claim, {
+      id,
+    });
+    await f.t.run((ctx) => ctx.db.patch(id, { state: "canceled" }));
+    return message?.afterClass;
+  };
+  expect(await afterClass("follow-up")).toBe(false);
 
   await f.t.run((ctx) =>
     ctx.db.patch(f.session, { lastEnd: Date.now() - 60_000 })
   );
-  const followUp = await step("follow-up");
-  expect(
-    (await f.t.mutation(internal.registrationMail.claim, { id: followUp }))
-      ?.afterClass
-  ).toBe(true);
+  expect(await afterClass("reminder")).toBe(false);
+  expect(await afterClass("follow-up")).toBe(true);
 });
 
 it("shows a waiver instead of claiming the quoted amount was paid", async () => {

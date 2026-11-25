@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { BATCH, formatMoney } from "../shared/registration/domain";
+import { BATCH, effective, formatMoney } from "../shared/registration/domain";
 import { calendar, formatSchedule } from "../shared/registration/schedule";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -184,16 +184,28 @@ export const due = internalQuery({
     return [...pending, ...abandoned].map((j) => j._id);
   },
 });
-/** A scheduled follow-up, not a certificate nudge, going out once class ended. */
-function sentAfterClass(
+/**
+ * A step scheduled for after the class ends, not a certificate nudge. Late
+ * pre-class reminders stay excluded because the step's anchor decides.
+ */
+async function sentAfterClass(
+  ctx: MutationCtx,
   job: Doc<"registrationJobs">,
   session: Doc<"registrationSessions"> | null
 ) {
+  if (!(job.stepId && session && session.lastEnd <= Date.now())) {
+    return false;
+  }
+  const course = await ctx.db.get(session.courseId);
+  const step = course
+    ? effective(course.settings, session.overrides).emails.find(
+        (s) => s.id === job.stepId
+      )
+    : undefined;
   return Boolean(
-    job.stepId &&
-      !job.onlyMissingCertificate &&
-      session &&
-      session.lastEnd <= Date.now()
+    step?.anchor === "last" &&
+      step.offsetMinutes >= 0 &&
+      !step.onlyMissingCertificate
   );
 }
 function scheduleContent(
@@ -405,7 +417,7 @@ export const claim = internalMutation({
       name: seat?.name ?? "",
       ...scheduleContent(session, seat),
       link: job.link,
-      afterClass: sentAfterClass(job, session),
+      afterClass: await sentAfterClass(ctx, job, session),
     };
   },
 });
