@@ -3,6 +3,11 @@ import { cacheLife, cacheTag } from "next/cache";
 
 const revnuApiBase = "https://revnu.com/api/content/v1";
 const listPageLimit = 200;
+const maxConcurrentRequests = 4;
+const maxAttempts = 5;
+const baseRetryDelayMs = 1000;
+const maxBackoffDelayMs = 8000;
+const maxTotalRetryWaitMs = 30_000;
 const rootRelativeHrefPattern = /href="(\/[^"/][^"#?]*)([^"]*)"/g;
 
 export const REVNU_CACHE_TAG = "revnu";
@@ -71,8 +76,74 @@ const getAuthHeaders = () => {
   return apiKey ? { Authorization: `Bearer ${apiKey}` } : null;
 };
 
-const fetchRevnu = (path: string, headers: Record<string, string>) =>
-  fetch(`${revnuApiBase}${path}`, { headers });
+let activeRequests = 0;
+const queuedRequests: (() => void)[] = [];
+
+const withRequestSlot = async <T>(request: () => Promise<T>) => {
+  if (activeRequests < maxConcurrentRequests) {
+    activeRequests += 1;
+  } else {
+    await new Promise<void>((resolve) => queuedRequests.push(resolve));
+  }
+  try {
+    return await request();
+  } finally {
+    const next = queuedRequests.shift();
+    if (next) {
+      next();
+    } else {
+      activeRequests -= 1;
+    }
+  }
+};
+
+const isRetryableStatus = (status: number) => status === 429 || status >= 500;
+
+const getRetryAfterMs = (header: string | null) => {
+  if (!header) {
+    return null;
+  }
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) {
+    return Math.max(0, seconds * 1000);
+  }
+  const retryAt = Date.parse(header);
+  return Number.isNaN(retryAt) ? null : Math.max(0, retryAt - Date.now());
+};
+
+const getRetryDelayMs = (response: Response, attempt: number) =>
+  getRetryAfterMs(response.headers.get("Retry-After")) ??
+  Math.min(
+    baseRetryDelayMs * 2 ** (attempt - 1) * (0.5 + Math.random() / 2),
+    maxBackoffDelayMs
+  );
+
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Retries 429 and 5xx responses with backoff, honoring Retry-After. Once the
+// attempts or the wait budget run out it returns the failed response, so
+// callers still fail loudly instead of rendering an empty blog.
+const fetchRevnu = async (
+  path: string,
+  headers: Record<string, string>,
+  attempt = 1,
+  waitedMs = 0
+): Promise<Response> => {
+  const response = await withRequestSlot(() =>
+    fetch(`${revnuApiBase}${path}`, { headers })
+  );
+  if (!isRetryableStatus(response.status) || attempt >= maxAttempts) {
+    return response;
+  }
+  const delayMs = getRetryDelayMs(response, attempt);
+  if (waitedMs + delayMs > maxTotalRetryWaitMs) {
+    return response;
+  }
+  await response.body?.cancel();
+  await sleep(delayMs);
+  return fetchRevnu(path, headers, attempt + 1, waitedMs + delayMs);
+};
 
 const fetchRevnuPostPages = async (
   headers: Record<string, string>,
