@@ -109,6 +109,21 @@ describe("Revnu post list", () => {
     await result;
   });
 
+  it("leaves out posts that redirect to a kept post", async () => {
+    mockFetch(
+      listRoute([
+        summary("first-aid-training-for-teachers"),
+        summary("first-aid-certification-for-teachers"),
+      ])
+    );
+
+    const posts = await getRevnuPosts();
+
+    expect(posts.map((post) => post.slug)).toEqual([
+      "first-aid-training-for-teachers",
+    ]);
+  });
+
   it("skips Revnu when no key is configured", async () => {
     vi.stubEnv("REVNU_CONTENT_API_KEY", "");
     const fetchMock = mockFetch(() => ({ status: 200 }));
@@ -262,6 +277,25 @@ describe("Revnu post resolution", () => {
     });
   });
 
+  it("sends an old alias of a consolidated post to the kept post", async () => {
+    mockFetch(
+      listRoute(
+        [
+          summary("first-aid-training-for-teachers"),
+          summary("first-aid-certification-for-teachers"),
+        ],
+        postResponse("first-aid-certification-for-teachers", {
+          redirected: true,
+        })
+      )
+    );
+
+    await expect(resolveRevnuPost("/old-teacher-slug")).resolves.toEqual({
+      kind: "redirect",
+      canonicalPath: "/first-aid-training-for-teachers",
+    });
+  });
+
   it("serves a removed post again once it is back in the list", async () => {
     mockFetch(listRoute([], postResponse("a")));
     await expect(resolveRevnuPost("/a")).resolves.toBeNull();
@@ -292,6 +326,15 @@ describe("Revnu body links", () => {
         '<a href="https://tayloredinstruction.com/blog">absolute</a>',
       ].join("")
     );
+  });
+
+  it("points links to a redirected post at the post that replaced it", () => {
+    const html =
+      '<a href="/first-aid-certification-for-teachers#kit">teachers</a>';
+
+    expect(
+      rewriteRevnuBodyLinks(html, ["/first-aid-training-for-teachers"])
+    ).toBe('<a href="/blog/first-aid-training-for-teachers#kit">teachers</a>');
   });
 
   it("points legacy hovn.app booking links at the class schedule", () => {
