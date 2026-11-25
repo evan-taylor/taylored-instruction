@@ -193,7 +193,10 @@ async function sentAfterClass(
   job: Doc<"registrationJobs">,
   session: Doc<"registrationSessions"> | null
 ) {
-  if (!(job.stepId && session && session.lastEnd <= Date.now())) {
+  if (
+    !(job.stepId && session && session.lastEnd <= Date.now()) ||
+    job.onlyMissingCertificate
+  ) {
     return false;
   }
   const course = await ctx.db.get(session.courseId);
