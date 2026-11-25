@@ -9,10 +9,9 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Instructor Alignment with Taylored Instruction | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "Instructor Alignment in Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "Align with Taylored Instruction as an independent CPR, First Aid, BLS, or Lifeguard instructor and receive support from a Red Cross LTP and AHA-aligned training site.";
+  "Align with Taylored Instruction as an independent CPR, First Aid, BLS, or Lifeguard instructor, supported by a Red Cross LTP and AHA-aligned training site.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,

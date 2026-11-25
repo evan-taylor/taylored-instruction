@@ -11,8 +11,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "First Aid/CPR/AED Certification | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "First Aid/CPR/AED Certification | Vancouver WA";
 const pageDescription =
   "American Red Cross First Aid, CPR, and AED certification classes in Vancouver WA, Clark County, and San Luis Obispo CA with blended and in-person options.";
 
@@ -20,7 +19,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/first-aid-cpr-aed",
-  ogType: "article",
   keywords: [
     "first aid CPR AED classes Vancouver WA",
     "Red Cross CPR certification Clark County",

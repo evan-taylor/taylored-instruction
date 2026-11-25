@@ -11,8 +11,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Red Cross Basic Life Support (BLS) Certification | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "Red Cross BLS Class in Vancouver WA | Taylored Instruction";
 const pageDescription =
   "American Red Cross Basic Life Support (BLS) certification for healthcare providers in Vancouver WA, Clark County, and San Luis Obispo CA.";
 
@@ -20,7 +19,6 @@ export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/basic-life-support",
-  ogType: "article",
   keywords: [
     "Red Cross BLS class Vancouver WA",
     "basic life support certification Clark County",
