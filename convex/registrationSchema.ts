@@ -444,7 +444,9 @@ export const registrationTables = {
       v.literal("pending"),
       v.literal("drafted"),
       v.literal("failed"),
-      v.literal("no-evidence")
+      v.literal("no-evidence"),
+      /** Staff submitted evidence themselves after the draft failed. */
+      v.literal("handled")
     ),
     attempts: v.number(),
     /** The uploaded evidence PDF, reused when a later attempt retries. */
@@ -452,6 +454,7 @@ export const registrationTables = {
     error: v.optional(v.string()),
   })
     .index("by_disputeId", ["disputeId"])
+    .index("by_paymentIntent", ["paymentIntent"])
     .index("by_state", ["state"]),
   registrationEvents: defineTable({
     eventId: v.string(),

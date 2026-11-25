@@ -318,6 +318,56 @@ function UnpaidEnrollments({ orders }: { orders: Attention["unpaid"] }) {
   );
 }
 
+function FailedDisputeRow({
+  dispute,
+}: {
+  dispute: Doc<"registrationDisputes">;
+}) {
+  const markHandled = useMutation(api.registrationDisputes.markHandled);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
+  return (
+    <TR>
+      <TD>
+        {dispute.orderId
+          ? orderLink(dispute.orderId, shortId(dispute.orderId))
+          : "None"}
+        <div className="text-slate-500 text-xs">
+          {formatDateTime(dispute._creationTime)}
+        </div>
+      </TD>
+      <TD>
+        <code className="text-xs">{dispute.disputeId}</code>
+      </TD>
+      <TD className="max-w-md text-rose-700 text-xs">
+        {dispute.error}
+        <ResultNotice className="mt-2" message={message} />
+      </TD>
+      <TD className="text-right">
+        <Button
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            setMessage("");
+            try {
+              await markHandled({ id: dispute._id });
+            } catch (error) {
+              setMessage(errorText(error));
+            } finally {
+              setBusy(false);
+            }
+          }}
+          size="xs"
+          type="button"
+          variant="secondary"
+        >
+          {busy ? "Working…" : "Submitted in Stripe"}
+        </Button>
+      </TD>
+    </TR>
+  );
+}
+
 function FailedDisputeDrafts({
   disputes,
 }: {
@@ -336,22 +386,12 @@ function FailedDisputeDrafts({
             <TH>Order</TH>
             <TH>Dispute</TH>
             <TH>Error</TH>
+            <TH className="text-right">Actions</TH>
           </TR>
         </THead>
         <TBody>
-          {disputes.map((d) => (
-            <TR key={d._id}>
-              <TD>
-                {d.orderId ? orderLink(d.orderId, shortId(d.orderId)) : "None"}
-                <div className="text-slate-500 text-xs">
-                  {formatDateTime(d._creationTime)}
-                </div>
-              </TD>
-              <TD>
-                <code className="text-xs">{d.disputeId}</code>
-              </TD>
-              <TD className="max-w-md text-rose-700 text-xs">{d.error}</TD>
-            </TR>
+          {disputes.map((dispute) => (
+            <FailedDisputeRow dispute={dispute} key={dispute._id} />
           ))}
         </TBody>
       </Table>

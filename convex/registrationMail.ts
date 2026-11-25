@@ -79,11 +79,14 @@ function messageBody(
   }
   return { category, body };
 }
-async function messageContext(
+/**
+ * The order behind a job. Receipts and invoices bill it; an attendee's
+ * confirmation only cites its policy, so it never shows the order's billing.
+ */
+async function jobOrder(
   ctx: MutationCtx,
   job: Doc<"registrationJobs">,
-  seat: Doc<"registrationSeats"> | null,
-  session: Doc<"registrationSessions"> | null
+  seat: Doc<"registrationSeats"> | null
 ) {
   const [kind, reference] = job.key.split(":");
   const invoiceId =
@@ -95,11 +98,21 @@ async function messageContext(
     kind === "receipt" && reference
       ? ctx.db.normalizeId("registrationOrders", reference)
       : null;
+  const billingOrderId = invoice?.orderId ?? receiptId;
   const orderId =
-    invoice?.orderId ??
-    receiptId ??
-    (kind === "confirmation" ? seat?.orderId : undefined);
+    billingOrderId ?? (kind === "confirmation" ? seat?.orderId : undefined);
   const order = orderId ? await ctx.db.get(orderId) : null;
+  return { invoice, order, billing: Boolean(billingOrderId) };
+}
+
+async function messageContext(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  seat: Doc<"registrationSeats"> | null,
+  session: Doc<"registrationSessions"> | null
+) {
+  const [kind] = job.key.split(":");
+  const { invoice, order, billing } = await jobOrder(ctx, job, seat);
   const course = seat ? await ctx.db.get(seat.courseId) : null;
   const title =
     session?.title ?? course?.title ?? order?.title ?? "Taylored Instruction";
@@ -116,7 +129,7 @@ async function messageContext(
       });
     }
   }
-  details.push(...billingDetails(order, invoice));
+  details.push(...billingDetails(billing ? order : null, invoice));
   const message =
     order?.source === "waived" && kind === "receipt"
       ? {

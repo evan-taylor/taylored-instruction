@@ -549,6 +549,7 @@ describe("Cancellation policy in confirmation emails", () => {
       `This registration is subject to our Cancellation Policy (version ${CURRENT.version})`
     );
     expect(mail?.body).not.toContain("You agreed");
+    expect(mail?.body).not.toContain("Total paid");
   });
 
   it("labels staff bookings and invoices as disclosures, not agreements", async () => {
@@ -760,6 +761,61 @@ describe("Dispute evidence export", () => {
       {}
     );
     expect(attention.disputes.map((row) => row.disputeId)).toEqual(["dp_down"]);
+    const [failed] = attention.disputes;
+    if (!failed) {
+      throw new Error("Missing failed dispute");
+    }
+    await expect(
+      f.outsiderClient.mutation(api.registrationDisputes.markHandled, {
+        id: failed._id,
+      })
+    ).rejects.toThrow();
+    await f.adminClient.mutation(api.registrationDisputes.markHandled, {
+      id: failed._id,
+    });
+    const cleared = await f.adminClient.query(
+      api.registrationOperations.attention,
+      {}
+    );
+    expect(cleared.disputes).toHaveLength(0);
+  });
+
+  it("drafts a dispute that arrived before its payment settled", async () => {
+    vi.useFakeTimers();
+    const f = await fixture();
+    const order = await f.register("early");
+    const unlinked = await f.t.run((ctx) =>
+      ctx.db.insert("registrationDisputes", {
+        disputeId: "dp_unlinked",
+        paymentIntent: "pi_nobody",
+        state: "pending",
+        attempts: 0,
+      })
+    );
+    await f.t.action(internal.registrationEvidence.prefillDispute, {
+      disputeId: "dp_unlinked",
+    });
+    expect(await f.t.run((ctx) => ctx.db.get(unlinked))).toMatchObject({
+      state: "pending",
+      attempts: 1,
+      error: "No order is linked to this payment yet",
+    });
+    await f.t.run((ctx) =>
+      ctx.db.insert("registrationDisputes", {
+        disputeId: "dp_early",
+        paymentIntent: "pi_early",
+        state: "failed",
+        attempts: 5,
+        error: "No order is linked to this payment yet",
+      })
+    );
+    await f.pay(order);
+    const drafts = await disputeDrafts(f);
+    vi.useRealTimers();
+    expect(drafts.find((row) => row.disputeId === "dp_early")).toMatchObject({
+      state: "drafted",
+    });
+    expect(stripe.disputes.map((row) => row.id)).toEqual(["dp_early"]);
   });
 
   it("dates the disputed service in the class's own time zone", async () => {

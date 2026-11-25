@@ -53,8 +53,11 @@ export const prefillDispute = internalAction({
         internal.registrationPolicy.disputeEvidence,
         { paymentIntent: dispute.paymentIntent }
       );
-      const text = data ? disputeEvidenceText(data, origin()) : null;
-      if (!(data && text)) {
+      if (!data) {
+        throw new Error("No order is linked to this payment yet");
+      }
+      const text = disputeEvidenceText(data, origin());
+      if (!text) {
         await ctx.runMutation(internal.registrationDisputes.result, {
           disputeId: args.disputeId,
           outcome: "no-evidence",

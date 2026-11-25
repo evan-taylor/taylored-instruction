@@ -1,8 +1,9 @@
 import { v } from "convex/values";
 import { doc } from "convex-helpers/validators";
 import { internal } from "./_generated/api";
-import { internalMutation, internalQuery } from "./_generated/server";
-import { audit } from "./registrationHelpers";
+import type { MutationCtx } from "./_generated/server";
+import { internalMutation, internalQuery, mutation } from "./_generated/server";
+import { audit, staff } from "./registrationHelpers";
 import schema from "./schema";
 
 const MAX_ATTEMPTS = 5;
@@ -39,6 +40,55 @@ export const opened = internalMutation({
       0,
       internal.registrationEvidence.prefillDispute,
       { disputeId: args.disputeId }
+    );
+    return null;
+  },
+});
+
+/**
+ * A dispute can arrive before the payment webhook links its PaymentIntent to
+ * the order. Linking the payment reopens drafts that gave up meanwhile.
+ */
+export async function reopenDisputes(ctx: MutationCtx, paymentIntent: string) {
+  const rows = await ctx.db
+    .query("registrationDisputes")
+    .withIndex("by_paymentIntent", (q) => q.eq("paymentIntent", paymentIntent))
+    .take(10);
+  await Promise.all(
+    rows
+      .filter((row) => row.state === "failed" || row.state === "no-evidence")
+      .map(async (row) => {
+        await ctx.db.patch(row._id, {
+          state: "pending",
+          attempts: 0,
+          error: undefined,
+        });
+        await ctx.scheduler.runAfter(
+          0,
+          internal.registrationEvidence.prefillDispute,
+          { disputeId: row.disputeId }
+        );
+      })
+  );
+}
+
+/** Clears a failed draft from the attention list once staff submit evidence themselves. */
+export const markHandled = mutation({
+  args: { id: v.id("registrationDisputes") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const actor = await staff(ctx);
+    const row = await ctx.db.get(args.id);
+    if (row?.state !== "failed") {
+      return null;
+    }
+    await ctx.db.patch(row._id, { state: "handled" });
+    await audit(
+      ctx,
+      actor.userId,
+      "dispute-evidence-handled",
+      row.orderId ?? row.disputeId,
+      `Stripe dispute ${row.disputeId}: evidence submitted by staff after the draft failed`
     );
     return null;
   },

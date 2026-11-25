@@ -13,6 +13,7 @@ import type { EvidenceData } from "../shared/registration/evidence";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalQuery, query } from "./_generated/server";
+import { reopenDisputes } from "./registrationDisputes";
 import { staff } from "./registrationHelpers";
 
 /**
@@ -246,6 +247,9 @@ export async function linkStripePayment(
         : Promise.resolve();
     })
   );
+  if (stripe.paymentIntent) {
+    await reopenDisputes(ctx, stripe.paymentIntent);
+  }
 }
 
 /** The acknowledgement an email should cite: the newest click-through, else the newest disclosure. */
