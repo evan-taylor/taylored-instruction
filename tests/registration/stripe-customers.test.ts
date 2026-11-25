@@ -36,6 +36,8 @@ const stripe = vi.hoisted(() => ({
   lists: 0,
   failCreate: false,
   failUpdate: false,
+  rateLimitSearches: 0,
+  onList: undefined as (() => void) | undefined,
   voided: [] as string[],
   beforeFinalize: undefined as (() => void) | undefined,
 }));
@@ -46,10 +48,12 @@ vi.mock("stripe", async (original) => {
     new Promise((resolve) => setTimeout(resolve, ms));
   class FakeStripe {
     static readonly errors = actual.default.errors;
+    static readonly createNodeHttpClient = actual.default.createNodeHttpClient;
     readonly customers = {
       list: ({ email }: { email: string }) => ({
         autoPagingToArray: async () => {
           stripe.lists += 1;
+          stripe.onList?.();
           await pause(stripe.listDelay);
           return stripe.customers.filter(
             (c) => !c.deleted && c.email === email
@@ -59,6 +63,12 @@ vi.mock("stripe", async (original) => {
       search: ({ query }: { query: string }) => ({
         autoPagingToArray: async () => {
           await pause(0);
+          if (stripe.rateLimitSearches > 0) {
+            stripe.rateLimitSearches -= 1;
+            throw new actual.default.errors.StripeRateLimitError({
+              message: "Request rate limit exceeded.",
+            });
+          }
           const email = query.slice(7, -1);
           return stripe.customers.filter(
             (c) => !c.deleted && c.email?.toLowerCase() === email
@@ -226,6 +236,8 @@ beforeEach(() => {
   stripe.lists = 0;
   stripe.failCreate = false;
   stripe.failUpdate = false;
+  stripe.rateLimitSearches = 0;
+  stripe.onList = undefined;
   stripe.voided.length = 0;
   stripe.beforeFinalize = undefined;
   signedIn.customer = "cus_signed_in";
@@ -816,7 +828,10 @@ describe("Customer backfill", () => {
       link: 1,
       create: 1,
       conflicts: [{ email: "twice@example.test", customers: duplicates }],
+      stopped: "done",
+      error: null,
       cursor: null,
+      next: null,
     });
     expect(stripe.created).toHaveLength(0);
     expect(
@@ -846,5 +861,135 @@ describe("Customer backfill", () => {
     });
     expect(again).toMatchObject({ link: 0, create: 0, alreadyStored: 3 });
     expect(stripe.created).toHaveLength(1);
+  });
+  it("stops on a lasting rate limit with a cursor, and resumes there", async () => {
+    const f = await fixture();
+    const emails = ["a", "b", "c", "d"].map((name) => `${name}@example.test`);
+    for (const email of emails) {
+      // biome-ignore lint/performance/noAwaitInLoops: keep the orders in insertion order
+      await paidOrder(f, email);
+    }
+    let lists = 0;
+    stripe.onList = () => {
+      lists += 1;
+      if (lists === 3) {
+        stripe.rateLimitSearches = 1;
+      }
+    };
+    const first = await f.t.action(internal.registrationCustomerBackfill.run, {
+      dryRun: false,
+    });
+    expect(first).toMatchObject({
+      stopped: "rateLimited",
+      orders: 1,
+      purchasers: 1,
+      create: 1,
+      error: expect.stringContaining("b@example.test"),
+      next: { dryRun: false, cursor: first.cursor },
+    });
+    expect(first.cursor).toEqual(expect.any(String));
+    expect(stripe.created).toHaveLength(1);
+    const rest = await f.t.action(internal.registrationCustomerBackfill.run, {
+      dryRun: false,
+      cursor: first.cursor,
+    });
+    expect(rest).toMatchObject({
+      stopped: "done",
+      orders: 3,
+      purchasers: 3,
+      create: 3,
+      alreadyStored: 0,
+      cursor: null,
+    });
+    expect(stripe.created).toHaveLength(4);
+  });
+  it("returns a cursor when the time budget runs out, and honors limit", async () => {
+    const f = await fixture();
+    const emails = ["a", "b", "c", "d", "e"].map(
+      (name) => `${name}@example.test`
+    );
+    for (const email of emails) {
+      // biome-ignore lint/performance/noAwaitInLoops: keep the orders in insertion order
+      await paidOrder(f, email);
+    }
+    const now = Date.now.bind(Date);
+    let skew = 0;
+    vi.spyOn(Date, "now").mockImplementation(() => now() + skew);
+    stripe.onList = () => {
+      skew = 9 * 60_000;
+    };
+    const budget = await f.t.action(internal.registrationCustomerBackfill.run, {
+      dryRun: true,
+    });
+    vi.mocked(Date.now).mockRestore();
+    stripe.onList = undefined;
+    expect(budget).toMatchObject({
+      stopped: "budget",
+      orders: 1,
+      purchasers: 1,
+      create: 1,
+      error: null,
+    });
+    const limited = await f.t.action(
+      internal.registrationCustomerBackfill.run,
+      {
+        dryRun: true,
+        cursor: budget.cursor,
+        limit: 2,
+      }
+    );
+    expect(limited).toMatchObject({
+      stopped: "limit",
+      purchasers: 2,
+      create: 2,
+      next: { dryRun: true, cursor: limited.cursor, limit: 2 },
+    });
+    const last = await f.t.action(internal.registrationCustomerBackfill.run, {
+      dryRun: true,
+      cursor: limited.cursor,
+      limit: 2,
+    });
+    expect(last).toMatchObject({
+      stopped: "done",
+      purchasers: 2,
+      cursor: null,
+    });
+    expect(stripe.created).toHaveLength(0);
+  });
+  it("links a Customer an interrupted run created but never stored", async () => {
+    const f = await fixture();
+    await paidOrder(f, "Half@Example.test");
+    await f.t.run((ctx) =>
+      ctx.db.insert("registrationStripeCustomers", {
+        key: "email:half@example.test",
+        live: false,
+        email: "half@example.test",
+        claim: "crashed-run",
+        claimedAt: Date.now() - 5 * 60_000,
+      })
+    );
+    const orphan = await findOrCreateCustomer(new Stripe("sk_test_fixture"), {
+      email: "half@example.test",
+    });
+    const real = await f.t.action(internal.registrationCustomerBackfill.run, {
+      dryRun: false,
+    });
+    expect(real).toMatchObject({ stopped: "done", link: 1, create: 0 });
+    expect(stripe.created).toHaveLength(1);
+    const rows = await f.t.run((ctx) =>
+      ctx.db.query("registrationStripeCustomers").collect()
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.stripeCustomerId).toBe(orphan.id);
+    expect(rows[0]).not.toHaveProperty("claim");
+  });
+  it("rejects a cursor it did not issue", async () => {
+    const f = await fixture();
+    await expect(
+      f.t.action(internal.registrationCustomerBackfill.run, {
+        dryRun: true,
+        cursor: "not-a-cursor",
+      })
+    ).rejects.toThrow("Unrecognized cursor");
   });
 });
