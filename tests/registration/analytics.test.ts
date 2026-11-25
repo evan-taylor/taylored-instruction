@@ -101,10 +101,11 @@ it("propagates browser identity and respects opt-out", () => {
   expect(registrationAnalyticsContext()).toBeUndefined();
 });
 it("hands the remembered email click to checkout", () => {
-  vi.mocked(posthog.get_property).mockImplementation(
-    (key) =>
-      ({ email_campaign: "cert_reminder_30d", email_send: "job123" })[key]
-  );
+  const remembered: Record<string, string> = {
+    email_campaign: "cert_reminder_30d",
+    email_send: "job123",
+  };
+  vi.mocked(posthog.get_property).mockImplementation((key) => remembered[key]);
   expect(registrationAnalyticsContext()).toEqual({
     distinctId: "browser-id",
     sessionId: "session-id",
