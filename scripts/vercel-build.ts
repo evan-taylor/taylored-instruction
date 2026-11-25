@@ -153,7 +153,7 @@ if (endpoint) {
     }
     if (endpoints.length >= 16) {
       throw new Error(
-        "Stripe test webhook capacity (16) is full. Close unused preview PRs, wait for the 24-hour grace period, and run the Stripe preview cleanup workflow. Review legacy unowned endpoints manually; active or unverifiable endpoints are never removed to make room."
+        "Stripe test webhook capacity (16) is full. Endpoints of merged or closed PRs were removed if GitHub could verify them; close unused preview PRs or review legacy unowned endpoints manually. Active or unverifiable endpoints are never removed to make room."
       );
     }
   }
