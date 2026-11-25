@@ -1,7 +1,10 @@
 import { createElement } from "react";
 import { renderEmailHtml } from "../../emails/components/render";
 import { PHONE } from "../../emails/components/theme";
-import TransactionalEmail from "../../emails/TransactionalEmail";
+import TransactionalEmail, {
+  REVIEW_PROMPT,
+} from "../../emails/TransactionalEmail";
+import { GOOGLE_REVIEW_URL } from "../../lib/business";
 import { renderSubject } from "./domain";
 import { EmailBody, emailBodyText } from "./email-body";
 
@@ -14,6 +17,7 @@ type EmailContent = {
   variables?: Record<string, string>;
   details?: EmailDetail[];
   action?: { label: string; url: string };
+  review?: { label: string; url: string };
   note?: string;
   code?: string;
 };
@@ -61,6 +65,10 @@ export function brandedEmail(content: EmailContent) {
         label: content.action.label,
         url: emailUrl(content.action.url),
       },
+      review: content.review && {
+        label: content.review.label,
+        url: emailUrl(content.review.url),
+      },
       details: details.filter(
         (detail) => detail !== total && !amounts.includes(detail)
       ),
@@ -77,6 +85,9 @@ export function brandedEmail(content: EmailContent) {
     ...details.map(({ label, value }) => `${label}: ${value}`),
     content.action
       ? `${content.action.label}: ${content.action.url}`
+      : undefined,
+    content.review
+      ? `${REVIEW_PROMPT} ${content.review.label}: ${content.review.url}`
       : undefined,
     content.note,
     `Questions? Reply to this email or call ${PHONE.label}.`,
@@ -100,6 +111,8 @@ type RenderableJob = {
   details: { label: string; value: string }[];
   category: string;
   calendar?: string;
+  /** A scheduled step sent after the class ended. */
+  afterClass?: boolean;
 };
 /**
  * Renders a queued job into a safe subject and HTML body with structural
@@ -151,6 +164,10 @@ export function registrationEmail(job: RenderableJob, origin: string) {
       variables,
       details,
       action: primaryAction,
+      review:
+        job.afterClass && GOOGLE_REVIEW_URL
+          ? { label: "Leave us a Google review", url: GOOGLE_REVIEW_URL }
+          : undefined,
       note: [
         job.calendar
           ? "Your calendar invitation is attached. Add it to your calendar to keep the class time and location handy."

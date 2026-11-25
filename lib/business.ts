@@ -116,3 +116,10 @@ export const formatBusinessAddress = () => {
   const { streetAddress, locality, region, postalCode } = BUSINESS.address;
   return `${streetAddress}, ${locality}, ${region} ${postalCode}`;
 };
+
+/**
+ * Google's write-a-review form for the Business Profile above. Post-class
+ * emails link to it; set it to null to drop the review request.
+ */
+export const GOOGLE_REVIEW_URL: string | null =
+  "https://search.google.com/local/writereview?placeid=ChIJ649LB-AFjq8R6oVJiLxutTc";
