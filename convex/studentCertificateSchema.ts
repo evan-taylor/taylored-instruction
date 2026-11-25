@@ -81,6 +81,7 @@ export const studentCertificateTables = {
     ),
   })
     .index("by_sha256", ["sha256"])
+    .index("by_storageId", ["storageId"])
     .index("by_sessionId", ["sessionId"])
     .index("by_independentSessionId", ["independentSessionId"]),
   /** Certificate types seen in imports, for the staff filter. */

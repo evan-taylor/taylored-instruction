@@ -628,6 +628,7 @@ function ImportedFiles({ target }: { target: CertificateTarget }) {
 export function SessionCertificates({ target }: { target: CertificateTarget }) {
   const uploadUrl = useMutation(api.studentCertificates.uploadUrl);
   const previewFile = useAction(api.studentCertificateFiles.preview);
+  const discardUpload = useMutation(api.studentCertificates.discardUpload);
   const saved = usePaginatedQuery(
     api.studentCertificates.forTarget,
     { target },
@@ -644,6 +645,7 @@ export function SessionCertificates({ target }: { target: CertificateTarget }) {
   const onFile = async (file: File) => {
     setMessage("");
     setReview(null);
+    let uploaded: Id<"_storage"> | null = null;
     try {
       if (file.size > MAX_CERTIFICATE_FILE_BYTES) {
         throw new Error(`${file.name} is larger than 10 MB`);
@@ -661,10 +663,14 @@ export function SessionCertificates({ target }: { target: CertificateTarget }) {
       const { storageId } = (await response.json()) as {
         storageId: Id<"_storage">;
       };
+      uploaded = storageId;
       setBusy(`Reading ${file.name}…`);
       const preview = await previewFile({ target, storageId });
       setReview({ preview, upload: { storageId, fileName: file.name } });
     } catch (error) {
+      if (uploaded) {
+        discardUpload({ target, storageId: uploaded }).catch(() => null);
+      }
       setTone("danger");
       setMessage(errorText(error, `${file.name} could not be read.`));
     } finally {
@@ -707,7 +713,12 @@ export function SessionCertificates({ target }: { target: CertificateTarget }) {
     <div className="space-y-5">
       {review ? (
         <ImportReview
-          onCancel={() => setReview(null)}
+          onCancel={() => {
+            discardUpload({ target, storageId: review.upload.storageId }).catch(
+              () => null
+            );
+            setReview(null);
+          }}
           onDone={(text) => {
             setReview(null);
             setTone("success");

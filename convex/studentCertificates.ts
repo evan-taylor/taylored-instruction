@@ -147,6 +147,23 @@ export const uploadUrl = mutation({
   },
 });
 
+/** Deletes an upload staff abandoned before saving; saved source files stay. */
+export const discardUpload = mutation({
+  args: { target: certificateTarget, storageId: v.id("_storage") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await targetContext(ctx, args.target);
+    const saved = await ctx.db
+      .query("certificateImports")
+      .withIndex("by_storageId", (q) => q.eq("storageId", args.storageId))
+      .first();
+    if (!saved && (await ctx.db.system.get(args.storageId))) {
+      await ctx.storage.delete(args.storageId);
+    }
+    return null;
+  },
+});
+
 const savedRow = v.object({
   row: v.number(),
   firstName: v.string(),
