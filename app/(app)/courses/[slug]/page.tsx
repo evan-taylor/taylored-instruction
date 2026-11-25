@@ -1,44 +1,17 @@
 import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
+import { cache } from "react";
 import { RegistrationDetail } from "@/components/registration/public";
 import { api } from "@/convex/_generated/api";
-import { courseSchemas, indexable, snippet } from "@/lib/registration-seo";
-import { buildPageMetadata } from "@/lib/seo";
+import { courseMetadata, courseSchemas } from "@/lib/registration-seo";
 import { generateJSONLD } from "@/lib/structuredData";
 
 type Props = { params: Promise<{ slug: string }> };
 
-async function offeringFor(slug: string) {
-  return await fetchQuery(api.registration.detail, { slug }).catch(() => null);
-}
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const offering = await offeringFor(slug);
-  if (!offering) {
-    return {
-      title: "Course details | Taylored Instruction",
-      robots: { index: false, follow: true },
-    };
-  }
-  const description = snippet(
-    offering.description,
-    `${offering.title} with Taylored Instruction. See upcoming dates and full pricing, then register online.`
+const courseFor = cache(async (slug: string) => {
+  const offering = await fetchQuery(api.registration.detail, { slug }).catch(
+    () => null
   );
-  return indexable(
-    buildPageMetadata({
-      title: `${offering.title} | Classes & Registration | Taylored Instruction`,
-      description,
-      path: `/courses/${slug}`,
-      keywords: [offering.title],
-      image: { title: offering.title, eyebrow: "Classes & registration" },
-    })
-  );
-}
-
-export default async function Page({ params }: Props) {
-  const { slug } = await params;
-  const offering = await offeringFor(slug);
   const sessions = offering
     ? await fetchQuery(api.registration.upcomingClasses, {
         slugs: [slug],
@@ -47,6 +20,24 @@ export default async function Page({ params }: Props) {
         .then((data) => data.sessions)
         .catch(() => [])
     : [];
+  return { offering, sessions };
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { slug } = await params;
+  const { offering, sessions } = await courseFor(slug);
+  if (!offering) {
+    return {
+      title: "Course details | Taylored Instruction",
+      robots: { index: false, follow: true },
+    };
+  }
+  return courseMetadata(offering, sessions, slug);
+}
+
+export default async function Page({ params }: Props) {
+  const { slug } = await params;
+  const { offering, sessions } = await courseFor(slug);
   return (
     <>
       {offering
