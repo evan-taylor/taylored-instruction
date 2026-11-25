@@ -2,7 +2,10 @@
 import { ConvexError, type Infer, v } from "convex/values";
 import { BUSINESS } from "../lib/business";
 import { certificateEmail } from "../shared/registration/certificate-email";
-import { readCertificateFile } from "../shared/registration/certificate-file";
+import {
+  MAX_CERTIFICATE_FILE_BYTES,
+  readCertificateFile,
+} from "../shared/registration/certificate-file";
 import {
   CertificateFileError,
   certificateCourseTitle,
@@ -33,7 +36,10 @@ async function readUpload(
   target: Infer<typeof certificateTarget>,
   storageId: Id<"_storage">
 ) {
-  await ctx.runQuery(internal.studentCertificates.checkAccess, { target });
+  await ctx.runQuery(internal.studentCertificates.checkAccess, {
+    target,
+    storageId,
+  });
   const blob = await ctx.storage.get(storageId);
   if (!blob) {
     throw new ConvexError("The upload expired. Choose the file again.");
@@ -51,6 +57,39 @@ async function readUpload(
   const sha256 = Buffer.from(digest).toString("hex");
   return { parsed, sha256, size: bytes.byteLength, type: blob.type };
 }
+
+/**
+ * Stores an agency file for the caller after the access check, and records
+ * them as its uploader so only they can preview, save, or discard it.
+ */
+export const upload = action({
+  args: {
+    target: certificateTarget,
+    file: v.bytes(),
+    contentType: v.string(),
+  },
+  returns: v.id("_storage"),
+  handler: async (ctx, args) => {
+    const uploadedBy: Id<"users"> = await ctx.runQuery(
+      internal.studentCertificates.checkAccess,
+      { target: args.target }
+    );
+    if (args.file.byteLength > MAX_CERTIFICATE_FILE_BYTES) {
+      throw new ConvexError("Files must be 10 MB or smaller.");
+    }
+    const storageId = await ctx.storage.store(
+      new Blob([args.file], {
+        type: args.contentType || "application/octet-stream",
+      })
+    );
+    await ctx.runMutation(internal.studentCertificates.recordUpload, {
+      target: args.target,
+      storageId,
+      uploadedBy,
+    });
+    return storageId;
+  },
+});
 
 const matchStatus = v.union(
   v.literal("email"),

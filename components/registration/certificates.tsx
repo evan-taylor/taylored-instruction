@@ -626,7 +626,7 @@ function ImportedFiles({ target }: { target: CertificateTarget }) {
  * the certificates already saved for it.
  */
 export function SessionCertificates({ target }: { target: CertificateTarget }) {
-  const uploadUrl = useMutation(api.studentCertificates.uploadUrl);
+  const uploadFile = useAction(api.studentCertificateFiles.upload);
   const previewFile = useAction(api.studentCertificateFiles.preview);
   const discardUpload = useMutation(api.studentCertificates.discardUpload);
   const saved = usePaginatedQuery(
@@ -651,18 +651,11 @@ export function SessionCertificates({ target }: { target: CertificateTarget }) {
         throw new Error(`${file.name} is larger than 10 MB`);
       }
       setBusy(`Uploading ${file.name}…`);
-      const url = await uploadUrl({ target });
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": file.type || "application/octet-stream" },
-        body: file,
+      const storageId = await uploadFile({
+        target,
+        file: await file.arrayBuffer(),
+        contentType: file.type,
       });
-      if (!response.ok) {
-        throw new Error(`${file.name} could not be uploaded`);
-      }
-      const { storageId } = (await response.json()) as {
-        storageId: Id<"_storage">;
-      };
       uploaded = storageId;
       setBusy(`Reading ${file.name}…`);
       const preview = await previewFile({ target, storageId });

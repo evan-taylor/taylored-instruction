@@ -729,6 +729,53 @@ describe("re-saving certificates", () => {
   });
 });
 
+describe("pending uploads", () => {
+  it("lets only the uploader discard an unsaved file", async () => {
+    const f = await fixture();
+    const target = { kind: "session" as const, id: f.session };
+    const { instructor, upload, saved } = await f.t.run(async (ctx) => {
+      const id = await ctx.db.insert("users", {
+        email: "teacher@example.test",
+        emailVerificationTime: Date.now(),
+      });
+      await ctx.db.insert("profiles", { userId: id, isInstructor: true });
+      await ctx.db.patch(f.session, { instructors: [id] });
+      const storageId = await ctx.storage.store(new Blob(["upload"]));
+      await ctx.db.insert("certificateUploads", {
+        storageId,
+        uploadedBy: f.admin,
+        sessionId: f.session,
+        uploadedAt: Date.now(),
+      });
+      const other = await ctx.storage.store(new Blob(["material"]));
+      return { instructor: id, upload: storageId, saved: other };
+    });
+    const teacher = f.t.withIdentity({ subject: `${instructor}|session` });
+    await teacher.mutation(api.studentCertificates.discardUpload, {
+      target,
+      storageId: upload,
+    });
+    await teacher.mutation(api.studentCertificates.discardUpload, {
+      target,
+      storageId: saved,
+    });
+    await f.adminClient.mutation(api.studentCertificates.discardUpload, {
+      target,
+      storageId: saved,
+    });
+    expect(await f.t.run((ctx) => ctx.db.system.get(saved))).not.toBeNull();
+    expect(await f.t.run((ctx) => ctx.db.system.get(upload))).not.toBeNull();
+    await f.adminClient.mutation(api.studentCertificates.discardUpload, {
+      target,
+      storageId: upload,
+    });
+    expect(await f.t.run((ctx) => ctx.db.system.get(upload))).toBeNull();
+    expect(
+      await f.t.run((ctx) => ctx.db.query("certificateUploads").collect())
+    ).toEqual([]);
+  });
+});
+
 describe("post-class email selection", () => {
   const ava = {
     email: "ava@example.test",
@@ -796,6 +843,17 @@ describe("post-class email selection", () => {
       id: certificateJob?._id as Id<"registrationJobs">,
     });
     expect(claimed?.certificate?.review).toBe(false);
+  });
+
+  it("keeps the review ask when a stalled certificate send is retried", async () => {
+    const f = await fixture();
+    await save(f, saveArgs(f, [ava]));
+    const [certificateJob] = await jobs(f, "certificate:");
+    const id = certificateJob?._id as Id<"registrationJobs">;
+    await f.t.mutation(internal.registrationMail.claim, { id });
+    await f.t.run((ctx) => ctx.db.patch(id, { due: Date.now() - 600_000 }));
+    const retried = await f.t.mutation(internal.registrationMail.claim, { id });
+    expect(retried?.certificate?.review).toBe(true);
   });
 
   it("drops the review ask when the review letter already went out", async () => {

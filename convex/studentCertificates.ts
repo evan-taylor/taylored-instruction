@@ -46,10 +46,13 @@ const certificateRow = v.object({
 
 async function targetContext(ctx: QueryCtx, target: Target) {
   if (target.kind === "independent") {
-    const { actor, session, roster } = await independentRoster(ctx, target.id);
+    const { actor, session, roster, admin } = await independentRoster(
+      ctx,
+      target.id
+    );
     return {
       actor,
-      admin: false,
+      admin,
       roster,
       title: session.title,
       endedAt: session.end,
@@ -129,37 +132,95 @@ export const importContext = internalQuery({
   },
 });
 
+/** The caller's own pending upload for this target, or null. */
+async function pendingUpload(
+  ctx: QueryCtx,
+  target: Target,
+  actor: Id<"users">,
+  storageId: Id<"_storage">
+) {
+  const upload = await ctx.db
+    .query("certificateUploads")
+    .withIndex("by_storageId", (q) => q.eq("storageId", storageId))
+    .unique();
+  const sameTarget =
+    target.kind === "session"
+      ? upload?.sessionId === target.id
+      : upload?.independentSessionId === target.id;
+  return upload?.uploadedBy === actor && sameTarget ? upload : null;
+}
+
+/** Checks the caller can import into the target, and owns the upload if named. */
 export const checkAccess = internalQuery({
-  args: { target: certificateTarget },
+  args: {
+    target: certificateTarget,
+    storageId: v.optional(v.id("_storage")),
+  },
+  returns: v.id("users"),
+  handler: async (ctx, args) => {
+    const { actor } = await targetContext(ctx, args.target);
+    if (
+      args.storageId &&
+      !(await pendingUpload(ctx, args.target, actor, args.storageId))
+    ) {
+      throw new ConvexError("The upload expired. Choose the file again.");
+    }
+    return actor;
+  },
+});
+
+export const recordUpload = internalMutation({
+  args: {
+    target: certificateTarget,
+    storageId: v.id("_storage"),
+    uploadedBy: v.id("users"),
+  },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await targetContext(ctx, args.target);
+    await ctx.db.insert("certificateUploads", {
+      storageId: args.storageId,
+      uploadedBy: args.uploadedBy,
+      ...(args.target.kind === "session"
+        ? { sessionId: args.target.id }
+        : { independentSessionId: args.target.id }),
+      uploadedAt: Date.now(),
+    });
     return null;
   },
 });
 
-export const uploadUrl = mutation({
-  args: { target: certificateTarget },
-  returns: v.string(),
-  handler: async (ctx, args) => {
-    await targetContext(ctx, args.target);
-    return await ctx.storage.generateUploadUrl();
-  },
-});
-
-/** Deletes an upload staff abandoned before saving; saved source files stay. */
+/** Deletes the caller's own upload when they cancel it or it cannot be read. */
 export const discardUpload = mutation({
   args: { target: certificateTarget, storageId: v.id("_storage") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    await targetContext(ctx, args.target);
-    const saved = await ctx.db
-      .query("certificateImports")
-      .withIndex("by_storageId", (q) => q.eq("storageId", args.storageId))
-      .first();
-    if (!saved && (await ctx.db.system.get(args.storageId))) {
-      await ctx.storage.delete(args.storageId);
+    const { actor } = await targetContext(ctx, args.target);
+    const upload = await pendingUpload(ctx, args.target, actor, args.storageId);
+    if (upload) {
+      await ctx.storage.delete(upload.storageId);
+      await ctx.db.delete(upload._id);
     }
+    return null;
+  },
+});
+
+/** Deletes uploads nobody saved or canceled within a day. */
+export const sweepUploads = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const stale = await ctx.db
+      .query("certificateUploads")
+      .withIndex("by_uploadedAt", (q) =>
+        q.lt("uploadedAt", Date.now() - 86_400_000)
+      )
+      .take(REMINDER_PAGE);
+    await Promise.all(
+      stale.map(async (upload) => {
+        await ctx.storage.delete(upload.storageId);
+        await ctx.db.delete(upload._id);
+      })
+    );
     return null;
   },
 });
@@ -417,6 +478,15 @@ export const saveImport = internalMutation({
   }),
   handler: async (ctx, args) => {
     const context = await targetContext(ctx, args.target);
+    const pending = await pendingUpload(
+      ctx,
+      args.target,
+      context.actor,
+      args.file.storageId
+    );
+    if (pending) {
+      await ctx.db.delete(pending._id);
+    }
     const importId = await findOrCreateImport(
       ctx,
       args.target,

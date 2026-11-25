@@ -5,7 +5,7 @@ import {
   businessDate,
   certificateCourseTitle,
 } from "../shared/registration/student-certificates";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { preferenceToken } from "./emailPreferences";
@@ -232,7 +232,8 @@ async function afterClassStep(
  */
 async function reviewLetterSent(
   ctx: MutationCtx,
-  seat: Doc<"registrationSeats"> | null
+  seat: Doc<"registrationSeats"> | null,
+  current: Id<"registrationJobs">
 ) {
   const session = seat?.sessionId ? await ctx.db.get(seat.sessionId) : null;
   if (!(seat && session)) {
@@ -248,7 +249,9 @@ async function reviewLetterSent(
         .take(BATCH)
     )
   );
-  if ([...sent, ...sending].some((job) => job.reviewAsked)) {
+  if (
+    [...sent, ...sending].some((job) => job._id !== current && job.reviewAsked)
+  ) {
     return true;
   }
   const legacy = await Promise.all(
@@ -340,7 +343,7 @@ async function certificateMail(
     issuedOn: certificate.issuedOn,
     expiresOn: certificate.expiresOn,
     instructor: certificate.instructor,
-    review: !(reminder || (await reviewLetterSent(ctx, seat))),
+    review: !(reminder || (await reviewLetterSent(ctx, seat, job._id))),
     renewPath:
       course?.publication === "published"
         ? `/courses/${course.slug}`

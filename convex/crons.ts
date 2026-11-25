@@ -31,6 +31,12 @@ crons.daily(
   internal.studentCertificates.runReminders,
   {}
 );
+crons.daily(
+  "Delete abandoned student certificate uploads",
+  { hourUTC: 11, minuteUTC: 0 },
+  internal.studentCertificates.sweepUploads,
+  {}
+);
 crons.weekly(
   "Instructor certification staff digest",
   { dayOfWeek: "monday", hourUTC: 16, minuteUTC: 15 },

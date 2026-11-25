@@ -60,6 +60,16 @@ export const studentCertificateTables = {
     .index("by_expiresOn", ["expiresOn"])
     .index("by_agency_and_expiresOn", ["agency", "expiresOn"])
     .index("by_typeKey_and_expiresOn", ["typeKey", "expiresOn"]),
+  /** Files uploaded for review but not saved yet; only the uploader may use them. */
+  certificateUploads: defineTable({
+    storageId: v.id("_storage"),
+    uploadedBy: v.id("users"),
+    sessionId: v.optional(v.id("registrationSessions")),
+    independentSessionId: v.optional(independentSessionId),
+    uploadedAt: v.number(),
+  })
+    .index("by_storageId", ["storageId"])
+    .index("by_uploadedAt", ["uploadedAt"]),
   /** Each uploaded agency file, kept in storage as the source of its certificates. */
   certificateImports: defineTable({
     agency: certificateAgency,
@@ -81,7 +91,6 @@ export const studentCertificateTables = {
     ),
   })
     .index("by_sha256", ["sha256"])
-    .index("by_storageId", ["storageId"])
     .index("by_sessionId", ["sessionId"])
     .index("by_independentSessionId", ["independentSessionId"]),
   /** Certificate types seen in imports, for the staff filter. */
