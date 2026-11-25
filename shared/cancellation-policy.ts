@@ -33,8 +33,9 @@ const VERSION_2026_11_25: CancellationPolicy = {
   title: "Cancellation and refund policy",
   keyTerms: [
     "We do not offer refunds for course registrations; you may reschedule instead.",
-    "Rescheduling 7 or more days before the start date is free. Less than 7 days before, a $20 administrative fee applies.",
-    "Refunds are only provided if no course of the type you registered for is forecasted within the next 3 months, minus a $20 administrative fee.",
+    "Rescheduling 7 or more days before the class is free. Less than 7 days before, a $20 administrative fee applies.",
+    "If we cancel or reschedule your class, you choose a full refund or a free reschedule.",
+    "Course materials are non-refundable once issued.",
   ],
   blocks: [
     { kind: "heading", text: "Reschedule and refund policy" },
@@ -48,12 +49,43 @@ const VERSION_2026_11_25: CancellationPolicy = {
       items: [
         "Rescheduling requests made **7 or more days** before the scheduled start date will incur no additional charges.",
         "Rescheduling requests made **less than 7 days** before the scheduled start date will incur a $20 administrative fee.",
+        "A rescheduled registration must be used within **12 months** of the original class date, after which it expires. Each reschedule follows the same 7-day and $20 rule.",
       ],
+    },
+    { kind: "heading", text: "Substitutions" },
+    {
+      kind: "paragraph",
+      text: "You may transfer your registration to another person at no charge up to **48 hours** before the scheduled start time. The substitute must meet the course prerequisites and provide their details for certification. Course materials already issued to the original registrant may not transfer.",
+    },
+    { kind: "heading", text: "If we cancel or reschedule a class" },
+    {
+      kind: "paragraph",
+      text: "If Taylored Instruction cancels or reschedules a class for any reason, such as instructor illness, weather, facility closure, or low enrollment, you may choose either a free reschedule or a full refund, including any fees and course materials, with no administrative fee. Refunds are returned to the original payment method.",
     },
     { kind: "heading", text: "Refund exceptions" },
     {
       kind: "paragraph",
-      text: "Refunds are only provided if no courses of the type you registered for are forecasted to be available within the next 3 months. In such cases, a refund will be issued minus a $20 administrative fee.",
+      text: "A refund is available only if we have no class of the same course type scheduled within **90 days** of your original class date. In that case, the refund is issued minus a $20 administrative fee and the cost of any course materials already issued.",
+    },
+    { kind: "heading", text: "Course materials" },
+    {
+      kind: "paragraph",
+      text: "Digital course access (eLearning or online course codes, eCards, and certifying agency online access) and physical materials are non-refundable once issued or delivered. Any refund, including the exceptions above, deducts the cost of materials already issued, except a refund when we cancel a class, which is always in full.",
+    },
+    { kind: "heading", text: "No-shows" },
+    {
+      kind: "paragraph",
+      text: "If you miss your class without notice, your registration is forfeited. If you contact us within 7 days after the class date, you may reschedule once for a $20 administrative fee.",
+    },
+    { kind: "heading", text: "Late arrivals" },
+    {
+      kind: "paragraph",
+      text: "All of our courses begin on time and promptly. If you arrive more than 10 minutes late to your course, you will have already missed content, and may not be eligible to participate. In such a case, you may reschedule your registration for a fee of $20.",
+    },
+    { kind: "heading", text: "Certification requirements" },
+    {
+      kind: "paragraph",
+      text: "Not meeting the certification requirements, including the skills test, written exam, or attendance, is not grounds for a refund. Where the certifying agency's rules allow, you may retest once within 30 days at no charge. Otherwise, you may register for another class.",
     },
     { kind: "heading", text: "eLearning policy" },
     {
@@ -64,11 +96,6 @@ const VERSION_2026_11_25: CancellationPolicy = {
     {
       kind: "paragraph",
       text: "Some of our courses may have prerequisites. Please review the course description carefully when you sign up for a course. We are not able to offer a refund in the event that you are not able to complete the course due to not meeting the prerequisites. If you have any questions about the prerequisites, please contact us at info@tayloredinstruction.com.",
-    },
-    { kind: "heading", text: "Late arrivals" },
-    {
-      kind: "paragraph",
-      text: "All of our courses begin on time and promptly. If you arrive more than 10 minutes late to your course, you will have already missed content, and may not be eligible to participate. In such a case, you may reschedule your registration for a fee of $20.",
     },
     {
       kind: "paragraph",

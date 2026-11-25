@@ -509,7 +509,7 @@ describe("Cancellation policy acknowledgement record", () => {
     );
     expect(hashes).toEqual(pinned);
     expect(pinned["2026-11-25"]).toBe(
-      "2438ed638a78f56a53cb6eff31d98c9701570fd1b968b1c7b18d14efa58570b7"
+      "85688a2483513736a4727d85a96772085134eb9edd6008b59780bf8c93edfdd6"
     );
   });
 });
