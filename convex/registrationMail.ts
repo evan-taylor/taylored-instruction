@@ -226,8 +226,9 @@ async function afterClassStep(
   );
 }
 /**
- * The post-class review letter already went to this attendee, so the
- * certificate email should not ask for a review again.
+ * A post-class email that asked for a review is sending or went to this
+ * attendee, so the certificate email should not ask again. Sends from before
+ * `reviewAsked` was recorded count when their step ran after class.
  */
 async function reviewLetterSent(
   ctx: MutationCtx,
@@ -237,24 +238,31 @@ async function reviewLetterSent(
   if (!(seat && session)) {
     return false;
   }
-  const sent = await ctx.db
-    .query("registrationJobs")
-    .withIndex("by_seatId_and_state", (q) =>
-      q.eq("seatId", seat._id).eq("state", "sent")
+  const [sent, sending] = await Promise.all(
+    (["sent", "sending"] as const).map((state) =>
+      ctx.db
+        .query("registrationJobs")
+        .withIndex("by_seatId_and_state", (q) =>
+          q.eq("seatId", seat._id).eq("state", state)
+        )
+        .take(BATCH)
     )
-    .take(BATCH);
-  const steps = await Promise.all(
+  );
+  if ([...sent, ...sending].some((job) => job.reviewAsked)) {
+    return true;
+  }
+  const legacy = await Promise.all(
     sent.map((job) =>
-      job.stepId && !job.onlyMissingCertificate
+      job.reviewAsked === undefined && job.stepId && !job.onlyMissingCertificate
         ? afterClassStep(ctx, job.stepId, session)
         : false
     )
   );
-  return steps.some(Boolean);
+  return legacy.some(Boolean);
 }
 /**
- * A certificate email is queued or sent for this attendee. It replaces the
- * post-class review letter, which stays the fallback for everyone else.
+ * A certificate email is queued or sent for this attendee. Post-class emails
+ * then leave out their review ask; they still go out with their own content.
  */
 async function certificateEmailQueued(
   ctx: MutationCtx,
@@ -454,8 +462,9 @@ async function certificateReminderEligible(
 }
 
 /**
- * Certificate jobs carry their certificate; a review letter is dropped for an
- * attendee whose certificate email replaces it.
+ * Certificate jobs carry their certificate. A post-class email asks for a
+ * review only when no certificate email will ask instead; whichever claims
+ * first records the ask, so the attendee is asked once.
  */
 async function certificateRouting(
   ctx: MutationCtx,
@@ -464,11 +473,15 @@ async function certificateRouting(
   session: Doc<"registrationSessions"> | null
 ) {
   const certificate = await certificateMail(ctx, job, seat);
-  const afterClass = await sentAfterClass(ctx, job, session);
-  const replaced =
-    certificate === null ||
-    (afterClass && (await certificateEmailQueued(ctx, seat)));
-  return { certificate: certificate ?? undefined, afterClass, replaced };
+  const afterClass =
+    (await sentAfterClass(ctx, job, session)) &&
+    !(await certificateEmailQueued(ctx, seat));
+  return {
+    certificate: certificate ?? undefined,
+    afterClass,
+    replaced: certificate === null,
+    reviewAsked: afterClass || Boolean(certificate?.review),
+  };
 }
 
 export const claim = internalMutation({
@@ -521,12 +534,8 @@ export const claim = internalMutation({
       seat,
       session
     );
-    const { certificate, afterClass, replaced } = await certificateRouting(
-      ctx,
-      job,
-      seat,
-      session
-    );
+    const { certificate, afterClass, replaced, reviewAsked } =
+      await certificateRouting(ctx, job, seat, session);
     if (
       !(
         invoiceOpen &&
@@ -560,6 +569,7 @@ export const claim = internalMutation({
       state: "sending",
       attempts: job.attempts + 1,
       due: Date.now(),
+      reviewAsked,
     });
     const entitlements = seat?.settledAt
       ? await activeSeatMaterials(ctx, seat._id)

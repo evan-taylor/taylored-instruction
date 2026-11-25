@@ -383,6 +383,8 @@ export const registrationTables = {
     stepId: v.optional(v.string()),
     onlyMissingCertificate: v.optional(v.boolean()),
     scheduleRevision: v.optional(v.number()),
+    /** This send carried the Google review ask. */
+    reviewAsked: v.optional(v.boolean()),
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
     sentAt: v.optional(v.number()),

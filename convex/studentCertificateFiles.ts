@@ -1,5 +1,5 @@
 "use node";
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type Infer, v } from "convex/values";
 import { BUSINESS } from "../lib/business";
 import { certificateEmail } from "../shared/registration/certificate-email";
 import { readCertificateFile } from "../shared/registration/certificate-file";
@@ -27,7 +27,13 @@ type ImportContext = {
 };
 type SaveResult = { created: number; updated: number; emails: number };
 
-async function readUpload(ctx: ActionCtx, storageId: Id<"_storage">) {
+/** Checks the caller can import into the target before any file work. */
+async function readUpload(
+  ctx: ActionCtx,
+  target: Infer<typeof certificateTarget>,
+  storageId: Id<"_storage">
+) {
+  await ctx.runQuery(internal.studentCertificates.checkAccess, { target });
   const blob = await ctx.storage.get(storageId);
   if (!blob) {
     throw new ConvexError("The upload expired. Choose the file again.");
@@ -102,7 +108,7 @@ export const preview = action({
     ),
   }),
   handler: async (ctx, args) => {
-    const { parsed } = await readUpload(ctx, args.storageId);
+    const { parsed } = await readUpload(ctx, args.target, args.storageId);
     const issued = parsed.rows.filter((row) => row.certificateId);
     const context: ImportContext = await ctx.runQuery(
       internal.studentCertificates.importContext,
@@ -212,6 +218,7 @@ export const confirm = action({
   handler: async (ctx, args): Promise<SaveResult> => {
     const { parsed, sha256, size, type } = await readUpload(
       ctx,
+      args.target,
       args.storageId
     );
     const issued = parsed.rows.filter((row) => row.certificateId);

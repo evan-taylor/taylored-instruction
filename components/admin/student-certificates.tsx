@@ -194,9 +194,14 @@ export function StudentCertificatesAdmin() {
             {(props) => (
               <Select
                 {...props}
-                onChange={(event) =>
-                  setAgency(event.target.value as "" | CertificateAgency)
-                }
+                onChange={(event) => {
+                  const next = event.target.value as "" | CertificateAgency;
+                  setAgency(next);
+                  const current = types?.find((t) => t.typeKey === typeKey);
+                  if (next && current && current.agency !== next) {
+                    setTypeKey("");
+                  }
+                }}
                 value={agency}
               >
                 <option value="">All agencies</option>

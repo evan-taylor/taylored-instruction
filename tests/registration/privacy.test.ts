@@ -30,6 +30,7 @@ it("keeps sensitive registration and staff routes private", () => {
     "/instructor/independent/abc123",
     "/admin",
     "/admin/registrations",
+    "/unsubscribe",
   ]) {
     expect(isPrivateRegistrationPath(path)).toBe(true);
     expect(

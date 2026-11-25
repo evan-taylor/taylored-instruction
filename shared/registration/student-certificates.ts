@@ -408,16 +408,17 @@ const ARC_COLUMNS = {
   certificateId: ["qrcode", "certificateid", "certid", "certificatenumber"],
 } as const;
 type ArcColumn = keyof typeof ARC_COLUMNS;
+const HEADER_SLACK = 2;
 
 function arcHeader(line: Line) {
-  const columns: { column: ArcColumn; center: number }[] = [];
+  const columns: { column: ArcColumn; x: number }[] = [];
   for (const item of line.items) {
     const key = headerKey(item.str);
     const column = (Object.keys(ARC_COLUMNS) as ArcColumn[]).find((name) =>
       (ARC_COLUMNS[name] as readonly string[]).includes(key)
     );
     if (column) {
-      columns.push({ column, center: item.x + item.width / 2 });
+      columns.push({ column, x: item.x });
     }
   }
   const found = new Set(columns.map((c) => c.column));
@@ -442,18 +443,24 @@ function labelled(lines: Line[], label: string) {
 
 type ArcHeader = NonNullable<ReturnType<typeof arcHeader>>;
 
+/**
+ * Roster cells start just left of their heading, so a value belongs to the
+ * first column whose heading starts at or after it, whatever its width.
+ */
 function arcCells(line: Line, header: ArcHeader) {
   const cells: Partial<Record<ArcColumn, string>> = {};
+  const columns = [...header].sort((a, b) => a.x - b.x);
   for (const item of line.items) {
-    const center = item.x + item.width / 2;
-    const nearest = header.reduce((best, candidate) =>
-      Math.abs(candidate.center - center) < Math.abs(best.center - center)
-        ? candidate
-        : best
-    );
-    cells[nearest.column] = text(
-      [cells[nearest.column], item.str].filter(Boolean).join(" ")
-    );
+    let column: ArcColumn | undefined;
+    for (const candidate of columns) {
+      ({ column } = candidate);
+      if (candidate.x + HEADER_SLACK >= item.x) {
+        break;
+      }
+    }
+    if (column) {
+      cells[column] = text([cells[column], item.str].filter(Boolean).join(" "));
+    }
   }
   return cells;
 }

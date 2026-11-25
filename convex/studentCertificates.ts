@@ -49,13 +49,14 @@ async function targetContext(ctx: QueryCtx, target: Target) {
     const { actor, session, roster } = await independentRoster(ctx, target.id);
     return {
       actor,
+      admin: false,
       roster,
       title: session.title,
       endedAt: session.end,
       emails: false,
     };
   }
-  const { userId } = await staff(ctx, target.id);
+  const { userId, admin } = await staff(ctx, target.id);
   const session = await ctx.db.get(target.id);
   if (!session) {
     throw new ConvexError("Session not found");
@@ -75,6 +76,7 @@ async function targetContext(ctx: QueryCtx, target: Target) {
   }));
   return {
     actor: userId,
+    admin,
     roster,
     title: session.title,
     endedAt: session.lastEnd,
@@ -127,6 +129,15 @@ export const importContext = internalQuery({
   },
 });
 
+export const checkAccess = internalQuery({
+  args: { target: certificateTarget },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await targetContext(ctx, args.target);
+    return null;
+  },
+});
+
 export const uploadUrl = mutation({
   args: { target: certificateTarget },
   returns: v.string(),
@@ -172,48 +183,65 @@ async function newerCertificate(
     .first();
 }
 
-/** A renewal stops reminders for every earlier certificate of its type. */
-async function supersedeOlder(
+/**
+ * A renewal stops reminders for every earlier certificate of its type. The
+ * whole email and type group is recomputed, so corrected dates or addresses
+ * repair links instead of piling up.
+ */
+async function relinkRenewals(
   ctx: MutationCtx,
-  certificate: Doc<"studentCertificates">
+  email: string,
+  typeKey: string
 ) {
-  if (!certificate.email) {
+  if (!email) {
     return;
   }
-  const older = await ctx.db
+  const group = await ctx.db
     .query("studentCertificates")
     .withIndex("by_email_and_typeKey_and_issuedOn", (q) =>
-      q
-        .eq("email", certificate.email)
-        .eq("typeKey", certificate.typeKey)
-        .lt("issuedOn", certificate.issuedOn)
+      q.eq("email", email).eq("typeKey", typeKey)
     )
+    .order("desc")
     .take(50);
+  const [newest] = group;
   await Promise.all(
-    older
-      .filter((row) => !row.supersededBy)
-      .map((row) => ctx.db.patch(row._id, { supersededBy: certificate._id }))
+    group.map((row) => {
+      const supersededBy =
+        newest && row.issuedOn < newest.issuedOn ? newest._id : undefined;
+      return row.supersededBy === supersededBy
+        ? null
+        : ctx.db.patch(row._id, { supersededBy });
+    })
   );
-  const newer = await newerCertificate(ctx, certificate);
-  if (newer && !certificate.supersededBy) {
-    await ctx.db.patch(certificate._id, { supersededBy: newer._id });
-  }
 }
 
-function attendeeLink(
-  target: Target,
-  attendeeId: string | undefined,
-  ctx: QueryCtx
-) {
-  if (!attendeeId) {
-    return {};
-  }
+/** Every link field is set, so a re-upload clears links that no longer apply. */
+function links(ctx: QueryCtx, target: Target, attendeeId: string | undefined) {
   if (target.kind === "session") {
-    const seatId = ctx.db.normalizeId("registrationSeats", attendeeId);
-    return seatId ? { sessionId: target.id, seatId } : {};
+    const seatId = attendeeId
+      ? (ctx.db.normalizeId("registrationSeats", attendeeId) ?? undefined)
+      : undefined;
+    return {
+      sessionId: target.id,
+      seatId,
+      independentSessionId: undefined,
+      independentStudentId: undefined,
+    };
   }
-  const independentStudentId = independentStudentIdFrom(ctx, attendeeId);
-  return independentStudentId ? { independentStudentId } : {};
+  return {
+    sessionId: undefined,
+    seatId: undefined,
+    independentSessionId: target.id,
+    independentStudentId: attendeeId
+      ? (independentStudentIdFrom(ctx, attendeeId) ?? undefined)
+      : undefined,
+  };
+}
+
+function ownedBy(certificate: Doc<"studentCertificates">, target: Target) {
+  return target.kind === "session"
+    ? certificate.sessionId === target.id
+    : certificate.independentSessionId === target.id;
 }
 
 async function upsertCertificate(
@@ -225,11 +253,24 @@ async function upsertCertificate(
     importId: Id<"certificateImports">;
     trainingSite?: string;
     location?: string;
-    allowed: Set<string>;
+    roster: Map<string, RosterAttendee>;
+    admin: boolean;
   }
 ) {
-  if (row.attendeeId && !shared.allowed.has(row.attendeeId)) {
+  const attendee = row.attendeeId ? shared.roster.get(row.attendeeId) : null;
+  if (attendee === undefined) {
     throw new ConvexError("A matched attendee is not on this session’s roster");
+  }
+  const existing = await ctx.db
+    .query("studentCertificates")
+    .withIndex("by_agency_and_certificateId", (q) =>
+      q.eq("agency", shared.agency).eq("certificateId", row.certificateId)
+    )
+    .unique();
+  if (existing && !ownedBy(existing, target) && !shared.admin) {
+    throw new ConvexError(
+      `Certificate ${row.certificateId} is already saved on another class. Ask an admin to move it.`
+    );
   }
   const now = Date.now();
   const fields = {
@@ -242,37 +283,29 @@ async function upsertCertificate(
     status: row.status,
     firstName: row.firstName,
     lastName: row.lastName,
-    email: row.email.trim().toLowerCase(),
+    email: (row.email.trim() || attendee?.email || "").toLowerCase(),
     instructor: row.instructor,
     instructorId: row.instructorId,
     trainingSite: shared.trainingSite,
     location: shared.location,
-    ...(target.kind === "session"
-      ? { sessionId: target.id }
-      : { independentSessionId: target.id }),
-    ...attendeeLink(target, row.attendeeId, ctx),
+    ...links(ctx, target, row.attendeeId),
     importId: shared.importId,
     sourceRow: row.row,
     updatedAt: now,
   };
-  const existing = await ctx.db
-    .query("studentCertificates")
-    .withIndex("by_agency_and_certificateId", (q) =>
-      q.eq("agency", shared.agency).eq("certificateId", row.certificateId)
-    )
-    .unique();
   if (existing) {
-    await ctx.db.patch(existing._id, {
-      ...fields,
-      importId: existing.importId,
-    });
-    return { id: existing._id, created: false };
+    await ctx.db.patch(existing._id, fields);
+    return {
+      id: existing._id,
+      created: false,
+      previous: { email: existing.email, typeKey: existing.typeKey },
+    };
   }
   const id = await ctx.db.insert("studentCertificates", {
     ...fields,
     createdAt: now,
   });
-  return { id, created: true };
+  return { id, created: true, previous: null };
 }
 
 async function rememberType(
@@ -373,7 +406,9 @@ export const saveImport = internalMutation({
       context.actor,
       args
     );
-    const allowed = new Set(context.roster.map((attendee) => attendee.id));
+    const roster = new Map(
+      context.roster.map((attendee) => [attendee.id, attendee])
+    );
     const saved = await Promise.all(
       args.rows.map((row) =>
         upsertCertificate(ctx, args.target, row, {
@@ -381,17 +416,25 @@ export const saveImport = internalMutation({
           importId,
           trainingSite: args.trainingSite,
           location: args.location,
-          allowed,
+          roster,
+          admin: context.admin,
         })
       )
     );
     const certificates = (
       await Promise.all(saved.map(({ id }) => ctx.db.get(id)))
     ).filter((row) => row !== null);
-    for (const certificate of certificates) {
-      // biome-ignore lint/performance/noAwaitInLoops: each renewal check reads rows the previous one may have patched
-      await supersedeOlder(ctx, certificate);
-    }
+    const groups = new Map(
+      [
+        ...certificates.map(({ email, typeKey }) => ({ email, typeKey })),
+        ...saved.flatMap(({ previous }) => (previous ? [previous] : [])),
+      ].map((group) => [`${group.email}\n${group.typeKey}`, group])
+    );
+    await Promise.all(
+      [...groups.values()].map(({ email, typeKey }) =>
+        relinkRenewals(ctx, email, typeKey)
+      )
+    );
     await Promise.all(
       [...new Set(args.rows.map((row) => row.course))].map((course) =>
         rememberType(ctx, args.agency, course)
@@ -682,14 +725,14 @@ async function queueReminder(
         .unique()
     )
   );
-  if (existing.some(Boolean)) {
+  if (existing.some((row) => row && row.state !== "canceled")) {
     return false;
   }
   await preferenceToken(ctx, certificate.email);
   const title = certificateCourseTitle(certificate.course);
-  await enqueue(ctx, {
+  const reminder = {
     key: reminderKey(certificate._id, stage),
-    kind: "email",
+    kind: "email" as const,
     recipient: certificate.email,
     subject:
       stage === 0
@@ -699,7 +742,17 @@ async function queueReminder(
     due: Date.now(),
     seatId: certificate.seatId,
     sessionId: certificate.sessionId,
-  });
+  };
+  const [canceled] = existing;
+  if (canceled) {
+    await ctx.db.patch(canceled._id, {
+      ...reminder,
+      state: "pending",
+      attempts: 0,
+    });
+  } else {
+    await enqueue(ctx, reminder);
+  }
   return true;
 }
 

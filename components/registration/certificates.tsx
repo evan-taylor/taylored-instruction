@@ -28,6 +28,8 @@ import { cn } from "@/lib/utils";
 import { MAX_CERTIFICATE_FILE_BYTES } from "@/shared/registration/certificate-file";
 import {
   AGENCY_LABELS,
+  addDays,
+  businessDate,
   type CertificateAgency,
   certificateCourseTitle,
   certificateLinks,
@@ -59,16 +61,14 @@ const COMPACT_LABELS: Record<CertificateAgency, string> = {
 export function certificateState(
   row: Pick<CertificateRow, "expiresOn" | "supersededBy">
 ) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = businessDate(Date.now());
   if (row.supersededBy) {
     return { label: "Renewed", tone: "neutral" as BadgeTone };
   }
   if (row.expiresOn < today) {
     return { label: "Expired", tone: "danger" as BadgeTone };
   }
-  const soon = new Date(Date.now() + 60 * 86_400_000)
-    .toISOString()
-    .slice(0, 10);
+  const soon = addDays(today, 60);
   return row.expiresOn <= soon
     ? { label: "Expiring soon", tone: "warning" as BadgeTone }
     : { label: "Valid", tone: "success" as BadgeTone };
@@ -446,7 +446,7 @@ function ImportReview({
               checked={sendEmail}
               description={
                 preview.recentClass
-                  ? "Each newly certified student gets a thank-you note with their certificate link, the course survey, and a Google review request. It replaces the post-class review letter for them."
+                  ? "Each newly certified student gets a thank-you note with their certificate link, the course survey, and a Google review request. Their other post-class emails then skip the review request."
                   : "This class ended more than 30 days ago, so the email is off by default."
               }
               label="Send the post-class certificate email"
@@ -597,8 +597,10 @@ function ImportedFiles({ target }: { target: CertificateTarget }) {
               <span className="whitespace-nowrap text-slate-500 text-xs">
                 {file.certificates} certificates ·{" "}
                 {formatDateTime(file.uploadedAt)}
-                {file.postClassEmail === "send" ? " · emails sent" : ""}
-                {file.postClassEmail === "skip" ? " · no emails" : ""}
+                {file.postClassEmail === "send" ? " · post-class email on" : ""}
+                {file.postClassEmail === "skip"
+                  ? " · post-class email off"
+                  : ""}
               </span>
             </span>
             {file.url ? (

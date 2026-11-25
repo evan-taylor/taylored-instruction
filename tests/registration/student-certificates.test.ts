@@ -197,6 +197,20 @@ describe("certificate file parsers", () => {
     }
   });
 
+  it("keeps short Red Cross email addresses in their column", async () => {
+    const parsed = await readCertificateFile(
+      await arcRoster([["Al", "Li", "a@b.co", "", "Acquired", "02AB0C2"]])
+    );
+    expect(parsed.rows).toEqual([
+      expect.objectContaining({
+        firstName: "Al",
+        lastName: "Li",
+        email: "a@b.co",
+        certificateId: "02AB0C2",
+      }),
+    ]);
+  });
+
   it("names the file types it accepts when it cannot read one", async () => {
     const random = new TextEncoder().encode("name,email\nA,a@example.test");
     await expect(readCertificateFile(random)).rejects.toThrow(
@@ -523,7 +537,7 @@ function saveArgs(
       issuedOn: row.issuedOn ?? "2026-09-13",
       expiresOn: row.expiresOn ?? "2028-09-30",
       instructor: "Sam Rivera",
-      attendeeId: f.seat(row.email),
+      attendeeId: f.seat(row.email) as Id<"registrationSeats"> | undefined,
     })),
     postClassEmail,
   };
@@ -610,6 +624,111 @@ describe("saving certificates", () => {
   });
 });
 
+describe("re-saving certificates", () => {
+  const ava = {
+    email: "ava@example.test",
+    first: "Ava",
+    last: "Stone",
+    id: "111122223333",
+  };
+  const certificate = (f: Fixture, id: string) =>
+    f.t.run((ctx) =>
+      ctx.db
+        .query("studentCertificates")
+        .withIndex("by_agency_and_certificateId", (q) =>
+          q.eq("agency", "aha").eq("certificateId", id)
+        )
+        .unique()
+    );
+
+  it("clears a roster link that staff remove", async () => {
+    const f = await fixture();
+    await save(f, saveArgs(f, [ava]));
+    expect((await certificate(f, ava.id))?.seatId).toBeDefined();
+    const unlinked = saveArgs(f, [ava], "file-2");
+    await save(f, {
+      ...unlinked,
+      rows: unlinked.rows.map((row) => ({ ...row, attendeeId: undefined })),
+    });
+    const saved = await certificate(f, ava.id);
+    expect(saved?.seatId).toBeUndefined();
+    expect(saved?.sessionId).toBe(f.session);
+  });
+
+  it("uses the roster email when the file has none", async () => {
+    const f = await fixture();
+    const args = saveArgs(f, [ava]);
+    await save(f, {
+      ...args,
+      rows: args.rows.map((row) => ({ ...row, email: "" })),
+    });
+    expect((await certificate(f, ava.id))?.email).toBe("ava@example.test");
+  });
+
+  it("repairs renewal links when a corrected file changes the dates", async () => {
+    const f = await fixture();
+    const renewal = { ...ava, id: "999988887777", issuedOn: "2026-12-05" };
+    await save(f, saveArgs(f, [ava, renewal], "first", false));
+    expect((await certificate(f, ava.id))?.supersededBy).toBe(
+      (await certificate(f, renewal.id))?._id
+    );
+    await save(
+      f,
+      saveArgs(f, [{ ...renewal, issuedOn: "2026-01-05" }], "fixed", false)
+    );
+    expect((await certificate(f, ava.id))?.supersededBy).toBeUndefined();
+    expect((await certificate(f, renewal.id))?.supersededBy).toBe(
+      (await certificate(f, ava.id))?._id
+    );
+  });
+
+  it("keeps instructors from overwriting another class’s certificate", async () => {
+    const f = await fixture();
+    const { instructor, other } = await f.t.run(async (ctx) => {
+      const id = await ctx.db.insert("users", {
+        email: "teacher@example.test",
+        emailVerificationTime: Date.now(),
+      });
+      await ctx.db.insert("profiles", { userId: id, isInstructor: true });
+      await ctx.db.patch(f.session, { instructors: [id] });
+      const session = await ctx.db.get(f.session);
+      const copy = await ctx.db.insert("registrationSessions", {
+        ...(session as NonNullable<typeof session>),
+        _id: undefined,
+        _creationTime: undefined,
+        code: "bls-other",
+        instructors: [],
+      } as never);
+      return { instructor: id, other: copy };
+    });
+    const original = saveArgs(f, [ava], "other");
+    await save(f, {
+      ...original,
+      target: { kind: "session", id: other },
+      rows: original.rows.map((row) => ({ ...row, attendeeId: undefined })),
+    });
+    const teacher = f.t.withIdentity({ subject: `${instructor}|session` });
+    const storageId = await f.t.run((ctx) =>
+      ctx.storage.store(new Blob(["file"]))
+    );
+    const args = saveArgs(f, [ava]);
+    await expect(
+      teacher.mutation(internal.studentCertificates.saveImport, {
+        ...args,
+        file: { ...args.file, storageId },
+        rows: args.rows.map((row) => ({
+          ...row,
+          email: "attacker@example.test",
+          attendeeId: undefined,
+        })),
+      })
+    ).rejects.toThrow("already saved on another class");
+    expect((await certificate(f, ava.id))?.email).toBe("ava@example.test");
+    await save(f, saveArgs(f, [ava], "moved"));
+    expect((await certificate(f, ava.id))?.sessionId).toBe(f.session);
+  });
+});
+
 describe("post-class email selection", () => {
   const ava = {
     email: "ava@example.test",
@@ -637,7 +756,7 @@ describe("post-class email selection", () => {
     );
   }
 
-  it("replaces the review letter for students who got a certificate email", async () => {
+  it("keeps post-class emails and asks for a review once", async () => {
     const f = await fixture();
     await save(f, saveArgs(f, [ava]));
     const [certificateJob] = await jobs(f, "certificate:");
@@ -652,18 +771,31 @@ describe("post-class email selection", () => {
       firstName: "Ava",
     });
     const letter = await stepJob(f, f.seat("ava@example.test"));
-    expect(
-      await f.t.mutation(internal.registrationMail.claim, { id: letter })
-    ).toBeNull();
-    expect((await f.t.run((ctx) => ctx.db.get(letter)))?.state).toBe(
-      "canceled"
-    );
+    const followUp = await f.t.mutation(internal.registrationMail.claim, {
+      id: letter,
+    });
+    expect(followUp).toMatchObject({ subject: "Thanks", afterClass: false });
     const fallback = await stepJob(f, f.seat("ben@example.test"));
     const sent = await f.t.mutation(internal.registrationMail.claim, {
       id: fallback,
     });
     expect(sent?.afterClass).toBe(true);
     expect(sent?.certificate).toBeUndefined();
+  });
+
+  it("drops the review ask when a review letter is already sending", async () => {
+    const f = await fixture();
+    const letter = await stepJob(f, f.seat("ava@example.test"));
+    const sending = await f.t.mutation(internal.registrationMail.claim, {
+      id: letter,
+    });
+    expect(sending?.afterClass).toBe(true);
+    await save(f, saveArgs(f, [ava]));
+    const [certificateJob] = await jobs(f, "certificate:");
+    const claimed = await f.t.mutation(internal.registrationMail.claim, {
+      id: certificateJob?._id as Id<"registrationJobs">,
+    });
+    expect(claimed?.certificate?.review).toBe(false);
   });
 
   it("drops the review ask when the review letter already went out", async () => {
@@ -788,6 +920,10 @@ describe("expiry reminders", () => {
         id: pending?._id as Id<"registrationJobs">,
       })
     ).toBeNull();
+    await f.t.mutation(api.emailPreferences.resubscribe, { token });
+    expect(await run(f, "2026-12-03")).toBe(1);
+    expect(await run(f, "2026-12-03")).toBe(0);
+    await f.t.mutation(api.emailPreferences.unsubscribe, { token });
     expect(await run(f, "2027-01-01")).toBe(0);
     await f.t.mutation(api.emailPreferences.resubscribe, { token });
     expect(await run(f, "2027-01-01")).toBe(1);
