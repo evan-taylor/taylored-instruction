@@ -1,6 +1,12 @@
 "use client";
 
-import { useMutation, usePaginatedQuery, useQuery } from "convex/react";
+import {
+  type Preloaded,
+  useMutation,
+  usePaginatedQuery,
+  usePreloadedQuery,
+  useQuery,
+} from "convex/react";
 import type { FunctionReturnType } from "convex/server";
 import {
   ArrowLeft,
@@ -197,6 +203,11 @@ function DateBlock({ start, timeZone }: { start?: number; timeZone?: string }) {
 type DiscoveredSession = FunctionReturnType<
   typeof api.registration.discover
 >["page"][number];
+/** The first page the server rendered, for the search it rendered it with. */
+export type DiscoveryFirstPage = {
+  search: string;
+  page: DiscoveredSession[];
+};
 
 function meetingsSummary(s: DiscoveredSession) {
   if (!s.firstStart) {
@@ -490,7 +501,7 @@ function useDebounced<T>(value: T, delay: number) {
   return debounced;
 }
 
-export function ClassDiscovery() {
+export function ClassDiscovery({ initial }: { initial?: DiscoveryFirstPage }) {
   const selfPaced = useQuery(api.registration.selfPaced);
   const params = useSearchParams();
   const preset = params.get("q") ?? "";
@@ -517,7 +528,14 @@ export function ClassDiscovery() {
     { search: needle || undefined, ...dayWindow(date) },
     { initialNumItems: 20 }
   );
-  const visible = results.filter(
+  // Until the live subscription answers, show the page the server rendered
+  // for the same search so crawlers and first paint see real classes.
+  const serverPage =
+    status === "LoadingFirstPage" && !date && initial?.search === needle
+      ? initial.page
+      : null;
+  const loading = status === "LoadingFirstPage" && !serverPage;
+  const visible = (serverPage ?? results).filter(
     (s) =>
       !date || (s.firstStart ? dayKey(s.firstStart, s.timeZone) : "") === date
   );
@@ -559,7 +577,7 @@ export function ClassDiscovery() {
             search={search}
           />
         </div>
-        {calendar && status !== "LoadingFirstPage" ? (
+        {calendar && !loading ? (
           <SessionCalendar
             sessions={visible.map((s) => ({
               code: s.code ?? "",
@@ -570,7 +588,7 @@ export function ClassDiscovery() {
           />
         ) : (
           <SessionGrid
-            loading={status === "LoadingFirstPage"}
+            loading={loading}
             onLoadMore={
               status === "CanLoadMore" ? () => loadMore(20) : undefined
             }
@@ -820,24 +838,6 @@ function useRegistrationForm(
   };
 }
 type RegistrationForm = ReturnType<typeof useRegistrationForm>;
-
-function DetailSkeleton() {
-  return (
-    <div
-      aria-busy="true"
-      className="mx-auto max-w-6xl space-y-6 px-4 py-10 sm:px-6"
-      role="status"
-    >
-      <span className="sr-only">Loading class…</span>
-      <Skeleton className="h-5 w-24" />
-      <Skeleton className="h-10 w-2/3" />
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <Skeleton className="h-72" />
-        <Skeleton className="h-56" />
-      </div>
-    </div>
-  );
-}
 
 function CheckRow({
   checked,
@@ -2040,17 +2040,21 @@ function OfferingPage({
   );
 }
 
+/**
+ * A class or course page. The server preloads the offering (and a course's
+ * upcoming dates) so the page renders complete HTML; the client then keeps
+ * both live.
+ */
 export function RegistrationDetail({
   code,
-  slug,
+  preloaded,
+  sessions,
 }: {
   code?: string;
-  slug?: string;
+  preloaded: Preloaded<typeof api.registration.detail>;
+  sessions?: CourseSessions;
 }) {
-  const offering = useQuery(api.registration.detail, { code, slug });
-  if (offering === undefined) {
-    return <DetailSkeleton />;
-  }
+  const offering = usePreloadedQuery(preloaded);
   if (!offering) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
@@ -2071,6 +2075,7 @@ export function RegistrationDetail({
       <ScheduledCourse
         courseId={offering.courseId}
         description={offering.description}
+        initialSessions={sessions}
         title={offering.title}
       />
     );
@@ -2216,18 +2221,24 @@ export function RegistrationSuccess() {
 
 /* ---------------------------- Course listing ------------------------- */
 
+type CourseSessions = FunctionReturnType<
+  typeof api.registration.publicCourseSessions
+>;
+
 function ScheduledCourse({
   courseId,
   title,
   description,
+  initialSessions,
 }: {
   courseId: Id<"registrationCourses">;
   title: string;
   description: string;
+  initialSessions?: CourseSessions;
 }) {
-  const sessions = useQuery(api.registration.publicCourseSessions, {
-    courseId,
-  });
+  const sessions =
+    useQuery(api.registration.publicCourseSessions, { courseId }) ??
+    initialSessions;
   return (
     <div className="bg-slate-50">
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
@@ -2291,15 +2302,31 @@ function ScheduledCourse({
                         {s.title}
                       </Link>
                     </h3>
-                    <p className="text-slate-600 text-sm">
+                    <p className="flex items-start gap-1.5 text-slate-600 text-sm">
+                      <CalendarDays
+                        aria-hidden="true"
+                        className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                      />
                       {formatWeekday(s.start, s.timeZone)} ·{" "}
                       {formatTime(s.start, s.timeZone)}{" "}
                       {shortZone(s.timeZone, s.start)}
                     </p>
-                    <SeatsBadge available={s.available} />
+                    <p className="flex items-start gap-1.5 text-slate-600 text-sm">
+                      <MapPin
+                        aria-hidden="true"
+                        className="mt-0.5 h-4 w-4 shrink-0 text-slate-400"
+                      />
+                      {locationsOf([s])}
+                    </p>
                   </div>
                 </CardContent>
-                <CardFooter className="justify-end">
+                <CardFooter className="justify-between">
+                  <div className="space-y-1">
+                    <p className="font-semibold text-slate-900">
+                      {`${formatMoney(s.price)} per attendee`}
+                    </p>
+                    <SeatsBadge available={s.available} />
+                  </div>
                   <Button href={`/s/${s.code}`} size="sm">
                     View class and register
                   </Button>

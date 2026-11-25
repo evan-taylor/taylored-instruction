@@ -14,6 +14,14 @@ type Catalog = FunctionReturnType<
   typeof registrationApi.registration.upcomingClasses
 >;
 type UpcomingSession = Catalog["sessions"][number];
+type PriceConfig = {
+  tuition: number;
+  materials: { policy: string; cents: number }[];
+};
+/** A class as the public listings return it: no visibility flag, prices only. */
+type ListedClass = Omit<Offering, "unlisted" | "config"> & {
+  config: PriceConfig;
+};
 
 const ORGANIZATION_ID = `${SITE_URL}/#organization`;
 const DESCRIPTION_LENGTH = 155;
@@ -172,7 +180,7 @@ function offerSchema(
 }
 
 /** Base price for one seat on an offering: tuition plus required materials. */
-function seatPrice(config: Offering["config"]) {
+function seatPrice(config: PriceConfig) {
   return (
     config.tuition +
     config.materials
@@ -185,7 +193,7 @@ function seatPrice(config: Offering["config"]) {
  * A description unique to one class: its date, venue, and city lead, and the
  * course description fills the rest of the snippet.
  */
-function sessionDescription(offering: Offering) {
+function sessionDescription(offering: ListedClass) {
   const first = ordered(offering.meetings).at(0);
   const { name } = parsePlace(first?.location ?? "");
   const city = first ? cityOf(first.location) : "";
@@ -231,26 +239,22 @@ export function sessionMetadata(offering: Offering): Metadata {
     : { ...base, robots: { index: false, follow: true } };
 }
 
-/**
- * Event and Course markup for one scheduled class. Both are emitted: Google's
- * course carousel reads Course + CourseInstance, and event search reads
- * EducationEvent.
- */
-export function sessionSchemas(offering: Offering) {
+function sessionOffer(offering: ListedClass) {
+  return offerSchema(
+    `${SITE_URL}/s/${offering.code ?? ""}`,
+    seatPrice(offering.config),
+    offering.available,
+    offering.state === "open"
+  );
+}
+
+/** EducationEvent markup for one scheduled class, read by event search. */
+function eventSchema(offering: ListedClass) {
   const url = `${SITE_URL}/s/${offering.code ?? ""}`;
   const meetings = ordered(offering.meetings);
   const first = meetings.at(0);
   const last = meetings.at(-1);
-  const price = seatPrice(offering.config);
-  const offers = offerSchema(
-    url,
-    price,
-    offering.available,
-    offering.state === "open"
-  );
-  const location = first ? placeSchema(first.location) : placeSchema("");
-  const mode = attendance(meetings);
-  const event = {
+  return {
     "@context": "https://schema.org",
     "@type": "EducationEvent",
     "@id": `${url}#event`,
@@ -263,11 +267,11 @@ export function sessionSchemas(offering: Offering) {
       offering.state === "canceled"
         ? "https://schema.org/EventCancelled"
         : "https://schema.org/EventScheduled",
-    eventAttendanceMode: ATTENDANCE_MODE[mode],
-    location,
+    eventAttendanceMode: ATTENDANCE_MODE[attendance(meetings)],
+    location: placeSchema(first?.location ?? ""),
     organizer: { "@id": ORGANIZATION_ID },
     performer: { "@id": ORGANIZATION_ID },
-    offers,
+    offers: sessionOffer(offering),
     subEvent: meetings.map((m) => ({
       "@type": "EducationEvent",
       name: offering.title,
@@ -276,6 +280,36 @@ export function sessionSchemas(offering: Offering) {
       location: placeSchema(m.location),
     })),
   };
+}
+
+/** The class schedule as an ItemList of the events it shows. */
+export function classListSchema(offerings: ListedClass[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${SITE_URL}/classes#schedule`,
+    name: "Upcoming classes",
+    itemListElement: offerings.map((offering, index) => {
+      const { "@context": _context, ...event } = eventSchema(offering);
+      return { "@type": "ListItem", position: index + 1, item: event };
+    }),
+  };
+}
+
+/**
+ * Event and Course markup for one scheduled class. Both are emitted: Google's
+ * course carousel reads Course + CourseInstance, and event search reads
+ * EducationEvent.
+ */
+export function sessionSchemas(offering: Offering) {
+  const url = `${SITE_URL}/s/${offering.code ?? ""}`;
+  const meetings = ordered(offering.meetings);
+  const first = meetings.at(0);
+  const last = meetings.at(-1);
+  const offers = sessionOffer(offering);
+  const location = placeSchema(first?.location ?? "");
+  const mode = attendance(meetings);
+  const event = eventSchema(offering);
   const course = {
     "@context": "https://schema.org",
     "@type": "Course",

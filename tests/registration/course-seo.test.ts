@@ -114,6 +114,17 @@ it("attaches every open public session to the course page's Course markup", asyn
   ]);
 });
 
+it("gives the course page each upcoming class's venue and price", async () => {
+  const { t, offering } = await catalog(2);
+  const sessions = await t.query(api.registration.publicCourseSessions, {
+    courseId: offering.courseId,
+  });
+  expect(sessions).toMatchObject([
+    { code: "code-0", location: VENUES[0], price: 30_000, available: 8 },
+    { code: "code-1", location: VENUES[1], price: 30_000 },
+  ]);
+});
+
 it("omits hasCourseInstance rather than emitting an empty list when nothing is scheduled", async () => {
   const { offering, sessions } = await catalog(0);
   expect(sessions).toEqual([]);
