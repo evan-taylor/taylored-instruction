@@ -179,7 +179,8 @@ export async function POST(req: NextRequest) {
   try {
     const session =
       await getStripeClient().checkout.sessions.retrieve(sessionId);
-    const customerEmail = session.customer_email;
+    const customerEmail =
+      session.customer_details?.email ?? session.customer_email;
     await capturePurchase(session);
 
     if (!customerEmail) {

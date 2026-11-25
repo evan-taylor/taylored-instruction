@@ -3,6 +3,7 @@ import { after, type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { flushPostHogLogs, getPostHogLogLogger } from "@/instrumentation";
 import PostHogClient from "@/lib/posthog";
+import { signedInCustomer } from "@/lib/signed-in-customer";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -16,14 +17,14 @@ function getStripeClient(): Stripe {
 }
 
 export async function POST(req: NextRequest) {
-  const { priceId, email, quantity, metadata } = await req.json();
+  const { priceId, quantity, metadata } = await req.json();
   const distinctId =
     req.headers.get("x-posthog-distinct-id") ?? crypto.randomUUID();
   const sessionId = req.headers.get("x-posthog-session-id");
 
-  if (!(priceId && email && quantity)) {
+  if (!(priceId && quantity)) {
     return NextResponse.json(
-      { error: "Missing priceId, email, or quantity in request body" },
+      { error: "Missing priceId or quantity in request body" },
       { status: 400 }
     );
   }
@@ -73,13 +74,24 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const client = getStripeClient();
+    const customer = await signedInCustomer();
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Sign in to buy eCards" },
+        { status: 401 }
+      );
+    }
     // Stripe API parameters use snake_case as required by their API
-    const session = await getStripeClient().checkout.sessions.create({
+    const session = await client.checkout.sessions.create({
       mode: "payment",
       allowed_payment_method_types: ["card"],
       success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/ecards?canceled=true`,
-      customer_email: email,
+      customer,
+      // Required for Stripe Tax and tax IDs with an existing Customer, and
+      // keeps the address entered at checkout on the Customer for invoicing.
+      customer_update: { address: "auto", name: "auto" },
       line_items: [
         {
           price: priceId,

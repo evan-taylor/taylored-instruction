@@ -14,6 +14,10 @@ import {
 } from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import { action, internalAction } from "./_generated/server";
+import {
+  organizationCustomer,
+  stripeCustomerFor,
+} from "./registrationCustomers";
 
 function stripe() {
   return new Stripe(registrationStripeKey(), {
@@ -44,6 +48,17 @@ export const checkout = action({
       return order.checkoutSecret;
     }
     const client = stripe();
+    const customer = await stripeCustomerFor(
+      ctx,
+      client,
+      order.organizationId
+        ? await organizationCustomer(ctx, order.organizationId)
+        : {
+            email: order.purchaser,
+            name: order.purchaserName,
+            phone: order.purchaserPhone,
+          }
+    );
     const session = await client.checkout.sessions.create(
       {
         mode: "payment",
@@ -53,7 +68,10 @@ export const checkout = action({
         automatic_tax: { enabled: true },
         billing_address_collection: "required",
         allowed_payment_method_types: ["card"],
-        customer_email: order.purchaser,
+        customer,
+        // Saves the billing address and name entered at checkout onto the
+        // Customer, so later invoices and Stripe Tax use them.
+        customer_update: { address: "auto", name: "auto" },
         client_reference_id: order._id,
         metadata: { registrationOrder: order._id },
         // Stripe requires at least 30 minutes from session creation; the local

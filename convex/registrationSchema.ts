@@ -244,6 +244,18 @@ export const registrationTables = {
     .index("by_number", ["number"])
     .index("by_status", ["status"])
     .index("by_stripeInvoiceId", ["stripeInvoiceId"]),
+  /** One Stripe Customer per purchaser email, or per organization bill-to. */
+  registrationStripeCustomers: defineTable({
+    /** `email:<normalized email>` or `organization:<id>`. */
+    key: v.string(),
+    live: v.boolean(),
+    email: v.string(),
+    organizationId: v.optional(v.id("registrationOrganizations")),
+    stripeCustomerId: v.optional(v.string()),
+    /** Held while one action finds or creates the Customer. */
+    claim: v.optional(v.string()),
+    claimedAt: v.optional(v.number()),
+  }).index("by_key_and_live", ["key", "live"]),
   registrationCounters: defineTable({
     key: v.string(),
     value: v.number(),
