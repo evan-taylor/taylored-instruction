@@ -6,6 +6,7 @@ import {
 } from "../shared/registration/environment";
 import {
   type CustomerDetails,
+  completeCustomer,
   customerKey,
   findOrCreateCustomer,
   type InvoiceOrganizations,
@@ -286,6 +287,7 @@ export async function stripeCustomerFor(
   if (result.customer) {
     const current = await client.customers.retrieve(result.customer);
     if (!current.deleted) {
+      await completeCustomer(client, current, details);
       return result.customer;
     }
     await ctx.runMutation(internal.registrationCustomers.forget, {
@@ -302,13 +304,17 @@ export async function stripeCustomerFor(
         details,
         legacyOwners(ctx)
       );
-      return await ctx.runMutation(internal.registrationCustomers.store, {
+      const kept = await ctx.runMutation(internal.registrationCustomers.store, {
         key,
         live,
         email: details.email,
         organizationId,
-        customer,
+        customer: customer.id,
       });
+      if (kept === customer.id) {
+        await completeCustomer(client, customer, details);
+      }
+      return kept;
     } catch (error) {
       await ctx.runMutation(internal.registrationCustomers.release, {
         key,

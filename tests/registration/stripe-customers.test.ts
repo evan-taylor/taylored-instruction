@@ -7,7 +7,10 @@ import { POST as ecardCheckout } from "../../app/api/create-checkout-session/rou
 import { api, internal } from "../../convex/_generated/api";
 import schema from "../../convex/schema";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
-import { findOrCreateCustomer } from "../../shared/stripe-customer";
+import {
+  completeCustomer,
+  findOrCreateCustomer,
+} from "../../shared/stripe-customer";
 
 type FakeCustomer = {
   id: string;
@@ -32,6 +35,7 @@ const stripe = vi.hoisted(() => ({
   listDelay: 0,
   lists: 0,
   failCreate: false,
+  failUpdate: false,
   voided: [] as string[],
   beforeFinalize: undefined as (() => void) | undefined,
 }));
@@ -101,6 +105,9 @@ vi.mock("stripe", async (original) => {
       },
       update: async (id: string, params: Params) => {
         await pause(0);
+        if (stripe.failUpdate) {
+          throw new Error("Update failed");
+        }
         stripe.updated.push({ id, params });
         const customer = stripe.customers.find((c) => c.id === id);
         if (customer) {
@@ -218,6 +225,7 @@ beforeEach(() => {
   stripe.listDelay = 0;
   stripe.lists = 0;
   stripe.failCreate = false;
+  stripe.failUpdate = false;
   stripe.voided.length = 0;
   stripe.beforeFinalize = undefined;
   signedIn.customer = "cus_signed_in";
@@ -374,50 +382,64 @@ async function invoice(f: Fixture, organizationId?: Fixture["organization"]) {
 
 const client = () => new Stripe("sk_test_customer_fixture");
 
+const findId = async (
+  details: Parameters<typeof findOrCreateCustomer>[1],
+  owners?: Parameters<typeof findOrCreateCustomer>[2]
+) => (await findOrCreateCustomer(client(), details, owners)).id;
+
 describe("findOrCreateCustomer", () => {
   it("reuses the oldest Customer with the same email, whatever its case", async () => {
     const first = existingCustomer("Buyer@Example.test");
     existingCustomer("buyer@example.test");
-    expect(
-      await findOrCreateCustomer(client(), { email: " buyer@example.test " })
-    ).toBe(first);
+    expect(await findId({ email: " buyer@example.test " })).toBe(first);
     expect(stripe.created).toHaveLength(0);
   });
-  it("creates under a key every path shares, then fills in name and phone", async () => {
+  it("creates under a key every path shares, then completes name and phone", async () => {
     const details = {
       email: "New@Example.test",
       name: "New Buyer",
       phone: "+15555550100",
     };
-    const id = await findOrCreateCustomer(client(), details);
+    const customer = await findOrCreateCustomer(client(), details);
     expect(stripe.created).toEqual([
       {
         params: { email: "new@example.test", metadata: {} },
         idempotencyKey: "stripe-customer:email:new@example.test",
       },
     ]);
+    await completeCustomer(client(), customer, details);
     expect(stripe.updated).toEqual([
-      { id, params: { name: "New Buyer", phone: "+15555550100" } },
+      { id: customer.id, params: { name: "New Buyer", phone: "+15555550100" } },
     ]);
     stripe.customers.length = 0;
-    expect(
-      await findOrCreateCustomer(client(), { email: "new@example.test" })
-    ).toBe(id);
+    expect(await findId({ email: "new@example.test" })).toBe(customer.id);
     expect(stripe.created).toHaveLength(1);
+  });
+  it("creates an organization's Customer with the same request whatever its billing email", async () => {
+    const first = await findId({
+      email: "ap@example.test",
+      organizationId: "org_1",
+    });
+    stripe.customers.length = 0;
+    const retried = await findId({
+      email: "billing@example.test",
+      organizationId: "org_1",
+    });
+    expect(retried).toBe(first);
+    expect(stripe.created).toEqual([
+      {
+        params: { metadata: { registrationOrganization: "org_1" } },
+        idempotencyKey: "stripe-customer:organization:org_1",
+      },
+    ]);
   });
   it("keeps organization and individual Customers apart", async () => {
     const org = existingCustomer("buyer@example.test", {
       registrationOrganization: "org_1",
     });
-    const person = await findOrCreateCustomer(client(), {
-      email: "buyer@example.test",
-    });
-    expect(person).not.toBe(org);
+    expect(await findId({ email: "buyer@example.test" })).not.toBe(org);
     expect(
-      await findOrCreateCustomer(client(), {
-        email: "buyer@example.test",
-        organizationId: "org_1",
-      })
+      await findId({ email: "buyer@example.test", organizationId: "org_1" })
     ).toBe(org);
   });
   it("treats a Customer from an old organization invoice as the organization's and tags it", async () => {
@@ -430,20 +452,13 @@ describe("findOrCreateCustomer", () => {
         ids.filter((id) => id === "inv_org").map((id) => [id, "org_1"])
       );
     };
-    expect(
-      await findOrCreateCustomer(
-        client(),
-        { email: "buyer@example.test" },
-        owners
-      )
-    ).not.toBe(legacy);
-    expect(
-      await findOrCreateCustomer(
-        client(),
-        { email: "buyer@example.test", organizationId: "org_1" },
-        owners
-      )
-    ).toBe(legacy);
+    expect(await findId({ email: "buyer@example.test" }, owners)).not.toBe(
+      legacy
+    );
+    const details = { email: "buyer@example.test", organizationId: "org_1" };
+    const found = await findOrCreateCustomer(client(), details, owners);
+    expect(found.id).toBe(legacy);
+    await completeCustomer(client(), found, details);
     expect(stripe.updated.at(-1)).toEqual({
       id: legacy,
       params: { metadata: { registrationOrganization: "org_1" } },
@@ -563,6 +578,16 @@ describe("Registration checkout Customers", () => {
       customer: "cus_first",
       claimed: false,
     });
+  });
+  it("stores a new Customer before completing it, so a failed update is not lost", async () => {
+    const f = await fixture();
+    stripe.failUpdate = true;
+    await expect(checkout(f)).rejects.toThrow("Update failed");
+    stripe.failUpdate = false;
+    const session = await checkout(f);
+    expect(stripe.created).toHaveLength(1);
+    expect(session?.customer).toBe(stripe.customers[0]?.id);
+    expect(stripe.customers[0]).toMatchObject({ name: "Pat Buyer" });
   });
   it("frees the claim when Stripe fails so the next checkout can retry", async () => {
     const f = await fixture();

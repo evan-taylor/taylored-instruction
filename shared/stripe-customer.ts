@@ -79,9 +79,10 @@ export async function matchingCustomers(
 
 /**
  * Reuses the purchaser's oldest matching Stripe Customer or creates one. The
- * create request carries only the email and owner under an idempotency key
- * derived from the purchaser, so concurrent or retried creates from any path
- * return the same Customer; name, phone and address follow in an update.
+ * create request carries only what the purchaser key pins down (the email for
+ * a person, the organization for an organization) under an idempotency key
+ * derived from that key, so concurrent or retried creates from any path
+ * return the same Customer. `completeCustomer` fills in the rest afterwards.
  */
 export async function findOrCreateCustomer(
   client: Stripe,
@@ -93,27 +94,35 @@ export async function findOrCreateCustomer(
     details,
     invoiceOrganizations
   );
-  const metadata: Record<string, string> = details.organizationId
-    ? { registrationOrganization: details.organizationId }
-    : {};
-  const customer =
-    existing ??
-    (await client.customers.create(
-      { email: normalizeEmail(details.email), metadata },
-      { idempotencyKey: `stripe-customer:${customerKey(details)}` }
-    ));
+  if (existing) {
+    return existing;
+  }
+  return await client.customers.create(
+    details.organizationId
+      ? { metadata: { registrationOrganization: details.organizationId } }
+      : { email: normalizeEmail(details.email), metadata: {} },
+    { idempotencyKey: `stripe-customer:${customerKey(details)}` }
+  );
+}
+
+/** Adds the details a found or new Customer is missing, and tags an organization's Customer. */
+export async function completeCustomer(
+  client: Stripe,
+  customer: Stripe.Customer,
+  details: CustomerDetails
+) {
   const missing = {
+    ...(customer.email ? {} : { email: normalizeEmail(details.email) }),
     ...(!customer.name && details.name ? { name: details.name } : {}),
     ...(!customer.phone && details.phone ? { phone: details.phone } : {}),
     ...(!customer.address && details.address
       ? { address: details.address }
       : {}),
     ...(details.organizationId && !customer.metadata?.registrationOrganization
-      ? { metadata }
+      ? { metadata: { registrationOrganization: details.organizationId } }
       : {}),
   };
   if (Object.keys(missing).length) {
     await client.customers.update(customer.id, missing);
   }
-  return customer.id;
 }
