@@ -15,6 +15,7 @@ const CLIPPED_RECERT = /… · Vancouver, WA · [A-Z][a-z]{2} \d{1,2}$/u;
 const CAMAS_TITLE = /^Lifeguarding - Blended · Camas, WA · /u;
 const CAMAS_DESCRIPTION =
   /^Lifeguarding - Blended on \w+day, \w+ \d{1,2}, \d{4} at Gold's Gym Camas in Camas, WA\. Flexible/u;
+const FIXED_LENGTH = /"(duration|timeRequired|courseWorkload)"/u;
 const VENUES = [
   "Gold's Gym Camas: 2950 NW 38th Ave, Camas, WA 98607",
   "Clark County Family YMCA: 11324 NE 51st Cir, Vancouver, WA 98682",
@@ -123,6 +124,34 @@ it("gives the course page each upcoming class's venue and price", async () => {
     { code: "code-0", location: VENUES[0], price: 30_000, available: 8 },
     { code: "code-1", location: VENUES[1], price: 30_000 },
   ]);
+});
+
+it("takes class dates from the session's meetings and states no fixed length", async () => {
+  const { t, offering, sessions } = await catalog(1);
+  const session = await t.query(api.registration.detail, { code: "code-0" });
+  if (!session) {
+    throw new Error("Fixture session is not published");
+  }
+  const meeting = session.meetings.at(0);
+  if (!meeting) {
+    throw new Error("Fixture session has no meetings");
+  }
+  const start = new Date(meeting.start).toISOString();
+  const end = new Date(meeting.end).toISOString();
+  const [event, course] = sessionSchemas(session) as Record<string, unknown>[];
+  expect(event).toMatchObject({ startDate: start, endDate: end });
+  expect(course?.hasCourseInstance).toMatchObject([
+    { startDate: start, endDate: end },
+  ]);
+  const [template] = courseSchemas(
+    offering,
+    sessions,
+    "lifeguarding-blended"
+  ) as Record<string, unknown>[];
+  expect(template?.hasCourseInstance).toMatchObject([
+    { startDate: start, endDate: end },
+  ]);
+  expect(JSON.stringify([event, course, template])).not.toMatch(FIXED_LENGTH);
 });
 
 it("omits hasCourseInstance rather than emitting an empty list when nothing is scheduled", async () => {
