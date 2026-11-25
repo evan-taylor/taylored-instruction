@@ -16,6 +16,7 @@ import type * as alignmentMigration from "../alignmentMigration.js";
 import type * as analytics from "../analytics.js";
 import type * as auth from "../auth.js";
 import type * as crons from "../crons.js";
+import type * as emailPreferences from "../emailPreferences.js";
 import type * as http from "../http.js";
 import type * as instructorCertifications from "../instructorCertifications.js";
 import type * as instructorInvitations from "../instructorInvitations.js";
@@ -52,6 +53,9 @@ import type * as registrationSchema from "../registrationSchema.js";
 import type * as registrationTransfers from "../registrationTransfers.js";
 import type * as registrationWaitlist from "../registrationWaitlist.js";
 import type * as registrationWebhook from "../registrationWebhook.js";
+import type * as studentCertificateFiles from "../studentCertificateFiles.js";
+import type * as studentCertificateSchema from "../studentCertificateSchema.js";
+import type * as studentCertificates from "../studentCertificates.js";
 
 import type {
   ApiFromModules,
@@ -68,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   analytics: typeof analytics;
   auth: typeof auth;
   crons: typeof crons;
+  emailPreferences: typeof emailPreferences;
   http: typeof http;
   instructorCertifications: typeof instructorCertifications;
   instructorInvitations: typeof instructorInvitations;
@@ -104,6 +109,9 @@ declare const fullApi: ApiFromModules<{
   registrationTransfers: typeof registrationTransfers;
   registrationWaitlist: typeof registrationWaitlist;
   registrationWebhook: typeof registrationWebhook;
+  studentCertificateFiles: typeof studentCertificateFiles;
+  studentCertificateSchema: typeof studentCertificateSchema;
+  studentCertificates: typeof studentCertificates;
 }>;
 
 /**

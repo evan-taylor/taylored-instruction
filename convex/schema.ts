@@ -4,6 +4,7 @@ import { v } from "convex/values";
 
 import { alignedTables } from "./alignedSchema";
 import { registrationTables } from "./registrationSchema";
+import { studentCertificateTables } from "./studentCertificateSchema";
 
 const onboardingSteps = defineTable({
   title: v.string(),
@@ -219,6 +220,7 @@ const schema = defineSchema({
   }).index("by_email", ["email"]),
 
   ...alignedTables,
+  ...studentCertificateTables,
 
   profiles: defineTable({
     userId: v.id("users"), // Reference to auth users table

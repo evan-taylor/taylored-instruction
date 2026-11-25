@@ -19,10 +19,17 @@ type EmailLayoutProps = {
   children: ReactNode;
   /** Replaces the customer support line, e.g. on internal notifications. */
   footer?: ReactNode;
+  /** Opt-out link for reminder and marketing mail. */
+  unsubscribeUrl?: string;
 };
 
 /** Logo, one content column, and a quiet footer shared by every email. */
-export function EmailLayout({ preview, children, footer }: EmailLayoutProps) {
+export function EmailLayout({
+  preview,
+  children,
+  footer,
+  unsubscribeUrl,
+}: EmailLayoutProps) {
   return (
     <Html dir="ltr" lang="en">
       <Head>
@@ -62,6 +69,15 @@ export function EmailLayout({ preview, children, footer }: EmailLayoutProps) {
               tayloredinstruction.com
             </Link>
           </FooterText>
+          {unsubscribeUrl ? (
+            <FooterText>
+              You’re receiving this because we issued your certificate.{" "}
+              <Link href={unsubscribeUrl} style={styles.footerLink}>
+                Unsubscribe from reminder and marketing emails
+              </Link>
+              .
+            </FooterText>
+          ) : null}
         </Container>
       </Body>
     </Html>

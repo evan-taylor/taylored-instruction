@@ -3,6 +3,7 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Sheet, VisuallyHidden } from "@silk-hq/components";
 import { useQuery } from "convex/react";
 import {
+  Award,
   BadgeCheck,
   Bell,
   BookOpen,
@@ -46,6 +47,11 @@ const NAV: { group?: string; items: NavItem[] }[] = [
       { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
       { label: "Sessions", href: "/admin/sessions", icon: CalendarDays },
       { label: "Registrations", href: "/admin/registrations", icon: Users },
+      {
+        label: "Student certificates",
+        href: "/admin/student-certificates",
+        icon: Award,
+      },
       { label: "Groups & invoices", href: "/admin/groups", icon: Building2 },
       {
         label: "Activity & attention",

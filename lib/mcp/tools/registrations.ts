@@ -121,6 +121,26 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
   );
 
   server.registerTool(
+    "student_certificates",
+    {
+      title: "Look up student certificates",
+      description:
+        "Certificates we issued to a student (AHA eCards and Red Cross certificates), newest first: course, certificate ID or eCard code, issue and expiry dates, instructor, session, and whether a newer card renewed it. Paginated; pass the returned cursor for more.",
+      inputSchema: { email, ...pagination },
+      annotations: READ,
+    },
+    (args) =>
+      run(async () =>
+        ok(
+          await ctx.convex.query(api.studentCertificates.forStudent, {
+            email: args.email,
+            paginationOpts: paginationOpts(args),
+          })
+        )
+      )
+  );
+
+  server.registerTool(
     "enroll",
     {
       title: "Enroll attendees (staff)",

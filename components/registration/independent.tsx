@@ -28,6 +28,7 @@ import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { useProfile } from "@/hooks/useProfile";
 import { parseStudents } from "@/shared/registration/independent";
 import { AgencyExport } from "./agency-roster-export";
+import { SessionCertificates } from "./certificates";
 import { errorText } from "./errors";
 import {
   formatDateTime,
@@ -591,6 +592,20 @@ export function IndependentSessionDetail({
         </Notice>
       ) : null}
       <Roster canceled={canceled} session={session} students={students} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Certificates</CardTitle>
+          <CardDescription>
+            Upload the AHA eCard export or Red Cross class roster after you
+            issue cards. Each certificate is saved to the student’s record.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SessionCertificates
+            target={{ kind: "independent", id: session._id }}
+          />
+        </CardContent>
+      </Card>
       <ActivityLog sessionId={session._id} />
     </div>
   );

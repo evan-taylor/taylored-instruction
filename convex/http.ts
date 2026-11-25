@@ -1,6 +1,7 @@
 import { httpRouter } from "convex/server";
 import { auth } from "./auth";
 
+import { oneClickUnsubscribe } from "./emailPreferences";
 import { resendWebhook } from "./registrationEmailWebhook";
 import { stripeWebhook } from "./registrationWebhook";
 
@@ -17,6 +18,12 @@ http.route({
   path: "/registration/resend",
   method: "POST",
   handler: resendWebhook,
+});
+
+http.route({
+  path: "/email/unsubscribe",
+  method: "POST",
+  handler: oneClickUnsubscribe,
 });
 
 export default http;

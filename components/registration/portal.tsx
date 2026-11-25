@@ -44,6 +44,7 @@ import {
   MAX_CERTIFICATE_BYTES,
 } from "@/shared/registration/certificate";
 import { formatMoney } from "@/shared/registration/domain";
+import { MyCertificates } from "./certificates";
 import { errorText } from "./errors";
 import { formatMeeting, formatTime, shortZone } from "./format";
 
@@ -811,6 +812,7 @@ export function RegistrationPortal() {
             </Button>
           </div>
         ) : null}
+        {ready ? <MyCertificates /> : null}
         {ready ? (
           <>
             <Tabs
