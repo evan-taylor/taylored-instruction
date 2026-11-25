@@ -107,6 +107,34 @@ async function handleRefund(ctx: ActionCtx, event: Stripe.Event) {
   }
 }
 
+/**
+ * The Stripe account can also take shop payments. A dispute is ours only when
+ * the payment came from a registration Checkout Session or invoice.
+ */
+export async function isRegistrationPayment(
+  client: Stripe,
+  paymentIntent: string
+) {
+  const sessions = await client.checkout.sessions.list({
+    payment_intent: paymentIntent,
+    limit: 1,
+  });
+  if (sessions.data.some((session) => session.metadata?.registrationOrder)) {
+    return true;
+  }
+  const payments = await client.invoicePayments.list({
+    payment: { type: "payment_intent", payment_intent: paymentIntent },
+    limit: 1,
+    expand: ["data.invoice"],
+  });
+  return payments.data.some(
+    (payment) =>
+      typeof payment.invoice === "object" &&
+      "metadata" in payment.invoice &&
+      Boolean(payment.invoice.metadata?.registrationInvoice)
+  );
+}
+
 export const stripeWebhook = httpAction(async (ctx, request) => {
   const secret = process.env.REGISTRATION_STRIPE_WEBHOOK_SECRET;
   const signature = request.headers.get("stripe-signature");
@@ -145,6 +173,17 @@ export const stripeWebhook = httpAction(async (ctx, request) => {
     event.type === "refund.created"
   ) {
     await handleRefund(ctx, event);
+  } else if (event.type === "charge.dispute.created") {
+    const dispute = event.data.object as Stripe.Dispute;
+    if (
+      typeof dispute.payment_intent === "string" &&
+      (await isRegistrationPayment(client, dispute.payment_intent))
+    ) {
+      await ctx.runMutation(internal.registrationDisputes.opened, {
+        disputeId: dispute.id,
+        paymentIntent: dispute.payment_intent,
+      });
+    }
   }
   return new Response("Accepted", { status: 200 });
 });

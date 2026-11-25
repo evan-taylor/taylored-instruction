@@ -55,6 +55,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { formatMoney } from "@/shared/registration/domain";
 import { MaterialBalances, OrderMaterialEditor } from "./order-materials";
+import { PolicyEvidence } from "./policy-evidence";
 
 type Order = Doc<"registrationOrders">;
 type OrderId = Id<"registrationOrders">;
@@ -376,6 +377,12 @@ function OrderDetail({ order }: { order: Order }) {
         title="Invoices"
       >
         <OrderInvoices order={order} />
+      </Section>
+      <Section
+        description="Append-only record of the policy version the purchaser agreed to or was shown."
+        title="Cancellation policy"
+      >
+        <PolicyEvidence orderId={order._id} />
       </Section>
     </div>
   );

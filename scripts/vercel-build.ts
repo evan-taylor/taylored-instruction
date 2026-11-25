@@ -115,6 +115,7 @@ const enabledEvents: Stripe.WebhookEndpointCreateParams.EnabledEvent[] = [
   "invoice.paid",
   "invoice.voided",
   "invoice.marked_uncollectible",
+  "charge.dispute.created",
 ];
 const metadata =
   target === "preview"

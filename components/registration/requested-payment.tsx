@@ -18,6 +18,7 @@ import {
 } from "@/shared/registration/domain";
 import { errorText } from "./errors";
 import { PaymentStep } from "./payment-step";
+import { PolicyAgreement, policyAgreement } from "./policy-agreement";
 
 /** Emailed payment request: review the order, then pay on this page. */
 export function RequestedPayment() {
@@ -30,6 +31,7 @@ export function RequestedPayment() {
     orderId && requestKey ? { orderId, requestKey } : "skip"
   );
   const [busy, setBusy] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [expires, setExpires] = useState<number | null>(null);
   const [error, setError] = useState("");
   const start = async () => {
@@ -46,6 +48,7 @@ export function RequestedPayment() {
       const result = await begin({
         ...args,
         analytics: registrationAnalyticsContext(),
+        cancellationPolicy: policyAgreement(agreed),
       });
       trackRegistration("registration_requested_payment_ready", {
         order_id: orderId,
@@ -128,9 +131,14 @@ export function RequestedPayment() {
                 before you pay, and we’ll email your confirmation when payment
                 completes.
               </p>
+              <PolicyAgreement
+                checked={agreed}
+                disabled={busy}
+                onChange={setAgreed}
+              />
               {error ? <Notice tone="danger">{error}</Notice> : null}
               <Button
-                disabled={busy || !(orderId && requestKey)}
+                disabled={busy || !agreed || !(orderId && requestKey)}
                 onClick={start}
                 type="button"
               >

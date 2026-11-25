@@ -38,14 +38,24 @@ function baseUrl() {
  */
 export const checkout = action({
   args: { orderId: v.id("registrationOrders"), requestKey: v.string() },
-  returns: v.string(),
-  handler: async (ctx, args): Promise<string> => {
+  returns: v.object({ secret: v.string(), termsConsent: v.boolean() }),
+  handler: async (
+    ctx,
+    args
+  ): Promise<{ secret: string; termsConsent: boolean }> => {
     const order = await ctx.runQuery(
       internal.registrationPayments.checkoutOrder,
       args
     );
+    // Stripe's own terms-of-service checkbox; it needs a Terms of Service URL
+    // in the Stripe Dashboard's public details, so it is opt-in per deployment.
+    const termsConsent =
+      process.env.REGISTRATION_STRIPE_TERMS_CONSENT === "required";
     if (order.checkoutSecret) {
-      return order.checkoutSecret;
+      return {
+        secret: order.checkoutSecret,
+        termsConsent: order.checkoutTermsConsent ?? false,
+      };
     }
     const client = stripe();
     const customer = await stripeCustomerFor(
@@ -68,6 +78,9 @@ export const checkout = action({
         automatic_tax: { enabled: true },
         billing_address_collection: "required",
         allowed_payment_method_types: ["card"],
+        ...(termsConsent
+          ? { consent_collection: { terms_of_service: "required" as const } }
+          : {}),
         customer,
         // Saves the billing address and name entered at checkout onto the
         // Customer, so later invoices and Stripe Tax use them.
@@ -110,6 +123,7 @@ export const checkout = action({
         orderId: order._id,
         session: session.id,
         secret: session.client_secret,
+        termsConsent,
       }
     );
     if (!attached) {
@@ -117,7 +131,7 @@ export const checkout = action({
         "Reservation ended before the payment form was ready. Nothing was charged."
       );
     }
-    return session.client_secret;
+    return { secret: session.client_secret, termsConsent };
   },
 });
 export const refund = action({
@@ -201,6 +215,7 @@ export const deliver = internalAction({
             success: true,
             providerId: response.data?.id,
             deliveredTo: recipient,
+            copy: { subject: rendered.subject, text: rendered.text },
           });
         } catch (error) {
           await ctx.runMutation(internal.registrationMail.result, {

@@ -67,6 +67,7 @@ import {
 } from "./format";
 import { InvitationActions } from "./invitation";
 import { PaymentStep } from "./payment-step";
+import { PolicyAgreement, policyAgreement } from "./policy-agreement";
 
 type Offering = NonNullable<FunctionReturnType<typeof api.registration.detail>>;
 type Material = Offering["config"]["materials"][number];
@@ -638,6 +639,7 @@ function useRegistrationForm(
       : otherAttendees
   ).map((row) => ({ ...row, name: fullName(row.firstName, row.lastName) }));
   const [coupon, setCoupon] = useState("");
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [review, setReview] = useState<Review | null>(null);
@@ -681,6 +683,10 @@ function useRegistrationForm(
     if (submitting.current || review) {
       return;
     }
+    if (!agreed) {
+      setError("Agree to the Cancellation Policy to continue to payment.");
+      return;
+    }
     trackRegistration("registration_submitted", {
       course_id: offering.courseId,
       class_session_id: sessionId,
@@ -720,6 +726,7 @@ function useRegistrationForm(
         coupon: coupon || undefined,
         requestKey,
         invitation,
+        cancellationPolicy: policyAgreement(agreed),
       });
       trackRegistration("registration_reservation_succeeded", {
         order_id: result.orderId,
@@ -800,6 +807,8 @@ function useRegistrationForm(
     setPhone,
     coupon,
     setCoupon,
+    agreed,
+    setAgreed,
     error,
     setError,
     busy,
@@ -2006,6 +2015,11 @@ function OfferingPage({
                     <AttendeesSection config={offering.config} form={form} />
                   )}
                   {form.review ? null : <CouponCard form={form} />}
+                  <PolicyAgreement
+                    checked={form.agreed}
+                    disabled={form.busy}
+                    onChange={form.setAgreed}
+                  />
                 </>
               ) : (
                 <ClosedState state={offering.state} />

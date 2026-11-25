@@ -51,6 +51,10 @@ import {
   trackRegistrationOrder,
 } from "./registrationHelpers";
 import { selectedMaterials } from "./registrationMaterialSelection";
+import {
+  policyAgreement,
+  recordReservationAgreement,
+} from "./registrationPolicy";
 import schema from "./schema";
 
 /** A course material as shown to the public: the attachment plus the catalog blurb. */
@@ -614,6 +618,8 @@ export const reserve = mutation({
       })
     ),
     invitation: v.optional(v.string()),
+    /** The purchaser's checkbox agreement; required for public checkout. */
+    cancellationPolicy: v.optional(policyAgreement),
   },
   returns: v.object({
     orderId: v.id("registrationOrders"),
@@ -746,6 +752,12 @@ export const reserve = mutation({
       throw new ConvexError("Order insert failed");
     }
     await trackRegistrationOrder(ctx, order, "registration_reserved");
+    await recordReservationAgreement(
+      ctx,
+      order,
+      actor?.userId,
+      args.cancellationPolicy
+    );
     const status = await settleReservation(ctx, order, args.admin);
     await audit(
       ctx,

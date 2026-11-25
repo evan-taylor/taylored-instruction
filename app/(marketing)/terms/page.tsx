@@ -1,12 +1,15 @@
 "use cache";
 
 import { cacheLife } from "next/cache";
+import Link from "next/link";
+import { CancellationPolicyDocument } from "@/components/cancellation-policy-document";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
   getWebPageSchema,
 } from "@/lib/structuredData";
+import { CURRENT_CANCELLATION_POLICY } from "@/shared/cancellation-policy";
 
 const pageTitle = "Terms and Conditions | Taylored Instruction";
 const pageDescription =
@@ -70,80 +73,18 @@ export default async function TermsPage() {
           <h2 className="mb-6 font-semibold text-2xl text-text">
             Cancellation and refund policy
           </h2>
-          <h3 className="mb-3 font-semibold text-text text-xl">
-            Reschedule and refund policy
-          </h3>
-          <p>
-            At Taylored Instruction, we do not offer refunds for course
-            registrations. Instead, we provide the flexibility to reschedule
-            your registration. Please review the following guidelines:
-          </p>
-
-          <h4 className="mb-2 font-semibold text-lg text-text">
-            Rescheduling policy
-          </h4>
-          <ul className="mb-4 list-inside list-disc text-text-light">
-            <li>
-              Rescheduling requests made <strong>7 or more days</strong> before
-              the scheduled start date will incur no additional charges.
-            </li>
-            <li>
-              Rescheduling requests made <strong>less than 7 days</strong>{" "}
-              before the scheduled start date will incur a $20 administrative
-              fee.
-            </li>
-          </ul>
-
-          <h4 className="mb-2 font-semibold text-lg text-text">
-            Refund exceptions
-          </h4>
-          <p>
-            Refunds are only provided if no courses of the type you registered
-            for are forecasted to be available within the next 3 months. In such
-            cases, a refund will be issued minus a $20 administrative fee.
-          </p>
-
-          <h3 className="mt-8 mb-3 font-semibold text-text text-xl">
-            eLearning policy
-          </h3>
-          <p>
-            Blended learning courses require completion of eLearning modules
-            prior to the in-person session. Failure to complete the eLearning
-            will prevent participation in the course. Refunds are not available
-            in these cases, but we encourage you to contact us for assistance if
-            you anticipate delays in completing the required materials.
-          </p>
-
-          <h3 className="mt-8 mb-3 font-semibold text-text text-xl">
-            Prerequisites
-          </h3>
-          <p>
-            Some of our courses may have prerequisites. Please review the course
-            description carefully when you sign up for a course. We are not able
-            to offer a refund in the event that you are not able to complete the
-            course due to not meeting the prerequisites. If you have any
-            questions about the prerequisites, please contact us at{" "}
-            <a
+          <div className="text-text-light leading-relaxed">
+            <CancellationPolicyDocument policy={CURRENT_CANCELLATION_POLICY} />
+          </div>
+          <p className="mt-4 text-sm text-text-light">
+            Version {CURRENT_CANCELLATION_POLICY.version}.{" "}
+            <Link
               className="text-primary hover:underline"
-              href="mailto:info@tayloredinstruction.com"
+              href={`/cancellation-policy/v/${CURRENT_CANCELLATION_POLICY.version}`}
             >
-              info@tayloredinstruction.com
-            </a>
+              Permanent link to this version
+            </Link>
             .
-          </p>
-          <h3 className="mt-8 mb-3 font-semibold text-text text-xl">
-            Late arrivals
-          </h3>
-          <p>
-            All of our courses begin on time and promptly. If you arrive more
-            than 10 minutes late to your course, you will have already missed
-            content, and may not be eligible to participate. In such a case, you
-            may reschedule your registration for a fee of $20.
-          </p>
-          <p>
-            In exceptional cases, refunds or adjustments may be considered at
-            Taylored Instruction&apos;s sole discretion. Please contact us for
-            individual review.
           </p>
 
           <h2 className="mt-12 mb-6 font-semibold text-2xl text-text">

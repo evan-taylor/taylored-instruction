@@ -19,6 +19,7 @@ import {
 } from "../../shared/registration/domain";
 import { parseRoster, rosterSummary } from "../../shared/registration/roster";
 import { recurrence } from "../../shared/registration/schedule";
+import { agreement } from "./fixtures/policy";
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -121,6 +122,7 @@ function attempt(
     purchaser: "buyer@example.test",
     purchaserName: "Buyer",
     attendees: [seat(address)],
+    cancellationPolicy: agreement,
   };
 }
 
@@ -3684,7 +3686,11 @@ describe("Emailed payment requests", () => {
         requestKey: "wrong",
       })
     ).rejects.toThrow("not found");
-    const payment = { orderId: result.orderId, requestKey: input.requestKey };
+    const payment = {
+      orderId: result.orderId,
+      requestKey: input.requestKey,
+      cancellationPolicy: agreement,
+    };
     await f.t.mutation(api.registrationPayments.beginRequestedPayment, payment);
     const first = await f.t.run((ctx) => ctx.db.get(result.orderId));
     await f.t.mutation(api.registrationPayments.beginRequestedPayment, payment);

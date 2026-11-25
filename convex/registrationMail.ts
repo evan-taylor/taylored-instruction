@@ -9,6 +9,7 @@ import {
   activeSeatMaterials,
   materialJobEntitlementId,
 } from "./registrationHelpers";
+import { citedAcknowledgement, policyEmailLine } from "./registrationPolicy";
 
 function billingDetails(
   order: Doc<"registrationOrders"> | null,
@@ -78,11 +79,14 @@ function messageBody(
   }
   return { category, body };
 }
-async function messageContext(
+/**
+ * The order behind a job. Receipts and invoices bill it; an attendee's
+ * confirmation only cites its policy, so it never shows the order's billing.
+ */
+async function jobOrder(
   ctx: MutationCtx,
   job: Doc<"registrationJobs">,
-  seat: Doc<"registrationSeats"> | null,
-  session: Doc<"registrationSessions"> | null
+  seat: Doc<"registrationSeats"> | null
 ) {
   const [kind, reference] = job.key.split(":");
   const invoiceId =
@@ -94,8 +98,21 @@ async function messageContext(
     kind === "receipt" && reference
       ? ctx.db.normalizeId("registrationOrders", reference)
       : null;
-  const orderId = invoice?.orderId ?? receiptId;
+  const billingOrderId = invoice?.orderId ?? receiptId;
+  const orderId =
+    billingOrderId ?? (kind === "confirmation" ? seat?.orderId : undefined);
   const order = orderId ? await ctx.db.get(orderId) : null;
+  return { invoice, order, billing: Boolean(billingOrderId) };
+}
+
+async function messageContext(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  seat: Doc<"registrationSeats"> | null,
+  session: Doc<"registrationSessions"> | null
+) {
+  const [kind] = job.key.split(":");
+  const { invoice, order, billing } = await jobOrder(ctx, job, seat);
   const course = seat ? await ctx.db.get(seat.courseId) : null;
   const title =
     session?.title ?? course?.title ?? order?.title ?? "Taylored Instruction";
@@ -112,16 +129,40 @@ async function messageContext(
       });
     }
   }
-  details.push(...billingDetails(order, invoice));
-  if (order?.source === "waived" && kind === "receipt") {
-    return {
-      title,
-      details,
-      category: "Payment waived",
-      body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
-    };
+  details.push(...billingDetails(billing ? order : null, invoice));
+  const message =
+    order?.source === "waived" && kind === "receipt"
+      ? {
+          category: "Payment waived",
+          body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
+        }
+      : messageBody(job, kind, invoice);
+  const notice = order ? await policyNotice(ctx, job, order) : null;
+  if (notice) {
+    message.body += `\n${notice}`;
   }
-  return { title, details, ...messageBody(job, kind, invoice) };
+  return { title, details, ...message };
+}
+
+/** Only the purchaser agreed; anyone else is told the policy applies. */
+async function policyNotice(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  order: Doc<"registrationOrders">
+) {
+  const acknowledgement = await citedAcknowledgement(ctx, order._id);
+  const site = process.env.SITE_URL;
+  if (!(acknowledgement && site)) {
+    return null;
+  }
+  const agreedByRecipient =
+    job.recipient.toLowerCase() === order.purchaser.toLowerCase();
+  return policyEmailLine(
+    agreedByRecipient
+      ? acknowledgement
+      : { ...acknowledgement, kind: "disclosed" },
+    new URL(site).origin
+  );
 }
 
 export const due = internalQuery({
@@ -361,6 +402,7 @@ export const result = internalMutation({
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
     deliveredTo: v.optional(v.string()),
+    copy: v.optional(v.object({ subject: v.string(), text: v.string() })),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -376,6 +418,7 @@ export const result = internalMutation({
       providerId: args.providerId,
       sentAt: args.success ? Date.now() : job.sentAt,
       deliveredTo: args.deliveredTo ?? job.deliveredTo,
+      sentCopy: args.success ? args.copy : job.sentCopy,
     });
     return null;
   },

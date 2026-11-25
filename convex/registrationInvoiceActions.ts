@@ -1,6 +1,11 @@
 "use node";
 import { ConvexError, v } from "convex/values";
 import Stripe from "stripe";
+import {
+  type CancellationPolicy,
+  CURRENT_CANCELLATION_POLICY,
+  cancellationPolicyUrl,
+} from "../shared/cancellation-policy";
 import { DEFAULT_TAX_CODES } from "../shared/registration/domain";
 import {
   assertRegistrationPaymentMode,
@@ -28,6 +33,17 @@ function stripe() {
  * Invoice items need a Stripe Product to carry a tax code. One product per
  * tax code is created on demand with a deterministic id so retries reuse it.
  */
+/** States the policy version on every invoice; the payer never checks a box. */
+function policyFooter({ version, keyTerms }: CancellationPolicy) {
+  const site = process.env.SITE_URL;
+  if (!site) {
+    throw new Error("Configure SITE_URL");
+  }
+  return [
+    `This registration is subject to our Cancellation Policy, version ${version}: ${cancellationPolicyUrl(site, version)}`,
+    ...keyTerms,
+  ].join("\n");
+}
 async function productForTaxCode(client: Stripe, taxCode?: string) {
   const id = taxCode ? `registration_${taxCode}` : "registration_default";
   try {
@@ -77,6 +93,7 @@ export const issue = action({
       return invoice.hostedUrl;
     }
     const client = stripe();
+    const policy = CURRENT_CANCELLATION_POLICY;
     try {
       const address = customerAddress(invoice);
       const bill = {
@@ -110,7 +127,9 @@ export const issue = action({
           pending_invoice_items_behavior: "exclude",
           currency: "usd",
           description: `${order.title} · ${order.seats.length} attendee${order.seats.length === 1 ? "" : "s"}`,
-          footer: invoice.notes || undefined,
+          footer: [invoice.notes, policyFooter(policy)]
+            .filter(Boolean)
+            .join("\n\n"),
           custom_fields: [
             { name: "Invoice", value: invoice.number },
             ...(invoice.poNumber
@@ -198,6 +217,7 @@ export const issue = action({
         hostedUrl: finalized.hosted_invoice_url,
         pdfUrl: finalized.invoice_pdf ?? undefined,
         tax: Math.max(0, finalized.total - preTax),
+        policyVersion: policy.version,
       });
       return finalized.hosted_invoice_url;
     } catch (error) {
