@@ -54,7 +54,8 @@ async function firstPage(q: string): Promise<DiscoveryFirstPage | undefined> {
 
 export default async function Page({ searchParams }: Props) {
   const { q } = await searchParams;
-  const initial = await firstPage(typeof q === "string" ? q : "");
+  // Like URLSearchParams.get, which the client reads: the first value wins.
+  const initial = await firstPage([q].flat().at(0) ?? "");
   const schemas = [
     getWebPageSchema({ name: title, description, path: "/classes" }),
     getBreadcrumbSchema([
