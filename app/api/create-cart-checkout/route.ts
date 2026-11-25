@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import PostHogClient from "@/lib/posthog";
-import { findOrCreateCustomer, normalizeEmail } from "@/shared/stripe-customer";
+import { signedInCustomer } from "@/lib/signed-in-customer";
 
 // Lazy Stripe initialization to avoid build-time errors
 function getStripeClient(): Stripe {
@@ -15,7 +15,7 @@ function getStripeClient(): Stripe {
 }
 
 export async function POST(req: NextRequest) {
-  const { lineItems, email, metadata } = await req.json();
+  const { lineItems, metadata } = await req.json();
 
   const MinItemQuantity = 1;
   const MaxItemQuantity = 100;
@@ -39,9 +39,6 @@ export async function POST(req: NextRequest) {
     if (!hasLineItems) {
       return "Missing or invalid lineItems in request body";
     }
-    if (!email) {
-      return "Missing email in request body";
-    }
     return validateItems(
       lineItems as Array<{ price?: string; quantity?: number }>
     );
@@ -62,11 +59,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const client = getStripeClient();
-    const customer = await findOrCreateCustomer(
-      client,
-      { email },
-      `ecard-customer:${normalizeEmail(email)}`
-    );
+    const customer = await signedInCustomer();
+    if (!customer) {
+      return NextResponse.json(
+        { error: "Sign in to buy eCards" },
+        { status: 401 }
+      );
+    }
     // Stripe API parameters use snake_case as required by their API
     const session = await client.checkout.sessions.create({
       mode: "payment",

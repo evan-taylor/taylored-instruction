@@ -392,7 +392,6 @@ export default function ECardsPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: session?.user?.email,
           lineItems,
           metadata: {
             userId: session?.user?.id,

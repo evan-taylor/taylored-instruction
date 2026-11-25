@@ -12,9 +12,12 @@ import { findOrCreateCustomer } from "../../shared/stripe-customer";
 type FakeCustomer = {
   id: string;
   email: string | null;
-  name?: string;
+  name?: string | null;
+  phone?: string | null;
+  address?: Record<string, string | undefined> | null;
   created: number;
   metadata: Record<string, string>;
+  deleted?: boolean;
 };
 type Params = Record<string, unknown>;
 
@@ -29,6 +32,8 @@ const stripe = vi.hoisted(() => ({
   listDelay: 0,
   lists: 0,
   failCreate: false,
+  voided: [] as string[],
+  beforeFinalize: undefined as (() => void) | undefined,
 }));
 
 vi.mock("stripe", async (original) => {
@@ -38,10 +43,28 @@ vi.mock("stripe", async (original) => {
   class FakeStripe {
     static readonly errors = actual.default.errors;
     readonly customers = {
-      list: async ({ email }: { email: string }) => {
-        stripe.lists += 1;
-        await pause(stripe.listDelay);
-        return { data: stripe.customers.filter((c) => c.email === email) };
+      list: ({ email }: { email: string }) => ({
+        autoPagingToArray: async () => {
+          stripe.lists += 1;
+          await pause(stripe.listDelay);
+          return stripe.customers.filter(
+            (c) => !c.deleted && c.email === email
+          );
+        },
+      }),
+      search: ({ query }: { query: string }) => ({
+        autoPagingToArray: async () => {
+          await pause(0);
+          const email = query.slice(7, -1);
+          return stripe.customers.filter(
+            (c) => !c.deleted && c.email?.toLowerCase() === email
+          );
+        },
+      }),
+      retrieve: async (id: string) => {
+        await pause(0);
+        const found = stripe.customers.find((c) => c.id === id);
+        return found?.deleted || !found ? { id, deleted: true } : found;
       },
       create: async (
         params: Params & { email: string; metadata?: Record<string, string> },
@@ -57,10 +80,12 @@ vi.mock("stripe", async (original) => {
         if (reused) {
           return reused;
         }
-        const customer = {
+        const customer: FakeCustomer = {
           id: `cus_${stripe.customers.length + 1}`,
           email: params.email,
-          name: params.name as string | undefined,
+          name: null,
+          phone: null,
+          address: null,
           created: stripe.customers.length + 1,
           metadata: params.metadata ?? {},
         };
@@ -77,6 +102,10 @@ vi.mock("stripe", async (original) => {
       update: async (id: string, params: Params) => {
         await pause(0);
         stripe.updated.push({ id, params });
+        const customer = stripe.customers.find((c) => c.id === id);
+        if (customer) {
+          Object.assign(customer, params);
+        }
         return { id };
       },
     };
@@ -107,11 +136,25 @@ vi.mock("stripe", async (original) => {
         stripe.invoices.push(params);
         return { id: `in_${stripe.invoices.length}` };
       },
+      voidInvoice: async (id: string) => {
+        await pause(0);
+        stripe.voided.push(id);
+        return { id };
+      },
       finalizeInvoice: async (id: string) => {
         await pause(0);
         const total = stripe.items.get(id) ?? 0;
+        const index = Number(id.slice(3)) - 1;
+        if (stripe.beforeFinalize) {
+          stripe.beforeFinalize();
+        }
+        const customer = stripe.customers.find(
+          (c) => c.id === stripe.invoices[index]?.customer
+        );
         return {
           id,
+          customer_name: customer?.name,
+          customer_address: customer?.address,
           livemode: false,
           hosted_invoice_url: `https://invoice.stripe.test/${id}`,
           invoice_pdf: null,
@@ -138,6 +181,15 @@ vi.mock("stripe", async (original) => {
   }
   return { default: FakeStripe };
 });
+const signedIn = vi.hoisted(() => ({
+  customer: "cus_signed_in" as string | null,
+}));
+vi.mock("@/lib/signed-in-customer", () => ({
+  signedInCustomer: async () => {
+    await Promise.resolve();
+    return signedIn.customer;
+  },
+}));
 vi.mock("@/lib/posthog", () => ({ default: () => null }));
 vi.mock("@/instrumentation", () => ({
   flushPostHogLogs: async () => {
@@ -166,6 +218,9 @@ beforeEach(() => {
   stripe.listDelay = 0;
   stripe.lists = 0;
   stripe.failCreate = false;
+  stripe.voided.length = 0;
+  stripe.beforeFinalize = undefined;
+  signedIn.customer = "cus_signed_in";
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -321,64 +376,78 @@ const client = () => new Stripe("sk_test_customer_fixture");
 
 describe("findOrCreateCustomer", () => {
   it("reuses the oldest Customer with the same email, whatever its case", async () => {
-    const first = existingCustomer("buyer@example.test");
+    const first = existingCustomer("Buyer@Example.test");
     existingCustomer("buyer@example.test");
     expect(
-      await findOrCreateCustomer(
-        client(),
-        { email: " Buyer@Example.test " },
-        "key"
-      )
+      await findOrCreateCustomer(client(), { email: " buyer@example.test " })
     ).toBe(first);
     expect(stripe.created).toHaveLength(0);
   });
-  it("finds a Customer stored with a mixed-case email", async () => {
-    const mixed = existingCustomer("Buyer@Example.test");
-    expect(
-      await findOrCreateCustomer(
-        client(),
-        { email: "Buyer@Example.test" },
-        "key"
-      )
-    ).toBe(mixed);
-  });
-  it("creates a Customer with a normalized email, name, and phone", async () => {
-    const id = await findOrCreateCustomer(
-      client(),
-      { email: "New@Example.test", name: "New Buyer", phone: "+15555550100" },
-      "key"
-    );
+  it("creates under a key every path shares, then fills in name and phone", async () => {
+    const details = {
+      email: "New@Example.test",
+      name: "New Buyer",
+      phone: "+15555550100",
+    };
+    const id = await findOrCreateCustomer(client(), details);
     expect(stripe.created).toEqual([
       {
-        params: {
-          email: "new@example.test",
-          name: "New Buyer",
-          phone: "+15555550100",
-          address: undefined,
-          metadata: {},
-        },
-        idempotencyKey: "key",
+        params: { email: "new@example.test", metadata: {} },
+        idempotencyKey: "stripe-customer:email:new@example.test",
       },
     ]);
-    expect(id).toBe(stripe.customers[0]?.id);
+    expect(stripe.updated).toEqual([
+      { id, params: { name: "New Buyer", phone: "+15555550100" } },
+    ]);
+    stripe.customers.length = 0;
+    expect(
+      await findOrCreateCustomer(client(), { email: "new@example.test" })
+    ).toBe(id);
+    expect(stripe.created).toHaveLength(1);
   });
   it("keeps organization and individual Customers apart", async () => {
     const org = existingCustomer("buyer@example.test", {
       registrationOrganization: "org_1",
     });
-    const person = await findOrCreateCustomer(
-      client(),
-      { email: "buyer@example.test" },
-      "person"
-    );
+    const person = await findOrCreateCustomer(client(), {
+      email: "buyer@example.test",
+    });
     expect(person).not.toBe(org);
+    expect(
+      await findOrCreateCustomer(client(), {
+        email: "buyer@example.test",
+        organizationId: "org_1",
+      })
+    ).toBe(org);
+  });
+  it("treats a Customer from an old organization invoice as the organization's and tags it", async () => {
+    const legacy = existingCustomer("buyer@example.test", {
+      registrationInvoice: "inv_org",
+    });
+    const owners = async (ids: string[]) => {
+      await Promise.resolve();
+      return Object.fromEntries(
+        ids.filter((id) => id === "inv_org").map((id) => [id, "org_1"])
+      );
+    };
+    expect(
+      await findOrCreateCustomer(
+        client(),
+        { email: "buyer@example.test" },
+        owners
+      )
+    ).not.toBe(legacy);
     expect(
       await findOrCreateCustomer(
         client(),
         { email: "buyer@example.test", organizationId: "org_1" },
-        "org"
+        owners
       )
-    ).toBe(org);
+    ).toBe(legacy);
+    expect(stripe.updated.at(-1)).toEqual({
+      id: legacy,
+      params: { metadata: { registrationOrganization: "org_1" } },
+    });
   });
 });
 
@@ -419,6 +488,12 @@ describe("Registration checkout Customers", () => {
   });
   it("uses a stored Customer id without searching Stripe", async () => {
     const f = await fixture();
+    stripe.customers.push({
+      id: "cus_stored",
+      email: "buyer@example.test",
+      created: 0,
+      metadata: {},
+    });
     await f.t.run((ctx) =>
       ctx.db.insert("registrationStripeCustomers", {
         key: "email:buyer@example.test",
@@ -430,6 +505,24 @@ describe("Registration checkout Customers", () => {
     const session = await checkout(f);
     expect(session?.customer).toBe("cus_stored");
     expect(stripe.lists).toBe(0);
+  });
+  it("replaces a stored Customer that was deleted in Stripe", async () => {
+    const f = await fixture();
+    await f.t.run((ctx) =>
+      ctx.db.insert("registrationStripeCustomers", {
+        key: "email:buyer@example.test",
+        live: false,
+        email: "buyer@example.test",
+        stripeCustomerId: "cus_deleted",
+      })
+    );
+    const session = await checkout(f);
+    expect(session?.customer).toBe(stripe.customers[0]?.id);
+    expect(session?.customer).not.toBe("cus_deleted");
+    const rows = await f.t.run((ctx) =>
+      ctx.db.query("registrationStripeCustomers").collect()
+    );
+    expect(rows.map((r) => r.stripeCustomerId)).toEqual([session?.customer]);
   });
   it("links an existing Stripe Customer found by email", async () => {
     const f = await fixture();
@@ -527,6 +620,8 @@ describe("Invoice Customers", () => {
     expect(stripe.updated.at(-1)).toEqual({
       id: session?.customer,
       params: {
+        name: "Pat Buyer",
+        email: "buyer@example.test",
         address: {
           line1: "100 Main St",
           city: "Vancouver",
@@ -552,14 +647,28 @@ describe("Invoice Customers", () => {
   });
 });
 
+describe("Invoice billing details", () => {
+  it("voids the invoice when another payment changes the Customer before finalizing", async () => {
+    const f = await fixture();
+    stripe.beforeFinalize = () => {
+      const [customer] = stripe.customers;
+      if (customer) {
+        customer.name = "Someone Else";
+      }
+    };
+    await expect(invoice(f)).rejects.toThrow("Void this invoice");
+    expect(stripe.voided).toEqual(["in_1"]);
+  });
+});
+
 describe("eCard checkout Customers", () => {
   const request = (url: string, body: Params) =>
     new NextRequest(url, { method: "POST", body: JSON.stringify(body) });
-  it("passes a Customer on single and cart eCard checkouts and reuses it", async () => {
+  it("passes the signed-in account's Customer on single and cart eCard checkouts", async () => {
     const single = await ecardCheckout(
       request("https://site.example.test/api/create-checkout-session", {
         priceId: "price_1",
-        email: "Ecard@Example.test",
+        email: "someone.else@example.test",
         quantity: 2,
         metadata: {},
       })
@@ -568,21 +677,43 @@ describe("eCard checkout Customers", () => {
     const cart = await cartCheckout(
       request("https://site.example.test/api/create-cart-checkout", {
         lineItems: [{ price: "price_1", quantity: 1 }],
-        email: "ecard@example.test",
         metadata: {},
       })
     );
     expect(cart.status).toBe(200);
-    expect(stripe.created).toHaveLength(1);
-    const customer = stripe.customers[0]?.id;
+    expect(stripe.sessions).toHaveLength(2);
     for (const session of stripe.sessions) {
       expect(session).toMatchObject({
-        customer,
+        customer: "cus_signed_in",
         customer_update: { address: "auto", name: "auto" },
         automatic_tax: { enabled: true },
       });
       expect(session).not.toHaveProperty("customer_email");
     }
+  });
+  it("refuses eCard checkout without a signed-in account", async () => {
+    signedIn.customer = null;
+    const response = await cartCheckout(
+      request("https://site.example.test/api/create-cart-checkout", {
+        lineItems: [{ price: "price_1", quantity: 1 }],
+        metadata: {},
+      })
+    );
+    expect(response.status).toBe(401);
+    expect(stripe.sessions).toHaveLength(0);
+  });
+  it("finds the Customer for the account's own email, shared with registration", async () => {
+    const f = await fixture();
+    await expect(
+      f.t.action(api.registrationCustomers.signedInCustomer, {})
+    ).rejects.toThrow("Sign in");
+    const ecard = await f.adminClient.action(
+      api.registrationCustomers.signedInCustomer,
+      {}
+    );
+    const session = await checkout(f, ADMIN_EMAILS[0]);
+    expect(session?.customer).toBe(ecard);
+    expect(stripe.created).toHaveLength(1);
   });
 });
 

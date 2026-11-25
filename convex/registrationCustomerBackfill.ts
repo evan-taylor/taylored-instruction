@@ -7,12 +7,13 @@ import {
 } from "../shared/registration/environment";
 import {
   type CustomerDetails,
+  customerKey,
   matchingCustomers,
   normalizeEmail,
 } from "../shared/stripe-customer";
 import { internal } from "./_generated/api";
 import { type ActionCtx, internalAction } from "./_generated/server";
-import { customerKey, stripeCustomerFor } from "./registrationCustomers";
+import { legacyOwners, stripeCustomerFor } from "./registrationCustomers";
 
 const PAGE = 25;
 /** Stop early enough to return a cursor before Convex's 10-minute action limit. */
@@ -42,7 +43,7 @@ async function visit(
   if (stored) {
     return "stored";
   }
-  const matches = await matchingCustomers(client, purchaser);
+  const matches = await matchingCustomers(client, purchaser, legacyOwners(ctx));
   if (matches.length > 1) {
     return matches.map((customer) => customer.id);
   }

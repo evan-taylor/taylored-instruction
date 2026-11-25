@@ -1,15 +1,21 @@
 import { ConvexError, v } from "convex/values";
-import type Stripe from "stripe";
-import { registrationIsLive } from "../shared/registration/environment";
+import Stripe from "stripe";
+import {
+  registrationIsLive,
+  registrationStripeKey,
+} from "../shared/registration/environment";
 import {
   type CustomerDetails,
+  customerKey,
   findOrCreateCustomer,
+  type InvoiceOrganizations,
   normalizeEmail,
 } from "../shared/stripe-customer";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import {
   type ActionCtx,
+  action,
   internalMutation,
   internalQuery,
   type QueryCtx,
@@ -19,12 +25,6 @@ import {
 const CLAIM_MS = 60_000;
 const POLL_MS = 500;
 const POLLS = 30;
-
-export function customerKey(details: CustomerDetails) {
-  return details.organizationId
-    ? `organization:${details.organizationId}`
-    : `email:${normalizeEmail(details.email)}`;
-}
 
 async function row(ctx: Pick<QueryCtx, "db">, key: string, live: boolean) {
   return await ctx.db
@@ -165,6 +165,45 @@ export const paidPurchasers = internalQuery({
   },
 });
 
+/** Drops a stored Customer that was deleted in Stripe so it can be found or created again. */
+export const forget = internalMutation({
+  args: { key: v.string(), live: v.boolean(), customer: v.string() },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const existing = await row(ctx, args.key, args.live);
+    if (existing?.stripeCustomerId === args.customer) {
+      await ctx.db.delete(existing._id);
+    }
+    return null;
+  },
+});
+
+/** Organizations billed by invoices from before Customers were shared. */
+export const invoiceOrganizations = internalQuery({
+  args: { ids: v.array(v.string()) },
+  returns: v.record(v.string(), v.string()),
+  handler: async (ctx, args) => {
+    const owners: Record<string, string> = {};
+    const invoices = await Promise.all(
+      args.ids.map(async (id) => {
+        const invoiceId = ctx.db.normalizeId("registrationInvoices", id);
+        return invoiceId ? await ctx.db.get(invoiceId) : null;
+      })
+    );
+    for (const invoice of invoices) {
+      if (invoice?.organizationId) {
+        owners[invoice._id] = invoice.organizationId;
+      }
+    }
+    return owners;
+  },
+});
+
+export function legacyOwners(ctx: ActionCtx): InvoiceOrganizations {
+  return (ids) =>
+    ctx.runQuery(internal.registrationCustomers.invoiceOrganizations, { ids });
+}
+
 export const organization = internalQuery({
   args: { id: v.id("registrationOrganizations") },
   returns: v.union(
@@ -245,14 +284,23 @@ export async function stripeCustomerFor(
     token,
   });
   if (result.customer) {
-    return result.customer;
+    const current = await client.customers.retrieve(result.customer);
+    if (!current.deleted) {
+      return result.customer;
+    }
+    await ctx.runMutation(internal.registrationCustomers.forget, {
+      key,
+      live,
+      customer: result.customer,
+    });
+    return await stripeCustomerFor(ctx, client, details, polls);
   }
   if (result.claimed) {
     try {
       const customer = await findOrCreateCustomer(
         client,
         details,
-        `registration-customer:${token}`
+        legacyOwners(ctx)
       );
       return await ctx.runMutation(internal.registrationCustomers.store, {
         key,
@@ -278,3 +326,19 @@ export async function stripeCustomerFor(
   await new Promise((resolve) => setTimeout(resolve, POLL_MS));
   return await stripeCustomerFor(ctx, client, details, polls - 1);
 }
+
+/** The signed-in person's own Customer, for the eCard checkout routes. */
+export const signedInCustomer = action({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx): Promise<string> => {
+    const profile = await ctx.runQuery(api.profiles.getProfile, {});
+    if (!profile?.email) {
+      throw new ConvexError("Sign in to buy eCards");
+    }
+    const client = new Stripe(registrationStripeKey(), {
+      apiVersion: "2026-09-30.endive",
+    });
+    return await stripeCustomerFor(ctx, client, { email: profile.email });
+  },
+});

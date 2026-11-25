@@ -94,12 +94,9 @@ export const issue = action({
             }
           : bill
       );
-      // Stripe Tax on the invoice reads the Customer's address; an
-      // organization's Customer is its bill-to, so it follows the invoice too.
-      await client.customers.update(
-        customer,
-        invoice.organizationId ? bill : { address }
-      );
+      // The invoice copies the Customer's name and address at finalization,
+      // and Stripe Tax uses that address, so the Customer takes this bill-to.
+      await client.customers.update(customer, bill);
       const created = await client.invoices.create(
         {
           customer,
@@ -175,6 +172,16 @@ export const issue = action({
       if (!finalized.hosted_invoice_url) {
         throw new ConvexError(
           "The invoice was created but no payment link came back. Retry sending it."
+        );
+      }
+      if (
+        finalized.customer_name !== bill.name ||
+        finalized.customer_address?.line1 !== address.line1 ||
+        finalized.customer_address?.postal_code !== address.postal_code
+      ) {
+        await client.invoices.voidInvoice(finalized.id);
+        throw new ConvexError(
+          "Another payment for this customer changed their billing details while this invoice was being created. Void this invoice and create a new one."
         );
       }
       const preTax = finalized.total_excluding_tax ?? finalized.subtotal;
