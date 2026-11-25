@@ -184,6 +184,18 @@ export const due = internalQuery({
     return [...pending, ...abandoned].map((j) => j._id);
   },
 });
+/** A scheduled follow-up, not a certificate nudge, going out once class ended. */
+function sentAfterClass(
+  job: Doc<"registrationJobs">,
+  session: Doc<"registrationSessions"> | null
+) {
+  return Boolean(
+    job.stepId &&
+      !job.onlyMissingCertificate &&
+      session &&
+      session.lastEnd <= Date.now()
+  );
+}
 function scheduleContent(
   session: Doc<"registrationSessions"> | null,
   seat: Doc<"registrationSeats"> | null
@@ -311,6 +323,7 @@ export const claim = internalMutation({
       ),
       calendar: v.optional(v.string()),
       link: v.optional(v.object({ label: v.string(), url: v.string() })),
+      afterClass: v.boolean(),
     }),
     v.null()
   ),
@@ -392,6 +405,7 @@ export const claim = internalMutation({
       name: seat?.name ?? "",
       ...scheduleContent(session, seat),
       link: job.link,
+      afterClass: sentAfterClass(job, session),
     };
   },
 });

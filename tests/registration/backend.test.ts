@@ -2989,6 +2989,51 @@ it("delivers explicit staff messages to unpaid attendees without private joining
   expect(message?.calendar).toBeUndefined();
 });
 
+it("marks scheduled steps sent after the class ends for the review request", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } })
+  );
+  await f.t.mutation(api.registration.reserve, attempt(f.course, f.session));
+  const enrolled = await f.t.run((ctx) =>
+    ctx.db.query("registrationSeats").first()
+  );
+  if (!enrolled) {
+    throw new Error("Missing attendee");
+  }
+  const step = (stepId: string) =>
+    f.t.run((ctx) =>
+      ctx.db.insert("registrationJobs", {
+        key: `step:${enrolled._id}:${stepId}:1`,
+        kind: "email",
+        recipient: enrolled.email,
+        subject: "Thanks for training with us",
+        body: "Your eCard is in your portal.",
+        state: "pending",
+        attempts: 0,
+        due: Date.now(),
+        seatId: enrolled._id,
+        sessionId: f.session,
+        stepId,
+        scheduleRevision: 1,
+      })
+    );
+  const reminder = await step("reminder");
+  expect(
+    (await f.t.mutation(internal.registrationMail.claim, { id: reminder }))
+      ?.afterClass
+  ).toBe(false);
+
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.session, { lastEnd: Date.now() - 60_000 })
+  );
+  const followUp = await step("follow-up");
+  expect(
+    (await f.t.mutation(internal.registrationMail.claim, { id: followUp }))
+      ?.afterClass
+  ).toBe(true);
+});
+
 it("shows a waiver instead of claiming the quoted amount was paid", async () => {
   const f = await fixture();
   const order = await f.adminClient.mutation(api.registration.reserve, {
