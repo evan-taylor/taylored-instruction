@@ -8,6 +8,10 @@ export const attendanceStatus = v.union(
   v.literal("not-recorded")
 );
 
+/** Links from other records, such as student certificates, to independent rosters. */
+export const independentSessionId = v.id("independentSessions");
+export const independentStudentId = v.id("independentStudents");
+
 /**
  * Independent sessions run by instructors aligned with our Training Site. They
  * only record rosters here; these tables never touch registration sessions,

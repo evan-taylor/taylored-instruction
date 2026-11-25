@@ -100,6 +100,35 @@ async function sessionAccess(
   return { actor: me.userId, session, admin: false };
 }
 
+/**
+ * An independent session's roster for certificate imports, after the same
+ * access check as every other independent-session read.
+ */
+export async function independentRoster(
+  ctx: QueryCtx,
+  sessionId: Id<"independentSessions">
+) {
+  const access = await sessionAccess(ctx, sessionId);
+  const students = await ctx.db
+    .query("independentStudents")
+    .withIndex("by_sessionId", (q) => q.eq("sessionId", sessionId))
+    .take(MAX_STUDENTS);
+  return {
+    ...access,
+    roster: students.map((student) => ({
+      id: student._id as string,
+      name: `${student.firstName} ${student.lastName}`,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      email: student.email,
+    })),
+  };
+}
+
+export function independentStudentIdFrom(ctx: QueryCtx, id: string) {
+  return ctx.db.normalizeId("independentStudents", id);
+}
+
 async function studentAccess(
   ctx: QueryCtx,
   studentId: Id<"independentStudents">

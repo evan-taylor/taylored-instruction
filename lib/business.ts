@@ -118,6 +118,15 @@ export const formatBusinessAddress = () => {
 };
 
 /**
+ * Anonymous course feedback surveys, one per agency. Post-class certificate
+ * emails link the student's agency; set one to null to drop that ask.
+ */
+export const COURSE_SURVEY_URLS: Record<"aha" | "arc", string | null> = {
+  aha: "https://form.tayloredinstruction.com/aha-course-feedback",
+  arc: "https://form.tayloredinstruction.com/red-cross-feedback",
+};
+
+/**
  * Google's write-a-review form for the Business Profile above. Post-class
  * emails link to it; set it to null to drop the review request.
  */

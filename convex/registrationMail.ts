@@ -1,15 +1,22 @@
 import { v } from "convex/values";
 import { BATCH, effective, formatMoney } from "../shared/registration/domain";
 import { calendar, formatSchedule } from "../shared/registration/schedule";
+import {
+  businessDate,
+  certificateCourseTitle,
+} from "../shared/registration/student-certificates";
 import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
+import { preferenceToken } from "./emailPreferences";
 import { certificateStatus } from "./registrationCertificates";
 import {
   activeSeatMaterials,
   materialJobEntitlementId,
 } from "./registrationHelpers";
 import { citedAcknowledgement, policyEmailLine } from "./registrationPolicy";
+import { certificateAgency } from "./studentCertificateSchema";
+import { reminderBlocked } from "./studentCertificates";
 
 function billingDetails(
   order: Doc<"registrationOrders"> | null,
@@ -199,10 +206,17 @@ async function sentAfterClass(
   ) {
     return false;
   }
+  return await afterClassStep(ctx, job.stepId, session);
+}
+async function afterClassStep(
+  ctx: MutationCtx,
+  stepId: string,
+  session: Doc<"registrationSessions">
+) {
   const course = await ctx.db.get(session.courseId);
   const step = course
     ? effective(course.settings, session.overrides).emails.find(
-        (s) => s.id === job.stepId
+        (s) => s.id === stepId
       )
     : undefined;
   return Boolean(
@@ -210,6 +224,124 @@ async function sentAfterClass(
       step.offsetMinutes >= 0 &&
       !step.onlyMissingCertificate
   );
+}
+/**
+ * The post-class review letter already went to this attendee, so the
+ * certificate email should not ask for a review again.
+ */
+async function reviewLetterSent(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats"> | null
+) {
+  const session = seat?.sessionId ? await ctx.db.get(seat.sessionId) : null;
+  if (!(seat && session)) {
+    return false;
+  }
+  const sent = await ctx.db
+    .query("registrationJobs")
+    .withIndex("by_seatId_and_state", (q) =>
+      q.eq("seatId", seat._id).eq("state", "sent")
+    )
+    .take(BATCH);
+  const steps = await Promise.all(
+    sent.map((job) =>
+      job.stepId && !job.onlyMissingCertificate
+        ? afterClassStep(ctx, job.stepId, session)
+        : false
+    )
+  );
+  return steps.some(Boolean);
+}
+/**
+ * A certificate email is queued or sent for this attendee. It replaces the
+ * post-class review letter, which stays the fallback for everyone else.
+ */
+async function certificateEmailQueued(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats"> | null
+) {
+  if (!seat) {
+    return false;
+  }
+  const certificates = await ctx.db
+    .query("studentCertificates")
+    .withIndex("by_seatId", (q) => q.eq("seatId", seat._id))
+    .take(BATCH);
+  const jobs = await Promise.all(
+    certificates.map((certificate) =>
+      ctx.db
+        .query("registrationJobs")
+        .withIndex("by_key", (q) =>
+          q.eq("key", `certificate:${certificate._id}`)
+        )
+        .unique()
+    )
+  );
+  return jobs.some(
+    (job) => job && job.state !== "canceled" && job.state !== "failed"
+  );
+}
+
+const CERTIFICATE_JOB = /^certificate(-reminder)?:([^:]+)(?::(\d+))?$/u;
+
+export const certificateMailValidator = v.object({
+  kind: v.union(v.literal("issued"), v.literal("reminder")),
+  firstName: v.string(),
+  course: v.string(),
+  agency: certificateAgency,
+  certificateId: v.string(),
+  issuedOn: v.string(),
+  expiresOn: v.string(),
+  instructor: v.optional(v.string()),
+  review: v.boolean(),
+  renewPath: v.string(),
+  today: v.optional(v.string()),
+  unsubscribeToken: v.optional(v.string()),
+});
+
+/**
+ * The certificate behind a certificate or reminder job: undefined for other
+ * jobs, null when the job should be canceled (certificate gone, renewed, or
+ * the student unsubscribed from reminders).
+ */
+async function certificateMail(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  seat: Doc<"registrationSeats"> | null
+) {
+  const match = job.key.match(CERTIFICATE_JOB);
+  if (!match) {
+    return;
+  }
+  const id = ctx.db.normalizeId("studentCertificates", match[2] ?? "");
+  const certificate = id ? await ctx.db.get(id) : null;
+  const reminder = Boolean(match[1]);
+  if (!certificate || (reminder && (await reminderBlocked(ctx, certificate)))) {
+    return null;
+  }
+  const session = certificate.sessionId
+    ? await ctx.db.get(certificate.sessionId)
+    : null;
+  const course = session ? await ctx.db.get(session.courseId) : null;
+  return {
+    kind: reminder ? ("reminder" as const) : ("issued" as const),
+    firstName: certificate.firstName,
+    course: certificateCourseTitle(certificate.course),
+    agency: certificate.agency,
+    certificateId: certificate.certificateId,
+    issuedOn: certificate.issuedOn,
+    expiresOn: certificate.expiresOn,
+    instructor: certificate.instructor,
+    review: !(reminder || (await reviewLetterSent(ctx, seat))),
+    renewPath:
+      course?.publication === "published"
+        ? `/courses/${course.slug}`
+        : "/classes",
+    today: businessDate(Date.now()),
+    unsubscribeToken: reminder
+      ? await preferenceToken(ctx, certificate.email)
+      : undefined,
+  };
 }
 function scheduleContent(
   session: Doc<"registrationSessions"> | null,
@@ -321,6 +453,24 @@ async function certificateReminderEligible(
   return certificate?.uploaded === false;
 }
 
+/**
+ * Certificate jobs carry their certificate; a review letter is dropped for an
+ * attendee whose certificate email replaces it.
+ */
+async function certificateRouting(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  seat: Doc<"registrationSeats"> | null,
+  session: Doc<"registrationSessions"> | null
+) {
+  const certificate = await certificateMail(ctx, job, seat);
+  const afterClass = await sentAfterClass(ctx, job, session);
+  const replaced =
+    certificate === null ||
+    (afterClass && (await certificateEmailQueued(ctx, seat)));
+  return { certificate: certificate ?? undefined, afterClass, replaced };
+}
+
 export const claim = internalMutation({
   args: { id: v.id("registrationJobs") },
   returns: v.union(
@@ -339,6 +489,7 @@ export const claim = internalMutation({
       calendar: v.optional(v.string()),
       link: v.optional(v.object({ label: v.string(), url: v.string() })),
       afterClass: v.boolean(),
+      certificate: v.optional(certificateMailValidator),
     }),
     v.null()
   ),
@@ -370,8 +521,20 @@ export const claim = internalMutation({
       seat,
       session
     );
+    const { certificate, afterClass, replaced } = await certificateRouting(
+      ctx,
+      job,
+      seat,
+      session
+    );
     if (
-      !(invoiceOpen && offerOpen && paymentOpen && certificateEligible) ||
+      !(
+        invoiceOpen &&
+        offerOpen &&
+        paymentOpen &&
+        certificateEligible &&
+        !replaced
+      ) ||
       (seat && seat.state !== "active" && !explicit) ||
       (session &&
         ((session.state === "canceled" && !explicit) ||
@@ -420,7 +583,8 @@ export const claim = internalMutation({
       name: seat?.name ?? "",
       ...scheduleContent(session, seat),
       link: job.link,
-      afterClass: await sentAfterClass(ctx, job, session),
+      afterClass,
+      certificate,
     };
   },
 });

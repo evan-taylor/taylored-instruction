@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useCourses } from "@/components/registration/catalog";
+import { SessionCertificates } from "@/components/registration/certificates";
 import {
   formatDateTime,
   formatMeeting,
@@ -33,10 +34,11 @@ import { SessionFiles } from "./session-files";
 import { SessionKeycodes } from "./session-keycodes";
 import { SessionEditDialog } from "./sessions";
 
-type DetailTab = "overview" | "roster" | "keycodes" | "files";
+type DetailTab = "overview" | "roster" | "certificates" | "keycodes" | "files";
 const TABS: { id: DetailTab; label: string }[] = [
   { id: "overview", label: "Overview" },
   { id: "roster", label: "Roster" },
+  { id: "certificates", label: "Certificates" },
   { id: "keycodes", label: "Keycodes" },
   { id: "files", label: "Files" },
 ];
@@ -232,6 +234,9 @@ export function SessionDetail({
       </TabPanel>
       <TabPanel active={tab === "roster"} id="roster">
         <InstructorRoster embedded sessionId={sessionId} />
+      </TabPanel>
+      <TabPanel active={tab === "certificates"} id="certificates">
+        <SessionCertificates target={{ kind: "session", id: sessionId }} />
       </TabPanel>
       <TabPanel active={tab === "keycodes"} id="keycodes">
         <SessionKeycodes session={session} />

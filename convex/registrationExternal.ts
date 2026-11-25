@@ -1,4 +1,5 @@
 "use node";
+import type { FunctionReturnType } from "convex/server";
 import { ConvexError, v } from "convex/values";
 import { PostHog } from "posthog-node";
 import { Resend } from "resend";
@@ -6,6 +7,7 @@ import Stripe from "stripe";
 import { SUPPORT_EMAIL } from "../shared/email";
 import { registrationProperties } from "../shared/registration/analytics";
 import { analyticsContext } from "../shared/registration/analytics-validator";
+import { certificateEmail } from "../shared/registration/certificate-email";
 import { registrationEmail } from "../shared/registration/email";
 import {
   assertRegistrationPaymentMode,
@@ -165,6 +167,33 @@ export const refund = action({
   },
 });
 
+type ClaimedJob = NonNullable<
+  FunctionReturnType<typeof internal.registrationMail.claim>
+>;
+
+/**
+ * Certificate mail has its own template; reminders also carry RFC 8058
+ * one-click unsubscribe headers pointing at the Convex HTTP route.
+ */
+function renderJob(job: ClaimedJob) {
+  if (!job.certificate) {
+    return { rendered: registrationEmail(job, baseUrl()), headers: undefined };
+  }
+  const rendered = certificateEmail(job.certificate, baseUrl());
+  const token = job.certificate.unsubscribeToken;
+  const site = process.env.CONVEX_SITE_URL;
+  return {
+    rendered,
+    headers:
+      token && site && rendered.unsubscribeUrl
+        ? {
+            "List-Unsubscribe": `<${site}/email/unsubscribe?token=${encodeURIComponent(token)}>, <${rendered.unsubscribeUrl}>`,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          }
+        : undefined,
+  };
+}
+
 export const deliver = internalAction({
   args: {},
   returns: v.null(),
@@ -184,7 +213,7 @@ export const deliver = internalAction({
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
             throw new Error("Recipient, sender, and Resend key required");
           }
-          const rendered = registrationEmail(job, baseUrl());
+          const { rendered, headers } = renderJob(job);
           const response = await new Resend(
             process.env.RESEND_API_KEY
           ).emails.send(
@@ -194,6 +223,7 @@ export const deliver = internalAction({
               subject: rendered.subject,
               replyTo: SUPPORT_EMAIL,
               text: rendered.text,
+              headers,
               attachments: job.calendar
                 ? [
                     {

@@ -14,6 +14,7 @@ import {
   BulkResults,
   BulkTransfer,
 } from "@/components/registration/bulk-transfer";
+import { StudentCertificates } from "@/components/registration/certificates";
 import { errorText } from "@/components/registration/errors";
 import {
   formatDateTime,
@@ -973,6 +974,11 @@ export function OrderAdmin() {
             visible={visible}
           />
         </CardContent>
+        {byEmail && search.trim().includes("@") ? (
+          <div className="border-slate-100 border-t px-5 py-4">
+            <StudentCertificates email={search.trim()} />
+          </div>
+        ) : null}
         {!byEmail &&
         (paginated.status === "CanLoadMore" ||
           paginated.status === "LoadingMore") ? (

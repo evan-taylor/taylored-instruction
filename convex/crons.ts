@@ -24,6 +24,13 @@ crons.daily(
   internal.instructorCertifications.runReminders,
   {}
 );
+// After the instructor reminders; reminders queue into the registration outbox.
+crons.daily(
+  "Student certificate expiry reminders",
+  { hourUTC: 16, minuteUTC: 30 },
+  internal.studentCertificates.runReminders,
+  {}
+);
 crons.weekly(
   "Instructor certification staff digest",
   { dayOfWeek: "monday", hourUTC: 16, minuteUTC: 15 },
