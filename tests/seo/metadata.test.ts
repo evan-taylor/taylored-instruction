@@ -26,11 +26,15 @@ describe("marketing page metadata", () => {
   for (const [path, load] of pages) {
     it(`keeps ${path} within search snippet limits`, async () => {
       const metadata = await pageMetadata(load);
-      expect(typeof metadata?.title).toBe("string");
-      expect(String(metadata?.title).length).toBeLessThanOrEqual(TITLE_LIMIT);
-      expect(String(metadata?.description).length).toBeLessThanOrEqual(
-        DESCRIPTION_LIMIT
-      );
+      const title = metadata?.title;
+      const description = metadata?.description;
+      if (typeof title !== "string" || typeof description !== "string") {
+        throw new Error(`${path} needs a string title and description`);
+      }
+      expect(title.trim()).not.toBe("");
+      expect(description.trim()).not.toBe("");
+      expect(title.length).toBeLessThanOrEqual(TITLE_LIMIT);
+      expect(description.length).toBeLessThanOrEqual(DESCRIPTION_LIMIT);
     });
   }
 });
