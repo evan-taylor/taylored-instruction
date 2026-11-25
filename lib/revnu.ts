@@ -245,11 +245,14 @@ export const resolveRevnuPost = async (
   }
 
   const data = await getRevnuPost(slug);
-  if (!(data && listedPaths.has(data.post.canonicalPath))) {
+  const resolvedPath =
+    data &&
+    (getBlogRedirectTarget(data.post.canonicalPath) ?? data.post.canonicalPath);
+  if (!(data && resolvedPath && listedPaths.has(resolvedPath))) {
     return null;
   }
-  if (data.post.canonicalPath !== canonicalPath) {
-    return { kind: "redirect", canonicalPath: data.post.canonicalPath };
+  if (resolvedPath !== canonicalPath) {
+    return { kind: "redirect", canonicalPath: resolvedPath };
   }
   return { kind: "post", data, postPaths: [...listedPaths] };
 };

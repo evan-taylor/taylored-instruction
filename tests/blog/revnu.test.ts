@@ -277,6 +277,25 @@ describe("Revnu post resolution", () => {
     });
   });
 
+  it("sends an old alias of a consolidated post to the kept post", async () => {
+    mockFetch(
+      listRoute(
+        [
+          summary("first-aid-training-for-teachers"),
+          summary("first-aid-certification-for-teachers"),
+        ],
+        postResponse("first-aid-certification-for-teachers", {
+          redirected: true,
+        })
+      )
+    );
+
+    await expect(resolveRevnuPost("/old-teacher-slug")).resolves.toEqual({
+      kind: "redirect",
+      canonicalPath: "/first-aid-training-for-teachers",
+    });
+  });
+
   it("serves a removed post again once it is back in the list", async () => {
     mockFetch(listRoute([], postResponse("a")));
     await expect(resolveRevnuPost("/a")).resolves.toBeNull();
