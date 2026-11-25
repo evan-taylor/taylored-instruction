@@ -3,6 +3,7 @@ import {
   BillingAddressElement,
   CheckoutElementsProvider,
   PaymentElement,
+  TermsElement,
   useCheckoutElements,
 } from "@stripe/react-stripe-js/checkout";
 import { useAction, useMutation } from "convex/react";
@@ -85,10 +86,13 @@ export function HoldTimer({
 function PaymentForm({
   expired,
   orderId,
+  termsConsent,
   onPaying,
 }: {
   expired: boolean;
   orderId: string;
+  /** Stripe requires its terms-of-service checkbox on this session. */
+  termsConsent: boolean;
   /** Fires before Stripe takes over so leaving the page is not read as abandoning. */
   onPaying: (paying: boolean) => void;
 }) {
@@ -200,6 +204,7 @@ function PaymentForm({
           }}
         />
       </fieldset>
+      {termsConsent ? <TermsElement /> : null}
       <dl className="space-y-1.5 border-slate-200 border-t pt-4 text-sm">
         <div className="flex items-center justify-between gap-3 text-slate-600">
           <dt>Subtotal</dt>
@@ -265,7 +270,10 @@ export function PaymentStep({
 }) {
   const checkout = useAction(api.registrationExternal.checkout);
   const abandon = useMutation(api.registration.abandon);
-  const [secret, setSecret] = useState<string | null>(null);
+  const [session, setSession] = useState<{
+    secret: string;
+    termsConsent: boolean;
+  } | null>(null);
   const [failure, setFailure] = useState("");
   const [attempt, setAttempt] = useState(0);
   const [now, setNow] = useState(() => Date.now());
@@ -336,7 +344,7 @@ export function PaymentStep({
           trackRegistration("registration_checkout_ready", {
             order_id: orderId,
           });
-          setSecret(value);
+          setSession(value);
         }
       })
       .catch((error) => {
@@ -421,10 +429,10 @@ export function PaymentStep({
           </div>
         </Notice>
       ) : null}
-      {!(expired || failure) && secret ? (
+      {!(expired || failure) && session ? (
         <CheckoutElementsProvider
           options={{
-            clientSecret: secret,
+            clientSecret: session.secret,
             elementsOptions: { appearance: APPEARANCE, fonts: ELEMENT_FONTS },
           }}
           stripe={getStripe()}
@@ -436,6 +444,7 @@ export function PaymentStep({
               setPaying(value);
             }}
             orderId={orderId}
+            termsConsent={session.termsConsent}
           />
         </CheckoutElementsProvider>
       ) : null}
@@ -452,7 +461,7 @@ export function PaymentStep({
           </button>
         </p>
       ) : null}
-      {expired || failure || secret ? null : (
+      {expired || failure || session ? null : (
         <div aria-busy="true" className="space-y-4" role="status">
           <span className="sr-only">Preparing secure payment…</span>
           <Skeleton className="h-28" />

@@ -9,6 +9,7 @@ import {
   activeSeatMaterials,
   materialJobEntitlementId,
 } from "./registrationHelpers";
+import { citedAcknowledgement, policyEmailLine } from "./registrationPolicy";
 
 function billingDetails(
   order: Doc<"registrationOrders"> | null,
@@ -113,15 +114,21 @@ async function messageContext(
     }
   }
   details.push(...billingDetails(order, invoice));
-  if (order?.source === "waived" && kind === "receipt") {
-    return {
-      title,
-      details,
-      category: "Payment waived",
-      body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
-    };
+  const message =
+    order?.source === "waived" && kind === "receipt"
+      ? {
+          category: "Payment waived",
+          body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
+        }
+      : messageBody(job, kind, invoice);
+  const acknowledgement = order
+    ? await citedAcknowledgement(ctx, order._id)
+    : null;
+  const site = process.env.SITE_URL;
+  if (acknowledgement && site) {
+    message.body += `\n${policyEmailLine(acknowledgement, new URL(site).origin)}`;
   }
-  return { title, details, ...messageBody(job, kind, invoice) };
+  return { title, details, ...message };
 }
 
 export const due = internalQuery({
@@ -361,6 +368,7 @@ export const result = internalMutation({
     error: v.optional(v.string()),
     providerId: v.optional(v.string()),
     deliveredTo: v.optional(v.string()),
+    copy: v.optional(v.object({ subject: v.string(), text: v.string() })),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -376,6 +384,7 @@ export const result = internalMutation({
       providerId: args.providerId,
       sentAt: args.success ? Date.now() : job.sentAt,
       deliveredTo: args.deliveredTo ?? job.deliveredTo,
+      sentCopy: args.success ? args.copy : job.sentCopy,
     });
     return null;
   },

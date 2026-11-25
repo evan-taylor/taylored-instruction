@@ -44,6 +44,24 @@ export function registerRegistrationTools(server: McpServer, ctx: McpContext) {
       )
   );
   server.registerTool(
+    "get_cancellation_acknowledgement",
+    {
+      title: "Get cancellation policy acknowledgement",
+      description:
+        "Admin-only dispute evidence for an order: each append-only cancellation policy acknowledgement (click-through agreement or staff disclosure) with policy version, text snapshot and hash, checkbox label, server timestamp, purchaser, seat/session ids, server-captured IP and user agent, Stripe ids, and an integrity check, plus the confirmation and invoice emails with delivery status.",
+      inputSchema: { orderId: id },
+      annotations: READ,
+    },
+    (args) =>
+      run(async () =>
+        ok(
+          await ctx.convex.query(api.registrationPolicy.evidence, {
+            orderId: args.orderId as Id<"registrationOrders">,
+          })
+        )
+      )
+  );
+  server.registerTool(
     "list_orders",
     {
       title: "List orders",

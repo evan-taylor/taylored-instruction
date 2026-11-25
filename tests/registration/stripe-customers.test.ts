@@ -11,6 +11,7 @@ import {
   completeCustomer,
   findOrCreateCustomer,
 } from "../../shared/stripe-customer";
+import { agreement } from "./fixtures/policy";
 
 type FakeCustomer = {
   id: string;
@@ -328,6 +329,7 @@ function attempt(f: Fixture, purchaser = "buyer@example.test") {
     purchaser,
     purchaserName: "Pat Buyer",
     purchaserPhone: "(555) 555-0100",
+    cancellationPolicy: agreement,
     attendees: [
       {
         name: "Student",
@@ -620,6 +622,7 @@ describe("Registration checkout Customers", () => {
     await f.t.mutation(api.registrationPayments.beginRequestedPayment, {
       orderId: order.orderId,
       requestKey,
+      cancellationPolicy: agreement,
     });
     await f.t.action(api.registrationExternal.checkout, {
       orderId: order.orderId,

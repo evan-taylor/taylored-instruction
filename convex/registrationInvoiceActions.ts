@@ -1,6 +1,10 @@
 "use node";
 import { ConvexError, v } from "convex/values";
 import Stripe from "stripe";
+import {
+  CURRENT_CANCELLATION_POLICY,
+  cancellationPolicyUrl,
+} from "../shared/cancellation-policy";
 import { DEFAULT_TAX_CODES } from "../shared/registration/domain";
 import {
   assertRegistrationPaymentMode,
@@ -28,6 +32,18 @@ function stripe() {
  * Invoice items need a Stripe Product to carry a tax code. One product per
  * tax code is created on demand with a deterministic id so retries reuse it.
  */
+/** States the policy version on every invoice; the payer never checks a box. */
+function policyFooter() {
+  const { version, keyTerms } = CURRENT_CANCELLATION_POLICY;
+  const site = process.env.SITE_URL;
+  if (!site) {
+    throw new Error("Configure SITE_URL");
+  }
+  return [
+    `This registration is subject to our Cancellation Policy, version ${version}: ${cancellationPolicyUrl(site, version)}`,
+    ...keyTerms,
+  ].join("\n");
+}
 async function productForTaxCode(client: Stripe, taxCode?: string) {
   const id = taxCode ? `registration_${taxCode}` : "registration_default";
   try {
@@ -110,7 +126,7 @@ export const issue = action({
           pending_invoice_items_behavior: "exclude",
           currency: "usd",
           description: `${order.title} · ${order.seats.length} attendee${order.seats.length === 1 ? "" : "s"}`,
-          footer: invoice.notes || undefined,
+          footer: [invoice.notes, policyFooter()].filter(Boolean).join("\n\n"),
           custom_fields: [
             { name: "Invoice", value: invoice.number },
             ...(invoice.poNumber

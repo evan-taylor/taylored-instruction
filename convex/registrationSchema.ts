@@ -166,6 +166,7 @@ export const registrationTables = {
     .index("by_status_and_expires", ["status", "expires"])
     .index("by_sessionId", ["sessionId"])
     .index("by_stripeSession", ["stripeSession"])
+    .index("by_paymentIntent", ["paymentIntent"])
     .index("by_organizationId", ["organizationId"]),
   registrationMaterialEdits: defineTable({
     requestKey: v.string(),
@@ -385,6 +386,8 @@ export const registrationTables = {
     sentAt: v.optional(v.number()),
     deliveredTo: v.optional(v.string()),
     link: v.optional(v.object({ label: v.string(), url: v.string() })),
+    /** Subject and plain-text copy of the message as Resend accepted it. */
+    sentCopy: v.optional(v.object({ subject: v.string(), text: v.string() })),
     /** @deprecated Legacy magic-link token; cleared by `registrationMigration.purgeLegacyPortalGrants`. Remove once no rows carry it. */
     portalToken: v.optional(v.string()),
   })
@@ -394,6 +397,42 @@ export const registrationTables = {
     .index("by_seatId_and_state", ["seatId", "state"])
     .index("by_seatId_and_stepId_and_state", ["seatId", "stepId", "state"])
     .index("by_seatId", ["seatId"]),
+  /**
+   * Append-only evidence that a purchaser agreed to, or was shown, a version of
+   * the cancellation policy. Only convex/registrationPolicy.ts writes it: rows
+   * are inserted once, and the Stripe ids are filled in once when known.
+   */
+  registrationPolicyAcknowledgements: defineTable({
+    /** A purchaser checked the box, or staff booked and the policy was disclosed. */
+    kind: v.union(v.literal("click-through"), v.literal("disclosed")),
+    channel: v.union(
+      v.literal("registration-form"),
+      v.literal("payment-request-page"),
+      v.literal("staff-booking"),
+      v.literal("invoice")
+    ),
+    policyVersion: v.string(),
+    policyHash: v.string(),
+    policySnapshot: v.string(),
+    /** The checkbox label, or for a disclosure, how the policy was disclosed. */
+    statement: v.string(),
+    recordedAt: v.number(),
+    purchaserName: v.string(),
+    purchaserEmail: v.string(),
+    orderId: v.id("registrationOrders"),
+    seatIds: v.array(v.id("registrationSeats")),
+    sessionId: v.optional(v.id("registrationSessions")),
+    courseId: v.id("registrationCourses"),
+    invoiceId: v.optional(v.id("registrationInvoices")),
+    /** "guest" for a purchaser, otherwise the staff user who booked. */
+    actor: v.string(),
+    ip: v.union(v.string(), v.null()),
+    userAgent: v.union(v.string(), v.null()),
+    /** SHA-256 over every field above, so later tampering is detectable. */
+    digest: v.string(),
+    stripeCheckoutSession: v.optional(v.string()),
+    stripePaymentIntent: v.optional(v.string()),
+  }).index("by_orderId", ["orderId"]),
   registrationEvents: defineTable({
     eventId: v.string(),
     orderId: v.id("registrationOrders"),

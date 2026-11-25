@@ -23,6 +23,7 @@ import {
   query,
 } from "./_generated/server";
 import { audit, enqueue, rate, settle, staff } from "./registrationHelpers";
+import { linkStripePayment, recordDisclosure } from "./registrationPolicy";
 import schema from "./schema";
 
 const groupStatus = v.union(
@@ -551,6 +552,9 @@ export const attachStripeInvoice = internalMutation({
       sentAt: invoice.sentAt ?? Date.now(),
       error: undefined,
     });
+    if (!invoice.sentAt) {
+      await recordDisclosure(ctx, order, invoice.actor, invoice);
+    }
     await enqueue(ctx, {
       key: `invoice:${invoice._id}`,
       kind: "email",
@@ -664,6 +668,9 @@ export const invoicePaid = internalMutation({
         error: undefined,
       });
       await ctx.db.patch(order._id, { tax });
+      await linkStripePayment(ctx, order._id, {
+        paymentIntent: args.paymentIntent,
+      });
       await settle(ctx, { ...order, tax }, "invoice", args.paymentIntent);
       await audit(ctx, "system", "invoice-paid", invoice._id, invoice.number);
     }

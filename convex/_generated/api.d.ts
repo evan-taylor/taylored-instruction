@@ -32,6 +32,7 @@ import type * as registrationCustomers from "../registrationCustomers.js";
 import type * as registrationDashboard from "../registrationDashboard.js";
 import type * as registrationEmailWebhook from "../registrationEmailWebhook.js";
 import type * as registrationEngagement from "../registrationEngagement.js";
+import type * as registrationEvidence from "../registrationEvidence.js";
 import type * as registrationExternal from "../registrationExternal.js";
 import type * as registrationFixtures from "../registrationFixtures.js";
 import type * as registrationGroups from "../registrationGroups.js";
@@ -43,6 +44,7 @@ import type * as registrationMaterialSelection from "../registrationMaterialSele
 import type * as registrationMigration from "../registrationMigration.js";
 import type * as registrationOperations from "../registrationOperations.js";
 import type * as registrationPayments from "../registrationPayments.js";
+import type * as registrationPolicy from "../registrationPolicy.js";
 import type * as registrationPortal from "../registrationPortal.js";
 import type * as registrationRefundAllocation from "../registrationRefundAllocation.js";
 import type * as registrationSchema from "../registrationSchema.js";
@@ -81,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   registrationDashboard: typeof registrationDashboard;
   registrationEmailWebhook: typeof registrationEmailWebhook;
   registrationEngagement: typeof registrationEngagement;
+  registrationEvidence: typeof registrationEvidence;
   registrationExternal: typeof registrationExternal;
   registrationFixtures: typeof registrationFixtures;
   registrationGroups: typeof registrationGroups;
@@ -92,6 +95,7 @@ declare const fullApi: ApiFromModules<{
   registrationMigration: typeof registrationMigration;
   registrationOperations: typeof registrationOperations;
   registrationPayments: typeof registrationPayments;
+  registrationPolicy: typeof registrationPolicy;
   registrationPortal: typeof registrationPortal;
   registrationRefundAllocation: typeof registrationRefundAllocation;
   registrationSchema: typeof registrationSchema;

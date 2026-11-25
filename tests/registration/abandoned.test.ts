@@ -4,6 +4,7 @@ import { api, internal } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import schema from "../../convex/schema";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
+import { agreement } from "./fixtures/policy";
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 const PAGE = { numItems: 100, cursor: null };
@@ -71,6 +72,7 @@ async function fixture() {
       requestKey,
       purchaser: `${name}-buyer@example.test`,
       purchaserName: name,
+      cancellationPolicy: agreement,
       attendees: [
         {
           name,

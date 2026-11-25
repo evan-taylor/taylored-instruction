@@ -145,6 +145,14 @@ export const stripeWebhook = httpAction(async (ctx, request) => {
     event.type === "refund.created"
   ) {
     await handleRefund(ctx, event);
+  } else if (event.type === "charge.dispute.created") {
+    const dispute = event.data.object as Stripe.Dispute;
+    if (typeof dispute.payment_intent === "string") {
+      await ctx.runMutation(internal.registrationPolicy.disputeOpened, {
+        disputeId: dispute.id,
+        paymentIntent: dispute.payment_intent,
+      });
+    }
   }
   return new Response("Accepted", { status: 200 });
 });

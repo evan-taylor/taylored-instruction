@@ -21,6 +21,12 @@ import {
   settle,
   staff,
 } from "./registrationHelpers";
+import {
+  hasClickThrough,
+  linkStripePayment,
+  policyAgreement,
+  recordClickThrough,
+} from "./registrationPolicy";
 import { allocateRefund } from "./registrationRefundAllocation";
 import schema from "./schema";
 
@@ -51,6 +57,11 @@ export const checkoutOrder = internalQuery({
     ) {
       throw new ConvexError(
         "This checkout is no longer eligible; contact us for help"
+      );
+    }
+    if (!(await hasClickThrough(ctx, order._id))) {
+      throw new ConvexError(
+        "Agree to the Cancellation Policy before paying. Nothing was charged."
       );
     }
     return order;
@@ -84,6 +95,7 @@ export const attachCheckout = internalMutation({
       stripeSession: args.session,
       checkoutSecret: args.secret,
     });
+    await linkStripePayment(ctx, order._id, { checkoutSession: args.session });
     return true;
   },
 });
@@ -147,6 +159,10 @@ export const paymentEvent = internalMutation({
     ) {
       await release(ctx, order, args.type);
     } else if (args.paid) {
+      await linkStripePayment(ctx, order._id, {
+        checkoutSession: args.session,
+        paymentIntent: args.paymentIntent,
+      });
       await settle(
         ctx,
         order,
@@ -386,12 +402,22 @@ export const beginRequestedPayment = mutation({
     orderId: v.id("registrationOrders"),
     requestKey: v.string(),
     analytics: v.optional(analyticsContext),
+    /** The payer's checkbox agreement on the payment page. */
+    cancellationPolicy: v.optional(policyAgreement),
   },
   returns: v.object({ expires: v.number() }),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order || order.requestKey !== args.requestKey) {
       throw new ConvexError("Payment request not found");
+    }
+    if (order.status === "unpaid" || order.status === "hold") {
+      await recordClickThrough(
+        ctx,
+        order,
+        "payment-request-page",
+        args.cancellationPolicy
+      );
     }
     if (
       args.analytics?.distinctId.length &&
