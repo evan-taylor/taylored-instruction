@@ -85,26 +85,17 @@ describe("GitHub retirement verification", () => {
     expect(await branchIsRetired("feature/exact-branch", request)).toBe(false);
   });
 
-  it("waits 24 hours after closure and rejects missing or malformed closure times", async () => {
-    const now = Date.parse("2026-11-10T12:00:00Z");
-    await Promise.all(
-      [null, "invalid", "2026-11-10T11:00:00Z"].map(async (date) => {
-        expect(
-          await branchIsRetired(
-            "feature/exact-branch",
-            github([pull("closed", date)]),
-            "",
-            now
-          )
-        ).toBe(false);
-      })
-    );
+  it("retires a branch as soon as every PR on it is merged or closed", async () => {
     expect(
       await branchIsRetired(
         "feature/exact-branch",
-        github([pull("closed", "2026-11-09T12:00:00Z")]),
-        "",
-        now
+        github([pull("closed", new Date().toISOString())])
+      )
+    ).toBe(true);
+    expect(
+      await branchIsRetired(
+        "feature/exact-branch",
+        github([pull("closed", "2020-01-01T00:00:00Z"), pull("closed")])
       )
     ).toBe(true);
   });

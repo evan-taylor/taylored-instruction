@@ -1020,6 +1020,9 @@ export const publicCourseSessions = query({
       start: v.number(),
       timeZone: v.string(),
       available: v.number(),
+      /** Where the first meeting happens; empty for an online meeting. */
+      location: v.string(),
+      price: v.number(),
     })
   ),
   handler: async (ctx, args) => {
@@ -1048,6 +1051,9 @@ export const publicCourseSessions = query({
         start: s.firstStart,
         timeZone: s.timeZone,
         available: Math.max(0, s.capacity - s.reserved),
+        location:
+          [...s.meetings].sort((a, b) => a.start - b.start)[0]?.location ?? "",
+        price: seatPrice(effective(course.settings, s.overrides)),
       }));
   },
 });

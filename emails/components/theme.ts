@@ -1,7 +1,12 @@
-/** Public origin for links and hosted assets in every email. */
-export const SITE_URL = "https://tayloredinstruction.com";
+import { BUSINESS } from "../../lib/business";
 
-export const PHONE = { label: "(360) 685-8199", href: "tel:+13606858199" };
+/** Public origin for links and hosted assets in every email. */
+export const SITE_URL = BUSINESS.url;
+
+export const PHONE = {
+  label: BUSINESS.phone.display,
+  href: BUSINESS.phone.href,
+};
 
 export const colors = {
   ink: "#192224",

@@ -7,6 +7,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   cacheLife("minutes");
   cacheTag(REVNU_CACHE_TAG);
 
-  const posts = await getRevnuPosts().catch(() => []);
+  const posts = await getRevnuPosts();
   return buildRevnuSitemap(posts);
 }

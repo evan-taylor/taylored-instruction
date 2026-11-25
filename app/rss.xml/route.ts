@@ -15,7 +15,7 @@ const escapeXml = (value: string) =>
   value.replace(XML_ESCAPE_REGEX, (character) => xmlReplacements[character]);
 
 export async function GET() {
-  const posts = await getRevnuPosts().catch(() => []);
+  const posts = await getRevnuPosts();
 
   const items = posts
     .slice(0, feedItemLimit)

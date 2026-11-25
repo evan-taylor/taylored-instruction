@@ -1,6 +1,11 @@
+import { fetchQuery } from "convex/nextjs";
 import type { Metadata } from "next";
-import { ClassDiscovery } from "@/components/registration/public";
-import { indexable } from "@/lib/registration-seo";
+import {
+  ClassDiscovery,
+  type DiscoveryFirstPage,
+} from "@/components/registration/public";
+import { api } from "@/convex/_generated/api";
+import { classListSchema, indexable } from "@/lib/registration-seo";
 import { buildPageMetadata, SITE_URL } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -8,10 +13,9 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const title =
-  "CPR, BLS, First Aid & Lifeguarding Classes | Vancouver WA | Taylored Instruction";
+const title = "CPR & BLS Classes in Vancouver, WA | Taylored Instruction";
 const description =
-  "Browse upcoming American Red Cross and AHA classes in Vancouver, WA and Clark County. See every date, location, and the full price, then register online in minutes.";
+  "Upcoming CPR, BLS, First Aid and lifeguarding classes in Vancouver, WA and Clark County. See every date, location and the full price, then register online.";
 
 export const metadata: Metadata = indexable(
   buildPageMetadata({
@@ -32,13 +36,33 @@ export const metadata: Metadata = indexable(
   })
 );
 
-export default function Page() {
+/** Blocks on Convex so crawlers get the schedule in the first HTML response. */
+export const instant = false;
+
+type Props = { searchParams: Promise<{ q?: string | string[] }> };
+
+/** The first page of classes, matching the search the client starts with. */
+async function firstPage(q: string): Promise<DiscoveryFirstPage | undefined> {
+  const search = q.trim().toLowerCase();
+  return await fetchQuery(api.registration.discover, {
+    paginationOpts: { numItems: 20, cursor: null },
+    search: search || undefined,
+  })
+    .then(({ page }) => ({ search, page }))
+    .catch(() => undefined);
+}
+
+export default async function Page({ searchParams }: Props) {
+  const { q } = await searchParams;
+  // Like URLSearchParams.get, which the client reads: the first value wins.
+  const initial = await firstPage([q].flat().at(0) ?? "");
   const schemas = [
     getWebPageSchema({ name: title, description, path: "/classes" }),
     getBreadcrumbSchema([
       { name: "Home", url: SITE_URL },
       { name: "Classes", url: `${SITE_URL}/classes` },
     ]),
+    ...(initial?.page.length ? [classListSchema(initial.page)] : []),
   ];
   return (
     <>
@@ -50,7 +74,7 @@ export default function Page() {
           type="application/ld+json"
         />
       ))}
-      <ClassDiscovery />
+      <ClassDiscovery initial={initial} />
     </>
   );
 }

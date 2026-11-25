@@ -10,6 +10,7 @@ vi.mock("next/cache", () => ({
 const { POST } = await import("@/app/api/revnu-revalidate/route");
 const {
   buildRevnuSitemap,
+  fetchRevnuPost,
   getRevnuPosts,
   resolveRevnuPost,
   rewriteRevnuBodyLinks,
@@ -64,6 +65,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
   vi.clearAllMocks();
@@ -95,13 +97,16 @@ describe("Revnu post list", () => {
   });
 
   it("fails instead of returning a partial list", async () => {
+    vi.useFakeTimers();
     mockFetch((url) =>
       url.searchParams.has("cursor")
         ? { status: 429 }
         : { status: 200, body: { posts: [summary("a")], cursor: "next" } }
     );
 
-    await expect(getRevnuPosts()).rejects.toThrow("429");
+    const result = expect(getRevnuPosts()).rejects.toThrow("429");
+    await vi.runAllTimersAsync();
+    await result;
   });
 
   it("leaves out posts that redirect to a kept post", async () => {
@@ -125,6 +130,115 @@ describe("Revnu post list", () => {
 
     await expect(getRevnuPosts()).resolves.toEqual([]);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+type Reply = { status: number; headers?: Record<string, string> };
+
+const mockReplies = (replies: Reply[]) => {
+  const fetchMock = vi.fn(() => {
+    const { status, headers } = replies.shift() ?? { status: 200 };
+    return Promise.resolve(
+      Response.json(status === 200 ? postResponse("a") : {}, {
+        status,
+        headers,
+      })
+    );
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
+};
+
+describe("Revnu rate limiting", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  it("retries 429 and 5xx responses until one succeeds", async () => {
+    const fetchMock = mockReplies([
+      { status: 429 },
+      { status: 503 },
+      { status: 200 },
+    ]);
+
+    const post = fetchRevnuPost("a");
+    await vi.runAllTimersAsync();
+
+    await expect(post).resolves.toMatchObject({ post: { slug: "a" } });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("waits as long as Retry-After asks", async () => {
+    const fetchMock = mockReplies([
+      { status: 429, headers: { "Retry-After": "3" } },
+      { status: 200 },
+    ]);
+
+    const post = fetchRevnuPost("a");
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+
+    await expect(post).resolves.not.toBeNull();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("fails once retries are exhausted", async () => {
+    const fetchMock = mockReplies(
+      Array.from({ length: 10 }, () => ({ status: 429 }))
+    );
+
+    const result = expect(fetchRevnuPost("a")).rejects.toThrow("429");
+    await vi.runAllTimersAsync();
+
+    await result;
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+  });
+
+  it("fails without waiting when Retry-After exceeds the wait budget", async () => {
+    const fetchMock = mockReplies([
+      { status: 429, headers: { "Retry-After": "120" } },
+      { status: 200 },
+    ]);
+
+    await expect(fetchRevnuPost("a")).rejects.toThrow("429");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not retry other client errors", async () => {
+    const fetchMock = mockReplies([{ status: 401 }, { status: 200 }]);
+
+    await expect(fetchRevnuPost("a")).rejects.toThrow("401");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps at most four requests in flight until their bodies are read", async () => {
+    let inFlight = 0;
+    let peak = 0;
+    const body = new TextEncoder().encode(JSON.stringify(postResponse("a")));
+    const fetchMock = vi.fn(() => {
+      inFlight += 1;
+      peak = Math.max(peak, inFlight);
+      const stream = new ReadableStream({
+        async start(controller) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          controller.enqueue(body);
+          inFlight -= 1;
+          controller.close();
+        },
+      });
+      return Promise.resolve(new Response(stream, { status: 200 }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const posts = Promise.all(
+      Array.from({ length: 10 }, (_, index) => fetchRevnuPost(`post-${index}`))
+    );
+    await vi.runAllTimersAsync();
+
+    await expect(posts).resolves.toHaveLength(10);
+    expect(fetchMock).toHaveBeenCalledTimes(10);
+    expect(peak).toBe(4);
   });
 });
 
@@ -202,6 +316,25 @@ describe("Revnu body links", () => {
     expect(
       rewriteRevnuBodyLinks(html, ["/first-aid-training-for-teachers"])
     ).toBe('<a href="/blog/first-aid-training-for-teachers#kit">teachers</a>');
+  });
+
+  it("points legacy hovn.app booking links at the class schedule", () => {
+    const html = [
+      '<a href="https://www.hovn.app/tayloredinstruction" target="_blank" rel="nofollow noreferrer noopener" class="font-medium">Register</a>',
+      '<a href="https://hovn.app/tayloredinstruction/locations">Locations</a>',
+      '<a href="https://example.com/hovn.app">unrelated</a>',
+    ].join("");
+
+    const rewritten = rewriteRevnuBodyLinks(html, []);
+
+    expect(rewritten).toBe(
+      [
+        '<a href="/classes" class="font-medium">Register</a>',
+        '<a href="/classes">Locations</a>',
+        '<a href="https://example.com/hovn.app">unrelated</a>',
+      ].join("")
+    );
+    expect(rewritten).not.toContain('"https://www.hovn.app');
   });
 });
 

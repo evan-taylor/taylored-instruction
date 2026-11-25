@@ -2,6 +2,14 @@ import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import {
+  CERTIFICATION_FACTS,
+  FaqSection,
+  QuickFacts,
+} from "@/components/ServicePageSections";
+import { faCprAedInstructorFAQs } from "@/lib/faqSchema";
+
+const linkClassName = "font-medium text-primary hover:underline";
 
 export default function FaCprAedInstructorPageContent() {
   return (
@@ -20,36 +28,61 @@ export default function FaCprAedInstructorPageContent() {
       ]}
       title="American Red Cross First Aid/CPR/AED Instructor Course"
     >
+      <QuickFacts
+        facts={[
+          { label: "Certifying body", value: "American Red Cross" },
+          {
+            label: "Format",
+            value: "Blended: online session, then an in-person session",
+          },
+          {
+            label: "Who it's for",
+            value:
+              "People 17 or older with a current First Aid/CPR/AED certificate who want to teach it",
+          },
+          ...CERTIFICATION_FACTS,
+        ]}
+      />
+
       <ClassPageSection title="Course purpose">
         <p>
           The purpose of the American Red Cross FA/CPR/AED Instructor course is
           to train instructor candidates to teach the basic-level American Red
           Cross FA/CPR/AED course.
         </p>
+        <p>
+          The course suits HR and safety staff who want to certify their own
+          coworkers, teachers and coaches, fitness trainers, and anyone who
+          wants to teach CPR and first aid in their community.
+        </p>
       </ClassPageSection>
 
       <ClassPageSection title="Course prerequisites">
         <p>
-          FA/CPR/AED Instructor candidates must possess a current basic-level
-          certification in FA/CPR/AED or equivalent.
+          FA/CPR/AED Instructor candidates must be at least 17 by the last day
+          of the course and possess a current basic-level certification in
+          FA/CPR/AED or equivalent.
         </p>
       </ClassPageSection>
 
-      <ClassPageSection title="Course length">
+      <ClassPageSection title="Course format">
         <p>
           The FA/CPR/AED Instructor Course is offered in a blended learning
-          format that includes:
+          format: an online session you complete first, then an in-person
+          session. Session dates and times vary by class, so check the listing
+          on the schedule.
         </p>
-        <ul className="list-disc space-y-2 pl-5">
-          <li>
-            FA/CPR/AED Instructor Course online session, designed to be
-            completed in approximately 2 hours.
-          </li>
-          <li>
-            FA/CPR/AED Instructor Course in-person session, designed to be
-            completed in approximately 8 hours.
-          </li>
-        </ul>
+      </ClassPageSection>
+
+      <ClassPageSection title="What happens in the in-person session">
+        <p>
+          The in-person session is about teaching, not relearning CPR. You
+          practice running skill sessions, giving clear corrective feedback, and
+          checking skills against Red Cross standards. You also complete
+          practice teaching assignments in front of the group, learn how to set
+          up a classroom and manage equipment, and learn the paperwork side:
+          rosters, course records and issuing certificates.
+        </p>
       </ClassPageSection>
 
       <ClassPageSection title="Course preparation">
@@ -69,7 +102,7 @@ export default function FaCprAedInstructorPageContent() {
         <p>
           You may view all instructor candidate resources on the{" "}
           <Link
-            className="font-medium text-primary hover:underline"
+            className={linkClassName}
             href="https://www.redcrosslearningcenter.org/s/candidate-resources-first-aid-cpr-aed-21"
             rel="noopener noreferrer"
             target="_blank"
@@ -79,6 +112,38 @@ export default function FaCprAedInstructorPageContent() {
           .
         </p>
       </ClassPageSection>
+
+      <ClassPageSection title="After you certify">
+        <p>
+          Your instructor certification is valid for 2 years. To issue Red Cross
+          certificates, you teach through a Red Cross Training Provider.
+          Taylored Instruction is a Red Cross Licensed Training Provider, and
+          new instructors can{" "}
+          <Link className={linkClassName} href="/alignment">
+            align with us
+          </Link>
+          . Our founder, Evan Taylor, is a Red Cross First Aid/CPR/AED
+          Instructor Trainer. For a broader look at the path, read{" "}
+          <Link
+            className={linkClassName}
+            href="/blog/how-to-become-cpr-instructor"
+          >
+            how to become a CPR instructor
+          </Link>
+          .
+        </p>
+        <p>
+          We teach in Vancouver, WA, and serve Camas, Portland, San Luis Obispo
+          and the surrounding areas. If you want to teach American Heart
+          Association courses instead, see{" "}
+          <Link className={linkClassName} href="/aha-instructor-training">
+            AHA instructor training
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+
+      <FaqSection faqs={faCprAedInstructorFAQs} />
     </ClassPageLayout>
   );
 }

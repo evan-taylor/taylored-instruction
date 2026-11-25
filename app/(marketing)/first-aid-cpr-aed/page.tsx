@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import FirstAidCprAedPageContent from "@/components/FirstAidCprAedPageContent";
+import { firstAidFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -69,6 +70,10 @@ const FirstAidCprAedPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(firstAidFAQs))}
         type="application/ld+json"
       />
       <FirstAidCprAedPageContent />

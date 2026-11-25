@@ -1,6 +1,7 @@
 import { fetchQuery } from "convex/nextjs";
 import type { MetadataRoute } from "next";
 import { api } from "@/convex/_generated/api";
+import { LOCATIONS, LOCATIONS_BASE_PATH, locationPath } from "@/lib/locations";
 import { getRevnuPosts } from "@/lib/revnu";
 
 const baseUrl = "https://tayloredinstruction.com";
@@ -71,6 +72,9 @@ const getRouteConfig = (routePath: string): RouteConfig => {
   if (routePath.startsWith("/s/")) {
     return { priority: 0.8, changeFrequency: "daily" };
   }
+  if (routePath.startsWith(`${LOCATIONS_BASE_PATH}/`)) {
+    return { priority: 0.9, changeFrequency: "weekly" };
+  }
   if (routePath.startsWith("/courses/")) {
     return { priority: 0.85, changeFrequency: "weekly" };
   }
@@ -129,7 +133,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Still return the static routes when Convex is unavailable.
   }
 
-  const revnuPosts = await getRevnuPosts().catch(() => []);
+  const revnuPosts = await getRevnuPosts();
   const listingLastModified: Record<string, Date | undefined> = {
     "/blog": latestDate(
       revnuPosts.map((post) => new Date(post.updatedAt ?? post.publishedAt))
@@ -146,6 +150,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries = [
     ...staticRoutePaths.map((path) =>
       buildEntry({ path, lastModified: staticLastModified(path) })
+    ),
+    ...LOCATIONS.map((location) =>
+      buildEntry({
+        path: locationPath(location),
+        lastModified: staticLastModified(LOCATIONS_BASE_PATH),
+      })
     ),
     ...registrationRoutes.map((path) => buildEntry({ path })),
   ];

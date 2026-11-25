@@ -13,6 +13,7 @@ import {
 import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import { ResultNotice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { BUSINESS } from "@/lib/business";
 import { trackRegistration } from "@/lib/registration-analytics";
 import { errorText } from "./errors";
 
@@ -104,9 +105,9 @@ function Expectations() {
         Prefer to talk it through?{" "}
         <a
           className="font-medium text-primary underline-offset-2 hover:underline"
-          href="tel:3606588199"
+          href={BUSINESS.phone.href}
         >
-          Call (360) 658-8199
+          Call {BUSINESS.phone.display}
         </a>
         .
       </p>

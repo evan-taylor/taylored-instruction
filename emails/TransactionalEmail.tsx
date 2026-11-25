@@ -7,6 +7,7 @@ import {
   Note,
   Paragraph,
   PrimaryButton,
+  TextLink,
   Title,
 } from "./components/blocks";
 import { EmailLayout } from "./components/layout";
@@ -19,9 +20,13 @@ export type TransactionalEmailProps = {
   code?: string;
   amounts?: { rows: DetailRow[]; total?: DetailRow };
   action?: { label: string; url: string };
+  review?: { label: string; url: string };
   details?: DetailRow[];
   note?: string;
 };
+
+export const REVIEW_PROMPT =
+  "Enjoyed your class? A short review helps others find CPR training near them.";
 
 /**
  * Sign-in codes, access links, and registration mail sent from Convex.
@@ -35,6 +40,7 @@ export default function TransactionalEmail({
   code,
   amounts,
   action,
+  review,
   details,
   note,
 }: TransactionalEmailProps) {
@@ -49,6 +55,11 @@ export default function TransactionalEmail({
       {amounts ? <Amounts {...amounts} /> : null}
       {action ? (
         <PrimaryButton href={action.url}>{action.label}</PrimaryButton>
+      ) : null}
+      {review ? (
+        <Paragraph>
+          {REVIEW_PROMPT} <TextLink href={review.url}>{review.label}</TextLink>
+        </Paragraph>
       ) : null}
       {details?.length ? <Details rows={details} /> : null}
       {note ? <Note>{note}</Note> : null}

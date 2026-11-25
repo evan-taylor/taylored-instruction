@@ -1,4 +1,5 @@
 import { expect, it } from "vitest";
+import { GOOGLE_REVIEW_URL } from "../../lib/business";
 import {
   brandedEmail,
   registrationEmail,
@@ -205,4 +206,30 @@ it("renders nested lists, emphasis, underline and safe links in workflow mail", 
   expect(result.text).toContain("Photo ID");
   expect(result.text).not.toContain("++Photo ID++");
   expect(result.text).toContain("3. Review");
+});
+
+it("asks for a Google review only in emails sent after the class", () => {
+  const job = {
+    category: "Your training",
+    subject: "Thanks for training with us",
+    body: "Hi {{attendeeName}}, your eCard is in your portal.",
+    name: "Sam",
+    title: "BLS",
+    schedule: "",
+    materials: [],
+    details: [],
+  };
+  const after = registrationEmail(
+    { ...job, afterClass: true },
+    "https://example.com"
+  );
+  expect(after.html).toContain(`href="${GOOGLE_REVIEW_URL}"`);
+  expect(after.html).toContain("Leave us a Google review");
+  expect(after.text).toContain(
+    `Leave us a Google review: ${GOOGLE_REVIEW_URL}`
+  );
+
+  const before = registrationEmail(job, "https://example.com");
+  expect(before.html).not.toContain("writereview");
+  expect(before.text).not.toContain("Google review");
 });

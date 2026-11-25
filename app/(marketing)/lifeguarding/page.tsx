@@ -2,6 +2,7 @@
 
 import { cacheLife } from "next/cache";
 import LifeguardingPageContent from "@/components/LifeguardingPageContent";
+import { getFAQSchema, lifeguardFAQs } from "@/lib/faqSchema";
 import { withLiveInstances } from "@/lib/registration-seo";
 import { buildPageMetadata } from "@/lib/seo";
 import {
@@ -69,6 +70,10 @@ const LifeguardingPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getFAQSchema(lifeguardFAQs))}
         type="application/ld+json"
       />
       <LifeguardingPageContent />

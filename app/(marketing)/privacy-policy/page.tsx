@@ -1,6 +1,7 @@
 "use cache";
 
 import { cacheLife } from "next/cache";
+import { BUSINESS } from "@/lib/business";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -252,16 +253,16 @@ export default async function PrivacyPolicyPage() {
           <p>
             By providing your phone number and agreeing to receive texts, you
             consent to receive text messages from Taylored Instruction, from
-            360-685-8199 regarding account notification and customer care.
-            Consent is not a condition of purchase. Message frequency varies.
-            Message &amp; data rates may apply. You can reply STOP to
+            {BUSINESS.phone.display} regarding account notification and customer
+            care. Consent is not a condition of purchase. Message frequency
+            varies. Message &amp; data rates may apply. You can reply STOP to
             unsubscribe at any time or HELP for assistance. You can also contact
-            us at 360-685-8199 or{" "}
+            us at {BUSINESS.phone.display} or{" "}
             <a
               className="text-primary hover:underline"
-              href="mailto:info@tayloredinstruction.com"
+              href={`mailto:${BUSINESS.email}`}
             >
-              info@tayloredinstruction.com
+              {BUSINESS.email}
             </a>
             . Mobile opt-in information is never shared with third parties.
           </p>

@@ -65,13 +65,13 @@ defaults, with webhook endpoint management access. The workflow becomes effectiv
 once it exists on the default branch; no live key belongs in this secret.
 
 Cleanup verifies GitHub state before deletion. Any open PR on the exact repository
-branch protects it. Closed PR branches retain endpoints for 24 hours after the
-latest closure for rollback and delayed test events; the closure event reconciles
-older endpoints immediately, while the schedule removes the newly closed preview
-after that grace period. Branches with no PR are retained unless GitHub confirms
-the branch was deleted. Unknown state, API errors, and rate limits fail closed.
-Reopening a PR during grace preserves its endpoint; reopening after cleanup needs
-a new preview build to create an endpoint and replace its Convex signing secret.
+branch protects it. Once every PR on the branch is merged or closed, its endpoint
+is retired immediately: the closure event removes it, the schedule catches any
+missed event, and the next preview build sweeps it before creating its own.
+Stripe allows only 16 test endpoints, so there is no grace period. Branches with
+no PR are retained unless GitHub confirms the branch was deleted. Unknown state,
+API errors, and rate limits fail closed. Reopening a PR after cleanup needs a new
+preview build to create an endpoint and replace its Convex signing secret.
 
 Before creating an endpoint, preview builds attempt the same cleanup and protect
 their own branch. Public GitHub API access needs no token; optional `GITHUB_TOKEN`

@@ -4,7 +4,6 @@ import type Stripe from "stripe";
 export const PREVIEW_REPOSITORY = "evan-taylor/taylored-instruction";
 const PREVIEW_URL =
   /^https:\/\/[a-z0-9]+(?:-[a-z0-9]+)*\.convex\.site\/registration\/stripe$/;
-const GRACE_MS = 24 * 60 * 60 * 1000;
 
 export function previewMetadata(branch: string) {
   if (!branch || branch.length > 500) {
@@ -30,7 +29,6 @@ export function previewCreationKey(url: string, previousSecret: string) {
 }
 
 type Pull = {
-  closed_at: string | null;
   head: { ref: string; repo: { full_name: string } | null };
   state: "open" | "closed";
 };
@@ -38,8 +36,7 @@ type Pull = {
 export async function branchIsRetired(
   branch: string,
   request: typeof fetch = fetch,
-  token = process.env.GITHUB_TOKEN,
-  now = Date.now()
+  token = process.env.GITHUB_TOKEN
 ) {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
@@ -72,7 +69,6 @@ export async function branchIsRetired(
           !(
             pull?.head?.ref &&
             ["open", "closed"].includes(pull.state) &&
-            (pull.closed_at === null || typeof pull.closed_at === "string") &&
             (pull.head.repo === null ||
               typeof pull.head.repo?.full_name === "string")
           )
@@ -91,16 +87,8 @@ export async function branchIsRetired(
       pull.head.ref === branch &&
       pull.head.repo?.full_name === PREVIEW_REPOSITORY
   );
-  if (matching.some((pull) => pull.state === "open")) {
-    return false;
-  }
   if (matching.length > 0) {
-    return matching.every(
-      (pull) =>
-        pull.state === "closed" &&
-        pull.closed_at !== null &&
-        now - Date.parse(pull.closed_at) >= GRACE_MS
-    );
+    return matching.every((pull) => pull.state === "closed");
   }
   const response = await request(
     `${base}/branches/${encodeURIComponent(branch)}`,
