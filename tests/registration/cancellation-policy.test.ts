@@ -1,10 +1,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { convexTest } from "convex-test";
 import { PDFDocument } from "pdf-lib";
+import type Stripe from "stripe";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { linkStripePayment } from "../../convex/registrationPolicy";
+import { isRegistrationPayment } from "../../convex/registrationWebhook";
 import schema from "../../convex/schema";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
 import {
@@ -816,6 +818,42 @@ describe("Dispute evidence export", () => {
       state: "drafted",
     });
     expect(stripe.disputes.map((row) => row.id)).toEqual(["dp_early"]);
+  });
+
+  it("ignores disputes on shop payments but claims registration checkouts and invoices", async () => {
+    const client = (
+      sessions: Record<string, string>[],
+      invoices: Record<string, string>[]
+    ) =>
+      ({
+        checkout: {
+          sessions: {
+            list: async () => ({
+              data: sessions.map((metadata) => ({ metadata })),
+            }),
+          },
+        },
+        invoicePayments: {
+          list: async () => ({
+            data: invoices.map((metadata) => ({ invoice: { metadata } })),
+          }),
+        },
+      }) as unknown as Stripe;
+    expect(
+      await isRegistrationPayment(client([{ productName: "eCard" }], []), "pi")
+    ).toBe(false);
+    expect(
+      await isRegistrationPayment(
+        client([{ registrationOrder: "order" }], []),
+        "pi"
+      )
+    ).toBe(true);
+    expect(
+      await isRegistrationPayment(
+        client([], [{ registrationInvoice: "invoice" }]),
+        "pi"
+      )
+    ).toBe(true);
   });
 
   it("dates the disputed service in the class's own time zone", async () => {
