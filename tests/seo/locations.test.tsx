@@ -9,6 +9,7 @@ import {
   sessionsIn,
 } from "@/lib/locations";
 import nextConfig from "@/next.config.js";
+import { readPageLastModified } from "@/scripts/page-last-modified.js";
 
 const WORD = /\S+/gu;
 const EM_DASH = /\u2014/u;
@@ -38,6 +39,7 @@ const sessions = [
   ),
   session("golds", "Gold's Gym Camas: 2950 NW 38th Ave, Camas, WA 98607"),
   session("pdx", "Office: 100 SW Main St, Portland, OR 97204"),
+  session("bare", "915 Broadway St, Vancouver, WA 98660"),
   session("online", ""),
 ];
 
@@ -80,10 +82,15 @@ describe("city landing pages", () => {
   it("matches classes to a city by the first meeting's address", () => {
     const codes = (slug: string) =>
       sessionsIn(cityPage(slug), sessions).map((s) => s.code);
-    expect(codes("vancouver-wa")).toEqual(["ymca"]);
+    expect(codes("vancouver-wa")).toEqual(["ymca", "bare"]);
     expect(codes("camas-wa")).toEqual(["golds"]);
     expect(codes("portland-or")).toEqual(["pdx"]);
     expect(codes("san-luis-obispo-ca")).toEqual([]);
+  });
+
+  it("dates city pages by their config file in the sitemap", () => {
+    const dates: Record<string, string> = readPageLastModified();
+    expect(dates["/cpr-classes"]).toBeTruthy();
   });
 
   it("only points nearby fallbacks at real city pages", () => {

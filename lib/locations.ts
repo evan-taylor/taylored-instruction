@@ -390,11 +390,15 @@ export const findLocation = (slug: string) =>
 
 type Meeting = { start: number; location: string };
 
-/** "Clark County Family YMCA: 11324 NE 51st Cir, Vancouver, WA 98682" → Vancouver, WA. */
+/**
+ * "Clark County Family YMCA: 11324 NE 51st Cir, Vancouver, WA 98682" → Vancouver, WA.
+ * A venue entered as a bare address has no name prefix, so it is parsed whole.
+ */
 export function sessionPlace(meetings: Meeting[]) {
   const first = [...meetings].sort((a, b) => a.start - b.start).at(0);
-  const parts = parsePlace(first?.location ?? "")
-    .address.split(",")
+  const { address } = parsePlace(first?.location ?? "");
+  const parts = (address || (first?.location ?? ""))
+    .split(",")
     .map((part) => part.trim());
   if (parts.length < 3) {
     return null;

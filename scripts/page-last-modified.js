@@ -6,6 +6,10 @@ const marketingDir = path.join("app", "(marketing)");
 const importPattern = /(?:from|import)\s*["']([^"']+)["']/g;
 const sourceExtensions = [".tsx", ".ts", ".jsx", ".js"];
 // Shared chrome changes every page's look, not what a page says.
+// Dynamic route groups whose copy lives in a config file rather than a page.
+const pageConfigFiles = {
+  "cpr-classes": path.join("lib", "locations.ts"),
+};
 const sharedComponentDirs = [
   path.join("components", "ui"),
   path.join("components", "layout"),
@@ -113,8 +117,16 @@ const readPageLastModified = () => {
   const pages = [["/", marketingDir, [path.join(marketingDir, "page.tsx")]]];
   for (const entry of readdirSync(marketingDir, { withFileTypes: true })) {
     const pageDir = path.join(marketingDir, entry.name);
-    if (entry.isDirectory() && existsSync(path.join(pageDir, "page.tsx"))) {
-      pages.push([`/${entry.name}`, pageDir, listFiles(pageDir)]);
+    const config = pageConfigFiles[entry.name];
+    if (
+      entry.isDirectory() &&
+      (config || existsSync(path.join(pageDir, "page.tsx")))
+    ) {
+      pages.push([
+        `/${entry.name}`,
+        pageDir,
+        config ? [...listFiles(pageDir), config] : listFiles(pageDir),
+      ]);
     }
   }
 
