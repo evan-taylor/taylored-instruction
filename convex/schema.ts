@@ -258,18 +258,6 @@ const schema = defineSchema({
     .index("by_type", ["type"])
     .index("by_requires_instructor", ["requiresInstructor"]),
 
-  analytics: defineTable({
-    url: v.optional(v.string()),
-    referrer: v.optional(v.string()),
-    userId: v.optional(v.id("users")),
-    ipAddress: v.optional(v.string()),
-    city: v.optional(v.string()),
-    region: v.optional(v.string()),
-    country: v.optional(v.string()),
-  })
-    .index("by_user", ["userId"])
-    .index("by_url", ["url"]),
-
   staging_profiles: defineTable({
     email: v.string(),
     supabaseUserId: v.string(), // Original Supabase auth.users.id
