@@ -32,7 +32,6 @@ type CourseSchema = {
   hasCourseInstance?: {
     "@type": string;
     courseMode: string | string[];
-    duration: string;
     inLanguage: string;
   };
   offers?: {
@@ -413,7 +412,6 @@ export const getBLSCourseSchema = (): CourseSchema => ({
   hasCourseInstance: {
     "@type": "CourseInstance",
     courseMode: "Blended",
-    duration: "PT4H",
     inLanguage: "en-US",
   },
   offers: {
@@ -439,7 +437,6 @@ export const getRedCrossBLSCourseSchema = (): CourseSchema => ({
   hasCourseInstance: {
     "@type": "CourseInstance",
     courseMode: ["Blended", "In-Person"],
-    duration: "PT4H",
     inLanguage: "en-US",
   },
   offers: {
@@ -466,7 +463,6 @@ export const getFirstAidCPRAEDCourseSchema = (): CourseSchema => ({
   hasCourseInstance: {
     "@type": "CourseInstance",
     courseMode: ["Blended", "In-Person"],
-    duration: "PT5H",
     inLanguage: "en-US",
   },
   offers: {
@@ -492,7 +488,6 @@ export const getHeartsaverCourseSchema = (): CourseSchema => ({
   hasCourseInstance: {
     "@type": "CourseInstance",
     courseMode: ["Blended", "In-Person"],
-    duration: "PT5H",
     inLanguage: "en-US",
   },
   offers: {
@@ -519,7 +514,6 @@ export const getLifeguardingCourseSchema = (): CourseSchema => ({
   hasCourseInstance: {
     "@type": "CourseInstance",
     courseMode: ["Blended", "In-Person"],
-    duration: "PT25H",
     inLanguage: "en-US",
   },
   offers: {
