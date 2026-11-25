@@ -129,7 +129,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Still return the static routes when Convex is unavailable.
   }
 
-  const revnuPosts = await getRevnuPosts().catch(() => []);
+  const revnuPosts = await getRevnuPosts();
   const listingLastModified: Record<string, Date | undefined> = {
     "/blog": latestDate(
       revnuPosts.map((post) => new Date(post.updatedAt ?? post.publishedAt))

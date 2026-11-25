@@ -4,7 +4,7 @@ const getRevnuPosts = vi.fn();
 
 vi.mock("next/cache", () => ({ cacheLife: vi.fn(), cacheTag: vi.fn() }));
 vi.mock("convex/nextjs", () => ({
-  fetchQuery: vi.fn(() => ({ courses: [] })),
+  fetchQuery: vi.fn(() => ({ courses: [], sessions: [] })),
 }));
 vi.mock("@/lib/revnu", () => ({
   buildRevnuSitemap: vi.fn(() => []),
@@ -13,6 +13,7 @@ vi.mock("@/lib/revnu", () => ({
 }));
 
 const { default: blogSitemap } = await import("@/app/(marketing)/blog/sitemap");
+const { default: rootSitemap } = await import("@/app/sitemap");
 const { GET: getRss } = await import("@/app/rss.xml/route");
 const { GET: getLlmsTxt } = await import("@/app/llms.txt/route");
 
@@ -22,6 +23,7 @@ afterEach(() => {
 
 describe("Revnu list failures", () => {
   it.each([
+    ["root sitemap", rootSitemap],
     ["blog sitemap", blogSitemap],
     ["RSS feed", getRss],
     ["llms.txt", getLlmsTxt],
