@@ -52,7 +52,8 @@ export const BUSINESS = {
     { type: "City", name: "San Luis Obispo, CA" },
     { type: "AdministrativeArea", name: "Clark County, WA" },
   ],
-  googleBusinessProfileUrl: "https://share.google/7PSi0Vq65i7nMgHnI",
+  googleBusinessProfileUrl:
+    "https://www.google.com/maps/place/?q=place_id:ChIJ649LB-AFjq8R6oVJiLxutTc",
   socials: {
     facebook: "https://www.facebook.com/tayloredinstruction.us",
     instagram: "https://www.instagram.com/taylored.instruction/",
