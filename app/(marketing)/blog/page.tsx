@@ -51,7 +51,7 @@ export default async function BlogPage() {
   cacheLife("minutes");
   cacheTag(REVNU_CACHE_TAG);
 
-  const posts = await getRevnuPosts().catch(() => []);
+  const posts = await getRevnuPosts();
   const postList = posts.slice(0, listingLimit);
   const webPageSchema = getWebPageSchema({
     name: pageTitle,
