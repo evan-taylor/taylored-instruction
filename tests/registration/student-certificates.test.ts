@@ -543,10 +543,25 @@ function saveArgs(
   };
 }
 
+async function pendingFile(
+  f: Fixture,
+  uploadedBy: Id<"users">,
+  target: ReturnType<typeof saveArgs>["target"]
+) {
+  return await f.t.run(async (ctx) => {
+    const storageId = await ctx.storage.store(new Blob(["file"]));
+    await ctx.db.insert("certificateUploads", {
+      storageId,
+      uploadedBy,
+      sessionId: target.id,
+      uploadedAt: Date.now(),
+    });
+    return storageId;
+  });
+}
+
 async function save(f: Fixture, args: ReturnType<typeof saveArgs>) {
-  const storageId = await f.t.run((ctx) =>
-    ctx.storage.store(new Blob(["file"]))
-  );
+  const storageId = await pendingFile(f, f.admin, args.target);
   return await f.adminClient.mutation(internal.studentCertificates.saveImport, {
     ...args,
     file: { ...args.file, storageId },
@@ -708,10 +723,8 @@ describe("re-saving certificates", () => {
       rows: original.rows.map((row) => ({ ...row, attendeeId: undefined })),
     });
     const teacher = f.t.withIdentity({ subject: `${instructor}|session` });
-    const storageId = await f.t.run((ctx) =>
-      ctx.storage.store(new Blob(["file"]))
-    );
     const args = saveArgs(f, [ava]);
+    const storageId = await pendingFile(f, instructor, args.target);
     await expect(
       teacher.mutation(internal.studentCertificates.saveImport, {
         ...args,

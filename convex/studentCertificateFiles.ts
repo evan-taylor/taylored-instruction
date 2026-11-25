@@ -82,11 +82,16 @@ export const upload = action({
         type: args.contentType || "application/octet-stream",
       })
     );
-    await ctx.runMutation(internal.studentCertificates.recordUpload, {
-      target: args.target,
-      storageId,
-      uploadedBy,
-    });
+    try {
+      await ctx.runMutation(internal.studentCertificates.recordUpload, {
+        target: args.target,
+        storageId,
+        uploadedBy,
+      });
+    } catch (error) {
+      await ctx.storage.delete(storageId);
+      throw error;
+    }
     return storageId;
   },
 });

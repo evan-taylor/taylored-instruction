@@ -484,9 +484,10 @@ export const saveImport = internalMutation({
       context.actor,
       args.file.storageId
     );
-    if (pending) {
-      await ctx.db.delete(pending._id);
+    if (!pending) {
+      throw new ConvexError("The upload expired. Choose the file again.");
     }
+    await ctx.db.delete(pending._id);
     const importId = await findOrCreateImport(
       ctx,
       args.target,
