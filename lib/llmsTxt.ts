@@ -1,3 +1,4 @@
+import { LOCATIONS, locationName, locationUrl } from "@/lib/locations";
 import type { RevnuPostSummary } from "@/lib/revnu";
 import { SITE_URL } from "@/lib/seo";
 
@@ -40,5 +41,10 @@ export const buildLlmsTxt = (revnuPosts: RevnuPostSummary[]) => {
       `- [${oneLine(article.title)}](${article.url}): ${oneLine(article.description)}`
   );
 
-  return `${header}\n## Articles\n\n${articleLines.join("\n")}\n`;
+  const locationLines = LOCATIONS.map(
+    (location) =>
+      `- [Classes in ${locationName(location)}](${locationUrl(location)}): ${location.description}`
+  );
+
+  return `${header}\n## Locations\n\n${locationLines.join("\n")}\n\n## Articles\n\n${articleLines.join("\n")}\n`;
 };

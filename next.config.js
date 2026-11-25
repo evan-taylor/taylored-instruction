@@ -1,5 +1,22 @@
 const { readPageLastModified } = require("./scripts/page-last-modified");
 
+// Retired /resources/<service>-<city> pages, keyed by the city page that
+// replaced them. Cities without their own page go to the nearest one.
+const legacyLocationSlugs = {
+  "vancouver-wa": [
+    "vancouver-wa",
+    "clark-county-wa",
+    "hazel-dell-wa",
+    "salmon-creek-wa",
+    "orchards-wa",
+    "battle-ground-wa",
+    "ridgefield-wa",
+  ],
+  "camas-wa": ["camas-wa", "washougal-wa"],
+  "portland-or": ["portland-metro-or"],
+  "san-luis-obispo-ca": ["san-luis-obispo-ca", "pismo-beach-ca"],
+};
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
@@ -211,6 +228,16 @@ const nextConfig = {
         source: "/resources/",
         destination: "/blog",
         permanent: true,
+      },
+      ...Object.entries(legacyLocationSlugs).map(([city, slugs]) => ({
+        source: `/resources/:page(.+-(?:${slugs.join("|")}))`,
+        destination: `/cpr-classes/${city}`,
+        permanent: true,
+      })),
+      {
+        source: "/cpr-classes",
+        destination: "/classes",
+        permanent: false,
       },
       {
         source: "/resources/aed-program-services-:city",
