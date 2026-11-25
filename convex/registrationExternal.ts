@@ -52,7 +52,10 @@ export const checkout = action({
     const termsConsent =
       process.env.REGISTRATION_STRIPE_TERMS_CONSENT === "required";
     if (order.checkoutSecret) {
-      return { secret: order.checkoutSecret, termsConsent };
+      return {
+        secret: order.checkoutSecret,
+        termsConsent: order.checkoutTermsConsent ?? false,
+      };
     }
     const client = stripe();
     const customer = await stripeCustomerFor(
@@ -120,6 +123,7 @@ export const checkout = action({
         orderId: order._id,
         session: session.id,
         secret: session.client_secret,
+        termsConsent,
       }
     );
     if (!attached) {

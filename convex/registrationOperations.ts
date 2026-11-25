@@ -1535,6 +1535,7 @@ export const attention = query({
     refunds: v.array(doc(schema, "registrationRefunds")),
     invoices: v.array(doc(schema, "registrationInvoices")),
     requests: v.array(doc(schema, "registrationGroupRequests")),
+    disputes: v.array(doc(schema, "registrationDisputes")),
   }),
   handler: async (ctx) => {
     await staff(ctx);
@@ -1548,6 +1549,10 @@ export const attention = query({
       requests: await ctx.db
         .query("registrationGroupRequests")
         .withIndex("by_status", (q) => q.eq("status", "new"))
+        .take(BATCH),
+      disputes: await ctx.db
+        .query("registrationDisputes")
+        .withIndex("by_state", (q) => q.eq("state", "failed"))
         .take(BATCH),
       refunds: await ctx.db
         .query("registrationRefunds")

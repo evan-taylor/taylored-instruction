@@ -318,6 +318,47 @@ function UnpaidEnrollments({ orders }: { orders: Attention["unpaid"] }) {
   );
 }
 
+function FailedDisputeDrafts({
+  disputes,
+}: {
+  disputes: Attention["disputes"];
+}) {
+  return (
+    <AttentionCard
+      count={disputes.length}
+      description="Stripe disputes whose evidence could not be drafted after every retry. Export dispute evidence from the order and submit it in the Stripe Dashboard."
+      title="Dispute evidence not drafted"
+      tone="danger"
+    >
+      <Table wrapperClassName="rounded-none border-0">
+        <THead>
+          <TR>
+            <TH>Order</TH>
+            <TH>Dispute</TH>
+            <TH>Error</TH>
+          </TR>
+        </THead>
+        <TBody>
+          {disputes.map((d) => (
+            <TR key={d._id}>
+              <TD>
+                {d.orderId ? orderLink(d.orderId, shortId(d.orderId)) : "None"}
+                <div className="text-slate-500 text-xs">
+                  {formatDateTime(d._creationTime)}
+                </div>
+              </TD>
+              <TD>
+                <code className="text-xs">{d.disputeId}</code>
+              </TD>
+              <TD className="max-w-md text-rose-700 text-xs">{d.error}</TD>
+            </TR>
+          ))}
+        </TBody>
+      </Table>
+    </AttentionCard>
+  );
+}
+
 function OverdueInvoices({ invoices }: { invoices: Attention["invoices"] }) {
   return (
     <AttentionCard
@@ -430,7 +471,8 @@ function attentionTotal(attention: Attention) {
     attention.refunds.length +
     attention.unpaid.length +
     attention.invoices.length +
-    attention.requests.length
+    attention.requests.length +
+    attention.disputes.length
   );
 }
 
@@ -446,7 +488,7 @@ function AttentionPanel({ attention }: { attention: Attention | undefined }) {
   if (attentionTotal(attention) === 0) {
     return (
       <EmptyState
-        description="No failed emails, payment exceptions, pending refunds, unpaid enrollments, overdue invoices, or new group requests."
+        description="No failed emails, payment exceptions, pending refunds, unpaid enrollments, overdue invoices, new group requests, or failed dispute drafts."
         icon={<CheckCircle2 aria-hidden="true" className="h-8 w-8" />}
         title="All clear"
       />
@@ -459,6 +501,7 @@ function AttentionPanel({ attention }: { attention: Attention | undefined }) {
       <PendingRefunds refunds={attention.refunds} />
       <UnpaidEnrollments orders={attention.unpaid} />
       <OverdueInvoices invoices={attention.invoices} />
+      <FailedDisputeDrafts disputes={attention.disputes} />
       <GroupRequests requests={attention.requests} />
     </div>
   );

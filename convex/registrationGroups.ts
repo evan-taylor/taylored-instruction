@@ -509,6 +509,8 @@ export const attachStripeInvoice = internalMutation({
     hostedUrl: v.string(),
     pdfUrl: v.optional(v.string()),
     tax: v.number(),
+    /** The policy version the invoice footer states. */
+    policyVersion: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -553,7 +555,13 @@ export const attachStripeInvoice = internalMutation({
       error: undefined,
     });
     if (!invoice.sentAt) {
-      await recordDisclosure(ctx, order, invoice.actor, invoice);
+      await recordDisclosure(
+        ctx,
+        order,
+        invoice.actor,
+        invoice,
+        args.policyVersion
+      );
     }
     await enqueue(ctx, {
       key: `invoice:${invoice._id}`,

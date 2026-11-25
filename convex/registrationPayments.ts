@@ -73,6 +73,7 @@ export const attachCheckout = internalMutation({
     session: v.string(),
     /** Client secret for the on-page Payment Element. */
     secret: v.string(),
+    termsConsent: v.optional(v.boolean()),
   },
   returns: v.boolean(),
   handler: async (ctx, args) => {
@@ -94,6 +95,7 @@ export const attachCheckout = internalMutation({
     await ctx.db.patch(order._id, {
       stripeSession: args.session,
       checkoutSecret: args.secret,
+      checkoutTermsConsent: args.termsConsent,
     });
     await linkStripePayment(ctx, order._id, { checkoutSession: args.session });
     return true;

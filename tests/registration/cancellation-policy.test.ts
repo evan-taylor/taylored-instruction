@@ -15,6 +15,7 @@ import {
   sha256,
 } from "../../shared/cancellation-policy";
 import {
+  disputeEvidenceText,
   evidencePdf,
   evidenceSections,
 } from "../../shared/registration/evidence";
@@ -37,6 +38,7 @@ const stripe = vi.hoisted(() => ({
   sessions: [] as Record<string, unknown>[],
   files: [] as Record<string, unknown>[],
   disputes: [] as { id: string; params: Record<string, unknown> }[],
+  disputeFailures: 0,
 }));
 vi.mock("stripe", async (original) => {
   const actual = await original<typeof import("stripe")>();
@@ -69,6 +71,10 @@ vi.mock("stripe", async (original) => {
     };
     readonly disputes = {
       update: (id: string, params: Record<string, unknown>) => {
+        if (stripe.disputeFailures > 0) {
+          stripe.disputeFailures -= 1;
+          return Promise.reject(new Error("Stripe is unavailable"));
+        }
         stripe.disputes.push({ id, params });
         return Promise.resolve({ id });
       },
@@ -92,6 +98,7 @@ beforeEach(() => {
   stripe.sessions.length = 0;
   stripe.files.length = 0;
   stripe.disputes.length = 0;
+  stripe.disputeFailures = 0;
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -326,6 +333,13 @@ describe("Cancellation policy agreement at checkout", () => {
     expect(stripe.sessions[0]?.consent_collection).toEqual({
       terms_of_service: "required",
     });
+    vi.stubEnv("REGISTRATION_STRIPE_TERMS_CONSENT", "");
+    const reopened = await f.t.action(api.registrationExternal.checkout, {
+      orderId: order.orderId,
+      requestKey: order.requestKey,
+    });
+    expect(reopened.termsConsent).toBe(true);
+    expect(stripe.sessions).toHaveLength(1);
   });
 });
 
@@ -514,6 +528,29 @@ describe("Cancellation policy in confirmation emails", () => {
     );
   });
 
+  it("states the policy in the attendee's confirmation without saying they agreed", async () => {
+    const f = await fixture();
+    const order = await f.register("gale");
+    await f.pay(order);
+    const job = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").collect()).find(
+        (row) =>
+          row.key.startsWith("confirmation:") &&
+          row.recipient === "gale@example.test"
+      )
+    );
+    if (!job) {
+      throw new Error("Missing confirmation");
+    }
+    const mail = await f.t.mutation(internal.registrationMail.claim, {
+      id: job._id,
+    });
+    expect(mail?.body).toContain(
+      `This registration is subject to our Cancellation Policy (version ${CURRENT.version})`
+    );
+    expect(mail?.body).not.toContain("You agreed");
+  });
+
   it("labels staff bookings and invoices as disclosures, not agreements", async () => {
     const f = await fixture();
     const offline = await f.adminClient.mutation(api.registration.reserve, {
@@ -544,14 +581,17 @@ describe("Cancellation policy in confirmation emails", () => {
         dueDays: 30,
       }
     );
+    policy.next = { ...CURRENT, version: "2099-01-01" };
     await f.t.mutation(internal.registrationGroups.attachStripeInvoice, {
       id: invoiceId,
       stripeInvoiceId: "in_1",
       stripeCustomerId: "cus_1",
       hostedUrl: "https://invoice.stripe.test/in_1",
       tax: 0,
+      policyVersion: CURRENT.version,
     });
     const rows = await f.acknowledgements(unpaid.orderId);
+    expect(rows[1]?.policyVersion).toBe(CURRENT.version);
     expect(rows.map((row) => [row.kind, row.channel, row.ip])).toEqual([
       ["disclosed", "staff-booking", null],
       ["disclosed", "invoice", null],
@@ -649,14 +689,25 @@ describe("Dispute evidence export", () => {
     ).rejects.toThrow();
   });
 
-  it("drafts Stripe dispute evidence without submitting it", async () => {
+  async function disputeDrafts(f: Awaited<ReturnType<typeof fixture>>) {
+    await f.t.finishAllScheduledFunctions(vi.runAllTimers);
+    return await f.t.run((ctx) =>
+      ctx.db.query("registrationDisputes").collect()
+    );
+  }
+
+  it("drafts Stripe dispute evidence once, without submitting it", async () => {
+    vi.useFakeTimers();
     const { f, order } = await paidAndEmailed();
-    await f.t.action(internal.registrationEvidence.prefillDispute, {
-      disputeId: "dp_1",
-      paymentIntent: "pi_erin",
-    });
+    const delivery = { disputeId: "dp_1", paymentIntent: "pi_erin" };
+    await f.t.mutation(internal.registrationDisputes.opened, delivery);
+    await f.t.mutation(internal.registrationDisputes.opened, delivery);
+    const [draft] = await disputeDrafts(f);
+    vi.useRealTimers();
+    expect(draft).toMatchObject({ state: "drafted", fileId: "file_evidence" });
     expect(stripe.files).toHaveLength(1);
     expect(stripe.files[0]).toMatchObject({ purpose: "dispute_evidence" });
+    expect(stripe.disputes).toHaveLength(1);
     const [update] = stripe.disputes;
     expect(update?.id).toBe("dp_1");
     expect(update?.params.submit).toBe(false);
@@ -678,6 +729,57 @@ describe("Dispute evidence export", () => {
     );
     expect(activity.map((row) => row.action)).toContain(
       "dispute-evidence-drafted"
+    );
+  });
+
+  it("retries a failed dispute draft and flags it for staff after the last try", async () => {
+    vi.useFakeTimers();
+    const { f } = await paidAndEmailed();
+    stripe.disputeFailures = 2;
+    await f.t.mutation(internal.registrationDisputes.opened, {
+      disputeId: "dp_retry",
+      paymentIntent: "pi_erin",
+    });
+    const [recovered] = await disputeDrafts(f);
+    expect(recovered).toMatchObject({ state: "drafted", attempts: 2 });
+    expect(stripe.files).toHaveLength(1);
+    stripe.disputeFailures = 10;
+    await f.t.mutation(internal.registrationDisputes.opened, {
+      disputeId: "dp_down",
+      paymentIntent: "pi_erin",
+    });
+    const drafts = await disputeDrafts(f);
+    vi.useRealTimers();
+    expect(drafts.find((row) => row.disputeId === "dp_down")).toMatchObject({
+      state: "failed",
+      attempts: 5,
+      error: "Stripe is unavailable",
+    });
+    const attention = await f.adminClient.query(
+      api.registrationOperations.attention,
+      {}
+    );
+    expect(attention.disputes.map((row) => row.disputeId)).toEqual(["dp_down"]);
+  });
+
+  it("dates the disputed service in the class's own time zone", async () => {
+    const { f, order } = await paidAndEmailed();
+    const data = await f.adminClient.query(api.registrationPolicy.evidence, {
+      orderId: order.orderId,
+    });
+    if (!data) {
+      throw new Error("Missing evidence");
+    }
+    const evening = {
+      ...data,
+      order: {
+        ...data.order,
+        sessionStart: Date.UTC(2026, 11, 5, 2),
+        sessionTimeZone: "America/Los_Angeles",
+      },
+    };
+    expect(disputeEvidenceText(evening, ORIGIN)?.service_date).toBe(
+      "2026-12-04"
     );
   });
 });

@@ -236,7 +236,7 @@ function encodable(font: PDFFont, text: string) {
         font.encodeText(char);
         return char;
       } catch {
-        return "?";
+        return `[U+${char.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0")}]`;
       }
     })
     .join("");
@@ -374,7 +374,12 @@ export function disputeEvidenceText(data: EvidenceData, origin: string) {
     customer_purchase_ip: ack.ip ?? undefined,
     product_description: `${data.order.courseTitle}: ${data.order.title} for ${data.order.seats.map((seat) => seat.name).join(", ")}`,
     service_date: data.order.sessionStart
-      ? new Date(data.order.sessionStart).toISOString().slice(0, 10)
+      ? new Intl.DateTimeFormat("en-CA", {
+          timeZone: data.order.sessionTimeZone,
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        }).format(data.order.sessionStart)
       : undefined,
   };
 }

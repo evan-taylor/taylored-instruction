@@ -149,6 +149,8 @@ export const registrationTables = {
     /** Hosted Checkout URL from before the on-page payment flow; no longer set. */
     checkoutUrl: v.optional(v.string()),
     checkoutSecret: v.optional(v.string()),
+    /** Whether that Checkout Session requires Stripe's terms-of-service consent. */
+    checkoutTermsConsent: v.optional(v.boolean()),
     error: v.optional(v.string()),
     organizationId: v.optional(v.id("registrationOrganizations")),
     pricingNote: v.optional(v.string()),
@@ -433,6 +435,24 @@ export const registrationTables = {
     stripeCheckoutSession: v.optional(v.string()),
     stripePaymentIntent: v.optional(v.string()),
   }).index("by_orderId", ["orderId"]),
+  /** One evidence draft per Stripe dispute, retried until drafted or failed. */
+  registrationDisputes: defineTable({
+    disputeId: v.string(),
+    paymentIntent: v.string(),
+    orderId: v.optional(v.id("registrationOrders")),
+    state: v.union(
+      v.literal("pending"),
+      v.literal("drafted"),
+      v.literal("failed"),
+      v.literal("no-evidence")
+    ),
+    attempts: v.number(),
+    /** The uploaded evidence PDF, reused when a later attempt retries. */
+    fileId: v.optional(v.string()),
+    error: v.optional(v.string()),
+  })
+    .index("by_disputeId", ["disputeId"])
+    .index("by_state", ["state"]),
   registrationEvents: defineTable({
     eventId: v.string(),
     orderId: v.id("registrationOrders"),

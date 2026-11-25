@@ -30,6 +30,7 @@ import type * as registrationCertificates from "../registrationCertificates.js";
 import type * as registrationCustomerBackfill from "../registrationCustomerBackfill.js";
 import type * as registrationCustomers from "../registrationCustomers.js";
 import type * as registrationDashboard from "../registrationDashboard.js";
+import type * as registrationDisputes from "../registrationDisputes.js";
 import type * as registrationEmailWebhook from "../registrationEmailWebhook.js";
 import type * as registrationEngagement from "../registrationEngagement.js";
 import type * as registrationEvidence from "../registrationEvidence.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   registrationCustomerBackfill: typeof registrationCustomerBackfill;
   registrationCustomers: typeof registrationCustomers;
   registrationDashboard: typeof registrationDashboard;
+  registrationDisputes: typeof registrationDisputes;
   registrationEmailWebhook: typeof registrationEmailWebhook;
   registrationEngagement: typeof registrationEngagement;
   registrationEvidence: typeof registrationEvidence;

@@ -95,7 +95,10 @@ async function messageContext(
     kind === "receipt" && reference
       ? ctx.db.normalizeId("registrationOrders", reference)
       : null;
-  const orderId = invoice?.orderId ?? receiptId;
+  const orderId =
+    invoice?.orderId ??
+    receiptId ??
+    (kind === "confirmation" ? seat?.orderId : undefined);
   const order = orderId ? await ctx.db.get(orderId) : null;
   const course = seat ? await ctx.db.get(seat.courseId) : null;
   const title =
@@ -121,14 +124,32 @@ async function messageContext(
           body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
         }
       : messageBody(job, kind, invoice);
-  const acknowledgement = order
-    ? await citedAcknowledgement(ctx, order._id)
-    : null;
-  const site = process.env.SITE_URL;
-  if (acknowledgement && site) {
-    message.body += `\n${policyEmailLine(acknowledgement, new URL(site).origin)}`;
+  const notice = order ? await policyNotice(ctx, job, order) : null;
+  if (notice) {
+    message.body += `\n${notice}`;
   }
   return { title, details, ...message };
+}
+
+/** Only the purchaser agreed; anyone else is told the policy applies. */
+async function policyNotice(
+  ctx: MutationCtx,
+  job: Doc<"registrationJobs">,
+  order: Doc<"registrationOrders">
+) {
+  const acknowledgement = await citedAcknowledgement(ctx, order._id);
+  const site = process.env.SITE_URL;
+  if (!(acknowledgement && site)) {
+    return null;
+  }
+  const agreedByRecipient =
+    job.recipient.toLowerCase() === order.purchaser.toLowerCase();
+  return policyEmailLine(
+    agreedByRecipient
+      ? acknowledgement
+      : { ...acknowledgement, kind: "disclosed" },
+    new URL(site).origin
+  );
 }
 
 export const due = internalQuery({

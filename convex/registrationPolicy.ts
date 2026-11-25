@@ -3,17 +3,17 @@ import {
   AGREEMENT_LABEL,
   type CancellationPolicy,
   CURRENT_CANCELLATION_POLICY,
+  cancellationPolicy,
   cancellationPolicyUrl,
   policyDate,
   policySnapshot,
   sha256,
 } from "../shared/cancellation-policy";
 import type { EvidenceData } from "../shared/registration/evidence";
-import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import { internalMutation, internalQuery, query } from "./_generated/server";
-import { audit, staff } from "./registrationHelpers";
+import { internalQuery, query } from "./_generated/server";
+import { staff } from "./registrationHelpers";
 
 /**
  * The only writer of registrationPolicyAcknowledgements. Rows are inserted
@@ -177,9 +177,13 @@ export async function recordDisclosure(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">,
   actor: string,
-  invoice?: Doc<"registrationInvoices">
+  invoice?: Doc<"registrationInvoices">,
+  version = CURRENT_CANCELLATION_POLICY.version
 ) {
-  const policy = CURRENT_CANCELLATION_POLICY;
+  const policy = cancellationPolicy(version);
+  if (!policy) {
+    throw new ConvexError(`Unknown Cancellation Policy version ${version}`);
+  }
   const path = `/cancellation-policy/v/${policy.version}`;
   await record(ctx, order, {
     kind: "disclosed",
@@ -408,34 +412,5 @@ export const disputeEvidence = internalQuery({
       )
       .first();
     return order ? await evidenceFor(ctx, order._id) : null;
-  },
-});
-
-export const disputeDrafted = internalMutation({
-  args: { orderId: v.string(), disputeId: v.string() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await audit(
-      ctx,
-      "system",
-      "dispute-evidence-drafted",
-      args.orderId,
-      `Stripe dispute ${args.disputeId}: evidence drafted from the cancellation policy acknowledgement, not submitted`
-    );
-    return null;
-  },
-});
-
-/** Queues a draft of Stripe's dispute evidence; staff still review and submit it. */
-export const disputeOpened = internalMutation({
-  args: { disputeId: v.string(), paymentIntent: v.string() },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    await ctx.scheduler.runAfter(
-      0,
-      internal.registrationEvidence.prefillDispute,
-      args
-    );
-    return null;
   },
 });

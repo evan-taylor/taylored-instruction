@@ -38,48 +38,76 @@ export const exportEvidence = action({
  * Drafts Stripe's dispute evidence from the acknowledgement: the disclosure
  * text, customer details, and the evidence PDF as the policy files. It saves
  * with submit: false, so staff review and submit in the Stripe Dashboard.
+ * Each attempt's outcome lands on the dispute row, which retries failures.
  */
 export const prefillDispute = internalAction({
-  args: { disputeId: v.string(), paymentIntent: v.string() },
+  args: { disputeId: v.string() },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const data = await ctx.runQuery(
-      internal.registrationPolicy.disputeEvidence,
-      {
-        paymentIntent: args.paymentIntent,
-      }
-    );
-    const text = data ? disputeEvidenceText(data, origin()) : null;
-    if (!(data && text)) {
+    const dispute = await ctx.runQuery(internal.registrationDisputes.get, args);
+    if (dispute?.state !== "pending") {
       return null;
     }
-    const client = new Stripe(registrationStripeKey(), {
-      apiVersion: "2026-09-30.endive",
-    });
-    const file = await client.files.create({
-      purpose: "dispute_evidence",
-      file: {
-        data: Buffer.from(await evidencePdf(data, origin())),
-        name: `cancellation-policy-evidence-${data.order.id}.pdf`,
-        type: "application/pdf",
-      },
-    });
-    await client.disputes.update(
-      args.disputeId,
-      {
-        evidence: {
-          ...text,
-          cancellation_policy: file.id,
-          refund_policy: file.id,
+    try {
+      const data = await ctx.runQuery(
+        internal.registrationPolicy.disputeEvidence,
+        { paymentIntent: dispute.paymentIntent }
+      );
+      const text = data ? disputeEvidenceText(data, origin()) : null;
+      if (!(data && text)) {
+        await ctx.runMutation(internal.registrationDisputes.result, {
+          disputeId: args.disputeId,
+          outcome: "no-evidence",
+        });
+        return null;
+      }
+      const client = new Stripe(registrationStripeKey(), {
+        apiVersion: "2026-09-30.endive",
+      });
+      let { fileId } = dispute;
+      if (!fileId) {
+        const file = await client.files.create({
+          purpose: "dispute_evidence",
+          file: {
+            data: Buffer.from(await evidencePdf(data, origin())),
+            name: `cancellation-policy-evidence-${data.order.id}.pdf`,
+            type: "application/pdf",
+          },
+        });
+        fileId = file.id;
+        await ctx.runMutation(internal.registrationDisputes.fileUploaded, {
+          disputeId: args.disputeId,
+          fileId,
+        });
+      }
+      await client.disputes.update(
+        args.disputeId,
+        {
+          evidence: {
+            ...text,
+            cancellation_policy: fileId,
+            refund_policy: fileId,
+          },
+          submit: false,
         },
-        submit: false,
-      },
-      { idempotencyKey: `dispute-evidence:${args.disputeId}` }
-    );
-    await ctx.runMutation(internal.registrationPolicy.disputeDrafted, {
-      orderId: data.order.id,
-      disputeId: args.disputeId,
-    });
+        {
+          idempotencyKey: `dispute-evidence:${args.disputeId}:${dispute.attempts}`,
+        }
+      );
+      await ctx.runMutation(internal.registrationDisputes.result, {
+        disputeId: args.disputeId,
+        outcome: "drafted",
+      });
+    } catch (error) {
+      await ctx.runMutation(internal.registrationDisputes.result, {
+        disputeId: args.disputeId,
+        outcome: "error",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Dispute evidence draft failed",
+      });
+    }
     return null;
   },
 });
