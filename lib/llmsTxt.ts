@@ -1,3 +1,8 @@
+import {
+  ACCREDITATION_PHRASE,
+  BUSINESS,
+  formatBusinessAddress,
+} from "@/lib/business";
 import type { RevnuPostSummary } from "@/lib/revnu";
 import { SITE_URL } from "@/lib/seo";
 
@@ -108,14 +113,19 @@ Taylored Instruction runs public classes, blended and online courses, and privat
 - [Blog](${SITE_URL}/blog): Articles on CPR, BLS, first aid, AEDs and lifeguarding
 `;
 
+const { address, hours, phone } = BUSINESS;
+
 const facts = `## Facts
 
-- Founded in 2023 by Evan Taylor and based in Vancouver, Washington.
+- Founded in ${BUSINESS.foundingYear} by ${BUSINESS.founder.name} and based in ${address.locality}, Washington.
 - Teaches classes seasonally in San Luis Obispo, CA on the Central Coast.
-- An authorized American Red Cross Licensed Training Provider, American Heart Association Training Site (Aligned with Resuscitation Group), and HSI Training Center.
-- Serves Clark County, WA, the Portland metro area, and San Luis Obispo County, CA.
+- ${ACCREDITATION_PHRASE}.
+- Serves ${BUSINESS.serviceArea.map((area) => area.name).join("; ")} and surrounding areas.
+- Address: ${formatBusinessAddress()} (${address.placeName})
+- Hours: ${hours.display}
+- Phone: ${phone.display}
+- Email: ${BUSINESS.email}
 - Register for public classes at ${SITE_URL}/classes.
-- Email: evan@tayloredinstruction.com
 `;
 
 const SENTENCE_END = /(?<=[.!?])\s/;

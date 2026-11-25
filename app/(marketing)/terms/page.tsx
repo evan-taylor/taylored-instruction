@@ -3,6 +3,7 @@
 import { cacheLife } from "next/cache";
 import Link from "next/link";
 import { CancellationPolicyDocument } from "@/components/cancellation-policy-document";
+import { BUSINESS } from "@/lib/business";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -108,9 +109,9 @@ export default async function TermsPage() {
             initiate a return, please contact us with your order details at{" "}
             <a
               className="text-primary hover:underline"
-              href="mailto:info@tayloredinstruction.com"
+              href={`mailto:${BUSINESS.email}`}
             >
-              info@tayloredinstruction.com
+              {BUSINESS.email}
             </a>
             . Return shipping costs may apply and are the responsibility of the
             customer unless the product is defective or incorrect. Refunds will
@@ -124,8 +125,9 @@ export default async function TermsPage() {
           <p>
             By providing your phone number and agreeing to receive texts, you
             consent to receive account-related SMS messages from Taylored
-            Instruction at 360-685-8199. Message frequency varies. Message and
-            data rates may apply. Consent is not a condition of purchase.
+            Instruction at {BUSINESS.phone.display}. Message frequency varies.
+            Message and data rates may apply. Consent is not a condition of
+            purchase.
           </p>
           <p>
             To stop receiving messages, text <strong>STOP</strong>. For help,
@@ -193,9 +195,9 @@ export default async function TermsPage() {
             If you have any questions about these terms, please contact us at{" "}
             <a
               className="text-primary hover:underline"
-              href="mailto:info@tayloredinstruction.com"
+              href={`mailto:${BUSINESS.email}`}
             >
-              info@tayloredinstruction.com
+              {BUSINESS.email}
             </a>{" "}
             before proceeding with your booking. Thank you for choosing Taylored
             Instruction LLC for your training needs!

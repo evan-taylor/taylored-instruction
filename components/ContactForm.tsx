@@ -11,6 +11,7 @@ import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { trackVisitorsEvent } from "@/lib/analytics";
+import { BUSINESS } from "@/lib/business";
 import { registrationAnalyticsContext } from "@/lib/registration-analytics";
 
 export function ContactForm() {
@@ -217,13 +218,13 @@ export function ContactForm() {
         <div className="grid gap-1.5 leading-none">
           <Label className="font-normal text-sm" htmlFor="smsOptIn">
             Yes, I agree to receive text messages from Taylored Instruction sent
-            from 360-685-8199.
+            from {BUSINESS.phone.display}.
           </Label>
           <p className="text-muted-foreground text-xs">
             Message frequency varies and may include appointment reminders or
             course information. Message and data rates may apply. Reply STOP at
-            any time to unsubscribe or HELP for assistance. Contact support at
-            360-685-8199. See our{" "}
+            any time to unsubscribe or HELP for assistance. Contact support at{" "}
+            {BUSINESS.phone.display}. See our{" "}
             <a className="text-blue-500" href="/privacy-policy">
               Privacy Policy
             </a>{" "}
@@ -331,9 +332,9 @@ export function ContactForm() {
       <p className="text-muted-foreground text-xs">
         By submitting this form, you agree that we may contact you by email or
         phone about your inquiry. We send text messages only if you check the
-        box above to receive text messages from Taylored Instruction sent from
-        360-685-8199. Message and data rates may apply. Reply STOP at any time
-        to unsubscribe or HELP for assistance.
+        box above to receive text messages from Taylored Instruction sent from{" "}
+        {BUSINESS.phone.display}. Message and data rates may apply. Reply STOP
+        at any time to unsubscribe or HELP for assistance.
       </p>
     </form>
   );

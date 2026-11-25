@@ -6,11 +6,10 @@ import {
   PrivateAwareAnalytics,
   PrivateAwareSpeedInsights,
 } from "@/components/registration/analytics";
+import { ACCREDITATION_PHRASE, ACCREDITATION_SHORT } from "@/lib/business";
 import {
   generateJSONLD,
   getOrganizationSchema,
-  getSLOLocalBusinessSchema,
-  getVancouverLocalBusinessSchema,
   getWebSiteSchema,
 } from "@/lib/structuredData";
 import { generateOgImageUrl, OG_IMAGE_SIZE } from "@/lib/utils";
@@ -19,15 +18,14 @@ import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
 const defaultOgImage = {
   url: generateOgImageUrl(
     "Professional CPR, BLS & Lifeguard Training",
-    "Red Cross & AHA certified"
+    ACCREDITATION_SHORT
   ),
   ...OG_IMAGE_SIZE,
   alt: "Professional CPR, BLS & Lifeguard Training | Taylored Instruction",
 };
 
 const siteTitle = "CPR & BLS Training in Vancouver WA | Taylored Instruction";
-const siteDescription =
-  "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified.";
+const siteDescription = `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}.`;
 
 const readexPro = Readex_Pro({
   subsets: ["latin"],
@@ -106,10 +104,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Generate structured data for all pages
   const organizationSchema = getOrganizationSchema();
-  const vancouverBusinessSchema = getVancouverLocalBusinessSchema();
-  const sloBusinessSchema = getSLOLocalBusinessSchema();
   const websiteSchema = getWebSiteSchema();
 
   return (
@@ -118,18 +113,6 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={generateJSONLD(organizationSchema)}
           key="organization-jsonld"
-          type="application/ld+json"
-        />
-
-        <script
-          dangerouslySetInnerHTML={generateJSONLD(vancouverBusinessSchema)}
-          key="vancouver-business-jsonld"
-          type="application/ld+json"
-        />
-
-        <script
-          dangerouslySetInnerHTML={generateJSONLD(sloBusinessSchema)}
-          key="slo-business-jsonld"
           type="application/ld+json"
         />
 

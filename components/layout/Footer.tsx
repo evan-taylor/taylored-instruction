@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { FiFacebook, FiInstagram } from "react-icons/fi";
-import { GOOGLE_BUSINESS_PROFILE_URL } from "@/lib/businessProfile";
+import { BUSINESS } from "@/lib/business";
 import {
   AHA_COURSE_LINKS,
   RED_CROSS_COURSE_LINKS,
@@ -110,23 +110,23 @@ export const Footer = () => {
               <li>
                 <a
                   className="transition-colors hover:text-primary"
-                  href="mailto:info@tayloredinstruction.com"
+                  href={`mailto:${BUSINESS.email}`}
                 >
-                  info@tayloredinstruction.com
+                  {BUSINESS.email}
                 </a>
               </li>
               <li>
                 <a
                   className="transition-colors hover:text-primary"
-                  href="tel:3606588199"
+                  href={BUSINESS.phone.href}
                 >
-                  (360) 658-8199
+                  {BUSINESS.phone.display}
                 </a>
               </li>
               <li>
                 <a
                   className="transition-colors hover:text-primary"
-                  href={GOOGLE_BUSINESS_PROFILE_URL}
+                  href={BUSINESS.googleBusinessProfileUrl}
                   rel="noopener noreferrer"
                   target="_blank"
                 >
@@ -145,7 +145,7 @@ export const Footer = () => {
               <a
                 aria-label="Facebook"
                 className="text-slate-500 transition-colors hover:text-primary"
-                href="https://www.facebook.com/tayloredinstruction.us"
+                href={BUSINESS.socials.facebook}
                 rel="noopener noreferrer"
                 target="_blank"
               >
@@ -154,7 +154,7 @@ export const Footer = () => {
               <a
                 aria-label="Instagram"
                 className="text-slate-500 transition-colors hover:text-primary"
-                href="https://www.instagram.com/taylored.instruction/"
+                href={BUSINESS.socials.instagram}
                 rel="noopener noreferrer"
                 target="_blank"
               >

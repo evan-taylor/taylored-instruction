@@ -4,6 +4,10 @@ import { cacheLife, cacheTag } from "next/cache";
 const revnuApiBase = "https://revnu.com/api/content/v1";
 const listPageLimit = 200;
 const rootRelativeHrefPattern = /href="(\/[^"/][^"#?]*)([^"]*)"/g;
+const hovnAnchorPattern =
+  /<a\s[^>]*href="https?:\/\/(?:[a-z0-9-]+\.)*hovn\.app[^"]*"[^>]*>/gi;
+const hovnHrefPattern = /href="[^"]*"/i;
+const externalLinkAttributePattern = /\s(?:target|rel)="[^"]*"/gi;
 
 export const REVNU_CACHE_TAG = "revnu";
 
@@ -163,11 +167,15 @@ export const getRevnuPostHref = (canonicalPath: string) =>
 
 export const rewriteRevnuBodyLinks = (html: string, postPaths: string[]) => {
   const knownPaths = new Set(postPaths);
-  return html.replace(
-    rootRelativeHrefPattern,
-    (match, path: string, suffix: string) =>
+  return html
+    .replace(rootRelativeHrefPattern, (match, path: string, suffix: string) =>
       knownPaths.has(path) ? `href="${getRevnuPostHref(path)}${suffix}"` : match
-  );
+    )
+    .replace(hovnAnchorPattern, (anchor) =>
+      anchor
+        .replace(hovnHrefPattern, 'href="/classes"')
+        .replace(externalLinkAttributePattern, "")
+    );
 };
 
 export const buildRevnuSitemap = (
