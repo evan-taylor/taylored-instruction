@@ -197,15 +197,22 @@ describe("Revnu rate limiting", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps at most four requests in flight", async () => {
+  it("keeps at most four requests in flight until their bodies are read", async () => {
     let inFlight = 0;
     let peak = 0;
-    const fetchMock = vi.fn(async () => {
+    const body = new TextEncoder().encode(JSON.stringify(postResponse("a")));
+    const fetchMock = vi.fn(() => {
       inFlight += 1;
       peak = Math.max(peak, inFlight);
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      inFlight -= 1;
-      return Response.json(postResponse("a"));
+      const stream = new ReadableStream({
+        async start(controller) {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          controller.enqueue(body);
+          inFlight -= 1;
+          controller.close();
+        },
+      });
+      return Promise.resolve(new Response(stream, { status: 200 }));
     });
     vi.stubGlobal("fetch", fetchMock);
 

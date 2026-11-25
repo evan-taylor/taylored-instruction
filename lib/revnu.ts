@@ -111,8 +111,31 @@ const getRetryAfterMs = (header: string | null) => {
   return Number.isNaN(retryAt) ? null : Math.max(0, retryAt - Date.now());
 };
 
-const getRetryDelayMs = (response: Response, attempt: number) =>
-  getRetryAfterMs(response.headers.get("Retry-After")) ??
+type RevnuResult = {
+  ok: boolean;
+  status: number;
+  retryAfter: string | null;
+  data: unknown;
+};
+
+const requestRevnu = (path: string, headers: Record<string, string>) =>
+  withRequestSlot(async (): Promise<RevnuResult> => {
+    const response = await fetch(`${revnuApiBase}${path}`, { headers });
+    const { ok, status } = response;
+    if (!ok) {
+      await response.body?.cancel();
+      return {
+        ok,
+        status,
+        retryAfter: response.headers.get("Retry-After"),
+        data: null,
+      };
+    }
+    return { ok, status, retryAfter: null, data: await response.json() };
+  });
+
+const getRetryDelayMs = (retryAfter: string | null, attempt: number) =>
+  getRetryAfterMs(retryAfter) ??
   Math.min(
     baseRetryDelayMs * 2 ** (attempt - 1) * (0.5 + Math.random() / 2),
     maxBackoffDelayMs
@@ -122,25 +145,22 @@ const sleep = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 // Retries 429 and 5xx responses with backoff, honoring Retry-After. Once the
-// attempts or the wait budget run out it returns the failed response, so
+// attempts or the wait budget run out it returns the failed result, so
 // callers still fail loudly instead of rendering an empty blog.
 const fetchRevnu = async (
   path: string,
   headers: Record<string, string>,
   attempt = 1,
   waitedMs = 0
-): Promise<Response> => {
-  const response = await withRequestSlot(() =>
-    fetch(`${revnuApiBase}${path}`, { headers })
-  );
-  if (!isRetryableStatus(response.status) || attempt >= maxAttempts) {
-    return response;
+): Promise<RevnuResult> => {
+  const result = await requestRevnu(path, headers);
+  if (!isRetryableStatus(result.status) || attempt >= maxAttempts) {
+    return result;
   }
-  const delayMs = getRetryDelayMs(response, attempt);
+  const delayMs = getRetryDelayMs(result.retryAfter, attempt);
   if (waitedMs + delayMs > maxTotalRetryWaitMs) {
-    return response;
+    return result;
   }
-  await response.body?.cancel();
   await sleep(delayMs);
   return fetchRevnu(path, headers, attempt + 1, waitedMs + delayMs);
 };
@@ -153,12 +173,11 @@ const fetchRevnuPostPages = async (
   if (cursor) {
     query.set("cursor", cursor);
   }
-  const response = await fetchRevnu(`/posts?${query}`, headers);
-  if (!response.ok) {
-    throw new Error(`Revnu post list request failed: ${response.status}`);
+  const result = await fetchRevnu(`/posts?${query}`, headers);
+  if (!result.ok) {
+    throw new Error(`Revnu post list request failed: ${result.status}`);
   }
-  const { posts, cursor: nextCursor } =
-    (await response.json()) as RevnuListResponse;
+  const { posts, cursor: nextCursor } = result.data as RevnuListResponse;
   return nextCursor
     ? [...posts, ...(await fetchRevnuPostPages(headers, nextCursor))]
     : posts;
@@ -177,17 +196,17 @@ export const fetchRevnuPost = async (
     return null;
   }
 
-  const response = await fetchRevnu(
+  const result = await fetchRevnu(
     `/posts/${encodeURIComponent(slug)}`,
     headers
   );
-  if (response.status === 404) {
+  if (result.status === 404) {
     return null;
   }
-  if (!response.ok) {
-    throw new Error(`Revnu post request failed: ${response.status}`);
+  if (!result.ok) {
+    throw new Error(`Revnu post request failed: ${result.status}`);
   }
-  return (await response.json()) as RevnuPostResponse;
+  return result.data as RevnuPostResponse;
 };
 
 export async function getRevnuPosts() {
