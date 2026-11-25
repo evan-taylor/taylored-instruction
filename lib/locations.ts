@@ -101,10 +101,10 @@ export const LOCATIONS: CityPage[] = [
     intro: [
       "The office is at CoLab Coworking, 915 Broadway Street in downtown Vancouver, a few blocks from Esther Short Park. Evan started Taylored Instruction in 2023, and Vancouver has been home base since. Call (360) 685-8199 between 9 AM and 7 PM any day of the week if you're not sure which course you need.",
       "Every course ends in a national certification. Taylored Instruction is an American Red Cross Licensed Training Provider, an American Heart Association Training Site through the Resuscitation Group, and an HSI Training Center. Evan is AHA Training Faculty and a Red Cross Instructor Trainer for Lifeguarding, Water Safety Instructor and First Aid/CPR/AED. He trains new instructors as well as teaching classes.",
-      "Public classes meet at venues around Vancouver. Water courses such as lifeguarding and instructor classes use pools, including the Clark County Family YMCA on NE 51st Circle in east Vancouver. Every date in the schedule below lists its venue and address, so check where your class meets before you register. Classes are kept small, which means more time on the manikins and less time waiting. Cards are valid for two years and you get your eCard the same day you pass.",
+      "Public classes meet at local partner pools and facilities around Vancouver, wherever there's space for the course. Lifeguarding and other water courses need a pool, while CPR and first aid need a room big enough for manikins. Every date in the schedule below shows its exact location, so check where your class meets before you register. Classes are kept small, which means more time on the manikins and less time waiting. Cards are valid for two years and you get your eCard the same day you pass.",
       "AHA BLS is the usual course for healthcare workers renewing before a license or job deadline. Students in nursing and dental programs at Clark College and WSU Vancouver usually need BLS before clinical placements too, so check which card your program asks for. Teachers, coaches and child care staff tend to take Red Cross First Aid/CPR/AED or AHA Heartsaver, since DCYF-licensed child care programs need staff with current pediatric first aid and CPR. Red Cross Lifeguarding is the course to take before summer pool hiring, and teenagers can start once they meet the age requirement on the Lifeguarding page.",
       "Employers are the other half of the work. Washington's Department of Labor & Industries requires first-aid trained staff to be available at work (WAC 296-800-150), and many Clark County employers would rather train the whole team at once than send people to public classes one at a time. Evan teaches on-site at offices, warehouses, clinics, dental practices, schools and pools, and brings the manikins, AED trainers and first aid supplies. You pick the course and the date, and everyone leaves with their card.",
-      "Downtown, Hazel Dell, Salmon Creek, Orchards, Felida and Fishers Landing are all a short drive from Vancouver class venues. Battle Ground, Ridgefield, La Center, Camas and Washougal are close too, and Portland is just across the Columbia. Group training is available anywhere in Clark County. For any class, bring a photo ID and wear clothes you can kneel in.",
+      "Downtown, Hazel Dell, Salmon Creek, Orchards, Felida and Fishers Landing are all a short drive from classes in Vancouver. Battle Ground, Ridgefield, La Center, Camas and Washougal are close too, and Portland is just across the Columbia. Group training is available anywhere in Clark County. For any class, bring a photo ID and wear clothes you can kneel in.",
     ],
     sessionCities: ["Vancouver"],
     nearby: ["camas-wa"],
@@ -132,7 +132,7 @@ export const LOCATIONS: CityPage[] = [
       {
         question: "Where are CPR classes held in Vancouver, WA?",
         answer:
-          "Taylored Instruction's office is at CoLab Coworking, 915 Broadway St, Suite 100, Vancouver, WA 98660. Public classes meet at venues around Vancouver, and pool courses meet at pools such as the Clark County Family YMCA. Each date on the schedule lists its exact address.",
+          "Taylored Instruction's office is at CoLab Coworking, 915 Broadway St, Suite 100, Vancouver, WA 98660. Public classes meet at local partner pools and facilities around Vancouver. Each date on the schedule shows its exact location.",
       },
       {
         question: "Can I take AHA BLS in Vancouver?",
@@ -167,12 +167,12 @@ export const LOCATIONS: CityPage[] = [
     heading: "CPR and first aid training for Portland, OR",
     lede: "Taylored Instruction is based in Vancouver, Washington, across the Columbia River from Portland. Portland students either drive over for a public class or book a group class at their own workplace.",
     intro: [
-      "Public classes are scheduled in Clark County, Washington. Downtown Vancouver is a short drive from North and Northeast Portland over the I-5 Interstate Bridge, and east Clark County venues are easy to reach from the airport area on I-205. If a Portland date is ever posted, it shows up in the list on this page first. Otherwise you'll see the closest Clark County classes.",
+      "Public classes are scheduled in Clark County, Washington. Downtown Vancouver is a short drive from North and Northeast Portland over the I-5 Interstate Bridge, and east Clark County is easy to reach from the airport area on I-205. If a Portland date is ever posted, it shows up in the list on this page first. Otherwise you'll see the closest Clark County classes.",
       "The state line doesn't change your card. American Heart Association and American Red Cross certifications are national, so a card from a Vancouver class is the same card you would get in Oregon. Taylored Instruction is a Red Cross Licensed Training Provider, an AHA Training Site through the Resuscitation Group, and an HSI Training Center, and every course ends with a same-day eCard that is valid for two years.",
       "Portland-area hospitals and clinics usually ask clinical staff for AHA BLS. Nurses, medical assistants, dental teams and EMTs can take the full in-person class or do HeartCode BLS online and then attend a shorter skills session. If your employer specifically wants a Red Cross card, the Red Cross Basic Life Support course covers the same skills.",
       "Outside healthcare, the rules that send people to a CPR class are Oregon rules. Oregon OSHA expects workplaces to have first-aid trained people available when medical help isn't close by (OAR 437-002-0161), and child care providers licensed through Oregon's Department of Early Learning and Care need current infant and child CPR and first aid. Red Cross Adult and Pediatric First Aid/CPR/AED and AHA Heartsaver both cover those needs. Check with your licensing specialist or safety lead if you're unsure which one they accept.",
       "For a team, on-site training is usually easier than a trip across the river. Evan teaches at offices, clinics, dental practices, schools, gyms and pools in Portland, Beaverton, Gresham, Lake Oswego and the rest of the metro area, and brings the manikins, AED trainers and supplies. Groups choose the course and the date, classes stay small enough for real practice, and everyone gets their card the same day.",
-      "Lifeguard candidates cross the river too. Red Cross Lifeguarding needs a pool, so those classes meet at Clark County pool venues listed in the schedule. If you're hiring lifeguards for a Portland-area pool, ask about a private class at your facility.",
+      "Lifeguard candidates cross the river too. Red Cross Lifeguarding needs a pool, so those classes meet at local partner pools, and each date in the schedule shows where. If you're hiring lifeguards for a Portland-area pool, ask about a private class at your facility.",
       "Plan for the bridges when you book. Rush-hour traffic on the Interstate Bridge and the Glenn Jackson Bridge can add half an hour, so leave early for a morning class. Bring a photo ID and wear clothes you can kneel in. HeartCode BLS students also need the certificate from the online part.",
     ],
     sessionCities: [
@@ -242,13 +242,13 @@ export const LOCATIONS: CityPage[] = [
     description:
       "Red Cross lifeguarding, CPR and first aid classes in Camas, WA, plus on-site training for Camas and Washougal schools, gyms and employers.",
     heading: "Lifeguard, CPR and first aid classes in Camas, WA",
-    lede: "Camas is one of the places Taylored Instruction runs pool classes. Lifeguarding courses meet at the Gold's Gym Camas pool, about 20 minutes east of downtown Vancouver on SR-14.",
+    lede: "Camas sits about 20 minutes east of downtown Vancouver on SR-14, and Taylored Instruction runs lifeguarding, CPR and first aid classes for Camas and Washougal at local partner pools and facilities.",
     intro: [
-      "Gold's Gym Camas, at 2950 NW 38th Avenue, has the pool space a lifeguarding class needs. Red Cross Lifeguarding is a mix of pool and classroom work, so the venue matters more than for a CPR class. Each date in the schedule below lists its venue and address, so you can see which ones meet in Camas and which meet in Vancouver.",
+      "Public classes are held at local partner pools and facilities that have room for the course, in Camas when space is available and otherwise nearby in Vancouver. Red Cross Lifeguarding is a mix of pool and classroom work, so where it meets matters more than for a CPR class. Each date in the schedule below shows its exact location, so you can see which ones meet in Camas and which meet in Vancouver.",
       "Lifeguard certification is the main reason people come to a class in Camas. Students have to pass a swim skills test on the first day, then learn surveillance, water rescues, CPR/AED for Professional Rescuers and First Aid. The Lifeguarding page lists the prerequisites. Pools across east Clark County hire lifeguards ahead of summer, so book a spring class early. If you swim well and want to teach, the Red Cross Water Safety Instructor course certifies you to teach swim lessons, which local pools also need.",
       "Families in Camas and Washougal spend a lot of summer time around water, from Lacamas Lake and Round Lake to the Columbia River beaches along SR-14. That is a good reason for parents, babysitters and coaches to take a first aid and CPR class even when no job requires it. Red Cross Adult and Pediatric First Aid/CPR/AED covers adults, children and infants in one class.",
       "Schools and employers in Camas and Washougal can book a class on-site. Washington's Department of Labor & Industries requires first-aid trained staff to be available at work (WAC 296-800-150), and coaches, teachers and child care staff are often asked to keep CPR current. Evan brings the manikins, AED trainers and supplies to your building, so a team can train together without driving into Vancouver. Healthcare and dental teams can book AHA BLS the same way.",
-      "For a lifeguarding class, bring a swimsuit, towel and goggles, and arrive rested, since the swim test comes first. For CPR and first aid, bring a photo ID and wear clothes you can kneel in. Students from Fishers Landing and east Vancouver often find the Camas pool closer than a downtown venue, so check both when you compare dates.",
+      "For a lifeguarding class, bring a swimsuit, towel and goggles, and arrive rested, since the swim test comes first. For CPR and first aid, bring a photo ID and wear clothes you can kneel in. If you live in Fishers Landing or east Vancouver, a Camas date may be closer than one downtown, so check the location on each when you compare dates.",
       "Every course is certified through the American Red Cross, the American Heart Association or HSI. Classes are small, eCards arrive the same day you pass, and cards are valid for two years. Price and length depend on the course, so check the schedule for the current details. Taylored Instruction's office is in downtown Vancouver, and you can call (360) 685-8199 from 9 AM to 7 PM any day with questions.",
     ],
     sessionCities: ["Camas", "Washougal"],
@@ -266,7 +266,7 @@ export const LOCATIONS: CityPage[] = [
       {
         question: "Where are lifeguard classes held in Camas?",
         answer:
-          "Red Cross Lifeguarding classes in Camas meet at the Gold's Gym Camas pool, 2950 NW 38th Ave, Camas, WA 98607. Each class date lists its venue, since some lifeguarding classes meet at pools in Vancouver instead.",
+          "Lifeguarding classes meet at local partner pools in Camas and nearby Vancouver, wherever pool space is available. Each class date on the schedule shows its exact location.",
       },
       {
         question: "What do I need to pass to start lifeguard training?",
@@ -347,7 +347,7 @@ export const LOCATIONS: CityPage[] = [
       {
         question: "Do you offer lifeguard certification in San Luis Obispo?",
         answer:
-          "Yes. Red Cross Lifeguarding and Water Safety Instructor courses are taught on the Central Coast when a pool venue is booked. Pools and camps can also book a private class at their own facility.",
+          "Yes. Red Cross Lifeguarding and Water Safety Instructor courses are taught on the Central Coast when a local partner pool has space. Pools and camps can also book a private class at their own facility.",
       },
       {
         question: "Can you teach a private class for our group in SLO County?",
@@ -374,7 +374,7 @@ export const findLocation = (slug: string) =>
 type Meeting = { start: number; location: string };
 
 /**
- * "Clark County Family YMCA: 11324 NE 51st Cir, Vancouver, WA 98682" → Vancouver, WA.
+ * "Community Pool: 100 Main St, Vancouver, WA 98660" → Vancouver, WA.
  * A venue entered as a bare address has no name prefix, so it is parsed whole.
  */
 export function sessionPlace(meetings: Meeting[]) {
