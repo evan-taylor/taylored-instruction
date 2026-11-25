@@ -17,7 +17,10 @@ import { type ActionCtx, internalAction } from "./_generated/server";
 import { legacyOwners, stripeCustomerFor } from "./registrationCustomers";
 
 const PAGE = 25;
-/** Stop early enough to return a cursor before Convex's 10-minute action limit. */
+/**
+ * Stop starting purchasers, and stop waiting out 429s, early enough to return
+ * a cursor before Convex's 10-minute action limit.
+ */
 const BUDGET_MS = 8 * 60_000;
 const NETWORK_RETRIES = 3;
 /** Stripe's live Search limit is about 20 requests a second, shared with checkout traffic. */
@@ -230,6 +233,7 @@ export const run = internalAction({
       throw new ConvexError("limit must be a positive whole number");
     }
     const live = registrationIsLive();
+    const deadline = Date.now() + BUDGET_MS;
     const client = new Stripe(registrationStripeKey(), {
       apiVersion: "2026-09-30.endive",
       maxNetworkRetries: NETWORK_RETRIES,
@@ -238,6 +242,7 @@ export const run = internalAction({
         baseMs: RATE_LIMIT_BASE_MS,
         maxMs: RATE_LIMIT_MAX_MS,
         searchIntervalMs: SEARCH_INTERVAL_MS,
+        deadline,
       }),
     });
     const tally: Tally = {
@@ -254,7 +259,7 @@ export const run = internalAction({
         client,
         live,
         dryRun: args.dryRun,
-        deadline: Date.now() + BUDGET_MS,
+        deadline,
         limit: args.limit ?? Number.POSITIVE_INFINITY,
         seen: new Set(),
         tally,
