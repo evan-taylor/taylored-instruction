@@ -5,6 +5,7 @@ import { cacheLife } from "next/cache";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button"; // Import the Button component
 import { ChamberBadge } from "@/components/ui/ChamberBadge";
+import { BUSINESS } from "@/lib/business";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -144,20 +145,25 @@ export default async function AboutPage() {
                     Evan Taylor
                   </h3>
                   <p className="mb-3 text-text-light">
-                    Owner, Instructor Trainer
+                    {BUSINESS.founder.jobTitle}
                   </p>
+                  <ul className="mx-auto mb-4 max-w-sm space-y-1 text-sm text-text-light">
+                    {BUSINESS.founder.credentials.map((credential) => (
+                      <li key={credential.name}>{credential.name}</li>
+                    ))}
+                  </ul>
                   <div className="flex justify-center space-x-4">
                     <a
-                      aria-label="Email Evan Taylor"
+                      aria-label="Email Taylored Instruction"
                       className="text-slate-500 transition-colors duration-200 hover:text-primary"
-                      href="mailto:evan@tayloredinstruction.com"
+                      href={`mailto:${BUSINESS.email}`}
                     >
                       <Mail size={20} />
                     </a>
                     <a
-                      aria-label="Call Evan Taylor"
+                      aria-label="Call Taylored Instruction"
                       className="text-slate-500 transition-colors duration-200 hover:text-primary"
-                      href="tel:3606858199"
+                      href={BUSINESS.phone.href}
                     >
                       <Phone size={20} />
                     </a>

@@ -179,6 +179,25 @@ describe("Revnu body links", () => {
       ].join("")
     );
   });
+
+  it("points legacy hovn.app booking links at the class schedule", () => {
+    const html = [
+      '<a href="https://www.hovn.app/tayloredinstruction" target="_blank" rel="nofollow noreferrer noopener" class="font-medium">Register</a>',
+      '<a href="https://hovn.app/tayloredinstruction/locations">Locations</a>',
+      '<a href="https://example.com/hovn.app">unrelated</a>',
+    ].join("");
+
+    const rewritten = rewriteRevnuBodyLinks(html, []);
+
+    expect(rewritten).toBe(
+      [
+        '<a href="/classes" class="font-medium">Register</a>',
+        '<a href="/classes">Locations</a>',
+        '<a href="https://example.com/hovn.app">unrelated</a>',
+      ].join("")
+    );
+    expect(rewritten).not.toContain('"https://www.hovn.app');
+  });
 });
 
 describe("Revnu sitemap", () => {

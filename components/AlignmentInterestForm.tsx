@@ -11,6 +11,7 @@ import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { trackVisitorsEvent } from "@/lib/analytics";
+import { BUSINESS } from "@/lib/business";
 
 const AlignmentInterestForm: React.FC = () => {
   const posthog = usePostHog();
@@ -355,13 +356,13 @@ const AlignmentInterestForm: React.FC = () => {
             htmlFor="smsOptIn"
           >
             Yes, I agree to receive text messages from Taylored Instruction sent
-            from 360-685-8199.
+            from {BUSINESS.phone.display}.
           </Label>
           <p className="text-slate-500 text-xs">
             Message frequency varies and may include appointment reminders or
             course information. Message and data rates may apply. Reply STOP at
-            any time to unsubscribe or HELP for assistance. Contact support at
-            360-685-8199. Please review our{" "}
+            any time to unsubscribe or HELP for assistance. Contact support at{" "}
+            {BUSINESS.phone.display}. Please review our{" "}
             <a
               className="text-primary hover:underline"
               href="/privacy-policy"

@@ -6,11 +6,10 @@ import {
   PrivateAwareAnalytics,
   PrivateAwareSpeedInsights,
 } from "@/components/registration/analytics";
+import { ACCREDITATION_PHRASE, ACCREDITATION_SHORT } from "@/lib/business";
 import {
   generateJSONLD,
   getOrganizationSchema,
-  getSLOLocalBusinessSchema,
-  getVancouverLocalBusinessSchema,
   getWebSiteSchema,
 } from "@/lib/structuredData";
 import { generateOgImageUrl, OG_IMAGE_SIZE } from "@/lib/utils";
@@ -19,7 +18,7 @@ import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
 const defaultOgImage = {
   url: generateOgImageUrl(
     "Professional CPR, BLS & Lifeguard Training",
-    "Red Cross & AHA certified"
+    ACCREDITATION_SHORT
   ),
   ...OG_IMAGE_SIZE,
   alt: "Professional CPR, BLS & Lifeguard Training | Taylored Instruction",
@@ -49,8 +48,7 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://tayloredinstruction.com"),
   title:
     "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
-  description:
-    "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified. Serving Clark County, Portland metro, and SLO County.",
+  description: `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}. Serving Clark County, Portland metro, and SLO County.`,
   keywords: [
     "CPR training Vancouver WA",
     "BLS certification Vancouver WA",
@@ -82,16 +80,14 @@ export const metadata: Metadata = {
     siteName: "Taylored Instruction",
     title:
       "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
-    description:
-      "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified. Serving Clark County, Portland metro, and SLO County.",
+    description: `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}. Serving Clark County, Portland metro, and SLO County.`,
     images: [defaultOgImage],
   },
   twitter: {
     card: "summary_large_image",
     title:
       "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
-    description:
-      "Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. American Red Cross & AHA certified.",
+    description: `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}.`,
     images: [defaultOgImage],
   },
   robots: {
@@ -122,10 +118,7 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Generate structured data for all pages
   const organizationSchema = getOrganizationSchema();
-  const vancouverBusinessSchema = getVancouverLocalBusinessSchema();
-  const sloBusinessSchema = getSLOLocalBusinessSchema();
   const websiteSchema = getWebSiteSchema();
 
   return (
@@ -134,18 +127,6 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={generateJSONLD(organizationSchema)}
           key="organization-jsonld"
-          type="application/ld+json"
-        />
-
-        <script
-          dangerouslySetInnerHTML={generateJSONLD(vancouverBusinessSchema)}
-          key="vancouver-business-jsonld"
-          type="application/ld+json"
-        />
-
-        <script
-          dangerouslySetInnerHTML={generateJSONLD(sloBusinessSchema)}
-          key="slo-business-jsonld"
           type="application/ld+json"
         />
 

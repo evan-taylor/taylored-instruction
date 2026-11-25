@@ -8,6 +8,7 @@ export default defineConfig({
     include: [
       "tests/blog/**/*.test.{ts,tsx}",
       "tests/registration/**/*.test.{ts,tsx}",
+      "tests/seo/**/*.test.{ts,tsx}",
     ],
     server: { deps: { inline: ["convex-test"] } },
   },

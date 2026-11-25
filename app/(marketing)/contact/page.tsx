@@ -1,22 +1,23 @@
 "use cache";
 
-import { Mail, Phone } from "lucide-react";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
 import { cacheLife } from "next/cache";
 import Image from "next/image";
 import Link from "next/link";
 import { ContactForm } from "@/components/ContactForm"; // Placeholder for the form component
+import { BUSINESS, formatBusinessAddress } from "@/lib/business";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
   getBreadcrumbSchema,
   getContactPageSchema,
+  getLocalBusinessSchema,
   getServiceSchema,
 } from "@/lib/structuredData";
 
 const pageTitle =
   "Contact Taylored Instruction | CPR, BLS, First Aid & Lifeguard Training";
-const pageDescription =
-  "Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver WA and San Luis Obispo CA. Call (360) 685-8199.";
+const pageDescription = `Contact Taylored Instruction for CPR, BLS, First Aid, Lifeguard, and AED training in Vancouver WA and San Luis Obispo CA. Call ${BUSINESS.phone.display}.`;
 
 // --- Page Metadata ---
 export const metadata = buildPageMetadata({
@@ -78,6 +79,10 @@ export default async function ContactPage() {
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
         type="application/ld+json"
       />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(getLocalBusinessSchema())}
+        type="application/ld+json"
+      />
       {/* Hero Section with Background Image */}
       <section className="relative flex min-h-[400px] items-center justify-center md:min-h-[500px]">
         <div className="absolute inset-0 h-full w-full overflow-hidden">
@@ -135,24 +140,42 @@ export default async function ContactPage() {
                   Evan Taylor
                 </h3>
                 <p className="mb-4 text-text-light">
-                  Owner, Instructor Trainer
+                  {BUSINESS.founder.jobTitle}
                 </p>
 
                 <div className="space-y-3 text-left text-text-light">
                   <p className="flex items-center justify-center">
                     <Phone className="mr-2 text-primary" />
-                    <a className="hover:text-primary" href="tel:3606858199">
-                      (360) 685-8199
+                    <a
+                      className="hover:text-primary"
+                      href={BUSINESS.phone.href}
+                    >
+                      {BUSINESS.phone.display}
                     </a>
                   </p>
                   <p className="flex items-center justify-center">
                     <Mail className="mr-2 text-primary" />
                     <a
                       className="break-all hover:text-primary"
-                      href="mailto:evan@tayloredinstruction.com"
+                      href={`mailto:${BUSINESS.email}`}
                     >
-                      evan@tayloredinstruction.com
+                      {BUSINESS.email}
                     </a>
+                  </p>
+                  <p className="flex items-center justify-center">
+                    <MapPin className="mr-2 shrink-0 text-primary" />
+                    <a
+                      className="hover:text-primary"
+                      href={BUSINESS.googleBusinessProfileUrl}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      {formatBusinessAddress()}
+                    </a>
+                  </p>
+                  <p className="flex items-center justify-center">
+                    <Clock className="mr-2 shrink-0 text-primary" />
+                    {BUSINESS.hours.display}
                   </p>
                 </div>
 
