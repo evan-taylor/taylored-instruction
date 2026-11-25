@@ -13,10 +13,9 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Taylored Instruction | CPR, BLS, First Aid & Lifeguard Training in Vancouver WA & San Luis Obispo CA";
+const pageTitle = "CPR & BLS Training in Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "Get certified in CPR, BLS, First Aid, and Lifeguarding with American Red Cross and AHA courses in Vancouver WA, Clark County, Portland metro, and San Luis Obispo County.";
+  "Get certified in CPR, BLS, First Aid, and Lifeguarding with American Red Cross and AHA courses in Vancouver WA, Clark County, and San Luis Obispo County.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,

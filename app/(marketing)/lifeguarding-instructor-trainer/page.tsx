@@ -10,16 +10,14 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "Red Cross Lifeguarding Instructor Trainer | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "Red Cross Lifeguarding Instructor Trainer | Vancouver WA";
 const pageDescription =
-  "On-site Red Cross Lifeguarding Instructor Trainer services for aquatic facilities, schools, and organizations in Vancouver WA, Portland metro, and San Luis Obispo County.";
+  "On-site Red Cross Lifeguarding Instructor Trainer services for aquatic facilities, schools, and organizations in Vancouver WA and San Luis Obispo County.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,
   description: pageDescription,
   path: "/lifeguarding-instructor-trainer",
-  ogType: "article",
   keywords: [
     "lifeguarding instructor trainer",
     "Red Cross instructor trainer",

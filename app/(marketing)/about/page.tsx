@@ -14,8 +14,7 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "About Taylored Instruction | CPR, BLS & Lifeguard Training in Vancouver WA & San Luis Obispo CA";
+const pageTitle = "About Us | CPR & Lifeguard Training | Taylored Instruction";
 const pageDescription =
   "Meet Evan Taylor and learn how Taylored Instruction delivers Red Cross and AHA safety training, including CPR, BLS, First Aid, and Lifeguard courses.";
 

@@ -24,6 +24,9 @@ const defaultOgImage = {
   alt: "Professional CPR, BLS & Lifeguard Training | Taylored Instruction",
 };
 
+const siteTitle = "CPR & BLS Training in Vancouver WA | Taylored Instruction";
+const siteDescription = `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}.`;
+
 const readexPro = Readex_Pro({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -46,23 +49,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://tayloredinstruction.com"),
-  title:
-    "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
-  description: `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}. Serving Clark County, Portland metro, and SLO County.`,
-  keywords: [
-    "CPR training Vancouver WA",
-    "BLS certification Vancouver WA",
-    "First aid training Vancouver WA",
-    "Lifeguard certification Vancouver WA",
-    "CPR classes San Luis Obispo CA",
-    "AHA training Vancouver WA",
-    "Red Cross training Vancouver WA",
-    "CPR training Clark County",
-    "CPR certification San Luis Obispo",
-    "Corporate CPR training Vancouver",
-    "Healthcare CPR certification",
-    "AED sales Vancouver WA",
-  ],
+  title: siteTitle,
+  description: siteDescription,
   authors: [
     { name: "Evan Taylor", url: "https://tayloredinstruction.com/about" },
   ],
@@ -78,16 +66,14 @@ export const metadata: Metadata = {
     locale: "en_US",
     url: "https://tayloredinstruction.com",
     siteName: "Taylored Instruction",
-    title:
-      "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
-    description: `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}. Serving Clark County, Portland metro, and SLO County.`,
+    title: siteTitle,
+    description: siteDescription,
     images: [defaultOgImage],
   },
   twitter: {
     card: "summary_large_image",
-    title:
-      "Taylored Instruction | BLS/CPR Training in Vancouver WA & San Luis Obispo CA",
-    description: `Professional CPR, BLS, First Aid & Lifeguard training in Vancouver WA and San Luis Obispo CA. ${ACCREDITATION_PHRASE}.`,
+    title: siteTitle,
+    description: siteDescription,
     images: [defaultOgImage],
   },
   robots: {

@@ -12,10 +12,9 @@ import {
   getWebPageSchema,
 } from "@/lib/structuredData";
 
-const pageTitle =
-  "AED Sales & Distribution | Vancouver WA & San Luis Obispo CA";
+const pageTitle = "AED Sales & Support in Vancouver WA | Taylored Instruction";
 const pageDescription =
-  "Buy Automated External Defibrillators (AEDs) in Vancouver WA and San Luis Obispo CA with product guidance, training integration, and implementation support.";
+  "Buy AEDs in Vancouver WA and San Luis Obispo CA with product guidance, training integration, and implementation support.";
 
 export const metadata = buildPageMetadata({
   title: pageTitle,

@@ -91,10 +91,13 @@ describe("blog path status", () => {
 
 describe("llms.txt", () => {
   it("lists every Revnu article, newest first", () => {
-    const text = buildLlmsTxt([
-      revnuSummary("older", Date.UTC(2026, 0, 1)),
-      revnuSummary("fresh", Date.UTC(2026, 0, 2)),
-    ]);
+    const text = buildLlmsTxt(
+      [
+        revnuSummary("older", Date.UTC(2026, 0, 1)),
+        revnuSummary("fresh", Date.UTC(2026, 0, 2)),
+      ],
+      []
+    );
 
     const articles = text.split("## Articles\n\n")[1]?.trim().split("\n");
     expect(text.startsWith("# Taylored Instruction\n")).toBe(true);
@@ -102,5 +105,38 @@ describe("llms.txt", () => {
       "- [Revnu fresh](https://tayloredinstruction.com/blog/fresh): About fresh",
       "- [Revnu older](https://tayloredinstruction.com/blog/older): About older",
     ]);
+  });
+
+  it("lists service pages and catalog courses with a one-line summary", () => {
+    const text = buildLlmsTxt(
+      [],
+      [
+        {
+          slug: "bls-provider",
+          title: "BLS Provider",
+          description: "Hands-on BLS skills.\nSecond   sentence here.",
+        },
+        {
+          slug: "lifeguarding-blended",
+          title: "Lifeguarding",
+          description: "",
+        },
+      ]
+    );
+
+    const courses = text
+      .split("## Courses\n\n")[1]
+      ?.split("\n\n")[0]
+      ?.split("\n");
+    expect(courses).toContain(
+      "- [AHA BLS Certification](https://tayloredinstruction.com/bls): American Heart Association BLS certification for healthcare professionals, with in-person and blended options."
+    );
+    expect(courses).toContain(
+      "- [BLS Provider](https://tayloredinstruction.com/courses/bls-provider): Hands-on BLS skills."
+    );
+    expect(courses).toContain(
+      "- [Lifeguarding](https://tayloredinstruction.com/courses/lifeguarding-blended)"
+    );
+    expect(text).toContain("## Facts\n");
   });
 });
