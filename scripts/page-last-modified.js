@@ -105,15 +105,11 @@ const lastCommit = (files, shallowBoundary) => {
   return hash && date && !shallowBoundary.has(hash) ? date : null;
 };
 
-/**
- * Last git commit date of each marketing page's content, keyed by route.
- * Pages without a trustworthy date are left out.
- */
-const readPageLastModified = () => {
+/** Source files that make up each marketing page's content, keyed by route. */
+const readPageContentFiles = () => {
   if (!existsSync(marketingDir)) {
     return {};
   }
-  const shallowBoundary = readShallowBoundary();
   const pages = [["/", marketingDir, [path.join(marketingDir, "page.tsx")]]];
   for (const entry of readdirSync(marketingDir, { withFileTypes: true })) {
     const pageDir = path.join(marketingDir, entry.name);
@@ -130,12 +126,24 @@ const readPageLastModified = () => {
     }
   }
 
-  const lastModified = {};
+  const contentFiles = {};
   for (const [route, pageDir, entryFiles] of pages) {
-    const files = collectContentFiles(
+    contentFiles[route] = collectContentFiles(
       route === "/" ? path.join(marketingDir, "page.tsx") : pageDir,
       entryFiles
     );
+  }
+  return contentFiles;
+};
+
+/**
+ * Last git commit date of each marketing page's content, keyed by route.
+ * Pages without a trustworthy date are left out.
+ */
+const readPageLastModified = () => {
+  const shallowBoundary = readShallowBoundary();
+  const lastModified = {};
+  for (const [route, files] of Object.entries(readPageContentFiles())) {
     const date = lastCommit(files, shallowBoundary);
     if (date) {
       lastModified[route] = date;
@@ -144,4 +152,4 @@ const readPageLastModified = () => {
   return lastModified;
 };
 
-module.exports = { readPageLastModified };
+module.exports = { readPageContentFiles, readPageLastModified };

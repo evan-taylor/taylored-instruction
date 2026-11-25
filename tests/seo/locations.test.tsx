@@ -9,7 +9,7 @@ import {
   sessionsIn,
 } from "@/lib/locations";
 import nextConfig from "@/next.config.js";
-import { readPageLastModified } from "@/scripts/page-last-modified.js";
+import { readPageContentFiles } from "@/scripts/page-last-modified.js";
 
 const WORD = /\S+/gu;
 const EM_DASH = /\u2014/u;
@@ -88,9 +88,14 @@ describe("city landing pages", () => {
     expect(codes("san-luis-obispo-ca")).toEqual([]);
   });
 
-  it("dates city pages by their config file in the sitemap", () => {
-    const dates: Record<string, string> = readPageLastModified();
-    expect(dates["/cpr-classes"]).toBeTruthy();
+  it("dates city pages by their route, components and config file", () => {
+    const files: Record<string, string[]> = readPageContentFiles();
+    expect(files["/cpr-classes"]).toEqual(
+      expect.arrayContaining([
+        "lib/locations.ts",
+        "components/locations/CityLandingPage.tsx",
+      ])
+    );
   });
 
   it("only points nearby fallbacks at real city pages", () => {
