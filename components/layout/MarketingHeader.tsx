@@ -7,6 +7,11 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { isAdminEmail } from "@/lib/admin";
+import {
+  AHA_COURSE_LINKS,
+  RED_CROSS_COURSE_LINKS,
+  TRAINING_SERVICE_LINKS,
+} from "@/lib/service-links";
 import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
 import { WorkspaceMenu } from "./workspace-menu";
@@ -14,6 +19,10 @@ import { WorkspaceMenu } from "./workspace-menu";
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
 const REGISTER_URL = "/classes";
 const REGISTER_EXTERNAL = EXTERNAL_LINK_REGEX.test(REGISTER_URL);
+const NON_ID_CHARS = /[^a-z0-9]+/g;
+
+const dropdownId = (prefix: string, label: string) =>
+  `${prefix}-${label.toLowerCase().replace(NON_ID_CHARS, "-")}`;
 
 // --- Type Definitions ---
 type NavLinkItem = {
@@ -78,51 +87,23 @@ const generateNavLinks = (
   {
     label: "Classes",
     dropdown: [
-      {
-        label: "Register for classes",
-        href: "/classes",
-      },
+      ...TRAINING_SERVICE_LINKS.filter((link) => link.href !== "/aeds"),
       {
         type: "divider",
         label: "American Heart Association courses",
       },
-      { label: "BLS", href: "/bls", indent: true },
-      { label: "Heartsaver", href: "/heartsaver", indent: true },
-      {
-        label: "Instructor training",
-        href: "/aha-instructor-training",
-        indent: true,
-      },
+      ...AHA_COURSE_LINKS.map((link) => ({ ...link, indent: true })),
       {
         type: "divider",
         label: "American Red Cross courses",
       },
-      {
-        label: "Adult and Pediatric First Aid/CPR/AED",
-        href: "/first-aid-cpr-aed",
-        indent: true,
-      },
-      { label: "Lifeguarding", href: "/lifeguarding", indent: true },
-      {
-        label: "Lifeguarding instructor",
-        href: "/lifeguarding-instructor",
-        indent: true,
-      },
-      {
-        label: "Water Safety Instructor",
-        href: "/water-safety-instructor",
-        indent: true,
-      },
-      {
-        label: "First Aid/CPR/AED instructor",
-        href: "/fa-cpr-aed-instructor",
-        indent: true,
-      },
+      ...RED_CROSS_COURSE_LINKS.map((link) => ({ ...link, indent: true })),
     ],
   },
   {
     label: "Products",
     dropdown: [
+      { label: "AED sales", href: "/aeds" },
       {
         label: "Shop all products",
         href: "https://shop.tayloredinstruction.com/",
@@ -361,6 +342,7 @@ const NavMenu = ({
     if (link.dropdown) {
       return (
         <button
+          aria-controls={dropdownId("nav", link.label)}
           aria-expanded={activeDropdown === link.label}
           className={`flex items-center text-text transition-colors duration-200 hover:text-primary ${
             activeDropdown === link.label ||
@@ -397,13 +379,17 @@ const NavMenu = ({
         <div className="relative" key={link.label}>
           {renderNavLink(link)}
 
-          {activeDropdown === link.label && link.dropdown && (
-            <div className="absolute left-0 z-20 mt-2 w-56 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden">
+          {link.dropdown ? (
+            <div
+              className="absolute left-0 z-20 mt-2 w-64 origin-top-left rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden"
+              hidden={activeDropdown !== link.label}
+              id={dropdownId("nav", link.label)}
+            >
               {link.dropdown.map((item) =>
                 renderDropdownItem(item, () => toggleDropdown(link.label))
               )}
             </div>
-          )}
+          ) : null}
         </div>
       ))}
     </>
@@ -479,6 +465,7 @@ const MobileNavMenu = ({
       return (
         <>
           <button
+            aria-controls={dropdownId("mobile-nav", link.label)}
             aria-expanded={openMobileDropdown === link.label}
             className="flex w-full items-center justify-between py-2 text-left text-text transition-colors duration-200 hover:text-primary"
             onClick={() => toggleMobileDropdown(link.label)}
@@ -489,11 +476,13 @@ const MobileNavMenu = ({
               className={`ml-1 h-3 w-3 transition-transform duration-200 ${openMobileDropdown === link.label ? "rotate-180" : ""}`}
             />
           </button>
-          {openMobileDropdown === link.label && (
-            <div className="ml-2 space-y-1 border-slate-200 border-l pt-1 pb-2 pl-4">
-              {link.dropdown.map(renderDropdownItem)}
-            </div>
-          )}
+          <div
+            className="ml-2 space-y-1 border-slate-200 border-l pt-1 pb-2 pl-4"
+            hidden={openMobileDropdown !== link.label}
+            id={dropdownId("mobile-nav", link.label)}
+          >
+            {link.dropdown.map(renderDropdownItem)}
+          </div>
         </>
       );
     }
