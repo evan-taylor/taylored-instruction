@@ -3,6 +3,7 @@ import {
   BUSINESS,
   formatBusinessAddress,
 } from "@/lib/business";
+import { LOCATIONS, locationName, locationUrl } from "@/lib/locations";
 import type { RevnuPostSummary } from "@/lib/revnu";
 import { SITE_URL } from "@/lib/seo";
 
@@ -168,5 +169,10 @@ export const buildLlmsTxt = (
       `- [${oneLine(article.title)}](${article.url}): ${oneLine(article.description)}`
   );
 
-  return `${header}\n## Courses\n\n${courseLines.join("\n")}\n\n${facts}\n## Articles\n\n${articleLines.join("\n")}\n`;
+  const locationLines = LOCATIONS.map(
+    (location) =>
+      `- [Classes in ${locationName(location)}](${locationUrl(location)}): ${location.description}`
+  );
+
+  return `${header}\n## Courses\n\n${courseLines.join("\n")}\n\n${facts}\n## Locations\n\n${locationLines.join("\n")}\n\n## Articles\n\n${articleLines.join("\n")}\n`;
 };

@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { FiFacebook, FiInstagram } from "react-icons/fi";
 import { BUSINESS } from "@/lib/business";
+import { LOCATIONS, locationName, locationPath } from "@/lib/locations";
 import {
   AHA_COURSE_LINKS,
   RED_CROSS_COURSE_LINKS,
   type SiteLink,
   TRAINING_SERVICE_LINKS,
 } from "@/lib/service-links";
+
+const LOCATION_LINKS = LOCATIONS.map((location) => ({
+  label: locationName(location),
+  href: locationPath(location),
+}));
 
 const COURSE_GROUPS = [
   { label: "American Heart Association", links: AHA_COURSE_LINKS },
@@ -65,6 +71,10 @@ export const Footer = () => {
               Services
             </h3>
             <FooterLinkList links={TRAINING_SERVICE_LINKS} />
+            <h3 className="mb-2 font-semibold text-sm text-text uppercase tracking-wide">
+              Locations
+            </h3>
+            <FooterLinkList links={LOCATION_LINKS} />
           </div>
 
           {/* Information Links */}

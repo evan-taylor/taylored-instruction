@@ -6,6 +6,10 @@ const marketingDir = path.join("app", "(marketing)");
 const importPattern = /(?:from|import)\s*["']([^"']+)["']/g;
 const sourceExtensions = [".tsx", ".ts", ".jsx", ".js"];
 // Shared chrome changes every page's look, not what a page says.
+// Dynamic route groups whose copy lives in a config file rather than a page.
+const pageConfigFiles = {
+  "cpr-classes": path.join("lib", "locations.ts"),
+};
 const sharedComponentDirs = [
   path.join("components", "ui"),
   path.join("components", "layout"),
@@ -101,29 +105,45 @@ const lastCommit = (files, shallowBoundary) => {
   return hash && date && !shallowBoundary.has(hash) ? date : null;
 };
 
+/** Source files that make up each marketing page's content, keyed by route. */
+const readPageContentFiles = () => {
+  if (!existsSync(marketingDir)) {
+    return {};
+  }
+  const pages = [["/", marketingDir, [path.join(marketingDir, "page.tsx")]]];
+  for (const entry of readdirSync(marketingDir, { withFileTypes: true })) {
+    const pageDir = path.join(marketingDir, entry.name);
+    const config = pageConfigFiles[entry.name];
+    if (
+      entry.isDirectory() &&
+      (config || existsSync(path.join(pageDir, "page.tsx")))
+    ) {
+      pages.push([
+        `/${entry.name}`,
+        pageDir,
+        config ? [...listFiles(pageDir), config] : listFiles(pageDir),
+      ]);
+    }
+  }
+
+  const contentFiles = {};
+  for (const [route, pageDir, entryFiles] of pages) {
+    contentFiles[route] = collectContentFiles(
+      route === "/" ? path.join(marketingDir, "page.tsx") : pageDir,
+      entryFiles
+    );
+  }
+  return contentFiles;
+};
+
 /**
  * Last git commit date of each marketing page's content, keyed by route.
  * Pages without a trustworthy date are left out.
  */
 const readPageLastModified = () => {
-  if (!existsSync(marketingDir)) {
-    return {};
-  }
   const shallowBoundary = readShallowBoundary();
-  const pages = [["/", marketingDir, [path.join(marketingDir, "page.tsx")]]];
-  for (const entry of readdirSync(marketingDir, { withFileTypes: true })) {
-    const pageDir = path.join(marketingDir, entry.name);
-    if (entry.isDirectory() && existsSync(path.join(pageDir, "page.tsx"))) {
-      pages.push([`/${entry.name}`, pageDir, listFiles(pageDir)]);
-    }
-  }
-
   const lastModified = {};
-  for (const [route, pageDir, entryFiles] of pages) {
-    const files = collectContentFiles(
-      route === "/" ? path.join(marketingDir, "page.tsx") : pageDir,
-      entryFiles
-    );
+  for (const [route, files] of Object.entries(readPageContentFiles())) {
     const date = lastCommit(files, shallowBoundary);
     if (date) {
       lastModified[route] = date;
@@ -132,4 +152,4 @@ const readPageLastModified = () => {
   return lastModified;
 };
 
-module.exports = { readPageLastModified };
+module.exports = { readPageContentFiles, readPageLastModified };
