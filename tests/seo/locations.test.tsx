@@ -13,6 +13,7 @@ import { readPageContentFiles } from "@/scripts/page-last-modified.js";
 
 const WORD = /\S+/gu;
 const EM_DASH = /\u2014/u;
+const NAMED_VENUE = /ymca|gold's gym/iu;
 
 const session = (code: string, location: string) => ({
   code,
@@ -33,11 +34,8 @@ const session = (code: string, location: string) => ({
 });
 
 const sessions = [
-  session(
-    "ymca",
-    "Clark County Family YMCA: 11324 NE 51st Cir, Vancouver, WA 98682"
-  ),
-  session("golds", "Gold's Gym Camas: 2950 NW 38th Ave, Camas, WA 98607"),
+  session("vpool", "Partner Pool: 100 Main St, Vancouver, WA 98660"),
+  session("cpool", "Partner Gym: 200 NE 3rd Ave, Camas, WA 98607"),
   session("pdx", "Office: 100 SW Main St, Portland, OR 97204"),
   session("bare", "915 Broadway St, Vancouver, WA 98660"),
   session("online", ""),
@@ -77,13 +75,14 @@ describe("city landing pages", () => {
     expect(copy).not.toContain("658");
     expect(copy).not.toContain("hovn");
     expect(copy).not.toMatch(EM_DASH);
+    expect(copy).not.toMatch(NAMED_VENUE);
   });
 
   it("matches classes to a city by the first meeting's address", () => {
     const codes = (slug: string) =>
       sessionsIn(cityPage(slug), sessions).map((s) => s.code);
-    expect(codes("vancouver-wa")).toEqual(["ymca", "bare"]);
-    expect(codes("camas-wa")).toEqual(["golds"]);
+    expect(codes("vancouver-wa")).toEqual(["vpool", "bare"]);
+    expect(codes("camas-wa")).toEqual(["cpool"]);
     expect(codes("portland-or")).toEqual(["pdx"]);
     expect(codes("san-luis-obispo-ca")).toEqual([]);
   });
@@ -116,8 +115,8 @@ describe("city landing pages", () => {
         sessions={sessionsIn(cityPage("vancouver-wa"), sessions)}
       />
     );
-    expect(vancouver).toContain('href="/s/ymca"');
-    expect(vancouver).toContain("Clark County Family YMCA, Vancouver, WA");
+    expect(vancouver).toContain('href="/s/vpool"');
+    expect(vancouver).toContain("Partner Pool, Vancouver, WA");
     expect(vancouver).toContain("915 Broadway St, Suite 100");
 
     const slo = renderToStaticMarkup(
@@ -130,7 +129,7 @@ describe("city landing pages", () => {
     );
     expect(slo).toContain("No public classes are posted in San Luis Obispo");
     expect(slo).toContain("Closest upcoming classes");
-    expect(slo).toContain('href="/s/golds"');
+    expect(slo).toContain('href="/s/cpool"');
   });
 
   it("marks up Vancouver as the local business and other cities as services", () => {
