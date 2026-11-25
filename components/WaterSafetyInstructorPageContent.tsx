@@ -1,6 +1,15 @@
+import Link from "next/link";
 import ClassPageLayout, {
   ClassPageSection,
 } from "@/components/ClassPageLayout";
+import {
+  CERTIFICATION_FACTS,
+  FaqSection,
+  QuickFacts,
+} from "@/components/ServicePageSections";
+import { waterSafetyInstructorFAQs } from "@/lib/faqSchema";
+
+const linkClassName = "font-medium text-primary hover:underline";
 
 export default function WaterSafetyInstructorPageContent() {
   return (
@@ -22,6 +31,23 @@ export default function WaterSafetyInstructorPageContent() {
       subtitle="Build the skills to teach swimming and water safety to children and adults through American Red Cross instructor training."
       title="American Red Cross Water Safety Instructor Course"
     >
+      <QuickFacts
+        facts={[
+          { label: "Certifying body", value: "American Red Cross" },
+          {
+            label: "Format",
+            value:
+              "Classroom learning, in-water skill work and practice teaching",
+          },
+          {
+            label: "Who it's for",
+            value:
+              "Strong swimmers, 16 or older, who want to teach swim lessons",
+          },
+          ...CERTIFICATION_FACTS,
+        ]}
+      />
+
       <ClassPageSection title="Course overview">
         <p>
           Water Safety Instructor (WSI) training prepares candidates to teach
@@ -36,9 +62,10 @@ export default function WaterSafetyInstructorPageContent() {
       </ClassPageSection>
       <ClassPageSection title="Before you enroll">
         <p>
-          Candidates must meet Red Cross age and swimming prerequisites and
-          successfully complete the precourse assessment. Contact us before
-          registering to confirm eligibility and preparation requirements.
+          Candidates must be at least 16 by the last day of the course and pass
+          the precourse swimming skills session at the start of class. You don't
+          need a lifeguard certificate. Contact us before registering if you
+          have questions about eligibility or preparation.
         </p>
         <p>
           Come ready to demonstrate front crawl, back crawl, breaststroke,
@@ -75,6 +102,42 @@ export default function WaterSafetyInstructorPageContent() {
           instructions before your class.
         </p>
       </ClassPageSection>
+      <ClassPageSection title="Practice teaching">
+        <p>
+          Much of the course is spent teaching. You plan short lessons, teach
+          them to other candidates in the water, and get feedback from the
+          instructor trainer. You also learn to break each stroke into steps,
+          spot common faults and correct them, and keep a group of young
+          swimmers safe while you work with one child.
+        </p>
+        <p>
+          Our founder, Evan Taylor, is a Red Cross Water Safety Instructor
+          Trainer. Once you certify, you can teach swim lessons through a pool
+          or swim program that runs the Red Cross program. Read more in our
+          guide to{" "}
+          <Link
+            className={linkClassName}
+            href="/blog/water-safety-instructor-certification"
+          >
+            Water Safety Instructor certification
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+      <ClassPageSection title="Where we teach">
+        <p>
+          We teach in Vancouver, WA, and serve Camas, Portland, San Luis Obispo
+          and the surrounding areas. Each class on the schedule lists its pool
+          and session times. Pools and swim schools can host a WSI course for
+          their staff; use the Host this course button above to get in touch. If
+          you also want to guard, see{" "}
+          <Link className={linkClassName} href="/lifeguarding">
+            Red Cross Lifeguarding
+          </Link>
+          .
+        </p>
+      </ClassPageSection>
+      <FaqSection faqs={waterSafetyInstructorFAQs} />
     </ClassPageLayout>
   );
 }

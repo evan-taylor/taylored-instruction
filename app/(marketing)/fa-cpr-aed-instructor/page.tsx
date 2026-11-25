@@ -1,6 +1,7 @@
 "use cache";
 
 import FaCprAedInstructorPageContent from "@/components/FaCprAedInstructorPageContent";
+import { faCprAedInstructorFAQs, getFAQSchema } from "@/lib/faqSchema";
 import { buildPageMetadata } from "@/lib/seo";
 import {
   generateJSONLD,
@@ -73,6 +74,12 @@ const FaCprAedInstructorPage = async () => {
       />
       <script
         dangerouslySetInnerHTML={generateJSONLD(breadcrumbSchema)}
+        type="application/ld+json"
+      />
+      <script
+        dangerouslySetInnerHTML={generateJSONLD(
+          getFAQSchema(faCprAedInstructorFAQs)
+        )}
         type="application/ld+json"
       />
       <FaCprAedInstructorPageContent />
