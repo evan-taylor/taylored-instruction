@@ -4,6 +4,7 @@ import React from "react";
 import Stripe from "stripe";
 import EcardPurchaseAdminEmail from "@/emails/EcardPurchaseAdminEmail";
 import EcardPurchaseUserEmail from "@/emails/EcardPurchaseUserEmail";
+import { attributedEmail } from "@/lib/attributed-email";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
 import { SUPPORT_EMAIL } from "@/shared/email";
@@ -121,17 +122,20 @@ export async function POST(req: NextRequest) {
       to: [customerEmail],
       replyTo: SUPPORT_EMAIL,
       subject: "Your eCard order is confirmed",
-      react: React.createElement(EcardPurchaseUserEmail, {
-        itemName: "Multiple Products",
-        quantity: cartItems
-          .reduce((sum, item) => sum + item.quantity, 0)
-          .toString(),
-        price: totalPrice,
-        cartItems: cartItems.map((item) => ({
-          name: item.productName,
-          quantity: item.quantity.toString(),
-        })),
-      }),
+      ...(await attributedEmail(
+        React.createElement(EcardPurchaseUserEmail, {
+          itemName: "Multiple Products",
+          quantity: cartItems
+            .reduce((sum, item) => sum + item.quantity, 0)
+            .toString(),
+          price: totalPrice,
+          cartItems: cartItems.map((item) => ({
+            name: item.productName,
+            quantity: item.quantity.toString(),
+          })),
+        }),
+        "ecard_order"
+      )),
     });
     if (userEmailData.error) {
       // Intentionally not failing request on email notification issues
@@ -165,11 +169,14 @@ export async function POST(req: NextRequest) {
       to: [customerEmail],
       replyTo: SUPPORT_EMAIL,
       subject: "Your eCard order is confirmed",
-      react: React.createElement(EcardPurchaseUserEmail, {
-        itemName,
-        quantity,
-        price: totalPrice,
-      }),
+      ...(await attributedEmail(
+        React.createElement(EcardPurchaseUserEmail, {
+          itemName,
+          quantity,
+          price: totalPrice,
+        }),
+        "ecard_order"
+      )),
     });
     if (userEmailData.error) {
       // Intentionally not failing request on email notification issues

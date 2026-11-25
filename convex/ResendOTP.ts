@@ -1,6 +1,8 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { Resend as ResendAPI } from "resend";
+import { BUSINESS } from "../lib/business";
 import { SUPPORT_EMAIL } from "../shared/email";
+import { attributeEmail } from "../shared/email-attribution";
 import { brandedEmail } from "../shared/registration/email";
 import { registrationRecipient } from "../shared/registration/environment";
 
@@ -40,16 +42,20 @@ export const ResendOTP = Email({
       to: [registrationRecipient(email)],
       subject: "Your Taylored Instruction sign-in code",
       replyTo: SUPPORT_EMAIL,
-      ...brandedEmail({
-        title: "Your sign-in code",
-        preview:
-          "Use this code to finish signing in to Taylored Instruction. Expires in 10 minutes.",
-        paragraphs: [
-          "Enter this six-digit code on the sign-in page to securely access your account.",
-        ],
-        code: token,
-        note: "This code expires in 10 minutes and can only be used once. Don’t share it with anyone. If you didn’t request this code, you can safely ignore this email.",
-      }),
+      ...attributeEmail(
+        brandedEmail({
+          title: "Your sign-in code",
+          preview:
+            "Use this code to finish signing in to Taylored Instruction. Expires in 10 minutes.",
+          paragraphs: [
+            "Enter this six-digit code on the sign-in page to securely access your account.",
+          ],
+          code: token,
+          note: "This code expires in 10 minutes and can only be used once. Don’t share it with anyone. If you didn’t request this code, you can safely ignore this email.",
+        }),
+        { campaign: "sign_in_code" },
+        BUSINESS.url
+      ),
     });
 
     if (error) {

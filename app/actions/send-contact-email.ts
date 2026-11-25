@@ -4,6 +4,7 @@ import React from "react";
 import { z } from "zod";
 import ContactConfirmationEmail from "@/emails/ContactConfirmationEmail";
 import ContactFormEmail from "@/emails/ContactFormEmail";
+import { attributedEmail } from "@/lib/attributed-email";
 import PostHogClient from "@/lib/posthog";
 import { getResendClient } from "@/lib/resend";
 import { SUPPORT_EMAIL } from "@/shared/email";
@@ -134,7 +135,10 @@ export async function sendContactEmail(
       to: [email],
       replyTo: SUPPORT_EMAIL,
       subject: "We got your message",
-      react: React.createElement(ContactConfirmationEmail, { firstName }),
+      ...(await attributedEmail(
+        React.createElement(ContactConfirmationEmail, { firstName }),
+        "contact_confirmation"
+      )),
     });
 
     if (userEmailData.error) {

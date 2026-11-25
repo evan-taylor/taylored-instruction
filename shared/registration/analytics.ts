@@ -85,6 +85,11 @@ const PROPERTY_NAMES = new Set([
   "source",
   "schema_version",
   "environment",
+  "email_campaign",
+  "email_send",
+  "agency",
+  "certificate_count",
+  "email_count",
 ]);
 export function registrationProperties(properties: Record<string, unknown>) {
   return Object.fromEntries(

@@ -3,6 +3,7 @@ import React from "react";
 import { z } from "zod"; // Assuming zod is needed for the schema
 import AlignmentConfirmationEmail from "@/emails/AlignmentConfirmationEmail"; // Reverted import
 import AlignmentInterestEmail from "@/emails/AlignmentInterestEmail"; // Reverted import
+import { attributedEmail } from "@/lib/attributed-email";
 import { getResendClient } from "@/lib/resend";
 import { SUPPORT_EMAIL } from "@/shared/email";
 
@@ -83,7 +84,10 @@ export async function POST(req: NextRequest) {
       to: [email],
       replyTo: SUPPORT_EMAIL,
       subject: "We received your alignment request",
-      react: React.createElement(AlignmentConfirmationEmail, { firstName }), // Pass necessary data
+      ...(await attributedEmail(
+        React.createElement(AlignmentConfirmationEmail, { firstName }),
+        "alignment_confirmation"
+      )),
     });
 
     if (userEmailData.error) {

@@ -5,6 +5,7 @@ import { renderEmailHtml } from "../emails/components/render";
 import InstructorInvitationEmail from "../emails/InstructorInvitationEmail";
 import { isAdminEmail } from "../shared/adminEmails";
 import { SUPPORT_EMAIL } from "../shared/email";
+import { attributeEmail } from "../shared/email-attribution";
 import { registrationRecipient } from "../shared/registration/environment";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -448,20 +449,26 @@ async function deliver(email: string, teaches: boolean, aligned: boolean) {
     to: [registrationRecipient(email)],
     replyTo: SUPPORT_EMAIL,
     subject,
-    html: renderEmailHtml(
-      createElement(InstructorInvitationEmail, {
-        signInUrl,
-        email,
-        teaches,
-        aligned,
-      })
+    ...attributeEmail(
+      {
+        html: renderEmailHtml(
+          createElement(InstructorInvitationEmail, {
+            signInUrl,
+            email,
+            teaches,
+            aligned,
+          })
+        ),
+        text: [
+          intro,
+          `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks ${unlocks}.`,
+          "No password is needed: we email you a one-time code when you sign in.",
+          `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
+        ].join("\n\n"),
+      },
+      { campaign: "instructor_invitation" },
+      origin
     ),
-    text: [
-      intro,
-      `Sign in at ${signInUrl} using ${email}, then choose “Accept invitation” on your account page. That unlocks ${unlocks}.`,
-      "No password is needed: we email you a one-time code when you sign in.",
-      `Questions? Reply to this email or write to ${SUPPORT_EMAIL}.`,
-    ].join("\n\n"),
   });
   if (response.error) {
     throw new Error(response.error.message);

@@ -830,6 +830,7 @@ describe("post-class email selection", () => {
       review: true,
       firstName: "Ava",
     });
+    expect(claimed?.campaign).toBe("post_class_aha");
     const letter = await stepJob(f, f.seat("ava@example.test"));
     const followUp = await f.t.mutation(internal.registrationMail.claim, {
       id: letter,
@@ -919,6 +920,7 @@ describe("expiry reminders", () => {
       renewPath: "/courses/bls",
     });
     expect(claimed?.certificate?.unsubscribeToken).toBeTruthy();
+    expect(claimed?.campaign).toBe("cert_reminder_60d");
   });
 
   it("skips a late 60-day reminder once the 30-day window opens", async () => {

@@ -21,6 +21,7 @@ vi.mock("posthog-js", () => ({
     has_opted_out_capturing: vi.fn(),
     get_distinct_id: vi.fn(() => "browser-id"),
     get_session_id: vi.fn(() => "session-id"),
+    get_property: vi.fn(),
   },
 }));
 afterEach(() => {
@@ -98,6 +99,21 @@ it("propagates browser identity and respects opt-out", () => {
   });
   vi.mocked(posthog.has_opted_out_capturing).mockReturnValueOnce(true);
   expect(registrationAnalyticsContext()).toBeUndefined();
+});
+it("hands the remembered email click to checkout", () => {
+  const remembered: Record<string, string | number> = {
+    email_campaign: "cert_reminder_30d",
+    email_send: "job123",
+    email_clicked_at: Date.now(),
+  };
+  vi.mocked(posthog.get_property).mockImplementation((key) => remembered[key]);
+  expect(registrationAnalyticsContext()).toEqual({
+    distinctId: "browser-id",
+    sessionId: "session-id",
+    emailCampaign: "cert_reminder_30d",
+    emailSend: "job123",
+  });
+  vi.mocked(posthog.get_property).mockReset();
 });
 it("never lets a capture failure interrupt registration", () => {
   vi.mocked(posthog.capture).mockImplementationOnce(() => {

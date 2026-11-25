@@ -37,6 +37,12 @@ export async function trackRegistrationOrder(
         tax_cents: order.tax ?? 0,
         currency: order.currency,
         has_coupon: Boolean(order.couponId),
+        ...(order.analytics.emailCampaign
+          ? { email_campaign: order.analytics.emailCampaign }
+          : {}),
+        ...(order.analytics.emailSend
+          ? { email_send: order.analytics.emailSend }
+          : {}),
         ...properties,
       },
     }

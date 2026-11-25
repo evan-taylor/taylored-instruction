@@ -558,6 +558,19 @@ export const saveImport = internalMutation({
       args.target.id,
       `${args.file.fileName}: ${created.size} new, ${saved.length - created.size} updated${send ? `, ${mailable.length} emails` : ""}`
     );
+    await ctx.scheduler.runAfter(
+      0,
+      internal.registrationExternal.captureAnalytics,
+      {
+        event: "student_certificates_saved",
+        analytics: { distinctId: context.actor },
+        properties: {
+          agency: args.agency,
+          certificate_count: saved.length,
+          email_count: send ? mailable.length : 0,
+        },
+      }
+    );
     return {
       created: created.size,
       updated: saved.length - created.size,

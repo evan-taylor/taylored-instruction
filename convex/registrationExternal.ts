@@ -1,10 +1,11 @@
 "use node";
 import type { FunctionReturnType } from "convex/server";
-import { ConvexError, v } from "convex/values";
+import { ConvexError, type Infer, v } from "convex/values";
 import { PostHog } from "posthog-node";
 import { Resend } from "resend";
 import Stripe from "stripe";
 import { SUPPORT_EMAIL } from "../shared/email";
+import { attributeEmail } from "../shared/email-attribution";
 import { registrationProperties } from "../shared/registration/analytics";
 import { analyticsContext } from "../shared/registration/analytics-validator";
 import { certificateEmail } from "../shared/registration/certificate-email";
@@ -175,11 +176,23 @@ type ClaimedJob = NonNullable<
  * Certificate mail has its own template; reminders also carry RFC 8058
  * one-click unsubscribe headers pointing at the Convex HTTP route.
  */
-function renderJob(job: ClaimedJob) {
+function renderJob(job: ClaimedJob, send: string) {
+  const attribution = { campaign: job.campaign, send };
   if (!job.certificate) {
-    return { rendered: registrationEmail(job, baseUrl()), headers: undefined };
+    return {
+      rendered: attributeEmail(
+        registrationEmail(job, baseUrl()),
+        attribution,
+        baseUrl()
+      ),
+      headers: undefined,
+    };
   }
-  const rendered = certificateEmail(job.certificate, baseUrl());
+  const rendered = attributeEmail(
+    certificateEmail(job.certificate, baseUrl()),
+    attribution,
+    baseUrl()
+  );
   const token = job.certificate.unsubscribeToken;
   const site = process.env.CONVEX_SITE_URL;
   return {
@@ -213,7 +226,7 @@ export const deliver = internalAction({
           if (!(recipient && from && process.env.RESEND_API_KEY)) {
             throw new Error("Recipient, sender, and Resend key required");
           }
-          const { rendered, headers } = renderJob(job);
+          const { rendered, headers } = renderJob(job, id);
           const response = await new Resend(
             process.env.RESEND_API_KEY
           ).emails.send(
@@ -253,7 +266,18 @@ export const deliver = internalAction({
             success: false,
             error: error instanceof Error ? error.message : "Email failed",
           });
+          return;
         }
+        await capture(
+          "email_sent",
+          {
+            distinctId: job.analytics?.distinctId ?? `email_send:${id}`,
+          },
+          {
+            email_campaign: job.campaign,
+            email_send: id,
+          }
+        );
       })
     );
     return null;
@@ -341,6 +365,47 @@ export const expireCheckout = internalAction({
   },
 });
 
+/**
+ * Personless server capture with allowlisted properties. Analytics failures
+ * are swallowed: they must never fail a payment or an email send.
+ */
+async function capture(
+  event: string,
+  analytics: Infer<typeof analyticsContext>,
+  properties: Record<string, string | number | boolean>
+) {
+  const token =
+    process.env.POSTHOG_PROJECT_TOKEN ||
+    process.env.NEXT_PUBLIC_POSTHOG_KEY ||
+    process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
+  if (!token) {
+    return;
+  }
+  const client = new PostHog(token, {
+    host:
+      process.env.POSTHOG_HOST ||
+      process.env.NEXT_PUBLIC_POSTHOG_HOST ||
+      "https://us.i.posthog.com",
+    flushAt: 1,
+    flushInterval: 0,
+  });
+  client.capture({
+    distinctId: analytics.distinctId,
+    event,
+    properties: {
+      ...registrationProperties(properties),
+      $session_id: analytics.sessionId,
+      $process_person_profile: false,
+      source: "server",
+      schema_version: 1,
+      environment: process.env.REGISTRATION_MODE ?? "test",
+    },
+  });
+  await client.shutdown().catch(() => {
+    /* Delivery is best effort. */
+  });
+}
+
 /** Network delivery runs outside payment transactions and cannot fail checkout. */
 export const captureAnalytics = internalAction({
   args: {
@@ -353,34 +418,7 @@ export const captureAnalytics = internalAction({
   },
   returns: v.null(),
   handler: async (_ctx, args) => {
-    const token =
-      process.env.POSTHOG_PROJECT_TOKEN ||
-      process.env.NEXT_PUBLIC_POSTHOG_KEY ||
-      process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
-    if (!token) {
-      return null;
-    }
-    const client = new PostHog(token, {
-      host:
-        process.env.POSTHOG_HOST ||
-        process.env.NEXT_PUBLIC_POSTHOG_HOST ||
-        "https://us.i.posthog.com",
-      flushAt: 1,
-      flushInterval: 0,
-    });
-    client.capture({
-      distinctId: args.analytics.distinctId,
-      event: args.event,
-      properties: {
-        ...registrationProperties(args.properties),
-        $session_id: args.analytics.sessionId,
-        $process_person_profile: false,
-        source: "server",
-        schema_version: 1,
-        environment: process.env.REGISTRATION_MODE ?? "test",
-      },
-    });
-    await client.shutdown();
+    await capture(args.event, args.analytics, args.properties);
     return null;
   },
 });
