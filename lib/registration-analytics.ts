@@ -1,5 +1,6 @@
 "use client";
 import posthog from "posthog-js";
+import { withPostHog } from "@/lib/posthog-browser";
 import { emailCreditActive } from "@/shared/email-attribution";
 import {
   type RegistrationEvent,
@@ -35,13 +36,15 @@ export function trackRegistration(
   event: RegistrationEvent,
   properties: Record<string, unknown> = {}
 ) {
-  try {
-    posthog.capture(event, {
-      ...registrationProperties(properties),
-      schema_version: 1,
-      source: "browser",
-    });
-  } catch {
-    /* Analytics must never interrupt enrollment or payment. */
-  }
+  withPostHog((client) => {
+    try {
+      client.capture(event, {
+        ...registrationProperties(properties),
+        schema_version: 1,
+        source: "browser",
+      });
+    } catch {
+      /* Analytics must never interrupt enrollment or payment. */
+    }
+  });
 }

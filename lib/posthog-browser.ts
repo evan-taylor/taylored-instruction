@@ -50,7 +50,7 @@ let client: Promise<PostHog | null> | undefined;
  * read immediately so email attribution survives an early client navigation.
  */
 export const startPostHog = () => {
-  if (client) {
+  if (client || typeof window === "undefined") {
     return;
   }
   const landingSearch = window.location.search;
