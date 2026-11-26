@@ -7,7 +7,6 @@ import {
   CalComButton,
   CapEmbed,
   LoomEmbed,
-  TypeformEmbed,
 } from "@/components/mdx/EmbedComponents";
 import { api } from "@/convex/_generated/api";
 import { useProfile } from "@/hooks/useProfile";
@@ -19,8 +18,7 @@ const CODE_INLINE_REGEX = /`(.+?)`/;
 const URL_REGEX = /(https?:\/\/[^\s<>[\]()]+)/;
 const CAP_REGEX = /<CapEmbed\s+url="([^"]+)"\s*\/>/;
 const LOOM_REGEX = /<LoomEmbed\s+url="([^"]+)"\s*\/>/;
-const TYPEFORM_REGEX =
-  /<TypeformEmbed\s+formId="([^"]+)"(?:\s+height=\{(\d+)\})?\s*\/>/;
+const RETIRED_TYPEFORM_REGEX = /<TypeformEmbed\b[^>]*\/>/;
 const CALCOM_REGEX =
   /<CalComButton\s+username="([^"]+)"\s+eventType="([^"]+)"\s+namespace="([^"]+)"(?:\s+buttonText="([^"]+)")?\s*\/>/;
 const ORDERED_LIST_MATCH_REGEX = /^(\d+)\.\s(.+)/;
@@ -169,21 +167,6 @@ function tryRenderEmbed(
   const loomMatch = line.match(LOOM_REGEX);
   if (loomMatch) {
     return <LoomEmbed key={elementKey} url={loomMatch[1]} />;
-  }
-
-  const typeformMatch = line.match(TYPEFORM_REGEX);
-  if (typeformMatch) {
-    return (
-      <TypeformEmbed
-        formId={typeformMatch[1]}
-        height={
-          typeformMatch[2]
-            ? Number.parseInt(typeformMatch[2], RADIX_DECIMAL)
-            : undefined
-        }
-        key={elementKey}
-      />
-    );
   }
 
   const calMatch = line.match(CALCOM_REGEX);
@@ -345,6 +328,10 @@ function processCodeBlockLine(line: string, state: ParserState): boolean {
 
 function processLine(line: string, state: ParserState): void {
   if (processCodeBlockLine(line, state)) {
+    return;
+  }
+
+  if (RETIRED_TYPEFORM_REGEX.test(line)) {
     return;
   }
 

@@ -1,7 +1,6 @@
 "use client";
 
 import { getCalApi } from "@calcom/embed-react";
-import Script from "next/script";
 import { useEffect } from "react";
 
 type CapEmbedProps = {
@@ -70,37 +69,6 @@ export function LoomEmbed({ url }: LoomEmbedProps) {
   );
 }
 
-type TypeformEmbedProps = {
-  formId: string;
-  height?: number;
-};
-
-export function TypeformEmbed({ formId, height = 500 }: TypeformEmbedProps) {
-  if (!formId) {
-    return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-600">
-        Invalid Typeform ID
-      </div>
-    );
-  }
-
-  return (
-    <>
-      <div
-        className="my-4 w-full overflow-hidden rounded-lg"
-        style={{ minHeight: height }}
-      >
-        <div data-tf-live={formId} />
-      </div>
-      <Script
-        id="typeform-embed"
-        src="https://embed.typeform.com/next/embed.js"
-        strategy="lazyOnload"
-      />
-    </>
-  );
-}
-
 type CalComButtonProps = {
   username: string;
   eventType: string;
@@ -138,6 +106,5 @@ export function CalComButton({
 export const mdxComponents = {
   CapEmbed,
   LoomEmbed,
-  TypeformEmbed,
   CalComButton,
 };

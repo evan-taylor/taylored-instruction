@@ -3,59 +3,22 @@
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import {
+  addIntegration,
+  captureException,
   captureRouterTransitionStart,
   init,
-  replayIntegration,
 } from "@sentry/nextjs";
-import posthog from "posthog-js";
-import { rememberEmailClick } from "@/lib/email-attribution";
-import { getPostHogEnv } from "@/lib/posthog-env";
-import { analyticsSafeEvent } from "@/shared/analytics-urls";
-import { withoutStaleEmailCredit } from "@/shared/email-attribution";
-import { privateAnalyticsEvent } from "@/shared/registration/analytics";
+import { startPostHog } from "@/lib/posthog-browser";
+import { whenPageIsIdle } from "@/lib/when-page-is-idle";
 import { isPrivateRegistrationPath } from "@/shared/registration/privacy";
 
-const { host: posthogHost, projectToken: posthogProjectToken } =
-  getPostHogEnv();
-
-if (posthogProjectToken && posthogHost) {
-  posthog.init(posthogProjectToken, {
-    api_host: "/ingest",
-    ui_host: posthogHost.includes("eu.")
-      ? "https://eu.posthog.com"
-      : "https://us.posthog.com",
-    person_profiles: "identified_only",
-    capture_pageview: false,
-    before_send: (event) => {
-      if (!event) {
-        return event;
-      }
-      const credited = withoutStaleEmailCredit(event);
-      return isPrivateRegistrationPath(window.location.pathname)
-        ? privateAnalyticsEvent(credited)
-        : analyticsSafeEvent(credited);
-    },
-    capture_pageleave: true,
-    capture_exceptions: true,
-    tracing_headers: [window.location.hostname],
-    defaults: "2025-05-24",
-    debug: process.env.NODE_ENV === "development",
-  });
-  rememberEmailClick(posthog, window.location.search);
-}
+startPostHog();
 
 export const onRouterTransitionStart = captureRouterTransitionStart;
 
 init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
 
-  // Add optional integrations for additional features
-  integrations: [
-    replayIntegration({
-      beforeAddRecordingEvent: (event) =>
-        isPrivateRegistrationPath(window.location.pathname) ? null : event,
-    }),
-  ],
   beforeSend: (event) =>
     isPrivateRegistrationPath(window.location.pathname) ? null : event,
   beforeSendTransaction: (event) =>
@@ -86,4 +49,18 @@ init({
     graphQL: { document: true, variables: false },
     genAI: { inputs: false, outputs: false },
   },
+});
+
+const loadSentryReplay = async () => {
+  const { replayIntegration } = await import("@sentry/replay");
+  addIntegration(
+    replayIntegration({
+      beforeAddRecordingEvent: (event) =>
+        isPrivateRegistrationPath(window.location.pathname) ? null : event,
+    })
+  );
+};
+
+whenPageIsIdle(() => {
+  loadSentryReplay().catch(captureException);
 });

@@ -67,8 +67,9 @@ export default function ClassPageLayout({
         <Image
           alt={image.alt}
           className="brightness-[0.72]"
+          fetchPriority="high"
           fill
-          priority
+          preload
           sizes="100vw"
           src={image.src}
           style={{

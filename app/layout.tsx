@@ -13,7 +13,7 @@ import {
   getWebSiteSchema,
 } from "@/lib/structuredData";
 import { generateOgImageUrl, OG_IMAGE_SIZE } from "@/lib/utils";
-import { PostHogPageViewWrapper, PostHogProvider } from "@/providers";
+import { PostHogPageViewWrapper } from "@/providers";
 
 const defaultOgImage = {
   url: generateOgImageUrl(
@@ -123,10 +123,8 @@ export default function RootLayout({
         />
       </head>
       <body className={readexPro.variable}>
-        <PostHogProvider>
-          {children}
-          <PostHogPageViewWrapper />
-        </PostHogProvider>
+        {children}
+        <PostHogPageViewWrapper />
         <PrivateAwareAnalytics />
         <PrivateAwareSpeedInsights />
       </body>

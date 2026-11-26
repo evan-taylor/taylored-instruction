@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { trackVisitorsEvent } from "@/lib/analytics";
 import { BUSINESS } from "@/lib/business";
 
 const AlignmentInterestForm: React.FC = () => {
@@ -131,11 +130,6 @@ const AlignmentInterestForm: React.FC = () => {
           agencies: formData.agencies,
           smsOptIn: formData.smsOptIn,
           smsOptOut: formData.smsOptOut,
-        });
-
-        trackVisitorsEvent("Alignment Interest Submitted", {
-          hasCertification: formData.hasCertification,
-          source: "alignment_page",
         });
 
         setFormData({
