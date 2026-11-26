@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
 import {
   BookOpen,
   CalendarDays,
@@ -16,9 +15,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Menu, MenuItem, MenuLabel, MenuSeparator } from "@/components/ui/menu";
-import { useProfile } from "@/hooks/useProfile";
 import { isAdminEmail } from "@/lib/admin";
 import { workspaceLinks } from "@/lib/workspace-navigation";
+import { useHeaderAccount } from "./header-account";
 
 const ICONS: Record<string, typeof LogOut> = {
   "/admin": LayoutDashboard,
@@ -41,10 +40,9 @@ function triggerLabel(signedIn: boolean, staff: boolean) {
 
 /** Desktop header menu for the signed-in person's workspace, account, and sign-out. */
 export function WorkspaceMenu({ onOpen }: { onOpen?: () => void }) {
-  const { session, isInstructor, isAligned, email } = useProfile();
-  const { signOut } = useAuthActions();
+  const { signedIn, isInstructor, isAligned, email, signOut } =
+    useHeaderAccount();
   const router = useRouter();
-  const signedIn = Boolean(session);
   const admin = isAdminEmail(email);
   const links = workspaceLinks(signedIn, isInstructor, admin, isAligned).filter(
     (link) => link.type === "divider" || !link.secondary

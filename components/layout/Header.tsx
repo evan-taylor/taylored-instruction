@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { isAdminEmail } from "@/lib/admin";
 import { workspaceLinks } from "@/lib/workspace-navigation";
 import { useProfile } from "../../hooks/useProfile";
+import { ConvexHeaderAccount } from "./header-account";
 import { WorkspaceMenu } from "./workspace-menu";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
@@ -280,7 +281,9 @@ export const Header = () => {
               navLinks={visibleNavLinks.slice(0, -1)}
               toggleDropdown={toggleDesktopDropdown}
             />
-            <WorkspaceMenu onOpen={() => setActiveDesktopDropdown(null)} />
+            <ConvexHeaderAccount>
+              <WorkspaceMenu onOpen={() => setActiveDesktopDropdown(null)} />
+            </ConvexHeaderAccount>
 
             {/* Cart, Search, Register */}
             <div className="ml-4 flex items-center space-x-4">
