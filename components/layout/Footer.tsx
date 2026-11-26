@@ -31,6 +31,9 @@ const FooterLinkList = ({ links }: { links: SiteLink[] }) => (
   </ul>
 );
 
+/** Read once at module load so the prerendered shell doesn't depend on the clock. */
+const COPYRIGHT_YEAR = new Date().getFullYear();
+
 export const Footer = () => {
   return (
     <footer className="border-slate-200 border-t bg-slate-50 pt-16 pb-8 text-text-light">
@@ -177,8 +180,7 @@ export const Footer = () => {
         {/* Copyright - text-slate-600 for WCAG 4.5:1 contrast on gray-100 */}
         <div className="border-slate-300 border-t pt-6 text-center text-slate-600 text-xs">
           <p>
-            &copy; {new Date().getFullYear()} Taylored Instruction. All rights
-            reserved.
+            &copy; {COPYRIGHT_YEAR} Taylored Instruction. All rights reserved.
           </p>
         </div>
       </div>

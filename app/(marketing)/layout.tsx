@@ -2,26 +2,38 @@ import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import { Suspense } from "react";
 import { AuthEffects } from "@/components/auth-effects";
 import { Footer } from "@/components/layout/Footer";
+import { ConvexHeaderAccount } from "@/components/layout/header-account";
 import { MarketingHeader } from "@/components/layout/MarketingHeader";
-import { ConvexClientProvider } from "@/providers/ConvexClientProvider";
+import {
+  ConvexClientProvider,
+  ConvexPublicProvider,
+} from "@/providers/ConvexClientProvider";
 
+/**
+ * Only the header waits for the request's auth cookies. Page content stays in
+ * the prerendered shell, so the hero paints without a streamed reveal.
+ */
 export default function MarketingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <Suspense fallback={<div className="min-h-dvh bg-background" />}>
-      <ConvexAuthNextjsServerProvider>
-        <ConvexClientProvider>
-          <AuthEffects />
-          <div className="flex min-h-dvh flex-col">
-            <MarketingHeader />
-            <main className="prose-site grow">{children}</main>
-            <Footer />
-          </div>
-        </ConvexClientProvider>
-      </ConvexAuthNextjsServerProvider>
-    </Suspense>
+    <ConvexPublicProvider>
+      <div className="flex min-h-dvh flex-col">
+        <Suspense fallback={<MarketingHeader />}>
+          <ConvexAuthNextjsServerProvider>
+            <ConvexClientProvider>
+              <ConvexHeaderAccount>
+                <AuthEffects />
+                <MarketingHeader />
+              </ConvexHeaderAccount>
+            </ConvexClientProvider>
+          </ConvexAuthNextjsServerProvider>
+        </Suspense>
+        <main className="prose-site grow">{children}</main>
+        <Footer />
+      </div>
+    </ConvexPublicProvider>
   );
 }

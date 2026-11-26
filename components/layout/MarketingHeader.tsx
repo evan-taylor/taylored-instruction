@@ -1,6 +1,5 @@
 "use client";
 
-import { useAuthActions } from "@convex-dev/auth/react";
 import { ChevronDown, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -13,7 +12,7 @@ import {
   TRAINING_SERVICE_LINKS,
 } from "@/lib/service-links";
 import { workspaceLinks } from "@/lib/workspace-navigation";
-import { useProfile } from "../../hooks/useProfile";
+import { useHeaderAccount } from "./header-account";
 import { WorkspaceMenu } from "./workspace-menu";
 
 const EXTERNAL_LINK_REGEX = /^https?:\/\//;
@@ -134,11 +133,15 @@ export const MarketingHeader = () => {
   >(null);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname() ?? "";
-  const { session, isInstructor, isAligned, email } = useProfile();
-  const { signOut } = useAuthActions();
+  const {
+    signedIn: isAuthenticated,
+    isInstructor,
+    isAligned,
+    email,
+    signOut,
+  } = useHeaderAccount();
   const router = useRouter();
 
-  const isAuthenticated = !!session;
   const navLinks = generateNavLinks(
     isAuthenticated,
     isInstructor,
