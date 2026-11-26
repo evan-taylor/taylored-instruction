@@ -8,7 +8,7 @@ export const Hero = () => (
       className="object-cover"
       fetchPriority="high"
       fill
-      priority
+      preload
       quality={75}
       sizes="100vw"
       src="/life-buoy-1.jpeg"

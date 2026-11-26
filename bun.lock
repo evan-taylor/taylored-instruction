@@ -26,6 +26,7 @@
         "@radix-ui/react-radio-group": "^1.5.1",
         "@react-email/render": "^2.1.1",
         "@sentry/nextjs": "^11.8.0",
+        "@sentry/replay": "^11.8.0",
         "@silk-hq/components": "^0.10.1",
         "@stripe/react-stripe-js": "^7.1.0",
         "@stripe/stripe-js": "^10.4.0",

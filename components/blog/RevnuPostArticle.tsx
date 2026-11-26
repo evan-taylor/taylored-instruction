@@ -65,8 +65,9 @@ export const RevnuPostArticle = ({
           <Image
             alt={post.title}
             className="aspect-video w-full rounded-xl object-cover"
+            fetchPriority="high"
             height={heroImageHeight}
-            priority
+            preload
             src={post.heroImageUrl}
             unoptimized
             width={heroImageWidth}

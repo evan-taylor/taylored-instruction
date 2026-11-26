@@ -3,12 +3,12 @@
 import { useQuery } from "convex/react";
 import { CalendarDays, MapPin } from "lucide-react";
 import Link from "next/link";
-import { usePostHog } from "posthog-js/react";
 import { Component, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
+import { withPostHog } from "@/lib/posthog-browser";
 import type { CourseMatch } from "@/shared/registration/catalog";
 import { parsePlace } from "@/shared/registration/catalog";
 import { formatMoney } from "@/shared/registration/domain";
@@ -69,14 +69,15 @@ function when(session: Session) {
 
 /** Keeps the per-course click signal the old booking button reported. */
 function useRegistrationClick(courseName: string) {
-  const posthog = usePostHog();
   return (registrationUrl: string, buttonText: string) =>
-    posthog.capture("course_registration_clicked", {
-      courseName,
-      registrationUrl,
-      buttonText,
-      variant: "primary",
-    });
+    withPostHog((posthog) =>
+      posthog.capture("course_registration_clicked", {
+        courseName,
+        registrationUrl,
+        buttonText,
+        variant: "primary",
+      })
+    );
 }
 
 function SessionRow({

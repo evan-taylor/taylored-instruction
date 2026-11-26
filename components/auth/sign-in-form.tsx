@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/Button";
 import { Field, TextInput } from "@/components/ui/field";
 import { Notice } from "@/components/ui/page-header";
 import { api } from "@/convex/_generated/api";
-import { trackVisitorsEvent } from "@/lib/analytics";
 import { markOtpVerification } from "@/lib/posthog-auth";
 
 type Step = "email" | "code";
@@ -132,7 +131,6 @@ export function SignInForm({
       formData.append("code", code.trim());
       markOtpVerification(true);
       await signIn("resend-otp", formData);
-      trackVisitorsEvent("Login Success", { method: "email_otp" });
     } catch {
       setMessage({
         text: "That code is invalid or has expired. Try again or request a new one.",
@@ -157,7 +155,6 @@ export function SignInForm({
     try {
       await signIn("google");
       posthog.capture("google_signin_initiated");
-      trackVisitorsEvent("Google Sign-in Initiated", { method: "google" });
     } catch {
       setMessage({
         text: "Google sign-in didn’t complete. Please try again.",

@@ -1,12 +1,12 @@
 "use client";
 
+import { captureException } from "@sentry/nextjs";
 import { useConvexAuth, useMutation } from "convex/react";
-import posthog from "posthog-js";
 import { useEffect, useRef } from "react";
 import { api } from "@/convex/_generated/api";
 import { useMigrationAttachment } from "@/hooks/useMigrationAttachment";
 import { useProfile } from "@/hooks/useProfile";
-import { captureVerifiedOtp } from "@/lib/posthog-auth";
+import { withPostHog } from "@/lib/posthog-browser";
 
 export function AuthEffects() {
   const { isAuthenticated } = useConvexAuth();
@@ -21,7 +21,7 @@ export function AuthEffects() {
   useEffect(() => {
     if (!isAuthenticated) {
       if (wasAuthenticated.current) {
-        posthog.reset();
+        withPostHog((posthog) => posthog.reset());
       }
       wasAuthenticated.current = false;
       identifiedUserId.current = undefined;
@@ -42,16 +42,21 @@ export function AuthEffects() {
       return;
     }
 
-    if (identifiedUserId.current) {
-      posthog.reset();
-    }
-
-    posthog.identify(profile.userId, {
-      email: profile.email ?? undefined,
-      is_instructor: profile.is_instructor,
+    const shouldReset = Boolean(identifiedUserId.current);
+    const { userId, email, is_instructor } = profile;
+    withPostHog((posthog) => {
+      if (shouldReset) {
+        posthog.reset();
+      }
+      posthog.identify(userId, {
+        email: email ?? undefined,
+        is_instructor,
+      });
+      import("@/lib/posthog-auth")
+        .then(({ captureVerifiedOtp }) => captureVerifiedOtp(userId))
+        .catch(captureException);
     });
-    captureVerifiedOtp(profile.userId);
-    identifiedUserId.current = profile.userId;
+    identifiedUserId.current = userId;
   }, [isAuthenticated, profile, updateLastLogin]);
 
   return null;

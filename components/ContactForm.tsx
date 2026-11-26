@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Notice } from "@/components/ui/page-header";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import { trackVisitorsEvent } from "@/lib/analytics";
 import { BUSINESS } from "@/lib/business";
 import { registrationAnalyticsContext } from "@/lib/registration-analytics";
 
@@ -56,11 +55,6 @@ export function ContactForm() {
           location: formData.get("location"),
           contactMethods: formData.getAll("contactMethod"),
           smsOptIn: formData.get("smsOptIn") === "on",
-        });
-
-        trackVisitorsEvent("Contact Form Submitted", {
-          location: String(formData.get("location") ?? ""),
-          source: "contact_page",
         });
 
         // Optionally reset the form

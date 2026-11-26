@@ -36,7 +36,6 @@ type EditingStep = {
 const EMBED_EXAMPLES = [
   '<CapEmbed url="https://cap.so/embed/..." />',
   '<LoomEmbed url="https://www.loom.com/share/..." />',
-  '<TypeformEmbed formId="abc123" />',
   '<CalComButton username="evan-taylor" eventType="taylored-instruction" namespace="taylored-instruction" buttonText="Book Now" />',
 ];
 
