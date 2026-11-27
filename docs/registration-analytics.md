@@ -37,6 +37,9 @@ cents, with tax separate from the pre-tax total.
 - Emailed payments: payment start/ready/failure and payer identity handoff.
 - Portal: loaded view/count and failures; material open intent/success/failure.
 - Backend: reserved, released, settled and selected payment-reconciliation exceptions.
+- Staff: `preclass_certificate_uploaded_by_staff` when staff upload a pre-class
+  certificate for an attendee. The distinct id is the staff user id; properties are
+  `course_id`, `class_session_id` and `status` (`uploaded` or `replaced`).
 
 Browser leave events are best effort and do not prove a hold was released.
 `registration_released` records the backend transition. Field completion events
