@@ -51,6 +51,7 @@ const portalSeat = v.object({
   name: v.string(),
   state: v.string(),
   title: v.string(),
+  billedTo: v.optional(v.string()),
   sessionId: v.optional(v.id("registrationSessions")),
   timeZone: v.optional(v.string()),
   certificate: v.optional(certificateStatusValidator),
@@ -94,7 +95,10 @@ export const registrations = query({
         const session = seat.sessionId
           ? await ctx.db.get(seat.sessionId)
           : null;
-        const course = await ctx.db.get(seat.courseId);
+        const [course, order] = await Promise.all([
+          ctx.db.get(seat.courseId),
+          ctx.db.get(seat.orderId),
+        ]);
         const entitlements = seat.settledAt
           ? await activeSeatMaterials(ctx, seat._id)
           : [];
@@ -104,6 +108,7 @@ export const registrations = query({
           state: session?.state === "canceled" ? "canceled" : seat.state,
           timeZone: session?.timeZone,
           title: session?.title ?? course?.title ?? "Course",
+          ...(order?.billedTo ? { billedTo: order.billedTo } : {}),
           sessionId: session?._id,
           certificate:
             session && session.state !== "canceled"
@@ -154,6 +159,7 @@ export const orders = query({
         total: v.number(),
         tax: v.optional(v.number()),
         refunded: v.number(),
+        billedTo: v.optional(v.string()),
         attendees: v.array(v.object({ name: v.string(), email: v.string() })),
       })
     ),
@@ -183,6 +189,7 @@ export const orders = query({
         total: order.total,
         tax: order.tax,
         refunded: order.refunded,
+        ...(order.billedTo ? { billedTo: order.billedTo } : {}),
         attendees: order.seats.map((s) => ({
           name: s.attendee.name,
           email: s.attendee.email,

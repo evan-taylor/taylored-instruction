@@ -1,6 +1,6 @@
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
-import { api } from "../../convex/_generated/api";
+import { api, internal } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import schema from "../../convex/schema";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
@@ -11,6 +11,7 @@ import {
   endOfBusinessDay,
   generateBillingCode,
   normalizeBillingCode,
+  splitAmount,
 } from "../../shared/registration/billing";
 import { agreement } from "./fixtures/policy";
 
@@ -232,6 +233,11 @@ describe("organization billing codes", () => {
     const receipt = jobs.find((job) => job.key === `receipt:${result.orderId}`);
     expect(receipt?.body).toContain("covered by Acme Health");
     expect(receipt?.body).not.toContain("72.00");
+    const email = await f.t.mutation(internal.registrationMail.claim, {
+      id: receipt?._id as Id<"registrationJobs">,
+    });
+    expect(email?.body).toContain("covered by Acme Health");
+    expect(email?.body).not.toContain("Thank you for your payment");
 
     const status = await f.t.query(api.registrationPortal.status, {
       orderId: result.orderId,
@@ -336,6 +342,11 @@ describe("organization billing codes", () => {
       "ben",
       "cara",
     ]);
+    const lineIds = order?.seats.flatMap((seat) =>
+      seat.lines.map((line) => line.id)
+    );
+    expect(new Set(lineIds).size).toBe(lineIds?.length);
+    expect(order?.seats.every((seat) => seat.total === 6000)).toBe(true);
     expect((await f.balance()).unbilled).toBe(0);
     await expect(
       f.admin.mutation(api.registrationBilling.invoiceBalance, {
@@ -429,6 +440,9 @@ describe("organization billing codes", () => {
       (line) => line.attendeeName === "billed"
     );
     expect(resolved?.followUp).toBeUndefined();
+    expect(resolved?.followUpResolved?.reason).toBe(
+      "Credited on the next invoice"
+    );
   });
 
   it("moves the balance line when a covered seat is transferred", async () => {
@@ -503,6 +517,12 @@ describe("billing code rules", () => {
     expect(new Date(endOfBusinessDay("2026-11-01")).toISOString()).toBe(
       "2026-11-02T07:59:59.999Z"
     );
+  });
+
+  it("splits the agreed amount across priced lines", () => {
+    expect(splitAmount([8000, 2000], 7200)).toEqual([5760, 1440]);
+    expect(splitAmount([1000, 1000, 1000], 1000)).toEqual([334, 333, 333]);
+    expect(splitAmount([0, 0], 2000)).toEqual([2000, 0]);
   });
 
   it("normalizes and generates codes", () => {

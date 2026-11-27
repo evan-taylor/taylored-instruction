@@ -6,6 +6,7 @@ import {
   billingPricingProblem,
   generateBillingCode,
   normalizeBillingCode,
+  splitAmount,
 } from "../shared/registration/billing";
 import { formatMoney, type Quote } from "../shared/registration/domain";
 import type { Doc } from "./_generated/dataModel";
@@ -176,16 +177,27 @@ const balanceLine = v.object({
 
 export const organizationBalance = query({
   args: { organizationId: v.id("registrationOrganizations") },
-  returns: v.object({ unbilled: v.number(), lines: v.array(balanceLine) }),
+  returns: v.object({
+    unbilled: v.number(),
+    lines: v.array(balanceLine),
+    truncated: v.boolean(),
+  }),
   handler: async (ctx, args) => {
     await staff(ctx);
-    const rows = await ctx.db
-      .query("registrationOrganizationCharges")
-      .withIndex("by_organizationId_and_state", (q) =>
-        q.eq("organizationId", args.organizationId)
-      )
-      .order("desc")
-      .take(MAX_LINES);
+    const byState = (state: Doc<"registrationOrganizationCharges">["state"]) =>
+      ctx.db
+        .query("registrationOrganizationCharges")
+        .withIndex("by_organizationId_and_state", (q) =>
+          q.eq("organizationId", args.organizationId).eq("state", state)
+        )
+        .order("desc")
+        .take(MAX_LINES);
+    const groups = await Promise.all([
+      byState("unbilled"),
+      byState("invoiced"),
+      byState("void"),
+    ]);
+    const rows = groups.flat();
     const lines = await Promise.all(
       rows.map(async (row) => {
         const [session, billingOrder] = await Promise.all([
@@ -204,6 +216,7 @@ export const organizationBalance = query({
         .filter((row) => row.state === "unbilled")
         .reduce((sum, row) => sum + row.amount, 0),
       lines,
+      truncated: groups.some((group) => group.length === MAX_LINES),
     };
   },
 });
@@ -226,7 +239,11 @@ async function balanceSeat(
   line: Doc<"registrationOrganizationCharges">
 ): Promise<Quote> {
   const session = line.sessionId ? await ctx.db.get(line.sessionId) : null;
-  const cents = Math.max(line.listPrice, line.amount);
+  const when = classDate(line, session?.timeZone ?? DEFAULT_TIME_ZONE);
+  const shares = splitAmount(
+    line.lines.map((part) => part.cents),
+    line.amount
+  );
   return {
     attendee: {
       name: line.attendeeName,
@@ -235,15 +252,17 @@ async function balanceSeat(
       waived: [],
       answers: [],
     },
-    lines: [
-      {
-        id: "tuition",
-        title: `${line.title} (${classDate(line, session?.timeZone ?? DEFAULT_TIME_ZONE)}, code ${line.code})`,
+    lines: line.lines.map((part, index) => {
+      const owed = shares[index] ?? 0;
+      const cents = Math.max(part.cents, owed);
+      return {
+        id: `${line._id}:${part.id}`,
+        title: `${line.title}: ${part.title} (${when}, code ${line.code})`,
         cents,
-        discount: cents - line.amount,
-        ...(line.taxCode ? { taxCode: line.taxCode } : {}),
-      },
-    ],
+        discount: cents - owed,
+        ...(part.taxCode ? { taxCode: part.taxCode } : {}),
+      };
+    }),
     total: line.amount,
     couponUsed: false,
     materials: [],
@@ -361,19 +380,23 @@ export const resolveFollowUp = mutation({
   handler: async (ctx, args) => {
     const actor = await staff(ctx);
     const line = await ctx.db.get(args.chargeId);
-    if (!line?.followUp) {
+    if (!line || line.state === "void") {
       return null;
     }
-    if (!args.note.trim()) {
+    const note = args.note.trim();
+    if (!note) {
       throw new ConvexError("Say how it was resolved");
     }
-    await ctx.db.patch(line._id, { followUp: undefined });
+    await ctx.db.patch(line._id, {
+      followUp: undefined,
+      followUpResolved: { at: Date.now(), actor: actor.userId, reason: note },
+    });
     await audit(
       ctx,
       actor.userId,
       "billing-follow-up-resolved",
       line._id,
-      args.note.trim()
+      note
     );
     return null;
   },

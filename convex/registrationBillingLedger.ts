@@ -25,6 +25,12 @@ export function coverSeats(
 ) {
   return seats.map((seat) => ({
     listPrice: seat.total,
+    lines: seat.lines.map((line) => ({
+      id: line.id,
+      title: line.title,
+      cents: line.cents - line.discount,
+      ...(line.taxCode ? { taxCode: line.taxCode } : {}),
+    })),
     amount: agreedAmount(code, seat.total),
     seat: {
       ...seat,
@@ -39,12 +45,12 @@ export async function recordCharges(
   ctx: MutationCtx,
   order: Doc<"registrationOrders">,
   code: Doc<"registrationBillingCodes">,
-  covered: { listPrice: number; amount: number; seat: Quote }[],
+  covered: ReturnType<typeof coverSeats>,
   seatIds: Id<"registrationSeats">[],
   session: Doc<"registrationSessions"> | null
 ) {
   await Promise.all(
-    covered.map(({ listPrice, amount, seat }, index) => {
+    covered.map(({ listPrice, amount, lines, seat }, index) => {
       const seatId = seatIds[index];
       if (!seatId) {
         throw new Error("Seat missing for billing line");
@@ -63,7 +69,7 @@ export async function recordCharges(
         classStart: session?.firstStart,
         listPrice,
         amount,
-        taxCode: seat.lines.find((line) => line.id === "tuition")?.taxCode,
+        lines,
         state: "unbilled",
       });
     })

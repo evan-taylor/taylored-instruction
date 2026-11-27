@@ -104,6 +104,23 @@ export function billingPricingProblem(pricing: BillingPricing, amount: number) {
   return null;
 }
 
+/**
+ * Spreads what the organization owes for a seat across its priced lines in
+ * proportion to their list prices, so each line keeps its own tax code.
+ */
+export function splitAmount(prices: number[], amount: number) {
+  const total = prices.reduce((sum, price) => sum + price, 0);
+  const shares = prices.map((price) =>
+    total > 0 ? Math.floor((amount * price) / total) : 0
+  );
+  const largest = prices.indexOf(Math.max(...prices));
+  shares[largest] =
+    (shares[largest] ?? 0) +
+    amount -
+    shares.reduce((sum, share) => sum + share, 0);
+  return shares;
+}
+
 /** What the organization owes for one seat whose list price is `listPrice`. */
 export function agreedAmount(
   code: { pricing: BillingPricing; amount: number },

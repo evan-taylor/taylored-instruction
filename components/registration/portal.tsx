@@ -39,6 +39,7 @@ import { TabPanel, Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import { trackRegistration } from "@/lib/registration-analytics";
+import { cn } from "@/lib/utils";
 import {
   CERTIFICATE_ACCEPT,
   MAX_CERTIFICATE_BYTES,
@@ -58,6 +59,7 @@ type PortalRow = {
   total?: number;
   refunded?: number;
   tax?: number;
+  billedTo?: string;
   certificate?: { title: string; uploaded: boolean; materialId?: string };
   materials?: {
     id: string;
@@ -531,6 +533,7 @@ function RegistrationCard({
         {row.state ? <StatusBadge status={row.state} /> : null}
       </CardHeader>
       <CardContent className="space-y-5">
+        <CoveredBy row={row} />
         {row.meetings?.length ? (
           <section>
             <h3 className="mb-1 font-semibold text-slate-500 text-xs uppercase tracking-wide">
@@ -561,6 +564,14 @@ function RegistrationCard({
   );
 }
 
+function CoveredBy({ row, className }: { row: PortalRow; className?: string }) {
+  return row.billedTo ? (
+    <p className={cn("text-slate-600 text-sm", className)}>
+      Covered by {row.billedTo}. Nothing is due from you.
+    </p>
+  ) : null;
+}
+
 function OrderCard({ row }: { row: PortalRow }) {
   return (
     <Card>
@@ -569,6 +580,7 @@ function OrderCard({ row }: { row: PortalRow }) {
         {row.status ? <StatusBadge status={row.status} /> : null}
       </CardHeader>
       <CardContent className="grid gap-5 sm:grid-cols-[auto_minmax(0,1fr)]">
+        <CoveredBy className="sm:col-span-2" row={row} />
         <dl className="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:block sm:space-y-2">
           <div>
             <dt className="text-slate-500 text-xs uppercase tracking-wide">

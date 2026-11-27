@@ -272,7 +272,7 @@ function BillingCodeEditor({
             )}
           </Field>
           <Field
-            hint="Optional. Stops working at the end of this day (UTC)."
+            hint="Optional. Stops working at the end of this day, Pacific time."
             label="Expires"
           >
             {(props) => (
@@ -736,7 +736,9 @@ function BillingOrders({
 function FollowUps({ lines }: { lines: Line[] }) {
   const [resolving, setResolving] = useState<Line | null>(null);
   const flagged = lines.filter(
-    (line) => line.followUp || (line.sessionCanceled && line.state !== "void")
+    (line) =>
+      line.followUp ||
+      (line.sessionCanceled && line.state !== "void" && !line.followUpResolved)
   );
   if (flagged.length === 0) {
     return null;
@@ -761,7 +763,7 @@ function FollowUps({ lines }: { lines: Line[] }) {
                   "This class was canceled. Cancel or transfer the registration to update the balance."}
               </TD>
               <TD className="text-right">
-                {line.followUp ? (
+                {line.followUp || line.state === "invoiced" ? (
                   <Button
                     onClick={() => setResolving(line)}
                     size="xs"
@@ -814,6 +816,12 @@ function BalancePanel({ organization }: { organization: Organization }) {
           {reversed ? ` · ${reversed} reversed by cancellation` : ""}
         </p>
       </div>
+      {balance.truncated ? (
+        <Notice tone="info">
+          Showing the newest 500 lines in each state. Invoice these to see more
+          unbilled lines.
+        </Notice>
+      ) : null}
       <FollowUps lines={balance.lines} />
       <UnbilledLines
         lines={unbilled}

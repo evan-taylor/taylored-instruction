@@ -214,7 +214,15 @@ export const registrationTables = {
     listPrice: v.number(),
     /** What the organization owes for this seat now. */
     amount: v.number(),
-    taxCode: v.optional(v.string()),
+    /** The seat's priced lines at list price, so invoices keep each tax code. */
+    lines: v.array(
+      v.object({
+        id: v.string(),
+        title: v.string(),
+        cents: v.number(),
+        taxCode: v.optional(v.string()),
+      })
+    ),
     state: chargeState,
     /** The organization balance order this line was invoiced through. */
     billingOrderId: v.optional(v.id("registrationOrders")),
@@ -222,6 +230,8 @@ export const registrationTables = {
     adjustment: v.optional(staffNote),
     /** A change after invoicing that staff must credit or reconcile by hand. */
     followUp: v.optional(staffNote),
+    /** How staff handled the latest follow-up, which also clears a canceled-class warning. */
+    followUpResolved: v.optional(staffNote),
   })
     .index("by_organizationId_and_state", ["organizationId", "state"])
     .index("by_seatId", ["seatId"])
