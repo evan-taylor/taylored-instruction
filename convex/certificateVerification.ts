@@ -129,7 +129,9 @@ async function askJev(
     };
   }
   const parsed = answersFrom(await response.json().catch(() => null));
-  return parsed.answers.length ? parsed : { error: "invalid_response" };
+  return parsed.answers.length === VERIFICATION_CHECKS.length
+    ? parsed
+    : { error: "invalid_response" };
 }
 
 /**
@@ -193,6 +195,7 @@ export const verify = internalAction({
       {
         fileId,
         threshold,
+        checkedFrom: input.earliestCompletionDate,
         ...("error" in outcome ? { error: outcome.error } : outcome),
       }
     );

@@ -404,24 +404,32 @@ export const verificationInput = internalQuery({
     if (!(seat && session && rule)) {
       return null;
     }
-    const material = rule.certificateMaterialId
-      ? await ctx.db.get(rule.certificateMaterialId)
-      : null;
+    const [material, course] = await Promise.all([
+      rule.certificateMaterialId
+        ? ctx.db.get(rule.certificateMaterialId)
+        : null,
+      ctx.db.get(session.courseId),
+    ]);
+    const label = material ? `${rule.title} (${material.title})` : rule.title;
     return {
       storageId: file.storageId,
       type: file.type,
-      expectedCourse: material
-        ? `${rule.title} (${material.title})`
-        : rule.title,
+      expectedCourse: course
+        ? `${label}, the pre-class requirement for ${course.title}`
+        : label,
       attendeeName: seat.name,
       today: isoDate(Date.now(), session.timeZone),
-      earliestCompletionDate: isoDate(
-        session.firstStart - CERTIFICATE_MAX_AGE_DAYS * DAY_MS,
-        session.timeZone
-      ),
+      earliestCompletionDate: earliestCompletionDate(session),
     };
   },
 });
+
+function earliestCompletionDate(session: Doc<"registrationSessions">) {
+  return isoDate(
+    session.firstStart - CERTIFICATE_MAX_AGE_DAYS * DAY_MS,
+    session.timeZone
+  );
+}
 
 /** The outcome an attendee's certificate upload backs, and the rule it satisfies. */
 async function certificateRecord(
@@ -489,15 +497,25 @@ export const recordVerification = internalMutation({
     model: v.optional(v.string()),
     answers: v.optional(certificateVerification.fields.answers),
     error: certificateVerification.fields.error,
+    checkedFrom: v.optional(v.string()),
   },
   returns: v.null(),
-  handler: async (ctx, { fileId, threshold, model, answers, error }) => {
+  handler: async (
+    ctx,
+    { fileId, threshold, model, answers, error, checkedFrom }
+  ) => {
     const file = await ctx.db.get(fileId);
     if (!file) {
       return null;
     }
+    const session = await ctx.db.get(file.sessionId);
+    const sameWindow =
+      session !== null && checkedFrom === earliestCompletionDate(session);
     const passed =
-      !error && answers !== undefined && decide(answers, threshold);
+      !error &&
+      sameWindow &&
+      answers !== undefined &&
+      decide(answers, threshold);
     await finishVerification(ctx, file, {
       state: passed ? "auto_passed" : "needs_review",
       threshold,

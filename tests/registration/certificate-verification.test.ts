@@ -272,7 +272,8 @@ it("holds an attendee's upload as verifying and passes it when Jev is confident 
   const body = JSON.parse(String(init?.body));
   expect(body.model).toBe("typesafe/jev-1.14");
   expect(body.state[0]).toMatchObject({
-    expected_course: "HeartCode BLS",
+    expected_course:
+      "HeartCode BLS, the pre-class requirement for BLS Provider",
     attendee_name: "Jamie Example",
   });
   expect(body.state[0].today).toMatch(ISO_DATE);
@@ -381,26 +382,73 @@ it("retries transient gateway errors a bounded number of times, then sends the u
     async () => new Response("busy", { status: 503 })
   );
   const fileId = await f.upload();
+  const attempts = async () =>
+    (
+      await f.t.run((ctx) =>
+        ctx.db.system.query("_scheduled_functions").collect()
+      )
+    )
+      .filter((job) => job.name.includes("certificateVerification"))
+      .map((job) => ({
+        attempt: job.args[0].attempt,
+        delay: job.scheduledTime - job._creationTime,
+      }));
+  const retry = async (attempt: number) => {
+    const job = (await attempts()).find((next) => next.attempt === attempt);
+    if (job) {
+      await f.verify(fileId, job.attempt);
+    }
+    return job?.delay;
+  };
 
   await f.verify(fileId, 1);
   expect((await f.file(fileId))?.verification?.state).toBe("verifying");
-  const retries = (
-    await f.t.run((ctx) =>
-      ctx.db.system.query("_scheduled_functions").collect()
-    )
-  ).filter(
-    (job) =>
-      job.name.includes("certificateVerification") && job.args[0].attempt === 2
-  );
-  expect(retries).toHaveLength(1);
-
-  await f.verify(fileId, 3);
+  expect(await retry(2)).toBeCloseTo(30_000, -2);
+  expect((await f.file(fileId))?.verification?.state).toBe("verifying");
+  expect(await retry(3)).toBeCloseTo(120_000, -2);
+  expect(await retry(4)).toBeUndefined();
+  expect(fetchMock).toHaveBeenCalledTimes(3);
   expect((await f.file(fileId))?.verification).toMatchObject({
     state: "needs_review",
     error: "gateway_error",
   });
   expect(await f.portal()).toMatchObject({ review: "needs_review" });
   expect((await f.analytics()).at(0)?.properties.result).toBe("error");
+});
+
+it("sends the upload to review when Jev leaves a check unanswered", async () => {
+  const f = await fixture();
+  fetchMock.mockResolvedValue(
+    Response.json({
+      answers: Object.fromEntries(
+        VERIFICATION_CHECKS.filter((check) => check.id !== "date").map(
+          (check) => [check.id, { type: "noul", noul: 0.97 }]
+        )
+      ),
+    })
+  );
+  const fileId = await f.upload();
+
+  await f.verify(fileId);
+  expect((await f.file(fileId))?.verification).toMatchObject({
+    state: "needs_review",
+    error: "invalid_response",
+  });
+});
+
+it("sends the upload to review when the class moves while Jev is checking it", async () => {
+  const f = await fixture();
+  fetchMock.mockImplementation(async () => {
+    await f.t.run((ctx) =>
+      ctx.db.patch(f.session, { firstStart: Date.now() + 8 * 86_400_000 })
+    );
+    return jevAnswers();
+  });
+  const fileId = await f.upload();
+
+  await f.verify(fileId);
+  expect((await f.file(fileId))?.verification?.state).toBe("needs_review");
+  expect(await f.roster()).toMatchObject({ completion: "incomplete" });
 });
 
 it("sends the upload to review when the request times out or never finishes", async () => {

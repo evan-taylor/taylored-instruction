@@ -280,7 +280,8 @@ export default async function PrivacyPolicyPage() {
           </h2>
           <p>
             We do not transfer your personal information to any external
-            organizations under any circumstances, even with your consent.
+            organizations, except the automated certificate verification
+            described in section 6.
           </p>
 
           <h2 className="mt-8 mb-6 font-semibold text-2xl text-text">
