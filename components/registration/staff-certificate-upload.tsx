@@ -153,7 +153,7 @@ export function StaffCertificateUpload({
       <ConfirmDialog
         confirmLabel="Remove certificate"
         danger
-        description="The file is deleted and the attendee’s certificate requirement reopens, so upload reminders resume."
+        description="The file is deleted and the attendee’s certificate requirement reopens. Upload reminders that haven’t sent yet will go out again; ones skipped while a certificate was on file won’t."
         onClose={() => setRemoving(false)}
         onConfirm={async () => {
           if (!current) {
