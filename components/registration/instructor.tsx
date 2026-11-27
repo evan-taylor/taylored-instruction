@@ -46,12 +46,16 @@ import {
   shortZone,
 } from "./format";
 import { OutcomeField } from "./outcome-field";
+import {
+  type StaffCertificate,
+  StaffCertificateUpload,
+} from "./staff-certificate-upload";
 
 type AttendanceStatus = Doc<"registrationAttendance">["status"];
 type Seat = Doc<"registrationSeats"> & {
   attendance: Pick<Doc<"registrationAttendance">, "meetingId" | "status">[];
   completion: string;
-  certificate?: { title: string; uploaded: boolean };
+  certificate?: StaffCertificate;
   billedTo?: string;
 };
 const EMAIL_BATCH = 50;
@@ -369,6 +373,13 @@ function SeatDetails({
       </section>
       <section className="space-y-3">
         <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
+        {seat.certificate ? (
+          <StaffCertificateUpload
+            attendeeName={seat.name}
+            certificate={seat.certificate}
+            seatId={seat._id}
+          />
+        ) : null}
         {data?.values &&
           seat.outcomeDefinitions
             .filter((definition) => !definition.certificateRequired)

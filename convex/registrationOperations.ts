@@ -21,8 +21,8 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { cancelCharge } from "./registrationBillingLedger";
 import {
-  certificateStatus,
-  certificateStatusValidator,
+  staffCertificateStatus,
+  staffCertificateStatusValidator,
 } from "./registrationCertificates";
 import {
   activateSeat,
@@ -516,7 +516,7 @@ export const roster = query({
       v.object({
         ...doc(schema, "registrationSeats").fields,
         completion: v.string(),
-        certificate: v.optional(certificateStatusValidator),
+        certificate: v.optional(staffCertificateStatusValidator),
         /** The organization a billing code charges for this seat. */
         billedTo: v.optional(v.string()),
         attendance: v.array(
@@ -553,7 +553,7 @@ export const roster = query({
           ...seat,
           ...(order?.billedTo ? { billedTo: order.billedTo } : {}),
           completion: seatCompletion,
-          certificate: await certificateStatus(ctx, seat),
+          certificate: await staffCertificateStatus(ctx, seat),
           attendance: rows.map(({ meetingId, status }) => ({
             meetingId,
             status,

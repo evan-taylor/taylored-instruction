@@ -66,6 +66,8 @@ export const registrationTables = {
     uploadedBy: v.id("users"),
     uploadedAt: v.number(),
     certificateSeatId: v.optional(v.id("registrationSeats")),
+    /** Staff uploaded this certificate on the attendee's behalf. */
+    staffUpload: v.optional(v.literal(true)),
   }).index("by_sessionId", ["sessionId"]),
   registrationLocations: defineTable({
     name: v.string(),

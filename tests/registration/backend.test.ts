@@ -6323,3 +6323,198 @@ it("records an attendee's certificate and skips only their pending upload remind
     })
   ).toMatchObject({ completion: "incomplete", values: [] });
 });
+
+it("lets staff upload, replace, and remove an attendee's pre-class certificate", async () => {
+  const f = await fixture();
+  await f.t.run((ctx) =>
+    ctx.db.patch(f.course, {
+      settings: {
+        ...config,
+        tuition: 0,
+        outcomes: [
+          {
+            id: "online",
+            title: "HeartCode BLS",
+            type: "category",
+            options: ["Complete"],
+            passingValue: "Complete",
+            required: true,
+            certificateRequired: true,
+            version: 1,
+          },
+        ],
+        emails: [
+          {
+            id: "certificate",
+            anchor: "first",
+            offsetMinutes: -60,
+            subject: "Upload your certificate",
+            body: "Bring proof of online completion.",
+            onlyMissingCertificate: true,
+          },
+        ],
+      },
+    })
+  );
+  const address = "forgot@example.test";
+  const order = await f.t.mutation(api.registration.reserve, {
+    ...attempt(f.course, f.session),
+    attendees: [seat(address)],
+  });
+  const [student] = await f.adminClient.query(
+    api.registrationOperations.orderSeats,
+    { orderId: order.orderId }
+  );
+  if (!student) {
+    throw new Error("Expected the attendee");
+  }
+  const user = await f.t.run((ctx) =>
+    ctx.db.insert("users", {
+      email: address,
+      emailVerificationTime: Date.now(),
+    })
+  );
+  const attendee = f.t.withIdentity({ subject: `${user}|session` });
+  const paginationOpts = { numItems: 10, cursor: null };
+  const portal = async () =>
+    (
+      await attendee.query(api.registrationPortal.registrations, {
+        paginationOpts,
+      })
+    ).page.at(0)?.certificate;
+  const rosterRow = async () =>
+    (
+      await f.adminClient.query(api.registrationOperations.roster, {
+        sessionId: f.session,
+        paginationOpts,
+      })
+    ).page.find((entry) => entry._id === student._id);
+  const pdf = new TextEncoder().encode("%PDF-1.7\n%%EOF").buffer;
+  const upload = { seatId: student._id, name: "heartcode.pdf", bytes: pdf };
+
+  await expect(
+    attendee.action(api.registrationCertificates.uploadForAttendee, upload)
+  ).rejects.toThrow("Forbidden");
+  await expect(
+    f.outsiderClient.action(
+      api.registrationCertificates.uploadForAttendee,
+      upload
+    )
+  ).rejects.toThrow("Forbidden");
+  await expect(
+    f.adminClient.action(api.registrationCertificates.uploadForAttendee, {
+      ...upload,
+      bytes: new TextEncoder().encode("<html>nope</html>").buffer,
+    })
+  ).rejects.toThrow("Choose a PDF, JPEG, or PNG certificate");
+  await expect(
+    f.adminClient.action(api.registrationCertificates.uploadForAttendee, {
+      ...upload,
+      bytes: new Uint8Array(3 * 1024 * 1024 + 1).buffer,
+    })
+  ).rejects.toThrow("3 MB or smaller");
+  expect(
+    await f.t.run((ctx) => ctx.db.system.query("_storage").collect())
+  ).toHaveLength(0);
+
+  await f.adminClient.action(
+    api.registrationCertificates.uploadForAttendee,
+    upload
+  );
+  expect(await portal()).toMatchObject({ uploaded: true });
+  expect(await rosterRow()).toMatchObject({
+    completion: "complete",
+    certificate: {
+      uploaded: true,
+      file: { name: "heartcode.pdf", staffUpload: true },
+    },
+  });
+  const [file] = await f.t.run((ctx) =>
+    ctx.db.query("registrationSessionFiles").collect()
+  );
+  expect(file).toMatchObject({
+    uploadedBy: f.admin,
+    staffUpload: true,
+    certificateSeatId: student._id,
+  });
+  expect(typeof file?.uploadedAt).toBe("number");
+  const activity = await f.t.run((ctx) =>
+    ctx.db
+      .query("registrationActivity")
+      .withIndex("by_entity", (q) => q.eq("entity", student._id))
+      .collect()
+  );
+  expect(activity.map((row) => [row.actor, row.action])).toContainEqual([
+    f.admin,
+    "completion-certificate-uploaded-by-staff",
+  ]);
+  const scheduled = await f.t.run((ctx) =>
+    ctx.db.system.query("_scheduled_functions").collect()
+  );
+  const events = scheduled
+    .filter((job) => job.name.includes("captureAnalytics"))
+    .map((job) => job.args[0])
+    .filter((args) => args.event === "preclass_certificate_uploaded_by_staff");
+  expect(events).toEqual([
+    {
+      event: "preclass_certificate_uploaded_by_staff",
+      analytics: { distinctId: f.admin },
+      properties: {
+        course_id: f.course,
+        class_session_id: f.session,
+        status: "uploaded",
+      },
+    },
+  ]);
+
+  const reminder = await f.t.run(async (ctx) =>
+    (await ctx.db.query("registrationJobs").collect()).find(
+      (job) => job.stepId === "certificate" && job.seatId === student._id
+    )
+  );
+  if (!reminder) {
+    throw new Error("Expected a certificate reminder");
+  }
+  expect(
+    await f.t.mutation(internal.registrationMail.claim, { id: reminder._id })
+  ).toBeNull();
+
+  // The attendee's own upload is a no-op once staff uploaded one.
+  await attendee.action(api.registrationCertificates.upload, upload);
+  await f.instructorClient.action(
+    api.registrationCertificates.uploadForAttendee,
+    {
+      ...upload,
+      name: "heartcode-fixed.png",
+      bytes: new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0]).buffer,
+    }
+  );
+  const files = await f.t.run((ctx) =>
+    ctx.db.query("registrationSessionFiles").collect()
+  );
+  expect(files).toHaveLength(1);
+  expect(files.at(0)).toMatchObject({
+    name: "heartcode-fixed.png",
+    type: "image/png",
+    uploadedBy: f.instructor,
+  });
+  expect(
+    await f.t.run((ctx) => ctx.db.system.query("_storage").collect())
+  ).toHaveLength(1);
+  const replaced = await rosterRow();
+  expect(replaced?.certificate?.file?.name).toBe("heartcode-fixed.png");
+
+  const replacedId = replaced?.certificate?.file?._id;
+  if (!replacedId) {
+    throw new Error("Expected the replacement file");
+  }
+  await f.adminClient.mutation(api.registrationOperations.removeFile, {
+    id: replacedId,
+  });
+  expect(await portal()).toMatchObject({ uploaded: false });
+  expect(await rosterRow()).toMatchObject({
+    completion: "incomplete",
+    certificate: { uploaded: false },
+  });
+  expect((await rosterRow())?.certificate?.file).toBeUndefined();
+});
