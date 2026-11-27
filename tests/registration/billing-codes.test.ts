@@ -8,6 +8,7 @@ import {
   agreedAmount,
   amountAfterCancellation,
   billingCodeProblem,
+  endOfBusinessDay,
   generateBillingCode,
   normalizeBillingCode,
 } from "../../shared/registration/billing";
@@ -487,6 +488,21 @@ describe("billing code rules", () => {
     expect(amountAfterCancellation(7200, now + 2 * DAY, false, now)).toBe(2000);
     expect(amountAfterCancellation(1500, now + 2 * DAY, false, now)).toBe(1500);
     expect(amountAfterCancellation(7200, now + 2 * DAY, true, now)).toBe(0);
+  });
+
+  it("expires codes at the end of the business day in Pacific time", () => {
+    expect(new Date(endOfBusinessDay("2026-12-15")).toISOString()).toBe(
+      "2026-12-16T07:59:59.999Z"
+    );
+    expect(new Date(endOfBusinessDay("2026-07-04")).toISOString()).toBe(
+      "2026-07-05T06:59:59.999Z"
+    );
+    expect(new Date(endOfBusinessDay("2026-03-08")).toISOString()).toBe(
+      "2026-03-09T06:59:59.999Z"
+    );
+    expect(new Date(endOfBusinessDay("2026-11-01")).toISOString()).toBe(
+      "2026-11-02T07:59:59.999Z"
+    );
   });
 
   it("normalizes and generates codes", () => {

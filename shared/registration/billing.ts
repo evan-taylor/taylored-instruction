@@ -22,6 +22,39 @@ export const billingCodeFields = {
   active: v.boolean(),
 };
 
+export const BUSINESS_TIME_ZONE = "America/Los_Angeles";
+
+function wallClock(at: number, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+  }).formatToParts(at);
+  const part = (type: string) =>
+    Number(parts.find((value) => value.type === type)?.value);
+  return Date.UTC(
+    part("year"),
+    part("month") - 1,
+    part("day"),
+    part("hour"),
+    part("minute"),
+    part("second")
+  );
+}
+
+/** The last millisecond of a YYYY-MM-DD date where the business operates. */
+export function endOfBusinessDay(date: string, timeZone = BUSINESS_TIME_ZONE) {
+  const [year, month, day] = date.split("-").map(Number);
+  const midnight = Date.UTC(year, month - 1, day + 1);
+  const offset = (at: number) => wallClock(at, timeZone) - at;
+  return midnight - offset(midnight - offset(midnight)) - 1;
+}
+
 export const chargeState = v.union(
   v.literal("unbilled"),
   v.literal("invoiced"),

@@ -33,9 +33,12 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import {
   type BillingPricing,
+  BUSINESS_TIME_ZONE,
   describeBillingPricing,
+  endOfBusinessDay,
 } from "@/shared/registration/billing";
 import { formatMoney } from "@/shared/registration/domain";
+import { businessDate } from "@/shared/registration/student-certificates";
 import { Checklist, RadioGroup, RadioOption } from "./coupons";
 import { CreateInvoiceModal } from "./invoices";
 
@@ -47,8 +50,6 @@ type Balance = FunctionReturnType<
 >;
 type Line = Balance["lines"][number];
 type Tab = "codes" | "balance";
-
-const DATE_INPUT_LENGTH = 10;
 
 function courseList(code: BillingCode, courses: Course[] | undefined) {
   if (code.courseIds.length === 0) {
@@ -94,9 +95,7 @@ function BillingCodeEditor({
   );
   const [limit, setLimit] = useState(code?.limit?.toString() ?? "");
   const [expires, setExpires] = useState(
-    code?.expires
-      ? new Date(code.expires).toISOString().slice(0, DATE_INPUT_LENGTH)
-      : ""
+    code?.expires ? businessDate(code.expires, BUSINESS_TIME_ZONE) : ""
   );
   const [active, setActive] = useState(code?.active ?? true);
   const [busy, setBusy] = useState(false);
@@ -105,7 +104,7 @@ function BillingCodeEditor({
 
   async function submit() {
     setMessage("");
-    const expiresAt = expires ? Date.parse(`${expires}T23:59:59Z`) : undefined;
+    const expiresAt = expires ? endOfBusinessDay(expires) : undefined;
     if (expiresAt !== undefined && Number.isNaN(expiresAt)) {
       setMessage("Error: choose a valid expiration date");
       return;
@@ -381,7 +380,9 @@ function BillingCodesPanel({ organization }: { organization: Organization }) {
                   {code.limit === undefined ? "" : ` / ${code.limit}`}
                 </TD>
                 <TD className="whitespace-nowrap">
-                  {code.expires ? formatDate(code.expires, "UTC") : "Never"}
+                  {code.expires
+                    ? formatDate(code.expires, BUSINESS_TIME_ZONE)
+                    : "Never"}
                 </TD>
                 <TD>
                   <CodeStatus code={code} />
