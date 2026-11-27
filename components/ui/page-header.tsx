@@ -85,7 +85,7 @@ export function Notice({
   children,
   className,
 }: {
-  tone?: "info" | "success" | "warning" | "danger";
+  tone?: "info" | "success" | "warning" | "attention" | "danger";
   children: React.ReactNode;
   className?: string;
 }) {
@@ -93,6 +93,7 @@ export function Notice({
     info: "border-sky-200 bg-sky-50 text-sky-900",
     success: "border-emerald-200 bg-emerald-50 text-emerald-900",
     warning: "border-amber-200 bg-amber-50 text-amber-900",
+    attention: "border-orange-300 bg-orange-50 text-orange-900",
     danger: "border-rose-200 bg-rose-50 text-rose-900",
   };
   return (

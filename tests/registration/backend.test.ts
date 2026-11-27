@@ -6283,9 +6283,10 @@ it("records an attendee's certificate and skips only their pending upload remind
     api.registrationOperations.roster,
     { sessionId: f.session, paginationOpts }
   );
+  // The upload counts toward completion only once it is verified.
   expect(roster.page.find((entry) => entry._id === student._id)).toMatchObject({
-    completion: "complete",
-    certificate: { uploaded: true },
+    completion: "incomplete",
+    certificate: { uploaded: true, review: "verifying" },
   });
   expect(roster.page.find((entry) => entry._id === other._id)).toMatchObject({
     completion: "incomplete",

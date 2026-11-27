@@ -14,6 +14,7 @@ import type * as aligned from "../aligned.js";
 import type * as alignedSchema from "../alignedSchema.js";
 import type * as alignmentMigration from "../alignmentMigration.js";
 import type * as auth from "../auth.js";
+import type * as certificateVerification from "../certificateVerification.js";
 import type * as crons from "../crons.js";
 import type * as emailPreferences from "../emailPreferences.js";
 import type * as http from "../http.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   alignedSchema: typeof alignedSchema;
   alignmentMigration: typeof alignmentMigration;
   auth: typeof auth;
+  certificateVerification: typeof certificateVerification;
   crons: typeof crons;
   emailPreferences: typeof emailPreferences;
   http: typeof http;
