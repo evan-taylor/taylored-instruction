@@ -151,6 +151,7 @@ export async function moveCharge(
     courseId: session.courseId,
     title: session.title,
     classStart: session.firstStart,
+    followUpResolved: undefined,
   });
 }
 
