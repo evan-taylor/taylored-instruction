@@ -300,6 +300,25 @@ function Section({
   );
 }
 
+function OrderStatus({ order }: { order: Order }) {
+  return order.billedTo && order.status === "settled" ? (
+    <Badge tone="success">Org billed</Badge>
+  ) : (
+    <StatusBadge status={order.status} />
+  );
+}
+
+/** Code-covered registrations are billed to the organization, not unpaid. */
+function OrderSource({ order }: { order: Order }) {
+  if (order.billedTo) {
+    return <Badge tone="info">Billed to {order.billedTo}</Badge>;
+  }
+  if (order.organizationBalance) {
+    return <Badge tone="info">Organization balance</Badge>;
+  }
+  return order.source ? <Badge>{order.source}</Badge> : "—";
+}
+
 function orderFacts(order: Order) {
   const items: { label: string; value: React.ReactNode }[] = [
     {
@@ -313,10 +332,10 @@ function orderFacts(order: Order) {
         </>
       ),
     },
-    { label: "Status", value: <StatusBadge status={order.status} /> },
+    { label: "Status", value: <OrderStatus order={order} /> },
     {
       label: "Source",
-      value: order.source ? <Badge>{order.source}</Badge> : "—",
+      value: <OrderSource order={order} />,
     },
     { label: "Created", value: formatDateTime(order._creationTime) },
     {
@@ -347,7 +366,9 @@ function orderFacts(order: Order) {
   if (order.organizationId) {
     items.push({
       label: "Organization",
-      value: <code className="text-xs">{order.organizationId}</code>,
+      value: order.billedTo ?? (
+        <code className="text-xs">{order.organizationId}</code>
+      ),
     });
   }
   if (order.error) {
@@ -645,7 +666,9 @@ function OrderRow({
       <TD>
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-medium text-slate-900">{order.title}</span>
-          {order.source ? <Badge>{order.source}</Badge> : null}
+          {order.source || order.billedTo || order.organizationBalance ? (
+            <OrderSource order={order} />
+          ) : null}
         </div>
         <div className="text-slate-500 text-xs">
           {formatDateTime(order._creationTime)} ·{" "}
@@ -671,7 +694,7 @@ function OrderRow({
         ) : null}
       </TD>
       <TD>
-        <StatusBadge status={order.status} />
+        <OrderStatus order={order} />
       </TD>
       <TD className="text-right">
         <Button onClick={onOpen} size="xs" type="button" variant="ghost">

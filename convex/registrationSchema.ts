@@ -1,6 +1,7 @@
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 import { analyticsContext } from "../shared/registration/analytics-validator";
+import { billingCodeFields, chargeState } from "../shared/registration/billing";
 import {
   couponFields,
   courseFields,
@@ -160,6 +161,12 @@ export const registrationTables = {
     releasedBeforePayment: v.optional(staffNote),
     /** The invoice behind released access was voided; staff must follow up. */
     releaseFollowUp: v.optional(staffNote),
+    /** The organization billing code that covered this registration. */
+    billingCodeId: v.optional(v.id("registrationBillingCodes")),
+    /** The covering organization's name when the registration was made. */
+    billedTo: v.optional(v.string()),
+    /** Bundles an organization's unbilled balance lines so they can be invoiced. */
+    organizationBalance: v.optional(v.boolean()),
   })
     .index("by_requestKey", ["requestKey"])
     .index("by_parentOrderId", ["parentOrderId"])
@@ -186,6 +193,39 @@ export const registrationTables = {
     notes: v.string(),
     archived: v.boolean(),
   }).index("by_contactEmail", ["contactEmail"]),
+  /** Codes that let an organization's people register now and be billed later. */
+  registrationBillingCodes: defineTable(billingCodeFields)
+    .index("by_code", ["code"])
+    .index("by_organizationId", ["organizationId"]),
+  /** One line on an organization's balance per seat a billing code covered. */
+  registrationOrganizationCharges: defineTable({
+    organizationId: v.id("registrationOrganizations"),
+    billingCodeId: v.id("registrationBillingCodes"),
+    code: v.string(),
+    orderId: v.id("registrationOrders"),
+    seatId: v.id("registrationSeats"),
+    courseId: v.id("registrationCourses"),
+    sessionId: v.optional(v.id("registrationSessions")),
+    attendeeName: v.string(),
+    attendeeEmail: v.string(),
+    title: v.string(),
+    classStart: v.optional(v.number()),
+    /** What the seat would have cost the student, before the organization's terms. */
+    listPrice: v.number(),
+    /** What the organization owes for this seat now. */
+    amount: v.number(),
+    taxCode: v.optional(v.string()),
+    state: chargeState,
+    /** The organization balance order this line was invoiced through. */
+    billingOrderId: v.optional(v.id("registrationOrders")),
+    /** Why the amount changed after the registration, such as a cancellation. */
+    adjustment: v.optional(staffNote),
+    /** A change after invoicing that staff must credit or reconcile by hand. */
+    followUp: v.optional(staffNote),
+  })
+    .index("by_organizationId_and_state", ["organizationId", "state"])
+    .index("by_seatId", ["seatId"])
+    .index("by_billingOrderId", ["billingOrderId"]),
   registrationGroupRequests: defineTable({
     organization: v.string(),
     contactName: v.string(),

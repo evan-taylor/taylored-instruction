@@ -1491,8 +1491,8 @@ function CouponCard({ form }: { form: RegistrationForm }) {
     <Card>
       <CardContent className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <Field
-          hint="Discounts are applied per attendee at checkout."
-          label="Coupon code"
+          hint="Discounts are applied per attendee at checkout. If your organization gave you a billing code, enter it here and they'll be billed instead."
+          label="Coupon or organization code"
         >
           {(props) => (
             <TextInput
@@ -2090,6 +2090,13 @@ export function RegistrationDetail({
 
 /* ------------------------------- Success ----------------------------- */
 
+function successBadge(settled: boolean, billedTo: string | undefined) {
+  if (billedTo) {
+    return "Confirmed";
+  }
+  return settled ? "Paid" : "Payment processing";
+}
+
 export function RegistrationSuccess() {
   const [order, setOrder] = useState<{
     orderId: Id<"registrationOrders">;
@@ -2111,6 +2118,7 @@ export function RegistrationSuccess() {
   }, []);
   const status = useQuery(api.registrationPortal.status, order ?? "skip");
   const settled = status?.status === "settled";
+  const billedTo = settled ? status?.billedTo : undefined;
   const checking = order !== null && status === undefined;
   const reported = useRef("");
   useEffect(() => {
@@ -2151,7 +2159,7 @@ export function RegistrationSuccess() {
               </h1>
               {status ? (
                 <Badge tone={settled ? "success" : "warning"}>
-                  {settled ? "Paid" : "Payment processing"}
+                  {successBadge(settled, billedTo)}
                 </Badge>
               ) : null}
               {checking ? (
@@ -2164,7 +2172,12 @@ export function RegistrationSuccess() {
                   ? "Your registration is confirmed. Check your email for access instructions."
                   : "Payment may still be processing. Confirmation follows verified payment."}
               </p>
-              {status ? (
+              {billedTo ? (
+                <p className="text-slate-500 text-sm">
+                  Covered by {billedTo}. Nothing is due from you.
+                </p>
+              ) : null}
+              {status && !billedTo ? (
                 <p className="text-slate-500 text-sm">
                   Total charged {formatMoney(status.total + (status.tax ?? 0))}
                   {status.tax

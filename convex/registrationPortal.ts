@@ -262,13 +262,19 @@ export const status = query({
       status: v.string(),
       total: v.number(),
       tax: v.optional(v.number()),
+      billedTo: v.optional(v.string()),
     }),
     v.null()
   ),
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     return order?.requestKey === args.requestKey
-      ? { status: order.status, total: order.total, tax: order.tax }
+      ? {
+          status: order.status,
+          total: order.total,
+          tax: order.tax,
+          ...(order.billedTo ? { billedTo: order.billedTo } : {}),
+        }
       : null;
   },
 });

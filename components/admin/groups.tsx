@@ -1,6 +1,6 @@
 "use client";
 import { useMutation, useQuery } from "convex/react";
-import { Building2, Inbox, Receipt } from "lucide-react";
+import { Building2, Inbox, Receipt, Ticket } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useId, useState } from "react";
@@ -33,6 +33,7 @@ import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { type EnrollmentPrefill, GroupEnrollment } from "./group-enrollment";
 import { InvoicesPanel } from "./invoices";
+import { OrganizationBilling } from "./organization-billing";
 import { OrganizationModal } from "./organization-form";
 
 type Tab = "requests" | "organizations" | "invoices" | "enroll";
@@ -457,6 +458,8 @@ function OrganizationsPanel() {
   const [creating, setCreating] = useState(false);
   const [viewing, setViewing] =
     useState<Doc<"registrationOrganizations"> | null>(null);
+  const [billing, setBilling] =
+    useState<Doc<"registrationOrganizations"> | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const visible = organizations?.filter((o) => showArchived || !o.archived);
   return (
@@ -541,6 +544,16 @@ function OrganizationsPanel() {
                     >
                       Edit
                     </Button>
+                    <Button
+                      aria-label={`Billing codes and balance for ${o.name}`}
+                      onClick={() => setBilling(o)}
+                      size="xs"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Ticket aria-hidden="true" className="h-4 w-4" />
+                      Billing
+                    </Button>
                     <RowMenu label={`More actions for ${o.name}`}>
                       <MenuItem icon={Receipt} onSelect={() => setViewing(o)}>
                         View orders
@@ -562,6 +575,13 @@ function OrganizationsPanel() {
           onClose={() => setEditing(null)}
           open
           organization={editing}
+        />
+      ) : null}
+      {billing ? (
+        <OrganizationBilling
+          key={billing._id}
+          onClose={() => setBilling(null)}
+          organization={billing}
         />
       ) : null}
       {viewing ? (

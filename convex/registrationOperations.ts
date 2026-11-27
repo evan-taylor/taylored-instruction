@@ -19,6 +19,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { cancelCharge } from "./registrationBillingLedger";
 import {
   certificateStatus,
   certificateStatusValidator,
@@ -516,6 +517,8 @@ export const roster = query({
         ...doc(schema, "registrationSeats").fields,
         completion: v.string(),
         certificate: v.optional(certificateStatusValidator),
+        /** The organization a billing code charges for this seat. */
+        billedTo: v.optional(v.string()),
         attendance: v.array(
           v.object({ meetingId: v.string(), status: attendanceStatus })
         ),
@@ -545,8 +548,10 @@ export const roster = query({
       seats.map(async (seat) => {
         const { attendance: rows, completion: seatCompletion } =
           await seatOutcomes(ctx, seat);
+        const order = await ctx.db.get(seat.orderId);
         return {
           ...seat,
+          ...(order?.billedTo ? { billedTo: order.billedTo } : {}),
           completion: seatCompletion,
           certificate: await certificateStatus(ctx, seat),
           attendance: rows.map(({ meetingId, status }) => ({
@@ -1049,6 +1054,16 @@ async function cancelOne(
     }
   } else {
     await ctx.db.patch(seat._id, { state: "canceled" });
+    const billing = await cancelCharge(ctx, seat, actor.userId, args.reason);
+    if (billing) {
+      await audit(
+        ctx,
+        actor.userId,
+        "billing-line-adjusted",
+        seat._id,
+        billing
+      );
+    }
     if (seat.sessionId) {
       const session = await ctx.db.get(seat.sessionId);
       if (session) {
@@ -1074,7 +1089,9 @@ async function cancelOne(
       kind: "email",
       recipient: seat.email,
       subject: "Registration canceled",
-      body: "Your registration was canceled. A cancellation does not automatically refund your payment. Please contact us for assistance.",
+      body: order?.billedTo
+        ? `Your registration was canceled. It was covered by ${order.billedTo}, so nothing is due from you. Please contact us for assistance.`
+        : "Your registration was canceled. A cancellation does not automatically refund your payment. Please contact us for assistance.",
       due: Date.now(),
     });
   }

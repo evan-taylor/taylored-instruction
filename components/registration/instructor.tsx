@@ -52,6 +52,7 @@ type Seat = Doc<"registrationSeats"> & {
   attendance: Pick<Doc<"registrationAttendance">, "meetingId" | "status">[];
   completion: string;
   certificate?: { title: string; uploaded: boolean };
+  billedTo?: string;
 };
 const EMAIL_BATCH = 50;
 const ATTENDANCE_CHOICES = [
@@ -434,6 +435,11 @@ function RosterRow({
         <TD>
           <div className="font-medium text-slate-900">{seat.name}</div>
           <div className="text-slate-500 text-xs">{seat.email}</div>
+          {seat.billedTo ? (
+            <div className="mt-1">
+              <Badge tone="info">Billed to {seat.billedTo}</Badge>
+            </div>
+          ) : null}
           {seat.certificate ? (
             <div className="mt-1">
               <Badge tone={seat.certificate.uploaded ? "success" : "warning"}>

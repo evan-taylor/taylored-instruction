@@ -9,6 +9,7 @@ import {
   analyticsContext,
   boundedAnalytics,
 } from "../shared/registration/analytics-validator";
+import { billingCodeProblem } from "../shared/registration/billing";
 import { matchesCourse } from "../shared/registration/catalog";
 import type { Quote, Settings } from "../shared/registration/domain";
 import {
@@ -40,6 +41,11 @@ import type { Doc } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { courseInUse } from "./aligned";
+import {
+  billingCodeByCode,
+  coverSeats,
+  recordCharges,
+} from "./registrationBillingLedger";
 import {
   audit,
   enqueue,
@@ -550,6 +556,11 @@ export const saveCoupon = mutation({
     const actor = await staff(ctx);
     cents(value.amount);
     const code = value.code.trim().toUpperCase();
+    if (await billingCodeByCode(ctx, code)) {
+      throw new ConvexError(
+        "An organization billing code already uses this code"
+      );
+    }
     if (
       !code ||
       value.limit < 0 ||
@@ -659,7 +670,12 @@ export const reserve = mutation({
     );
     const now = Date.now();
     requireOpen(course, session, config, Boolean(actor));
-    const coupon = await validCoupon(ctx, args.coupon, course._id);
+    const { billing, coupon } = await checkoutCode(
+      ctx,
+      args.coupon,
+      course._id,
+      Boolean(actor)
+    );
     const pricing = adminPricing(config, args.admin);
     if (args.admin?.materialIds) {
       pricing.materials = await selectedMaterials(
@@ -669,7 +685,7 @@ export const reserve = mutation({
         session?._id
       );
     }
-    const seats = await withTaxCodes(
+    const quoted = await withTaxCodes(
       ctx,
       pricing,
       quote(
@@ -685,6 +701,12 @@ export const reserve = mutation({
         coupon ? coupon.limit - coupon.reserved - coupon.consumed : 0,
         actor ? ADMIN_MAX_SEATS : MAX_SEATS
       )
+    );
+    const { seats, covered } = applyBillingCode(
+      billing,
+      quoted,
+      course._id,
+      now
     );
     await reserveCapacity(
       ctx,
@@ -722,8 +744,15 @@ export const reserve = mutation({
       refundReserved: 0,
       organizationId: args.admin?.organizationId,
       pricingNote: args.admin?.pricingNote?.trim() || undefined,
+      ...(billing
+        ? {
+            organizationId: billing.organization._id,
+            billingCodeId: billing.code._id,
+            billedTo: billing.organization.name,
+          }
+        : {}),
     });
-    await Promise.all(
+    const seatIds = await Promise.all(
       seats.map((seat) =>
         ctx.db.insert("registrationSeats", {
           orderId: id,
@@ -747,6 +776,14 @@ export const reserve = mutation({
     const order = await ctx.db.get(id);
     if (!order) {
       throw new ConvexError("Order insert failed");
+    }
+    if (billing) {
+      await recordCharges(ctx, order, billing.code, covered, seatIds, session);
+      await trackRegistrationOrder(
+        ctx,
+        order,
+        "registration_billing_code_applied"
+      );
     }
     await trackRegistrationOrder(ctx, order, "registration_reserved");
     await recordReservationAgreement(
@@ -796,8 +833,9 @@ async function settleReservation(
     order.total === 0 ||
     ["offline", "waived"].includes(admin?.payment ?? "")
   ) {
-    const source =
-      admin && order.total === 0 ? "staff-free" : (admin?.payment ?? "free");
+    const source = order.billingCodeId
+      ? "organization"
+      : freeSource(order, admin);
     await settle(ctx, order, source);
   }
   const saved = await ctx.db.get(order._id);
@@ -805,6 +843,13 @@ async function settleReservation(
     throw new ConvexError("Order missing after settlement");
   }
   return saved.status;
+}
+
+function freeSource(
+  order: Doc<"registrationOrders">,
+  admin?: { payment: string }
+) {
+  return admin && order.total === 0 ? "staff-free" : (admin?.payment ?? "free");
 }
 
 /** Stamps each line with its Stripe tax code: tuition from settings, materials from the material. */
@@ -943,6 +988,60 @@ function requireOpen(
   }
 }
 
+type CoveringCode = {
+  code: Doc<"registrationBillingCodes">;
+  organization: Doc<"registrationOrganizations">;
+};
+
+/** The organization billing code a purchaser typed into the code field, if any. */
+async function coveringCode(
+  ctx: QueryCtx,
+  value: string | undefined,
+  staffBooking: boolean
+): Promise<CoveringCode | null> {
+  const typed = staffBooking ? undefined : value?.trim().toUpperCase();
+  const code = typed ? await billingCodeByCode(ctx, typed) : null;
+  const organization = code ? await ctx.db.get(code.organizationId) : null;
+  return code && organization ? { code, organization } : null;
+}
+
+/**
+ * One code field serves coupons and organization billing codes, which share
+ * a namespace, so a checkout can never stack the two.
+ */
+async function checkoutCode(
+  ctx: QueryCtx,
+  value: string | undefined,
+  courseId: Doc<"registrationCourses">["_id"],
+  staffBooking: boolean
+) {
+  const billing = await coveringCode(ctx, value, staffBooking);
+  return {
+    billing,
+    coupon: billing ? null : await validCoupon(ctx, value, courseId),
+  };
+}
+
+/** Checks the code against this checkout and moves each seat's cost to the organization. */
+function applyBillingCode(
+  billing: CoveringCode | null,
+  quoted: Quote[],
+  courseId: Doc<"registrationCourses">["_id"],
+  now: number
+) {
+  if (!billing) {
+    return { seats: quoted, covered: [] };
+  }
+  const problem = billing.organization.archived
+    ? "This code is no longer active. Check with your organization."
+    : billingCodeProblem(billing.code, courseId, quoted.length, now);
+  if (problem) {
+    throw new ConvexError(problem);
+  }
+  const covered = coverSeats(quoted, billing.code);
+  return { seats: covered.map((item) => item.seat), covered };
+}
+
 async function validCoupon(
   ctx: QueryCtx,
   couponCode: string | undefined,
@@ -956,10 +1055,14 @@ async function validCoupon(
         )
         .unique()
     : null;
+  if (couponCode && !coupon) {
+    throw new ConvexError(
+      "We don't recognize this code. Check the spelling or ask whoever gave it to you."
+    );
+  }
   if (
-    couponCode &&
-    (!coupon ||
-      coupon.disabled ||
+    coupon &&
+    (coupon.disabled ||
       coupon.expires <= Date.now() ||
       (coupon.courseIds.length && !coupon.courseIds.includes(courseId)))
   ) {

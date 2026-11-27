@@ -255,7 +255,7 @@ function CouponsTable({
   );
 }
 
-function RadioOption<T extends string>({
+export function RadioOption<T extends string>({
   name,
   value,
   current,
@@ -292,7 +292,7 @@ function RadioOption<T extends string>({
   );
 }
 
-function RadioGroup({
+export function RadioGroup({
   legend,
   children,
 }: {
@@ -309,7 +309,7 @@ function RadioGroup({
   );
 }
 
-function Checklist<T extends string>({
+export function Checklist<T extends string>({
   legend,
   hint,
   items,

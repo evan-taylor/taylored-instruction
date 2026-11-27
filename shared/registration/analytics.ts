@@ -22,6 +22,7 @@ export const REGISTRATION_EVENTS = [
   "registration_settled",
   "registration_released",
   "registration_payment_exception",
+  "registration_billing_code_applied",
   "registration_checkout_started",
   "registration_checkout_ready",
   "registration_checkout_failed",
@@ -90,6 +91,8 @@ const PROPERTY_NAMES = new Set([
   "agency",
   "certificate_count",
   "email_count",
+  "billing_code_id",
+  "organization_id",
 ]);
 export function registrationProperties(properties: Record<string, unknown>) {
   return Object.fromEntries(
