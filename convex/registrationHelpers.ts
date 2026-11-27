@@ -11,6 +11,7 @@ import { defaultConfirmation } from "../shared/registration/email-defaults";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
+import { returnBalanceLines } from "./registrationBillingLedger";
 
 /** Scheduled with the business transaction; retries of settlement do not create new events. */
 export async function trackRegistrationOrder(
@@ -37,6 +38,12 @@ export async function trackRegistrationOrder(
         tax_cents: order.tax ?? 0,
         currency: order.currency,
         has_coupon: Boolean(order.couponId),
+        ...(order.billingCodeId && order.organizationId
+          ? {
+              billing_code_id: order.billingCodeId,
+              organization_id: order.organizationId,
+            }
+          : {}),
         ...(order.analytics.emailCampaign
           ? { email_campaign: order.analytics.emailCampaign }
           : {}),
@@ -279,6 +286,7 @@ export async function release(
       })
   );
   await ctx.db.patch(order._id, { status: "expired", error: reason });
+  await returnBalanceLines(ctx, order);
   await trackRegistrationOrder(ctx, order, "registration_released", {
     reason:
       reason === "Checkout abandoned by purchaser"
@@ -666,6 +674,16 @@ export async function settle(
     await settleMaterialOrder(ctx, order, source, paymentIntent);
     return;
   }
+  if (order.organizationBalance) {
+    await ctx.db.patch(order._id, {
+      status: "settled",
+      settledAt: Date.now(),
+      source,
+      paymentIntent,
+    });
+    await audit(ctx, "system", "settled", order._id, source);
+    return;
+  }
   const { course, session, config } = await offering(
     ctx,
     order.courseId,
@@ -735,7 +753,9 @@ export async function settle(
     kind: "email",
     recipient: order.purchaser,
     subject: `Receipt: ${order.title}`,
-    body: `Payment recorded: USD ${((order.total + (order.tax ?? 0)) / 100).toFixed(2)}${order.tax ? ` (includes USD ${(order.tax / 100).toFixed(2)} sales tax)` : ""}. Attendees: ${order.seats.map((s) => s.attendee.name).join(", ")}. Request secure purchaser access to view your order.`,
+    body: order.billedTo
+      ? `Your registration is covered by ${order.billedTo}. Nothing is due from you. Attendees: ${order.seats.map((s) => s.attendee.name).join(", ")}. Request secure purchaser access to view your order.`
+      : `Payment recorded: USD ${((order.total + (order.tax ?? 0)) / 100).toFixed(2)}${order.tax ? ` (includes USD ${(order.tax / 100).toFixed(2)} sales tax)` : ""}. Attendees: ${order.seats.map((s) => s.attendee.name).join(", ")}. Request secure purchaser access to view your order.`,
     due: now,
   });
   await trackRegistrationOrder(ctx, order, "registration_settled", {

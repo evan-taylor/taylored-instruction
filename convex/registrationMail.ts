@@ -114,6 +114,29 @@ async function jobOrder(
   return { invoice, order, billing: Boolean(billingOrderId) };
 }
 
+/** Receipts for orders nobody paid for say why instead of thanking for payment. */
+function receiptMessage(
+  kind: string | undefined,
+  order: Doc<"registrationOrders"> | null
+) {
+  if (kind !== "receipt") {
+    return null;
+  }
+  if (order?.source === "waived") {
+    return {
+      category: "Payment waived",
+      body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
+    };
+  }
+  if (order?.billedTo) {
+    return {
+      category: "Registration confirmed",
+      body: `Your registration is covered by ${order.billedTo}. Nothing is due from you. Keep this confirmation for your records.\nClass details and materials are sent separately to each attendee.`,
+    };
+  }
+  return null;
+}
+
 async function messageContext(
   ctx: MutationCtx,
   job: Doc<"registrationJobs">,
@@ -140,12 +163,7 @@ async function messageContext(
   }
   details.push(...billingDetails(billing ? order : null, invoice));
   const message =
-    order?.source === "waived" && kind === "receipt"
-      ? {
-          category: "Payment waived",
-          body: "Your training payment has been waived. No payment was collected. Keep this confirmation for your records.",
-        }
-      : messageBody(job, kind, invoice);
+    receiptMessage(kind, order) ?? messageBody(job, kind, invoice);
   const notice = order ? await policyNotice(ctx, job, order) : null;
   if (notice) {
     message.body += `\n${notice}`;

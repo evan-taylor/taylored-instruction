@@ -11,6 +11,7 @@ import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { moveCharge } from "./registrationBillingLedger";
 import { audit, offering, settle, staff } from "./registrationHelpers";
 import { allocateRefund } from "./registrationRefundAllocation";
 
@@ -217,6 +218,7 @@ export const transfer = mutation({
       );
     }
     const sourceOrder = await paidSourceOrder(ctx, source);
+    const billedTo = organizationTransfer(sourceOrder, args.choice);
     const { config } = await offering(ctx, target.courseId, target._id);
     if (target.reserved >= target.capacity) {
       throw new ConvexError("Target session is full");
@@ -286,6 +288,7 @@ export const transfer = mutation({
       restoredUses: 0,
       refunded: 0,
       refundReserved: 0,
+      ...billedTo,
     });
     const seatId = await ctx.db.insert("registrationSeats", {
       orderId,
@@ -304,6 +307,7 @@ export const transfer = mutation({
     });
     await ctx.db.patch(target._id, { reserved: target.reserved + 1 });
     await ctx.db.patch(source._id, { state: "transferred" });
+    await moveCharge(ctx, source._id, { orderId, seatId }, target);
     if (source.sessionId) {
       const old = await ctx.db.get(source.sessionId);
       if (old) {
@@ -370,6 +374,26 @@ export const transfer = mutation({
     return { orderId, seatId, adjustment };
   },
 });
+
+/** A seat an organization pays for moves with its balance line and costs the student nothing. */
+function organizationTransfer(
+  order: Doc<"registrationOrders">,
+  choice: string
+) {
+  if (!order.billedTo) {
+    return {};
+  }
+  if (choice !== "keep") {
+    throw new ConvexError(
+      `This registration is billed to ${order.billedTo}. Choose keep so their balance line moves to the new class.`
+    );
+  }
+  return {
+    billingCodeId: order.billingCodeId,
+    organizationId: order.organizationId,
+    billedTo: order.billedTo,
+  };
+}
 
 /** Seats released before payment have no payment to carry to a new session. */
 async function paidSourceOrder(ctx: QueryCtx, seat: Doc<"registrationSeats">) {

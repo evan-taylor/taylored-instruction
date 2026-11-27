@@ -71,6 +71,7 @@ export const summary = query({
         o.source !== "waived" &&
         (o.settledAt ?? 0) >= since
     );
+    const registrations = settled.filter((o) => !o.organizationBalance);
     const unpaid = await ctx.db
       .query("registrationOrders")
       .withIndex("by_status_and_expires", (q) => q.eq("status", "unpaid"))
@@ -124,8 +125,9 @@ export const summary = query({
           (o.source === "invoice-extra-payment" ? 0 : o.refunded),
         0
       ),
-      seatsSold: settled.reduce((sum, o) => sum + o.seats.length, 0),
-      ordersSettled: settled.length,
+      // An organization balance order re-bills seats its covered orders already count.
+      seatsSold: registrations.reduce((sum, o) => sum + o.seats.length, 0),
+      ordersSettled: registrations.length,
       upcomingSessions: upcoming.length,
       seatsReserved: upcoming.reduce((sum, s) => sum + s.reserved, 0),
       seatsCapacity: upcoming.reduce((sum, s) => sum + s.capacity, 0),
