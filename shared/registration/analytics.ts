@@ -74,6 +74,7 @@ const PROPERTY_NAMES = new Set([
   "currency",
   "payment_source",
   "status",
+  "result",
   "reason",
   "has_search",
   "has_date",

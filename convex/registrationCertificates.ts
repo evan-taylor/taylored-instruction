@@ -2,11 +2,27 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import type { FunctionReference } from "convex/server";
 import { ConvexError, type Infer, v } from "convex/values";
 import { MAX_CERTIFICATE_BYTES } from "../shared/registration/certificate";
+import {
+  CERTIFICATE_MAX_AGE_DAYS,
+  checkVerdict,
+  decide,
+  VERIFICATION_CHECKS,
+} from "../shared/registration/certificate-verification";
+import { certificateVerification } from "../shared/registration/validators";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
-import { action, internalMutation, internalQuery } from "./_generated/server";
-import { audit, portalEmail, staff } from "./registrationHelpers";
+import {
+  action,
+  internalMutation,
+  internalQuery,
+  mutation,
+} from "./_generated/server";
+import { audit, enqueue, portalEmail, staff } from "./registrationHelpers";
+
+/** A verification still running after this long is handed to staff. */
+const VERIFICATION_DEADLINE_MS = 15 * 60_000;
+const DAY_MS = 86_400_000;
 
 function certificateRequirement(seat: Doc<"registrationSeats">) {
   if (seat.state === "active" && seat.settledAt && seat.sessionId) {
@@ -28,30 +44,57 @@ async function certificateOutcome(
     .first();
 }
 
+const reviewState = v.union(v.literal("verifying"), v.literal("needs_review"));
+
 export const certificateStatusValidator = v.object({
   title: v.string(),
   uploaded: v.boolean(),
+  /** The upload is still being checked, automatically or by staff. */
+  review: v.optional(reviewState),
   materialId: v.optional(v.id("registrationMaterials")),
 });
+
+function pendingReview(file: Doc<"registrationSessionFiles"> | null) {
+  const state = file?.verification?.state;
+  return state === "verifying" || state === "needs_review" ? state : undefined;
+}
+
+async function currentCertificate(
+  ctx: QueryCtx,
+  seat: Doc<"registrationSeats">
+) {
+  const rule = certificateRequirement(seat);
+  if (!rule) {
+    return;
+  }
+  const outcome = await certificateOutcome(ctx, seat._id, rule);
+  const file = outcome?.certificateFileId
+    ? await ctx.db.get(outcome.certificateFileId)
+    : null;
+  return { rule, outcome, file };
+}
 
 export async function certificateStatus(
   ctx: QueryCtx,
   seat: Doc<"registrationSeats">,
   displayRules = seat.outcomeDefinitions
 ) {
-  const rule = certificateRequirement(seat);
-  if (rule) {
-    const outcome = await certificateOutcome(ctx, seat._id, rule);
-    return {
-      title: rule.title,
-      uploaded: Boolean(outcome?.certificateFileId),
-      // Display settings can change after an attendee's grading rules are frozen.
-      materialId: displayRules.find(
-        (displayRule) =>
-          displayRule.id === rule.id && displayRule.certificateRequired
-      )?.certificateMaterialId,
-    };
+  const current = await currentCertificate(ctx, seat);
+  if (!current) {
+    return;
   }
+  const { rule, outcome, file } = current;
+  const review = pendingReview(file);
+  return {
+    title: rule.title,
+    uploaded: Boolean(outcome?.certificateFileId),
+    ...(review ? { review } : {}),
+    // Display settings can change after an attendee's grading rules are frozen.
+    materialId: displayRules.find(
+      (displayRule) =>
+        displayRule.id === rule.id && displayRule.certificateRequired
+    )?.certificateMaterialId,
+  };
 }
 
 export const staffCertificateStatusValidator = v.object({
@@ -63,9 +106,56 @@ export const staffCertificateStatusValidator = v.object({
       url: v.union(v.string(), v.null()),
       uploadedAt: v.number(),
       staffUpload: v.boolean(),
+      verification: v.optional(
+        v.object({
+          state: certificateVerification.fields.state,
+          error: certificateVerification.fields.error,
+          checks: v.array(
+            v.object({
+              id: v.string(),
+              label: v.string(),
+              probability: v.number(),
+              verdict: v.union(
+                v.literal("passed"),
+                v.literal("uncertain"),
+                v.literal("failed")
+              ),
+            })
+          ),
+        })
+      ),
     })
   ),
 });
+
+/** Each check's answer, for staff deciding on an upload Jev did not pass. */
+function staffVerification(
+  verification: Doc<"registrationSessionFiles">["verification"]
+) {
+  if (!verification) {
+    return;
+  }
+  const threshold = verification.threshold ?? 1;
+  return {
+    state: verification.state,
+    ...(verification.error ? { error: verification.error } : {}),
+    checks: VERIFICATION_CHECKS.flatMap((check) => {
+      const answer = verification.answers?.find(
+        (entry) => entry.check === check.id
+      );
+      return answer
+        ? [
+            {
+              id: check.id,
+              label: check.label,
+              probability: answer.probability,
+              verdict: checkVerdict(answer.probability, threshold),
+            },
+          ]
+        : [];
+    }),
+  };
+}
 
 /** The roster's view: the attendee's status plus the file behind it. */
 export async function staffCertificateStatus(
@@ -73,16 +163,11 @@ export async function staffCertificateStatus(
   seat: Doc<"registrationSeats">
 ): Promise<Infer<typeof staffCertificateStatusValidator> | undefined> {
   const status = await certificateStatus(ctx, seat);
-  const rule = certificateRequirement(seat);
-  if (!(status && rule)) {
-    return;
-  }
-  const fileId = (await certificateOutcome(ctx, seat._id, rule))
-    ?.certificateFileId;
-  const file = fileId ? await ctx.db.get(fileId) : null;
-  if (!file) {
+  const file = (await currentCertificate(ctx, seat))?.file;
+  if (!(status && file)) {
     return status;
   }
+  const verification = staffVerification(file.verification);
   return {
     ...status,
     file: {
@@ -91,6 +176,7 @@ export async function staffCertificateStatus(
       url: await ctx.storage.getUrl(file.storageId),
       uploadedAt: file.uploadedAt,
       staffUpload: file.staffUpload === true,
+      ...(verification ? { verification } : {}),
     },
   };
 }
@@ -157,19 +243,22 @@ async function record(
   }
 ) {
   const at = Date.now();
+  // Staff vouch for their own uploads; an attendee's upload passes only once verified.
   const certificateFileId = await ctx.db.insert("registrationSessionFiles", {
     ...file,
     sessionId: session._id,
     certificateSeatId: seat._id,
     uploadedAt: at,
     uploadedBy: actor,
-    ...(staffUpload ? { staffUpload: true } : {}),
+    ...(staffUpload
+      ? { staffUpload: true }
+      : { verification: { state: "verifying", requestedAt: at } }),
   });
   const outcome = {
     seatId: seat._id,
     fieldId: rule.id,
     version: rule.version,
-    value: passingValue,
+    value: staffUpload ? passingValue : "",
     actor,
     at,
     certificateFileId,
@@ -179,6 +268,7 @@ async function record(
   } else {
     await ctx.db.insert("registrationOutcomes", outcome);
   }
+  return certificateFileId;
 }
 
 export const canUpload = internalQuery({
@@ -200,13 +290,27 @@ export const attach = internalMutation({
       await ctx.storage.delete(file.storageId);
       return null;
     }
-    await record(ctx, { ...eligible, previous, file, staffUpload: false });
+    const fileId = await record(ctx, {
+      ...eligible,
+      previous,
+      file,
+      staffUpload: false,
+    });
     await audit(
       ctx,
       eligible.actor,
       "completion-certificate-uploaded",
       seatId,
       eligible.seat.name
+    );
+    await ctx.scheduler.runAfter(0, internal.certificateVerification.verify, {
+      fileId,
+      attempt: 1,
+    });
+    await ctx.scheduler.runAfter(
+      VERIFICATION_DEADLINE_MS,
+      internal.registrationCertificates.expireVerification,
+      { fileId }
     );
     return null;
   },
@@ -257,6 +361,260 @@ export const staffAttach = internalMutation({
           status: replaced ? "replaced" : "uploaded",
         },
       }
+    );
+    return null;
+  },
+});
+
+function isoDate(at: number, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(at);
+}
+
+/** What Jev checks an attendee's upload against, while it still awaits a decision. */
+export const verificationInput = internalQuery({
+  args: { fileId: v.id("registrationSessionFiles") },
+  returns: v.union(
+    v.null(),
+    v.object({
+      storageId: v.id("_storage"),
+      type: v.string(),
+      expectedCourse: v.string(),
+      attendeeName: v.string(),
+      today: v.string(),
+      earliestCompletionDate: v.string(),
+    })
+  ),
+  handler: async (ctx, { fileId }) => {
+    const file = await ctx.db.get(fileId);
+    if (
+      !(file?.verification?.state === "verifying" && file.certificateSeatId)
+    ) {
+      return null;
+    }
+    const [seat, session] = await Promise.all([
+      ctx.db.get(file.certificateSeatId),
+      ctx.db.get(file.sessionId),
+    ]);
+    const rule = seat ? certificateRequirement(seat) : undefined;
+    if (!(seat && session && rule)) {
+      return null;
+    }
+    const material = rule.certificateMaterialId
+      ? await ctx.db.get(rule.certificateMaterialId)
+      : null;
+    return {
+      storageId: file.storageId,
+      type: file.type,
+      expectedCourse: material
+        ? `${rule.title} (${material.title})`
+        : rule.title,
+      attendeeName: seat.name,
+      today: isoDate(Date.now(), session.timeZone),
+      earliestCompletionDate: isoDate(
+        session.firstStart - CERTIFICATE_MAX_AGE_DAYS * DAY_MS,
+        session.timeZone
+      ),
+    };
+  },
+});
+
+/** The outcome an attendee's certificate upload backs, and the rule it satisfies. */
+async function certificateRecord(
+  ctx: QueryCtx,
+  file: Doc<"registrationSessionFiles">
+) {
+  const [outcome, seat] = await Promise.all([
+    ctx.db
+      .query("registrationOutcomes")
+      .withIndex("by_certificateFileId", (q) =>
+        q.eq("certificateFileId", file._id)
+      )
+      .unique(),
+    file.certificateSeatId ? ctx.db.get(file.certificateSeatId) : null,
+  ]);
+  const rule = seat?.outcomeDefinitions.find(
+    (definition) =>
+      definition.id === outcome?.fieldId &&
+      definition.version === outcome?.version
+  );
+  return { outcome, seat, passingValue: rule?.passingValue };
+}
+
+async function finishVerification(
+  ctx: MutationCtx,
+  file: Doc<"registrationSessionFiles">,
+  update: Partial<Infer<typeof certificateVerification>> & {
+    state: "auto_passed" | "needs_review";
+  }
+) {
+  const { verification } = file;
+  if (verification?.state !== "verifying") {
+    return;
+  }
+  const [{ outcome, passingValue }, session] = await Promise.all([
+    certificateRecord(ctx, file),
+    ctx.db.get(file.sessionId),
+  ]);
+  if (update.state === "auto_passed" && outcome && passingValue) {
+    await ctx.db.patch(outcome._id, { value: passingValue, at: Date.now() });
+  }
+  await ctx.db.patch(file._id, {
+    verification: { ...verification, ...update, decidedAt: Date.now() },
+  });
+  await ctx.scheduler.runAfter(
+    0,
+    internal.registrationExternal.captureAnalytics,
+    {
+      event: "preclass_certificate_verified",
+      analytics: { distinctId: `certificate_verification:${file._id}` },
+      properties: {
+        ...(session ? { course_id: session.courseId } : {}),
+        class_session_id: file.sessionId,
+        result: update.error ? "error" : update.state,
+      },
+    }
+  );
+}
+
+/** Records Jev's answers, or the reason it could not answer. */
+export const recordVerification = internalMutation({
+  args: {
+    fileId: v.id("registrationSessionFiles"),
+    threshold: v.number(),
+    model: v.optional(v.string()),
+    answers: v.optional(certificateVerification.fields.answers),
+    error: certificateVerification.fields.error,
+  },
+  returns: v.null(),
+  handler: async (ctx, { fileId, threshold, model, answers, error }) => {
+    const file = await ctx.db.get(fileId);
+    if (!file) {
+      return null;
+    }
+    const passed =
+      !error && answers !== undefined && decide(answers, threshold);
+    await finishVerification(ctx, file, {
+      state: passed ? "auto_passed" : "needs_review",
+      threshold,
+      ...(model ? { model } : {}),
+      ...(answers ? { answers } : {}),
+      ...(error ? { error } : {}),
+    });
+    return null;
+  },
+});
+
+/** A verification that never finished goes to staff instead of staying stuck. */
+export const expireVerification = internalMutation({
+  args: { fileId: v.id("registrationSessionFiles") },
+  returns: v.null(),
+  handler: async (ctx, { fileId }) => {
+    const file = await ctx.db.get(fileId);
+    if (file) {
+      await finishVerification(ctx, file, {
+        state: "needs_review",
+        error: "timeout",
+      });
+    }
+    return null;
+  },
+});
+
+async function reviewableUpload(
+  ctx: MutationCtx,
+  fileId: Id<"registrationSessionFiles">
+) {
+  const file = await ctx.db.get(fileId);
+  if (!file) {
+    throw new ConvexError("Certificate not found");
+  }
+  const { userId } = await staff(ctx, file.sessionId);
+  const { verification } = file;
+  if (!(verification && pendingReview(file))) {
+    throw new ConvexError("This certificate is not awaiting review");
+  }
+  const { outcome, seat, passingValue } = await certificateRecord(ctx, file);
+  if (!(outcome && seat && passingValue)) {
+    throw new ConvexError(
+      "Certificate upload is unavailable for this registration"
+    );
+  }
+  return {
+    actor: userId,
+    file,
+    verification,
+    outcome,
+    seat,
+    passingValue,
+  };
+}
+
+/** Staff accept an attendee's certificate that automatic checks did not pass. */
+export const approve = mutation({
+  args: { fileId: v.id("registrationSessionFiles") },
+  returns: v.null(),
+  handler: async (ctx, { fileId }) => {
+    const { actor, file, verification, outcome, seat, passingValue } =
+      await reviewableUpload(ctx, fileId);
+    const at = Date.now();
+    await ctx.db.patch(outcome._id, { value: passingValue, actor, at });
+    await ctx.db.patch(file._id, {
+      verification: {
+        ...verification,
+        state: "approved",
+        reviewedBy: actor,
+        reviewedAt: at,
+      },
+    });
+    await audit(
+      ctx,
+      actor,
+      "completion-certificate-approved",
+      seat._id,
+      seat.name
+    );
+    return null;
+  },
+});
+
+/**
+ * Staff turn down an attendee's certificate: the file is deleted, the
+ * requirement reopens so upload reminders resume, and the attendee is asked
+ * to upload again.
+ */
+export const reject = mutation({
+  args: { fileId: v.id("registrationSessionFiles") },
+  returns: v.null(),
+  handler: async (ctx, { fileId }) => {
+    const { actor, file, outcome, seat } = await reviewableUpload(ctx, fileId);
+    const session = await ctx.db.get(file.sessionId);
+    const title =
+      seat.outcomeDefinitions.find((rule) => rule.id === outcome.fieldId)
+        ?.title ?? "pre-class";
+    await ctx.db.delete(outcome._id);
+    await ctx.storage.delete(file.storageId);
+    await ctx.db.delete(file._id);
+    await enqueue(ctx, {
+      key: `certificate-rejected:${file._id}`,
+      kind: "email",
+      recipient: seat.email,
+      subject: `Please upload your ${title} certificate again`,
+      body: `We couldn’t verify the completion certificate you uploaded${session ? ` for ${session.title}` : ""}. Please sign in to your registration portal and upload a clear copy of your ${title} completion certificate that shows your name, the course, and the completion date.`,
+      due: Date.now(),
+      seatId: seat._id,
+      sessionId: file.sessionId,
+    });
+    await audit(
+      ctx,
+      actor,
+      "completion-certificate-rejected",
+      seat._id,
+      seat.name
     );
     return null;
   },

@@ -40,6 +40,10 @@ cents, with tax separate from the pre-tax total.
 - Staff: `preclass_certificate_uploaded_by_staff` when staff upload a pre-class
   certificate for an attendee. The distinct id is the staff user id; properties are
   `course_id`, `class_session_id` and `status` (`uploaded` or `replaced`).
+- Certificates: `preclass_certificate_verified` when the automatic (Jev) check of an
+  attendee's own pre-class certificate upload finishes. The distinct id is
+  `certificate_verification:<file id>`, not a person; properties are `course_id`,
+  `class_session_id` and `result` (`auto_passed`, `needs_review` or `error`).
 
 Browser leave events are best effort and do not prove a hold was released.
 `registration_released` records the backend transition. Field completion events

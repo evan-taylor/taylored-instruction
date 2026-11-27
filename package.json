@@ -27,6 +27,7 @@
     "@lezer/common": "^1.5.3",
     "@mdxeditor/editor": "^4.3.3",
     "@modelcontextprotocol/sdk": "^1.32.1",
+    "@napi-rs/canvas": "^1.2.1",
     "@notionhq/client": "^5.27.1",
     "@opentelemetry/api-logs": "^0.200",
     "@opentelemetry/exporter-logs-otlp-http": "^0.200",

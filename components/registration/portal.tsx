@@ -60,7 +60,12 @@ type PortalRow = {
   refunded?: number;
   tax?: number;
   billedTo?: string;
-  certificate?: { title: string; uploaded: boolean; materialId?: string };
+  certificate?: {
+    title: string;
+    uploaded: boolean;
+    review?: "verifying" | "needs_review";
+    materialId?: string;
+  };
   materials?: {
     id: string;
     materialId: string;
@@ -483,9 +488,11 @@ function CertificateUpload({
           {certificate.title}
         </h3>
       )}
-      {certificate.uploaded ? (
+      {certificate.review ? <Notice>Received — being reviewed.</Notice> : null}
+      {certificate.uploaded && !certificate.review ? (
         <Notice tone="success">Completion certificate uploaded.</Notice>
-      ) : (
+      ) : null}
+      {certificate.uploaded ? null : (
         <form className="space-y-3" onSubmit={submit}>
           <Field
             hint="Choose a PDF, JPEG, or PNG (up to 3 MB), then select Upload certificate."

@@ -228,6 +228,14 @@ export default async function PrivacyPolicyPage() {
             service.
           </p>
           <p>
+            When you upload a pre-class completion certificate, we send an image
+            of it, with your name and course details, to an AI verification
+            provider through our hosting platform so it can be checked
+            automatically. The provider processes it only to return that result
+            and does not retain it or use it to train models. Staff review any
+            certificate that is not confirmed automatically.
+          </p>
+          <p>
             All categories exclude text messaging originator opt-in data and
             consent; this information will not be shared with any third parties.
           </p>

@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import { analyticsContext } from "../shared/registration/analytics-validator";
 import { billingCodeFields, chargeState } from "../shared/registration/billing";
 import {
+  certificateVerification,
   couponFields,
   courseFields,
   orderStatus,
@@ -68,6 +69,7 @@ export const registrationTables = {
     certificateSeatId: v.optional(v.id("registrationSeats")),
     /** Staff uploaded this certificate on the attendee's behalf. */
     staffUpload: v.optional(v.literal(true)),
+    verification: v.optional(certificateVerification),
   }).index("by_sessionId", ["sessionId"]),
   registrationLocations: defineTable({
     name: v.string(),

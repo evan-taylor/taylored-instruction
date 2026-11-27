@@ -47,6 +47,7 @@ import {
 } from "./format";
 import { OutcomeField } from "./outcome-field";
 import {
+  CertificateBadge,
   type StaffCertificate,
   StaffCertificateUpload,
 } from "./staff-certificate-upload";
@@ -453,11 +454,7 @@ function RosterRow({
           ) : null}
           {seat.certificate ? (
             <div className="mt-1">
-              <Badge tone={seat.certificate.uploaded ? "success" : "warning"}>
-                {seat.certificate.uploaded
-                  ? "Certificate uploaded"
-                  : "Certificate missing"}
-              </Badge>
+              <CertificateBadge certificate={seat.certificate} />
             </div>
           ) : null}
         </TD>

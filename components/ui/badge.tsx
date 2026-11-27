@@ -6,6 +6,7 @@ export type BadgeTone =
   | "info"
   | "success"
   | "warning"
+  | "attention"
   | "danger"
   | "primary";
 
@@ -14,6 +15,7 @@ const tones: Record<BadgeTone, string> = {
   info: "bg-sky-50 text-sky-800 ring-sky-200",
   success: "bg-emerald-50 text-emerald-800 ring-emerald-200",
   warning: "bg-amber-50 text-amber-900 ring-amber-200",
+  attention: "bg-orange-100 text-orange-900 ring-orange-300",
   danger: "bg-rose-50 text-rose-800 ring-rose-200",
   primary: "bg-primary/10 text-primary ring-primary/20",
 };

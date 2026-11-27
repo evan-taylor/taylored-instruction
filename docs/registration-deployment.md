@@ -23,6 +23,12 @@ also needs its existing `AUTH_GOOGLE_ID`/`AUTH_GOOGLE_SECRET` and the deployment
 callback URL registered with Google. Google/OTP provider acceptance is separate from
 build validation. Vercel environment variables do not automatically populate Convex.
 
+Pre-class certificates are checked by TypeSafe's Jev through the Convex AI Gateway,
+which authenticates with the deployment's own service token, so there is no API key
+to set. `JEV_MODEL` (default `typesafe/jev-1.14`) and `JEV_CONFIDENCE_THRESHOLD`
+(default `0.9`, accepted range 0.5–1) are optional Convex variables. Local anonymous
+backends cannot reach the gateway, so their uploads always go to staff review.
+
 `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is public browser configuration, not a Convex
 secret. Use the same Stripe account and mode as `STRIPE_SECRET_KEY`. Next.js embeds
 public variables at build time, so changes require a new deployment (or restarting

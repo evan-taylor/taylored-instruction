@@ -184,3 +184,32 @@ export const couponFields = {
   consumed: v.number(),
   disabled: v.boolean(),
 };
+
+/** Automated (Jev) and staff review of an attendee's own certificate upload. */
+export const certificateVerification = v.object({
+  state: v.union(
+    v.literal("verifying"),
+    v.literal("needs_review"),
+    v.literal("auto_passed"),
+    v.literal("approved")
+  ),
+  requestedAt: v.number(),
+  decidedAt: v.optional(v.number()),
+  /** The Jev model the gateway reported serving the request. */
+  model: v.optional(v.string()),
+  threshold: v.optional(v.number()),
+  answers: v.optional(
+    v.array(v.object({ check: v.string(), probability: v.number() }))
+  ),
+  error: v.optional(
+    v.union(
+      v.literal("gateway_unavailable"),
+      v.literal("gateway_error"),
+      v.literal("timeout"),
+      v.literal("unsupported_file"),
+      v.literal("invalid_response")
+    )
+  ),
+  reviewedBy: v.optional(v.id("users")),
+  reviewedAt: v.optional(v.number()),
+});
