@@ -525,6 +525,38 @@ it("asks Jev about the course by name, accepting the agency's name for its onlin
   expect(body.questions.course.criteria.false).toBeTruthy();
 });
 
+it("names the course from the linked material when the requirement has one", async () => {
+  const f = await fixture();
+  await f.t.run(async (ctx) => {
+    const material = await ctx.db.insert("registrationMaterials", {
+      title:
+        "Lifeguarding Online Learning (ARC) — upload completion certificate",
+      kind: "link",
+      version: 1,
+      archived: false,
+    });
+    const seat = await ctx.db.get(f.seatId);
+    await ctx.db.patch(f.seatId, {
+      outcomeDefinitions: (seat?.outcomeDefinitions ?? []).map((rule) =>
+        rule.certificateRequired
+          ? {
+              ...rule,
+              title: "Pre-class work",
+              certificateMaterialId: material,
+            }
+          : rule
+      ),
+    });
+  });
+  fetchMock.mockImplementation(async () => jevAnswers());
+  await f.verify(await f.upload());
+
+  const body = JSON.parse(String(fetchMock.mock.calls.at(0)?.[1]?.body));
+  expect(body.state[0].expected_course).toBe(
+    "Lifeguarding Online Learning (ARC)"
+  );
+});
+
 it("sends a PDF whose text didn't render to review without asking Jev", async () => {
   const f = await fixture();
   vi.mocked(renderPageAsImage).mockResolvedValueOnce(textlessRender());
