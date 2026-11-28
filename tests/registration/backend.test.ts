@@ -520,6 +520,45 @@ describe("Registration transactions", () => {
       })
     ).rejects.toThrow("no longer on the roster");
   });
+  it("queues one roster email per attendee when a send is retried", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("one@example.test"), seat("two@example.test")],
+    });
+    const [first, second] = await f.t.run((ctx) =>
+      ctx.db.query("registrationSeats").collect()
+    );
+    if (!(first && second)) {
+      throw new Error("Missing seats");
+    }
+    const message = {
+      sessionId: f.session,
+      subject: "Parking",
+      body: "Use the north lot.",
+      requestKey: "parking",
+    };
+    await f.adminClient.mutation(api.registrationOperations.selectedEmail, {
+      ...message,
+      seats: [first._id],
+    });
+    await f.adminClient.mutation(api.registrationOperations.selectedEmail, {
+      ...message,
+      seats: [first._id, second._id],
+    });
+    const staffJobs = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").collect()).filter((job) =>
+        job.key.startsWith("staff:parking:")
+      )
+    );
+    expect(staffJobs.map((job) => job.recipient).sort()).toEqual([
+      "one@example.test",
+      "two@example.test",
+    ]);
+  });
   it("records bulk attendance for the chosen meeting and rejects invalid batches", async () => {
     const f = await fixture();
     await f.t.run(async (ctx) => {

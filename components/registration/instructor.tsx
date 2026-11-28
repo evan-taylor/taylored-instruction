@@ -613,30 +613,37 @@ function EmailDialog({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
-  // One attempt per message: the key and progress survive a failed batch so
-  // retrying resumes where it stopped instead of re-queueing earlier batches.
-  const attempt = useRef({ signature: "", key: "", sent: 0 });
+  // One attempt per message: the key and the recipients already queued survive
+  // a failed batch, so a retry skips them even if the selection changed. The
+  // backend also keys each queued email by this request key and the seat.
+  const attempt = useRef({
+    signature: "",
+    key: "",
+    queued: new Set<Id<"registrationSeats">>(),
+  });
   async function submit() {
     setBusy(true);
     try {
-      const signature = JSON.stringify({ seats, subject, body });
+      const signature = JSON.stringify({ subject, body });
       if (attempt.current.signature !== signature) {
-        attempt.current = { signature, key: crypto.randomUUID(), sent: 0 };
+        attempt.current = {
+          signature,
+          key: crypto.randomUUID(),
+          queued: new Set(),
+        };
       }
+      const { key, queued } = attempt.current;
+      const remaining = seats.filter((id) => !queued.has(id));
       // The backend accepts up to EMAIL_BATCH recipients per call.
-      while (attempt.current.sent < seats.length) {
-        const start = attempt.current.sent;
+      while (remaining.length) {
+        const batch = remaining.splice(0, EMAIL_BATCH);
         // biome-ignore lint/performance/noAwaitInLoops: batches must be sequential so progress is tracked
-        await send({
-          sessionId,
-          seats: seats.slice(start, start + EMAIL_BATCH),
-          subject,
-          body,
-          requestKey: `${attempt.current.key}:${start / EMAIL_BATCH}`,
-        });
-        attempt.current.sent = start + EMAIL_BATCH;
+        await send({ sessionId, seats: batch, subject, body, requestKey: key });
+        for (const id of batch) {
+          queued.add(id);
+        }
       }
-      attempt.current = { signature: "", key: "", sent: 0 };
+      attempt.current = { signature: "", key: "", queued: new Set() };
       onResult("Selected-attendee message queued");
       setSubject("");
       setBody("");
