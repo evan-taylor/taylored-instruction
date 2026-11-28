@@ -1,7 +1,9 @@
-import { createCanvas } from "@napi-rs/canvas";
+import { existsSync } from "node:fs";
+import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { getServiceToken } from "convex/server";
 import { convexTest } from "convex-test";
 import { PDFDocument, StandardFonts } from "pdf-lib";
+import { getDocumentProxy, renderPageAsImage } from "unpdf";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { api, internal } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -14,6 +16,14 @@ vi.mock("convex/server", async (original) => ({
   ...(await original<typeof import("convex/server")>()),
   getServiceToken: vi.fn(),
 }));
+vi.mock("unpdf", async (original) => {
+  const actual = await original<typeof import("unpdf")>();
+  return {
+    ...actual,
+    getDocumentProxy: vi.fn(actual.getDocumentProxy),
+    renderPageAsImage: vi.fn(actual.renderPageAsImage),
+  };
+});
 
 const modules = import.meta.glob("../../convex/**/*.ts");
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/u;
@@ -58,16 +68,102 @@ function png(width = 640, height = 480) {
   return new Uint8Array(canvas.toBuffer("image/png")).buffer;
 }
 
+/** Shaped like an openhtmltopdf export: landscape A4, text in non-embedded standard fonts. */
 async function pdf() {
   const document = await PDFDocument.create();
-  const page = document.addPage([612, 792]);
-  page.drawText("Certificate of Completion: HeartCode BLS", {
+  const page = document.addPage([841.875, 595.275]);
+  const regular = await document.embedFont(StandardFonts.Helvetica);
+  const bold = await document.embedFont(StandardFonts.HelveticaBold);
+  page.drawRectangle({
     x: 60,
-    y: 700,
-    size: 18,
-    font: await document.embedFont(StandardFonts.Helvetica),
+    y: 120,
+    width: 720,
+    height: 410,
+    borderWidth: 1.5,
   });
+  const lines = [
+    { text: "Certificate of Completion", y: 420, size: 28, font: regular },
+    { text: "Jamie Example", y: 375, size: 26, font: bold },
+    {
+      text: "has successfully completed HeartCode BLS",
+      y: 345,
+      size: 14,
+      font: regular,
+    },
+    { text: "Date Completed: 11/20/2026", y: 260, size: 14, font: regular },
+  ];
+  for (const line of lines) {
+    page.drawText(line.text, {
+      x: (841.875 - line.font.widthOfTextAtSize(line.text, line.size)) / 2,
+      y: line.y,
+      size: line.size,
+      font: line.font,
+    });
+  }
   return new Uint8Array(await document.save()).buffer;
+}
+
+/** The PDF above as it rendered in production: border only, every line of text missing. */
+function textlessRender() {
+  const width = 1568;
+  const height = Math.round((595.275 * 1568) / 841.875);
+  const canvas = createCanvas(width, height);
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, width, height);
+  context.strokeStyle = "#000";
+  context.lineWidth = 3;
+  context.strokeRect(112, 140, 1341, 764);
+  return new Uint8Array(canvas.toBuffer("image/png"));
+}
+
+/** A phone photo stored sideways: dark band on the left, EXIF orientation 6 (rotate 90° clockwise). */
+function sidewaysPhoto() {
+  const canvas = createCanvas(400, 200);
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, 400, 200);
+  context.fillStyle = "#000";
+  context.fillRect(0, 0, 100, 200);
+  const jpeg = canvas.toBuffer("image/jpeg");
+  const exif = [
+    ...new TextEncoder().encode("Exif\0\0"),
+    ...[0x4d, 0x4d, 0x00, 0x2a, 0x00, 0x00, 0x00, 0x08],
+    ...[0x00, 0x01, 0x01, 0x12, 0x00, 0x03, 0x00, 0x00, 0x00, 0x01],
+    ...[0x00, 0x06, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+  ];
+  const length = exif.length + 2;
+  return new Uint8Array([
+    0xff,
+    0xd8,
+    0xff,
+    0xe1,
+    Math.floor(length / 256),
+    length % 256,
+    ...exif,
+    ...jpeg.subarray(2),
+  ]).buffer;
+}
+
+function photo(width: number, height: number, ink = true) {
+  const canvas = createCanvas(width, height);
+  const context = canvas.getContext("2d");
+  context.fillStyle = "#fff";
+  context.fillRect(0, 0, width, height);
+  if (ink) {
+    context.fillStyle = "#000";
+    context.font = `${Math.round(height / 12)}px sans-serif`;
+    context.fillText("Certificate of Completion", width / 10, height / 3);
+  }
+  return new Uint8Array(canvas.toBuffer("image/jpeg")).buffer;
+}
+
+async function sentImage() {
+  const body = JSON.parse(String(fetchMock.mock.calls.at(0)?.[1]?.body));
+  const url: string = body.state[1].image_url.url;
+  return await loadImage(
+    Buffer.from(url.slice(url.indexOf(",") + 1), "base64")
+  );
 }
 
 async function fixture() {
@@ -315,14 +411,77 @@ it("holds an attendee's upload as verifying and passes it when Jev is confident 
   ]);
 });
 
-it("renders page one of a PDF certificate to an image for Jev", async () => {
+it("renders page one of a PDF certificate with its standard fonts and sends its text to Jev", async () => {
   const f = await fixture();
   fetchMock.mockImplementation(async () => jevAnswers());
   const fileId = await f.upload(await pdf(), "heartcode.pdf");
   await f.verify(fileId);
+
+  const options = vi.mocked(getDocumentProxy).mock.calls.at(-1)?.[1];
+  expect(
+    existsSync(`${options?.standardFontDataUrl}LiberationSans-Regular.ttf`)
+  ).toBe(true);
   const body = JSON.parse(String(fetchMock.mock.calls.at(0)?.[1]?.body));
   expect(body.state[1].image_url.url).toMatch(JPEG_DATA_URL);
+  expect(body.state[0].certificate_text).toContain("Jamie Example");
+  expect(body.state[0].certificate_text).toContain("HeartCode BLS");
+  const image = await sentImage();
+  expect(Math.max(image.width, image.height)).toBe(1568);
   expect((await f.file(fileId))?.verification?.state).toBe("auto_passed");
+});
+
+it("sends a PDF whose text didn't render to review without asking Jev", async () => {
+  const f = await fixture();
+  vi.mocked(renderPageAsImage).mockResolvedValueOnce(textlessRender());
+  const fileId = await f.upload(await pdf(), "heartcode.pdf");
+  await f.verify(fileId);
+
+  expect(fetchMock).not.toHaveBeenCalled();
+  expect((await f.file(fileId))?.verification).toMatchObject({
+    state: "needs_review",
+    error: "render_failed",
+  });
+  const row = await f.roster();
+  expect(row?.certificate?.file?.verification?.error).toBe("render_failed");
+});
+
+it("sends a blank photo to review without asking Jev", async () => {
+  const f = await fixture();
+  const fileId = await f.upload(photo(1200, 900, false), "blank.jpg");
+  await f.verify(fileId);
+
+  expect(fetchMock).not.toHaveBeenCalled();
+  expect((await f.file(fileId))?.verification?.error).toBe("render_failed");
+});
+
+it("turns a sideways phone photo upright from its EXIF orientation", async () => {
+  const f = await fixture();
+  fetchMock.mockImplementation(async () => jevAnswers());
+  await f.verify(await f.upload(sidewaysPhoto(), "photo.jpg"));
+
+  const image = await sentImage();
+  expect(image.height).toBeGreaterThan(image.width);
+  const canvas = createCanvas(image.width, image.height);
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0);
+  const [top] = context.getImageData(image.width / 2, 10, 1, 1).data;
+  const [bottom] = context.getImageData(
+    image.width / 2,
+    image.height - 10,
+    1,
+    1
+  ).data;
+  expect(top).toBeLessThan(80);
+  expect(bottom).toBeGreaterThan(200);
+});
+
+it("scales a full-resolution phone photo down to Jev's size limit", async () => {
+  const f = await fixture();
+  fetchMock.mockImplementation(async () => jevAnswers());
+  await f.verify(await f.upload(photo(4032, 3024), "photo.jpg"));
+
+  const image = await sentImage();
+  expect([image.width, image.height]).toEqual([1568, 1176]);
 });
 
 it.each(VERIFICATION_CHECKS.map((check) => check.id))(
