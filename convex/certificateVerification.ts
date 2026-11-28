@@ -1,4 +1,6 @@
 "use node";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
 import { getServiceToken } from "convex/server";
 import { type Infer, v } from "convex/values";
 import {
@@ -22,35 +24,149 @@ type Outcome =
   | { answers: { check: string; probability: number }[]; model?: string }
   | { error: VerificationError; transient?: boolean };
 
-async function firstPage(bytes: Uint8Array) {
-  const { getDocumentProxy, renderPageAsImage } = await import("unpdf");
-  const pdf = await getDocumentProxy(bytes);
-  const { width, height } = (await pdf.getPage(1)).getViewport({ scale: 1 });
-  return await renderPageAsImage(pdf, 1, {
-    canvasImport: () => import("@napi-rs/canvas"),
-    scale: Math.min(JEV_MAX_SIDE / width, JEV_MAX_SIDE / height),
-  });
+/** Share of a mostly white page that must carry ink before Jev sees it. */
+const MIN_PAGE_INK = 0.002;
+/** Share of the PDF's text boxes that must carry ink once rendered. */
+const MIN_TEXT_INK = 0.02;
+const MAX_TEXT_CHARS = 4000;
+const WHITESPACE = /\s+/gu;
+
+type Box = { left: number; top: number; right: number; bottom: number };
+
+/**
+ * pdf.js draws non-embedded standard fonts (Helvetica, Times, Courier) from
+ * this font data. Without it, those fonts fall back to system fonts the
+ * Convex runtime doesn't have, and every line of text renders blank. Convex
+ * installs an external package only when the bundle imports it, so the
+ * manifest is imported before its directory is resolved.
+ */
+async function standardFontDataUrl() {
+  await import("pdfjs-dist/package.json", { with: { type: "json" } });
+  const require = createRequire(import.meta.url);
+  return join(
+    dirname(require.resolve("pdfjs-dist/package.json")),
+    "standard_fonts/"
+  );
 }
 
-/** Page one of a PDF, or the photo itself, as a JPEG within Jev's size limits. */
+/** Page one rendered within Jev's size limits, with its text and where it sits. */
+async function firstPage(bytes: Uint8Array) {
+  const { getDocumentProxy, renderPageAsImage } = await import("unpdf");
+  const pdf = await getDocumentProxy(bytes, {
+    standardFontDataUrl: await standardFontDataUrl(),
+  });
+  const page = await pdf.getPage(1);
+  const unit = page.getViewport({ scale: 1 });
+  const scale = Math.min(JEV_MAX_SIDE / unit.width, JEV_MAX_SIDE / unit.height);
+  const viewport = page.getViewport({ scale });
+  const items = (await page.getTextContent()).items.flatMap((item) =>
+    "str" in item && item.str.trim() ? [item] : []
+  );
+  const boxes = items.map(({ transform, width, height }) => {
+    const [a = 1, b = 0, c = 0, d = 1, x = 0, y = 0] = transform;
+    const along = Math.hypot(a, b) || 1;
+    const up = Math.hypot(c, d) || 1;
+    const size = height || up;
+    const corners = [
+      [0, 0],
+      [width, 0],
+      [0, size],
+      [width, size],
+    ].map(([run = 0, rise = 0]) =>
+      viewport.convertToViewportPoint(
+        x + (a / along) * run + (c / up) * rise,
+        y + (b / along) * run + (d / up) * rise
+      )
+    );
+    const xs = corners.map(([px = 0]) => px);
+    const ys = corners.map(([, py = 0]) => py);
+    return {
+      left: Math.min(...xs),
+      top: Math.min(...ys),
+      right: Math.max(...xs),
+      bottom: Math.max(...ys),
+    };
+  });
+  return {
+    png: await renderPageAsImage(pdf, 1, {
+      canvasImport: () => import("@napi-rs/canvas"),
+      scale,
+    }),
+    text: items
+      .map((item) => item.str)
+      .join(" ")
+      .replace(WHITESPACE, " ")
+      .trim()
+      .slice(0, MAX_TEXT_CHARS),
+    boxes,
+  };
+}
+
+/** Share of pixels in the given boxes, or the whole image, that aren't near-white. */
+function inkRatio(
+  {
+    data,
+    width,
+    height,
+  }: { data: Uint8ClampedArray; width: number; height: number },
+  boxes: Box[] = [{ left: 0, top: 0, right: width, bottom: height }]
+) {
+  let inked = 0;
+  let total = 0;
+  for (const box of boxes) {
+    const right = Math.min(width, Math.ceil(box.right));
+    const bottom = Math.min(height, Math.ceil(box.bottom));
+    for (let y = Math.max(0, Math.floor(box.top)); y < bottom; y += 1) {
+      for (let x = Math.max(0, Math.floor(box.left)); x < right; x += 1) {
+        const i = (y * width + x) * 4;
+        total += 1;
+        if (
+          Math.min(data[i] ?? 255, data[i + 1] ?? 255, data[i + 2] ?? 255) < 200
+        ) {
+          inked += 1;
+        }
+      }
+    }
+  }
+  return total ? inked / total : 0;
+}
+
+/**
+ * Page one of a PDF, or the photo itself (already turned upright from its
+ * EXIF orientation by the decoder), as a JPEG within Jev's size limits. A
+ * render with no visible content, or a PDF whose text didn't draw, is refused
+ * so staff review it instead of Jev judging a blank page.
+ */
 async function certificateImage(bytes: Uint8Array, type: string) {
   const { createCanvas, loadImage } = await import("@napi-rs/canvas");
-  const image = await loadImage(
-    Buffer.from(type === "application/pdf" ? await firstPage(bytes) : bytes)
-  );
+  const page = type === "application/pdf" ? await firstPage(bytes) : undefined;
+  const image = await loadImage(Buffer.from(page ? page.png : bytes));
   const fit = fitForJev(image.width, image.height);
   const canvas = createCanvas(fit.canvasWidth, fit.canvasHeight);
   const context = canvas.getContext("2d");
+  const left = Math.floor((fit.canvasWidth - fit.drawWidth) / 2);
+  const top = Math.floor((fit.canvasHeight - fit.drawHeight) / 2);
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, fit.canvasWidth, fit.canvasHeight);
-  context.drawImage(
-    image,
-    Math.floor((fit.canvasWidth - fit.drawWidth) / 2),
-    Math.floor((fit.canvasHeight - fit.drawHeight) / 2),
-    fit.drawWidth,
-    fit.drawHeight
-  );
-  return canvas.toBuffer("image/jpeg", 90).toString("base64");
+  context.drawImage(image, left, top, fit.drawWidth, fit.drawHeight);
+  const pixels = context.getImageData(0, 0, fit.canvasWidth, fit.canvasHeight);
+  const [sx, sy] = [fit.drawWidth / image.width, fit.drawHeight / image.height];
+  const textBoxes = page?.boxes.map((box) => ({
+    left: left + box.left * sx,
+    top: top + box.top * sy,
+    right: left + box.right * sx,
+    bottom: top + box.bottom * sy,
+  }));
+  if (
+    inkRatio(pixels) < MIN_PAGE_INK ||
+    (textBoxes?.length && inkRatio(pixels, textBoxes) < MIN_TEXT_INK)
+  ) {
+    return { error: "render_failed" as const };
+  }
+  return {
+    image: canvas.toBuffer("image/jpeg", 90).toString("base64"),
+    text: page?.text,
+  };
 }
 
 function answersFrom(body: unknown) {
@@ -97,7 +213,9 @@ async function askJev(
         state: [
           {
             ...state,
-            certificate: "The completion certificate image that follows.",
+            certificate: state.certificate_text
+              ? "The completion certificate image that follows. `certificate_text` is the text embedded in the same PDF."
+              : "The completion certificate image that follows.",
           },
           {
             type: "image_url",
@@ -154,20 +272,24 @@ export const verify = internalAction({
       JEV_MODEL: process.env.JEV_MODEL,
       JEV_CONFIDENCE_THRESHOLD: process.env.JEV_CONFIDENCE_THRESHOLD,
     });
-    let outcome: Outcome;
-    let image: string | undefined;
+    let rendered: Awaited<ReturnType<typeof certificateImage>> | undefined;
     try {
       const blob = await ctx.storage.get(input.storageId);
-      image = blob
+      rendered = blob
         ? await certificateImage(
             new Uint8Array(await blob.arrayBuffer()),
             input.type
           )
         : undefined;
     } catch {
-      image = undefined;
+      rendered = undefined;
     }
-    if (image) {
+    let outcome: Outcome;
+    if (!rendered) {
+      outcome = { error: "unsupported_file" };
+    } else if (rendered.error) {
+      outcome = { error: rendered.error };
+    } else {
       outcome = await askJev(
         model,
         {
@@ -175,11 +297,10 @@ export const verify = internalAction({
           attendee_name: input.attendeeName,
           today: input.today,
           earliest_completion_date: input.earliestCompletionDate,
+          ...(rendered.text ? { certificate_text: rendered.text } : {}),
         },
-        image
+        rendered.image
       );
-    } else {
-      outcome = { error: "unsupported_file" };
     }
     const delay = RETRY_DELAYS_MS[attempt - 1];
     if ("error" in outcome && outcome.transient && delay !== undefined) {

@@ -207,6 +207,7 @@ export const certificateVerification = v.object({
       v.literal("gateway_error"),
       v.literal("timeout"),
       v.literal("unsupported_file"),
+      v.literal("render_failed"),
       v.literal("invalid_response")
     )
   ),

@@ -23,6 +23,7 @@ type Verification = {
     | "gateway_error"
     | "timeout"
     | "unsupported_file"
+    | "render_failed"
     | "invalid_response";
   checks: {
     id: string;
@@ -51,6 +52,8 @@ const ERROR_TEXT: Record<NonNullable<Verification["error"]>, string> = {
   gateway_error: "The automatic check failed.",
   timeout: "The automatic check didn’t finish in time.",
   unsupported_file: "The file couldn’t be read for automatic checking.",
+  render_failed:
+    "The file came out blank when prepared for automatic checking, so it wasn’t checked.",
   invalid_response: "The automatic check returned no usable answer.",
 };
 
