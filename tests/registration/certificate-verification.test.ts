@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { getServiceToken } from "convex/server";
 import { convexTest } from "convex-test";
-import { PDFDocument, StandardFonts } from "pdf-lib";
+import { degrees, PDFDocument, StandardFonts } from "pdf-lib";
 import { getDocumentProxy, renderPageAsImage } from "unpdf";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { api, internal } from "../../convex/_generated/api";
@@ -98,6 +98,29 @@ async function pdf() {
       y: line.y,
       size: line.size,
       font: line.font,
+    });
+  }
+  return new Uint8Array(await document.save()).buffer;
+}
+
+/** Upright when viewed, but drawn upside down on a page rotated 180°. */
+async function upsideDownPdf() {
+  const document = await PDFDocument.create();
+  const page = document.addPage([841.875, 595.275]);
+  page.setRotation(degrees(180));
+  const font = await document.embedFont(StandardFonts.Helvetica);
+  const lines = [
+    "Certificate of Completion",
+    "Jamie Example",
+    "has successfully completed HeartCode BLS",
+  ];
+  for (const [index, text] of lines.entries()) {
+    page.drawText(text, {
+      x: 700,
+      y: 200 + index * 50,
+      size: 24,
+      font,
+      rotate: degrees(180),
     });
   }
   return new Uint8Array(await document.save()).buffer;
@@ -427,6 +450,16 @@ it("renders page one of a PDF certificate with its standard fonts and sends its 
   expect(body.state[0].certificate_text).toContain("HeartCode BLS");
   const image = await sentImage();
   expect(Math.max(image.width, image.height)).toBe(1568);
+  expect((await f.file(fileId))?.verification?.state).toBe("auto_passed");
+});
+
+it("checks a PDF whose text is drawn upside down on a rotated page", async () => {
+  const f = await fixture();
+  fetchMock.mockImplementation(async () => jevAnswers());
+  const fileId = await f.upload(await upsideDownPdf(), "heartcode.pdf");
+  await f.verify(fileId);
+
+  expect(fetchMock).toHaveBeenCalledTimes(1);
   expect((await f.file(fileId))?.verification?.state).toBe("auto_passed");
 });
 

@@ -63,15 +63,28 @@ async function firstPage(bytes: Uint8Array) {
     "str" in item && item.str.trim() ? [item] : []
   );
   const boxes = items.map(({ transform, width, height }) => {
-    const [x, y] = [transform[4] ?? 0, transform[5] ?? 0];
-    const size = height || Math.hypot(transform[2] ?? 0, transform[3] ?? 0);
-    const [ax, ay] = viewport.convertToViewportPoint(x, y);
-    const [bx, by] = viewport.convertToViewportPoint(x + width, y + size);
+    const [a = 1, b = 0, c = 0, d = 1, x = 0, y = 0] = transform;
+    const along = Math.hypot(a, b) || 1;
+    const up = Math.hypot(c, d) || 1;
+    const size = height || up;
+    const corners = [
+      [0, 0],
+      [width, 0],
+      [0, size],
+      [width, size],
+    ].map(([run = 0, rise = 0]) =>
+      viewport.convertToViewportPoint(
+        x + (a / along) * run + (c / up) * rise,
+        y + (b / along) * run + (d / up) * rise
+      )
+    );
+    const xs = corners.map(([px = 0]) => px);
+    const ys = corners.map(([, py = 0]) => py);
     return {
-      left: Math.min(ax, bx),
-      top: Math.min(ay, by),
-      right: Math.max(ax, bx),
-      bottom: Math.max(ay, by),
+      left: Math.min(...xs),
+      top: Math.min(...ys),
+      right: Math.max(...xs),
+      bottom: Math.max(...ys),
     };
   });
   return {
@@ -128,30 +141,28 @@ async function certificateImage(bytes: Uint8Array, type: string) {
   const { createCanvas, loadImage } = await import("@napi-rs/canvas");
   const page = type === "application/pdf" ? await firstPage(bytes) : undefined;
   const image = await loadImage(Buffer.from(page ? page.png : bytes));
-  const rendered = createCanvas(image.width, image.height);
-  const draw = rendered.getContext("2d");
-  draw.fillStyle = "#ffffff";
-  draw.fillRect(0, 0, image.width, image.height);
-  draw.drawImage(image, 0, 0);
-  const pixels = draw.getImageData(0, 0, image.width, image.height);
-  if (
-    inkRatio(pixels) < MIN_PAGE_INK ||
-    (page?.boxes.length && inkRatio(pixels, page.boxes) < MIN_TEXT_INK)
-  ) {
-    return { error: "render_failed" as const };
-  }
   const fit = fitForJev(image.width, image.height);
   const canvas = createCanvas(fit.canvasWidth, fit.canvasHeight);
   const context = canvas.getContext("2d");
+  const left = Math.floor((fit.canvasWidth - fit.drawWidth) / 2);
+  const top = Math.floor((fit.canvasHeight - fit.drawHeight) / 2);
   context.fillStyle = "#ffffff";
   context.fillRect(0, 0, fit.canvasWidth, fit.canvasHeight);
-  context.drawImage(
-    image,
-    Math.floor((fit.canvasWidth - fit.drawWidth) / 2),
-    Math.floor((fit.canvasHeight - fit.drawHeight) / 2),
-    fit.drawWidth,
-    fit.drawHeight
-  );
+  context.drawImage(image, left, top, fit.drawWidth, fit.drawHeight);
+  const pixels = context.getImageData(0, 0, fit.canvasWidth, fit.canvasHeight);
+  const [sx, sy] = [fit.drawWidth / image.width, fit.drawHeight / image.height];
+  const textBoxes = page?.boxes.map((box) => ({
+    left: left + box.left * sx,
+    top: top + box.top * sy,
+    right: left + box.right * sx,
+    bottom: top + box.bottom * sy,
+  }));
+  if (
+    inkRatio(pixels) < MIN_PAGE_INK ||
+    (textBoxes?.length && inkRatio(pixels, textBoxes) < MIN_TEXT_INK)
+  ) {
+    return { error: "render_failed" as const };
+  }
   return {
     image: canvas.toBuffer("image/jpeg", 90).toString("base64"),
     text: page?.text,
