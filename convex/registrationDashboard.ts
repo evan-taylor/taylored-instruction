@@ -99,7 +99,7 @@ export const summary = query({
       .query("registrationActivity")
       .order("desc")
       .take(RECENT);
-    const { page: recentOrders } = await ctx.db
+    const { page: recentOrders, isDone: allRecentOrders } = await ctx.db
       .query("registrationOrders")
       .order("desc")
       .filter(notAbandonedOrder)
@@ -113,6 +113,7 @@ export const summary = query({
       sampled:
         sessions.length === BATCH * 4 ||
         recentlySettled.length === BATCH * 4 ||
+        (recentOrders.length < RECENT && !allRecentOrders) ||
         [
           unpaid,
           exceptions,

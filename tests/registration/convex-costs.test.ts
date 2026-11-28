@@ -203,6 +203,7 @@ describe("Dashboard summary order reads", () => {
     expect(summary.ordersSettled).toBe(1);
     expect(summary.revenue).toBe(10_000);
     expect(summary.recentOrders).toEqual([]);
+    expect(summary.sampled).toBe(true);
   });
 
   it("lists the newest real orders past any run of abandoned checkouts", async () => {
@@ -226,5 +227,6 @@ describe("Dashboard summary order reads", () => {
       released,
       paid,
     ]);
+    expect(summary.sampled).toBe(false);
   });
 });
