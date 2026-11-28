@@ -27,6 +27,7 @@ import type * as onboarding from "../onboarding.js";
 import type * as products from "../products.js";
 import type * as profiles from "../profiles.js";
 import type * as registration from "../registration.js";
+import type * as registrationAttendees from "../registrationAttendees.js";
 import type * as registrationBilling from "../registrationBilling.js";
 import type * as registrationBillingLedger from "../registrationBillingLedger.js";
 import type * as registrationCertificates from "../registrationCertificates.js";
@@ -85,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   products: typeof products;
   profiles: typeof profiles;
   registration: typeof registration;
+  registrationAttendees: typeof registrationAttendees;
   registrationBilling: typeof registrationBilling;
   registrationBillingLedger: typeof registrationBillingLedger;
   registrationCertificates: typeof registrationCertificates;

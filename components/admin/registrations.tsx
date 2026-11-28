@@ -55,6 +55,7 @@ import { Tabs } from "@/components/ui/tabs";
 import { api } from "@/convex/_generated/api";
 import type { Doc, Id } from "@/convex/_generated/dataModel";
 import { formatMoney } from "@/shared/registration/domain";
+import { EditAttendeeButton } from "./attendee-edit";
 import { MaterialBalances, OrderMaterialEditor } from "./order-materials";
 import { PolicyEvidence } from "./policy-evidence";
 
@@ -150,7 +151,10 @@ function AttendeesTable({ order }: { order: Order }) {
                         : ""}
                     </p>
                   </div>
-                  <StatusBadge status={seat.state} />
+                  <div className="flex items-center gap-1">
+                    <StatusBadge status={seat.state} />
+                    <EditAttendeeButton onDone={setNotice} seat={seat} />
+                  </div>
                 </div>
                 <dl className="mt-3 grid grid-cols-2 gap-3 text-sm">
                   <div>
@@ -243,6 +247,7 @@ function AttendeesTable({ order }: { order: Order }) {
                   </TD>
                   <TD className="text-right">
                     <div className="inline-flex items-center gap-1">
+                      <EditAttendeeButton onDone={setNotice} seat={seat} />
                       <Button
                         aria-expanded={open}
                         aria-label={`${open ? "Hide" : "Manage"} ${seat.name}`}
