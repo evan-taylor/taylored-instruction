@@ -8,6 +8,18 @@ export const CERTIFICATE_MAX_AGE_DAYS = 90;
 export const JEV_MIN_SIDE = 280;
 export const JEV_MAX_SIDE = 1568;
 
+const INSTRUCTION_SUFFIX =
+  /\s*[-–—:]\s*(?:please\s+)?(?:upload|submit|attach|send)\b.*$|\s*(?:[-–—:]\s*)?(?:completion\s+)?certificate(?:\s+(?:upload|required))?\s*$/iu;
+
+/**
+ * The course a certificate should name, without the instruction to the
+ * attendee that requirement titles often carry ("— upload completion
+ * certificate").
+ */
+export function certificateCourseName(title: string) {
+  return title.replace(INSTRUCTION_SUFFIX, "").trim() || title.trim();
+}
+
 export const VERIFICATION_CHECKS = [
   {
     id: "genuine",
@@ -19,7 +31,12 @@ export const VERIFICATION_CHECKS = [
     id: "course",
     label: "Matches the expected course",
     instructions:
-      "The course or online module named on `certificate` is `expected_course`. Minor wording differences, abbreviations, and provider prefixes still match.",
+      "`certificate` is for `expected_course`, the online portion of `course`, or for `course` itself.",
+    criteria: {
+      true: 'Names `expected_course` or `course`, an abbreviation of either, or the provider\'s own name for the online portion of the same course, such as "Lifeguarding Online Session", "Lifeguarding online session r.24", "Blended Learning Online Content", or "HeartCode BLS Online". Version or revision suffixes, provider prefixes, and notes about an in-person skills session still match.',
+      false:
+        "Names a different course or discipline, such as a CPR, First Aid, or Water Safety course when Lifeguarding is expected, or names no course at all.",
+    },
   },
   {
     id: "name",

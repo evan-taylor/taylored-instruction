@@ -225,7 +225,11 @@ async function askJev(
         questions: Object.fromEntries(
           VERIFICATION_CHECKS.map((check) => [
             check.id,
-            { type: "noul", instructions: check.instructions },
+            {
+              type: "noul",
+              instructions: check.instructions,
+              ...("criteria" in check ? { criteria: check.criteria } : {}),
+            },
           ])
         ),
         provider: { zdr: true, data_collection: "deny" },
@@ -294,6 +298,7 @@ export const verify = internalAction({
         model,
         {
           expected_course: input.expectedCourse,
+          ...(input.course ? { course: input.course } : {}),
           attendee_name: input.attendeeName,
           today: input.today,
           earliest_completion_date: input.earliestCompletionDate,
