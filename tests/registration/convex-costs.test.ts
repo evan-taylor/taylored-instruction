@@ -189,6 +189,22 @@ describe("Dashboard summary order reads", () => {
     expect(summary.sampled).toBe(false);
   });
 
+  it("counts settled revenue behind more checkouts than recent orders scan", async () => {
+    const f = await fixture();
+    await f.order({ status: "settled", settledAt: Date.now() });
+    for (let i = 0; i < 210; i += 1) {
+      // biome-ignore lint/performance/noAwaitInLoops: creation order matters
+      await f.order({ status: "expired" });
+    }
+    const summary = await f.adminClient.query(
+      api.registrationDashboard.summary,
+      {}
+    );
+    expect(summary.ordersSettled).toBe(1);
+    expect(summary.revenue).toBe(10_000);
+    expect(summary.recentOrders).toEqual([]);
+  });
+
   it("lists the newest real orders past any run of abandoned checkouts", async () => {
     const f = await fixture();
     const paid = await f.order({ status: "settled", settledAt: Date.now() });

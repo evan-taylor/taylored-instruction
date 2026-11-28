@@ -99,11 +99,15 @@ export const summary = query({
       .query("registrationActivity")
       .order("desc")
       .take(RECENT);
-    const recentOrders = await ctx.db
+    const { page: recentOrders } = await ctx.db
       .query("registrationOrders")
       .order("desc")
       .filter(notAbandonedOrder)
-      .take(RECENT);
+      .paginate({
+        cursor: null,
+        numItems: RECENT,
+        maximumRowsRead: BATCH * 4,
+      });
     return {
       windowDays: WINDOW_DAYS,
       sampled:
