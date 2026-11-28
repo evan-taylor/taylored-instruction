@@ -210,6 +210,11 @@ describe("Abandoned checkouts", () => {
       "paid@example.test": "active",
       "in-progress@example.test": "held",
     });
+    expect(
+      await f.adminClient.query(api.registrationOperations.rosterCount, {
+        sessionId: f.session,
+      })
+    ).toBe(roster.page.length);
 
     const exported = await f.adminClient.query(
       api.registrationOperations.exportRoster,

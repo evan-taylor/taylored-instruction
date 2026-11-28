@@ -58,6 +58,9 @@ export function SessionDetail({
   const session = useQuery(api.registrationOperations.sessionForStaff, {
     sessionId,
   });
+  const rosterCount = useQuery(api.registrationOperations.rosterCount, {
+    sessionId,
+  });
   const courses = useCourses();
   const directory = useQuery(api.registrationOperations.staffDirectory);
   const params = useSearchParams();
@@ -155,7 +158,7 @@ export function SessionDetail({
         label="Session sections"
         onChange={go}
         tabs={TABS.map((entry) =>
-          entry.id === "roster" ? { ...entry, count: session.reserved } : entry
+          entry.id === "roster" ? { ...entry, count: rosterCount } : entry
         )}
         value={tab}
       />

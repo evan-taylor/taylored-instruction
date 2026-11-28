@@ -1670,6 +1670,25 @@ export const sessionForStaff = query({
     return await ctx.db.get(args.sessionId);
   },
 });
+/** Attendees on the session's roster: held and active seats, as rosterSeats lists them. */
+export const rosterCount = query({
+  args: { sessionId: v.id("registrationSessions") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    await staff(ctx, args.sessionId);
+    const [held, active] = await Promise.all(
+      (["held", "active"] as const).map((state) =>
+        ctx.db
+          .query("registrationSeats")
+          .withIndex("by_sessionId_and_state", (q) =>
+            q.eq("sessionId", args.sessionId).eq("state", state)
+          )
+          .collect()
+      )
+    );
+    return (held?.length ?? 0) + (active?.length ?? 0);
+  },
+});
 export const staffDirectory = query({
   args: {},
   returns: v.array(
