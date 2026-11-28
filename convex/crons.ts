@@ -10,12 +10,12 @@ crons.interval(
 crons.interval(
   "Deliver registration outbox",
   { minutes: 1 },
-  internal.registrationExternal.deliver
+  internal.registrationMail.kickDelivery
 );
 crons.interval(
   "Reconcile registration refunds",
   { minutes: 5 },
-  internal.registrationExternal.reconcileRefunds
+  internal.registrationPayments.kickRefundReconciliation
 );
 // 16:00 UTC is 8 or 9 a.m. in the Pacific time zone.
 crons.daily(

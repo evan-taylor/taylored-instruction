@@ -4,6 +4,7 @@ import { BATCH } from "../shared/registration/domain";
 import { query } from "./_generated/server";
 import {
   isAbandonedOrder,
+  notAbandonedOrder,
   staff,
   withoutAbandonedSeats,
 } from "./registrationHelpers";
@@ -61,15 +62,12 @@ export const summary = query({
     const upcoming = sessions
       .filter((s) => s.state === "open" && s.firstStart >= now)
       .sort((a, b) => a.firstStart - b.firstStart);
-    const orders = await ctx.db
+    const recentlySettled = await ctx.db
       .query("registrationOrders")
-      .order("desc")
+      .withIndex("by_settledAt", (q) => q.gte("settledAt", since))
       .take(BATCH * 4);
-    const settled = orders.filter(
-      (o) =>
-        o.status === "settled" &&
-        o.source !== "waived" &&
-        (o.settledAt ?? 0) >= since
+    const settled = recentlySettled.filter(
+      (o) => o.status === "settled" && o.source !== "waived"
     );
     const registrations = settled.filter((o) => !o.organizationBalance);
     const unpaid = await ctx.db
@@ -101,11 +99,16 @@ export const summary = query({
       .query("registrationActivity")
       .order("desc")
       .take(RECENT);
+    const recentOrders = await ctx.db
+      .query("registrationOrders")
+      .order("desc")
+      .filter(notAbandonedOrder)
+      .take(RECENT);
     return {
       windowDays: WINDOW_DAYS,
       sampled:
         sessions.length === BATCH * 4 ||
-        orders.length === BATCH * 4 ||
+        recentlySettled.length === BATCH * 4 ||
         [
           unpaid,
           exceptions,
@@ -157,7 +160,7 @@ export const summary = query({
           available: m.availableCount ?? 0,
         })),
       nextSessions: upcoming.slice(0, RECENT),
-      recentOrders: orders.filter((o) => !isAbandonedOrder(o)).slice(0, RECENT),
+      recentOrders,
       recentActivity: activity,
     };
   },

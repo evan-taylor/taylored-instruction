@@ -33,6 +33,7 @@ import {
   grantMaterial,
   hash,
   nextCode,
+  notAbandonedOrder,
   offering,
   release,
   scheduleEmails,
@@ -1486,13 +1487,7 @@ export const orders = query({
     ).order("desc");
     return await (args.includeAbandoned
       ? ordered
-      : ordered.filter((q) =>
-          q.or(
-            q.neq(q.field("status"), "expired"),
-            q.neq(q.field("settledAt"), undefined),
-            q.neq(q.field("releasedBeforePayment"), undefined)
-          )
-        )
+      : ordered.filter(notAbandonedOrder)
     ).paginate(args.paginationOpts);
   },
 });
