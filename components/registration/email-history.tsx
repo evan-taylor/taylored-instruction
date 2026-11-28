@@ -23,6 +23,16 @@ function timeOf(job: EmailRecord["job"]) {
   return job.sentAt ?? (job.state === "pending" ? job.due : job._creationTime);
 }
 
+function copyNote(job: EmailRecord["job"]) {
+  if (job.sentCopy) {
+    return "The text version exactly as it was sent.";
+  }
+  if (job.state === "sent") {
+    return "The sent text wasn’t saved for this older message, so merge fields are shown as written.";
+  }
+  return "This message hasn’t been sent, so merge fields are shown as written.";
+}
+
 function engagement(at: number | undefined, count: number, noun: string) {
   return at === undefined
     ? "Not recorded"
@@ -117,11 +127,8 @@ function EmailPreview({
           </div>
         </div>
         <p className="text-slate-500 text-xs">
-          {job.sentCopy
-            ? "The text version exactly as it was sent."
-            : "This message hasn’t been sent, so merge fields are shown as written."}{" "}
-          Opens and clicks come from the email provider and can include
-          automated scanners.
+          {copyNote(job)} Opens and clicks come from the email provider and can
+          include automated scanners.
         </p>
       </div>
     </Modal>
