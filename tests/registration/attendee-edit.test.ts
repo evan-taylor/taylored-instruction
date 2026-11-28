@@ -196,10 +196,10 @@ describe("Staff attendee edits", () => {
     ).toBeNull();
   });
 
-  it("send unsent mail to the new email and leave sent mail and invoiced lines alone", async () => {
+  it("send unsent or failed mail to the new email and leave sent mail and invoiced lines alone", async () => {
     const f = await fixture();
     const seat = await f.registerPaid("Jane", "Doe", "jane@example.test");
-    const job = (state: "pending" | "sent", recipient: string) =>
+    const job = (state: "pending" | "failed" | "sent", recipient: string) =>
       f.t.run((ctx) =>
         ctx.db.insert("registrationJobs", {
           key: `${state}-${recipient}`,
@@ -214,6 +214,7 @@ describe("Staff attendee edits", () => {
         })
       );
     const pending = await job("pending", "jane@example.test");
+    const failed = await job("failed", "jane@example.test");
     const sent = await job("sent", "jane@example.test");
     const charge = (state: "unbilled" | "invoiced") =>
       f.t.run(async (ctx) => {
@@ -262,11 +263,13 @@ describe("Staff attendee edits", () => {
     });
     const rows = await f.t.run(async (ctx) => ({
       pending: await ctx.db.get(pending),
+      failed: await ctx.db.get(failed),
       sent: await ctx.db.get(sent),
       unbilled: await ctx.db.get(unbilled),
       invoiced: await ctx.db.get(invoiced),
     }));
     expect(rows.pending?.recipient).toBe("janet@example.test");
+    expect(rows.failed?.recipient).toBe("janet@example.test");
     expect(rows.sent?.recipient).toBe("jane@example.test");
     expect(rows.unbilled).toMatchObject({
       attendeeName: "Janet Doe",
@@ -276,6 +279,79 @@ describe("Staff attendee edits", () => {
       attendeeName: "Jane Doe",
       attendeeEmail: "jane@example.test",
     });
+  });
+
+  it("keep transfer credit from paid add-ons and past refunds", async () => {
+    const f = await fixture();
+    const seat = await f.registerPaid("Jane", "Doe", "jane@example.test");
+    await f.t.run(async (ctx) => {
+      const order = await ctx.db.get(seat.orderId);
+      if (!order) {
+        throw new Error("Order missing");
+      }
+      const { _id, _creationTime, ...fields } = order;
+      const [first] = order.seats;
+      if (!first) {
+        throw new Error("Order seat missing");
+      }
+      await ctx.db.insert("registrationOrders", {
+        ...fields,
+        requestKey: crypto.randomUUID(),
+        parentOrderId: _id,
+        materialSeatId: seat._id,
+        status: "settled",
+        settledAt: Date.now(),
+        total: 2000,
+        seats: [{ ...first, total: 2000 }],
+        stripeSession: undefined,
+        paymentIntent: undefined,
+      });
+      await ctx.db.insert("registrationRefunds", {
+        orderId: _id,
+        key: "refund-1",
+        cents: 4000,
+        reason: "Partial refund",
+        actor: f.admin,
+        state: "succeeded",
+        allocations: [
+          { email: "jane@example.test", lineId: "tuition", cents: 4000 },
+        ],
+      });
+    });
+    const credit = async () =>
+      (
+        await f.as(f.admin).query(api.registrationTransfers.preview, {
+          seatId: seat._id,
+          sessionId: f.session,
+        })
+      ).original;
+    const before = await credit();
+    expect(before).toBe(8000);
+    await f.as(f.admin).mutation(api.registrationAttendees.updateContact, {
+      seatId: seat._id,
+      ...correction,
+    });
+    expect(await credit()).toBe(before);
+  });
+
+  it("refuse an email that holds a waitlist offer for the session", async () => {
+    const f = await fixture();
+    const seat = await f.registerPaid("Jane", "Doe", "jane@example.test");
+    await f.t.run((ctx) =>
+      ctx.db.insert("registrationWaitlist", {
+        sessionId: f.session,
+        name: "Janet Doe",
+        email: "janet@example.test",
+        state: "offered",
+        expires: Date.now() + 60_000,
+      })
+    );
+    await expect(
+      f.as(f.admin).mutation(api.registrationAttendees.updateContact, {
+        seatId: seat._id,
+        ...correction,
+      })
+    ).rejects.toThrow("waitlist offer");
   });
 
   it("apply checkout's validation", async () => {

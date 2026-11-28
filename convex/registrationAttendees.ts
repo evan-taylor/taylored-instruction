@@ -88,12 +88,75 @@ async function assertEmailFree(
       "That email already has a registration for this session"
     );
   }
+  const offer = await ctx.db
+    .query("registrationWaitlist")
+    .withIndex("by_sessionId_and_email_and_state", (q) =>
+      q.eq("sessionId", sessionId).eq("email", next).eq("state", "offered")
+    )
+    .first();
+  if (offer) {
+    throw new ConvexError(
+      "That email has a waitlist offer for this session. Decline the offer first."
+    );
+  }
+}
+
+/**
+ * Orders and refund allocations identify an attendee by email, so the seat's
+ * own order, its material add-on orders and their refunds follow the change.
+ * Otherwise transfer credit would drop paid add-ons and forget past refunds.
+ */
+async function renameInOrders(
+  ctx: MutationCtx,
+  seat: Doc<"registrationSeats">,
+  order: Doc<"registrationOrders">,
+  next: Contact
+) {
+  const children = await ctx.db
+    .query("registrationOrders")
+    .withIndex("by_parentOrderId", (q) => q.eq("parentOrderId", order._id))
+    .take(101);
+  if (children.length > 100) {
+    throw new ConvexError("Material order history requires reconciliation");
+  }
+  const orders = [
+    order,
+    ...children.filter((child) => child.materialSeatId === seat._id),
+  ];
+  await Promise.all(
+    orders.map(async (item) => {
+      await ctx.db.patch(item._id, {
+        seats: item.seats.map((entry) =>
+          entry.attendee.email === seat.email
+            ? { ...entry, attendee: { ...entry.attendee, ...next } }
+            : entry
+        ),
+      });
+      const refunds = await ctx.db
+        .query("registrationRefunds")
+        .withIndex("by_orderId", (q) => q.eq("orderId", item._id))
+        .take(1000);
+      await Promise.all(
+        refunds
+          .filter((refund) =>
+            refund.allocations?.some((a) => a.email === seat.email)
+          )
+          .map((refund) =>
+            ctx.db.patch(refund._id, {
+              allocations: refund.allocations?.map((a) =>
+                a.email === seat.email ? { ...a, email: next.email } : a
+              ),
+            })
+          )
+      );
+    })
+  );
 }
 
 /**
  * Corrects an attendee's name and contact details. The seat, its snapshot,
- * the order's copy, unsent email and an unbilled organization line change
- * together; sent mail, invoices and issued certificates keep their values.
+ * the order copies, unsent or failed email and an unbilled organization line
+ * change together; sent mail, invoices and issued certificates keep theirs.
  * Portal access follows `seat.email`, so the new address gains this
  * registration and the old one loses it.
  */
@@ -146,22 +209,22 @@ export const updateContact = mutation({
         attendee: { ...seat.snapshot.attendee, ...next },
       },
     });
-    await ctx.db.patch(order._id, {
-      seats: order.seats.map((item) =>
-        item.attendee.email === seat.email
-          ? { ...item, attendee: { ...item.attendee, ...next } }
-          : item
-      ),
-    });
+    await renameInOrders(ctx, seat, order, next);
     if (emailChanged) {
-      const pending = await ctx.db
-        .query("registrationJobs")
-        .withIndex("by_seatId_and_state", (q) =>
-          q.eq("seatId", seat._id).eq("state", "pending")
+      const unsent = (
+        await Promise.all(
+          (["pending", "failed"] as const).map((state) =>
+            ctx.db
+              .query("registrationJobs")
+              .withIndex("by_seatId_and_state", (q) =>
+                q.eq("seatId", seat._id).eq("state", state)
+              )
+              .take(500)
+          )
         )
-        .take(500);
+      ).flat();
       await Promise.all(
-        pending
+        unsent
           .filter((job) => job.recipient === seat.email)
           .map((job) => ctx.db.patch(job._id, { recipient: next.email }))
       );
