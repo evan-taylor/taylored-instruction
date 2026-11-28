@@ -1,4 +1,8 @@
 import { createElement } from "react";
+import {
+  type PolicyNotice,
+  policyNoticeWords,
+} from "../../emails/components/layout";
 import { renderEmailHtml } from "../../emails/components/render";
 import { PHONE } from "../../emails/components/theme";
 import TransactionalEmail, {
@@ -20,6 +24,7 @@ type EmailContent = {
   review?: { label: string; url: string };
   note?: string;
   code?: string;
+  policy?: PolicyNotice;
 };
 
 const PARAGRAPHS = /\n+/u;
@@ -73,8 +78,13 @@ export function brandedEmail(content: EmailContent) {
         (detail) => detail !== total && !amounts.includes(detail)
       ),
       note: content.note,
+      policy: content.policy && {
+        ...content.policy,
+        url: emailUrl(content.policy.url),
+      },
     })
   );
+  const policyWords = content.policy && policyNoticeWords(content.policy);
   const text = [
     content.title,
     ...content.paragraphs,
@@ -90,6 +100,9 @@ export function brandedEmail(content: EmailContent) {
       ? `${REVIEW_PROMPT} ${content.review.label}: ${content.review.url}`
       : undefined,
     content.note,
+    content.policy && policyWords
+      ? `${policyWords.before}cancellation policy${policyWords.after}\nCancellation policy: ${content.policy.url}`
+      : undefined,
     `Questions? Reply to this email or call ${PHONE.label}.`,
     "Taylored Instruction LLC",
   ]
@@ -113,6 +126,7 @@ type RenderableJob = {
   calendar?: string;
   /** A scheduled step sent after the class ended. */
   afterClass?: boolean;
+  policy?: PolicyNotice;
 };
 /**
  * Renders a queued job into a safe subject and HTML body with structural
@@ -176,6 +190,7 @@ export function registrationEmail(job: RenderableJob, origin: string) {
       ]
         .filter(Boolean)
         .join(" "),
+      policy: job.policy,
     }),
   };
 }

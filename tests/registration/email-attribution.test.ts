@@ -42,6 +42,7 @@ describe("email link attribution", () => {
   it("leaves token, opt-out, external and already tagged links alone", () => {
     for (const url of [
       `${origin}/unsubscribe?token=abc`,
+      `${origin}/cancellation-policy/v/2026-11-25`,
       `${origin}/registration/pay?key=secret`,
       `${origin}/s/abc#invitation=secret`,
       `${origin}/classes?utm_source=newsletter`,

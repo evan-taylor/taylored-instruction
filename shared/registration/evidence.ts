@@ -360,7 +360,7 @@ export function disputeEvidenceText(data: EvidenceData, origin: string) {
     email.description.startsWith("Purchaser")
   );
   const emailNote = receipt?.sentAt
-    ? ` A confirmation email sent to ${receipt.deliveredTo ?? receipt.recipient} on ${evidenceTime(receipt.sentAt)} (delivery status: ${receipt.deliveryStatus ?? "unknown"}) restated the policy version and linked to it.`
+    ? ` A confirmation email sent to ${receipt.deliveredTo ?? receipt.recipient} on ${evidenceTime(receipt.sentAt)} (delivery status: ${receipt.deliveryStatus ?? "unknown"}) linked to the permanent page for policy version ${ack.policyVersion}; the attached PDF includes that email as sent.`
     : "";
   const disclosure =
     ack.kind === "click-through"

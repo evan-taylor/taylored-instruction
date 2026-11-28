@@ -12,8 +12,12 @@ export const EMAIL_ATTRIBUTION_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 const CAMPAIGN = /^[a-z0-9_]{1,64}$/u;
 const SEND = /^[A-Za-z0-9_-]{1,64}$/u;
 const FIRST_PARTY_DOMAIN = "tayloredinstruction.com";
-/** Links that carry credentials or opt-outs are never tagged. */
-const UNTRACKED_PATH = /^\/(?:unsubscribe|api\/|email\/)/u;
+/**
+ * Links that carry credentials or opt-outs are never tagged, nor permanent
+ * policy versions, whose exact URL is dispute evidence.
+ */
+const UNTRACKED_PATH =
+  /^\/(?:unsubscribe|api\/|email\/|cancellation-policy\/v\/)/u;
 /** Query keys that can carry credentials or payment references. */
 export const SENSITIVE_PARAM =
   /token|secret|signature|session|key|code|invitation|password/iu;

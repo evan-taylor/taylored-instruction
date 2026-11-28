@@ -14,9 +14,21 @@ import {
 } from "react-email";
 import { colors, fontFamily, PHONE, READEX_PRO_WOFF2, SITE_URL } from "./theme";
 
+/** The cancellation policy version a registration email cites. */
+export type PolicyNotice = { url: string; agreedOn?: string };
+
+/** Words around the linked "cancellation policy", shared with plain text. */
+export function policyNoticeWords({ agreedOn }: PolicyNotice) {
+  return agreedOn
+    ? { before: "You agreed to our ", after: ` on ${agreedOn}.` }
+    : { before: "This registration is subject to our ", after: "." };
+}
+
 type EmailLayoutProps = {
   preview: string;
   children: ReactNode;
+  /** A muted cancellation policy line above the support footer. */
+  policy?: PolicyNotice;
   /** Replaces the customer support line, e.g. on internal notifications. */
   footer?: ReactNode;
   /** Opt-out link for reminder and marketing mail. */
@@ -29,7 +41,9 @@ export function EmailLayout({
   children,
   footer,
   unsubscribeUrl,
+  policy,
 }: EmailLayoutProps) {
+  const policyWords = policy ? policyNoticeWords(policy) : null;
   return (
     <Html dir="ltr" lang="en">
       <Head>
@@ -54,6 +68,15 @@ export function EmailLayout({
           </Link>
           <Section style={styles.content}>{children}</Section>
           <Hr style={styles.rule} />
+          {policy && policyWords ? (
+            <FooterText>
+              {policyWords.before}
+              <Link href={policy.url} style={styles.footerLink}>
+                cancellation policy
+              </Link>
+              {policyWords.after}
+            </FooterText>
+          ) : null}
           {footer ?? (
             <FooterText>
               Questions? Reply to this email or call{" "}
