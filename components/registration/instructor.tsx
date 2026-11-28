@@ -6,6 +6,7 @@ import {
   useQuery,
 } from "convex/react";
 import {
+  ArrowUpRight,
   ChevronDown,
   ChevronUp,
   Download,
@@ -23,6 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Modal } from "@/components/ui/dialog";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import {
+  DescriptionList,
   EmptyState,
   PageHeader,
   ResultNotice,
@@ -37,8 +39,10 @@ import { parsePlace } from "@/shared/registration/catalog";
 import { BATCH, csvRows } from "@/shared/registration/domain";
 import { AgencyRosterExport } from "./agency-roster-export";
 import { useAssignedSessions } from "./catalog";
+import { RegistrationEngagement } from "./engagement";
 import { errorText } from "./errors";
 import {
+  formatDateTime,
   formatMeeting,
   formatRelative,
   formatWeekday,
@@ -58,6 +62,7 @@ type Seat = Doc<"registrationSeats"> & {
   completion: string;
   certificate?: StaffCertificate;
   billedTo?: string;
+  payment?: Doc<"registrationOrders">["status"];
 };
 const EMAIL_BATCH = 50;
 const ATTENDANCE_CHOICES = [
@@ -359,6 +364,83 @@ function AttendanceCell({
   );
 }
 
+/** Who registered and how; payment and the order link are administrator-only. */
+function RegistrationSummary({ seat }: { seat: Seat }) {
+  const { phone } = seat.snapshot.attendee;
+  const payment =
+    seat.payment || seat.billedTo ? (
+      <span className="flex flex-wrap items-center gap-1.5">
+        {seat.payment ? <StatusBadge status={seat.payment} /> : null}
+        {seat.billedTo ? (
+          <Badge tone="info">Billed to {seat.billedTo}</Badge>
+        ) : null}
+      </span>
+    ) : null;
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-semibold text-slate-900 text-sm">Registration</h3>
+        {seat.payment ? (
+          <Button
+            href={`/admin/registrations?order=${seat.orderId}`}
+            size="xs"
+            variant="secondary"
+          >
+            View registration
+            <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
+      </div>
+      <DescriptionList
+        className="lg:grid-cols-4"
+        items={[
+          {
+            label: "Email",
+            value: (
+              <a
+                className="break-all text-primary underline-offset-2 hover:underline"
+                href={`mailto:${seat.email}`}
+              >
+                {seat.email}
+              </a>
+            ),
+          },
+          {
+            label: "Phone",
+            value: phone ? (
+              <a
+                className="text-primary tabular-nums underline-offset-2 hover:underline"
+                href={`tel:${phone}`}
+              >
+                {phone}
+              </a>
+            ) : (
+              <span className="text-slate-500">Not provided</span>
+            ),
+          },
+          {
+            label: "Registered",
+            value: (
+              <span className="tabular-nums">
+                {formatDateTime(seat._creationTime)}
+              </span>
+            ),
+          },
+          ...(payment ? [{ label: "Payment", value: payment }] : []),
+          ...(seat.certificate
+            ? [
+                {
+                  label: "Pre-class certificate",
+                  value: <CertificateBadge certificate={seat.certificate} />,
+                },
+              ]
+            : []),
+        ]}
+      />
+    </section>
+  );
+}
+
 function SeatDetails({
   seat,
   data,
@@ -367,49 +449,53 @@ function SeatDetails({
   data: { values: Doc<"registrationOutcomes">[] } | undefined;
 }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-2">
-        <h3 className="font-semibold text-slate-900 text-sm">Answers</h3>
-        <AnswerList seat={seat} />
-      </section>
-      <section className="space-y-3">
-        <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
-        {seat.certificate ? (
-          <StaffCertificateUpload
-            attendeeName={seat.name}
-            certificate={seat.certificate}
-            seatId={seat._id}
-          />
-        ) : null}
-        {data?.values &&
-          seat.outcomeDefinitions
-            .filter((definition) => !definition.certificateRequired)
-            .map((definition) => (
-              <OutcomeField
-                current={
-                  data.values.find(
-                    (value) =>
-                      value.fieldId === definition.id &&
-                      value.version === definition.version
-                  )?.value
-                }
-                definition={definition}
-                key={`${definition.id}:${definition.version}`}
-                seatId={seat._id}
-              />
-            ))}
-        {!data && seat.outcomeDefinitions.length > 0 ? (
-          <p role="status">Loading outcomes…</p>
-        ) : null}
-        {seat.outcomeDefinitions.length === 0 ? (
-          <p className="text-slate-500 text-sm">
-            This course has no outcome fields.
+    <div className="space-y-6">
+      <RegistrationSummary seat={seat} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-2">
+          <h3 className="font-semibold text-slate-900 text-sm">Answers</h3>
+          <AnswerList seat={seat} />
+        </section>
+        <section className="space-y-3">
+          <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
+          {seat.certificate ? (
+            <StaffCertificateUpload
+              attendeeName={seat.name}
+              certificate={seat.certificate}
+              seatId={seat._id}
+            />
+          ) : null}
+          {data?.values &&
+            seat.outcomeDefinitions
+              .filter((definition) => !definition.certificateRequired)
+              .map((definition) => (
+                <OutcomeField
+                  current={
+                    data.values.find(
+                      (value) =>
+                        value.fieldId === definition.id &&
+                        value.version === definition.version
+                    )?.value
+                  }
+                  definition={definition}
+                  key={`${definition.id}:${definition.version}`}
+                  seatId={seat._id}
+                />
+              ))}
+          {!data && seat.outcomeDefinitions.length > 0 ? (
+            <p role="status">Loading outcomes…</p>
+          ) : null}
+          {seat.outcomeDefinitions.length === 0 ? (
+            <p className="text-slate-500 text-sm">
+              This course has no outcome fields.
+            </p>
+          ) : null}
+          <p className="text-slate-500 text-xs">
+            Completion overrides are handled by administrators.
           </p>
-        ) : null}
-        <p className="text-slate-500 text-xs">
-          Completion overrides are handled by administrators.
-        </p>
-      </section>
+        </section>
+      </div>
+      {seat.payment ? <RegistrationEngagement seatId={seat._id} /> : null}
     </div>
   );
 }
@@ -450,6 +536,11 @@ function RosterRow({
           {seat.billedTo ? (
             <div className="mt-1">
               <Badge tone="info">Billed to {seat.billedTo}</Badge>
+            </div>
+          ) : null}
+          {seat.payment && seat.payment !== "settled" ? (
+            <div className="mt-1">
+              <StatusBadge status={seat.payment} />
             </div>
           ) : null}
           {seat.certificate ? (

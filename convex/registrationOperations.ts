@@ -16,6 +16,7 @@ import {
   safeUrl,
   taxCode,
 } from "../shared/registration/domain";
+import { orderStatus } from "../shared/registration/validators";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -536,6 +537,8 @@ export const roster = query({
         certificate: v.optional(staffCertificateStatusValidator),
         /** The organization a billing code charges for this seat. */
         billedTo: v.optional(v.string()),
+        /** The order's payment status; administrators only. */
+        payment: v.optional(orderStatus),
         attendance: v.array(
           v.object({ meetingId: v.string(), status: attendanceStatus })
         ),
@@ -553,17 +556,17 @@ export const roster = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await staff(ctx, args.sessionId);
+    const actor = await staff(ctx, args.sessionId);
     const result = await rosterSeats(ctx, args.sessionId, args.paginationOpts);
-    const seats = result.page;
     const page = await Promise.all(
-      seats.map(async (seat) => {
+      result.page.map(async (seat) => {
         const { attendance: rows, completion: seatCompletion } =
           await seatOutcomes(ctx, seat);
         const order = await ctx.db.get(seat.orderId);
         return {
           ...seat,
           ...(order?.billedTo ? { billedTo: order.billedTo } : {}),
+          ...(actor.admin && order ? { payment: order.status } : {}),
           completion: seatCompletion,
           certificate: await staffCertificateStatus(ctx, seat),
           attendance: rows.map(({ meetingId, status }) => ({
@@ -826,11 +829,10 @@ export const exportRoster = query({
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
     const result = await rosterSeats(ctx, args.sessionId, args.paginationOpts);
-    const seats = result.page;
     return {
       csv: csv([
         ["Name", "Email", "State"],
-        ...seats.map((s) => [s.name, s.email, s.state]),
+        ...result.page.map((s) => [s.name, s.email, s.state]),
       ]),
       continueCursor: result.continueCursor,
       isDone: result.isDone,

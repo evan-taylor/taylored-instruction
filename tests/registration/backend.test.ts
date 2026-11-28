@@ -467,6 +467,32 @@ describe("Registration transactions", () => {
       })
     ).rejects.toThrow("Verified");
   });
+  it("shows the payment status on roster rows to administrators only", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("one@example.test")],
+    });
+    const rosterArgs = {
+      sessionId: f.session,
+      paginationOpts: { cursor: null, numItems: 20 },
+    };
+    const [adminRow] = (
+      await f.adminClient.query(api.registrationOperations.roster, rosterArgs)
+    ).page;
+    const [instructorRow] = (
+      await f.instructorClient.query(
+        api.registrationOperations.roster,
+        rosterArgs
+      )
+    ).page;
+    expect(adminRow?.payment).toBe("settled");
+    expect(instructorRow?.email).toBe("one@example.test");
+    expect(instructorRow).not.toHaveProperty("payment");
+  });
   it("records bulk attendance for the chosen meeting and rejects invalid batches", async () => {
     const f = await fixture();
     await f.t.run(async (ctx) => {
