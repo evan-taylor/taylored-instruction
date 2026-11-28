@@ -720,6 +720,10 @@ describe("Dispute evidence export", () => {
       | { cancellation_policy_disclosure: string }
       | undefined;
     expect(evidence?.cancellation_policy_disclosure).toContain(AGREEMENT_LABEL);
+    expect(evidence?.cancellation_policy_disclosure).toContain(
+      `linked to the permanent page for policy version ${CURRENT.version}; the attached PDF includes that email as sent.`
+    );
+    expect(evidence?.cancellation_policy_disclosure).not.toContain("restated");
     const activity = await f.t.run((ctx) =>
       ctx.db
         .query("registrationActivity")

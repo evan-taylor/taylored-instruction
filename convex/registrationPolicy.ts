@@ -191,8 +191,8 @@ export async function recordDisclosure(
     kind: "disclosed",
     channel: invoice ? "invoice" : "staff-booking",
     statement: invoice
-      ? `Not a click-through. Invoice ${invoice.number} was sent to ${invoice.billToEmail}; its footer and the invoice email state that the order is subject to Cancellation Policy version ${policy.version} and link to ${path}.`
-      : `Not a click-through. Staff booked this order, so the purchaser did not check an agreement box. Their confirmation email states that the order is subject to Cancellation Policy version ${policy.version} and links to ${path}.`,
+      ? `Not a click-through. Invoice ${invoice.number} was sent to ${invoice.billToEmail}; its footer states that the order is subject to Cancellation Policy version ${policy.version} and links to ${path}, and the invoice email links to the same versioned policy.`
+      : `Not a click-through. Staff booked this order, so the purchaser did not check an agreement box. Their confirmation email states that the order is subject to our cancellation policy and links to version ${policy.version} at ${path}.`,
     actor,
     invoiceId: invoice?._id,
     policy,
