@@ -497,7 +497,8 @@ describe("Release access before payment", () => {
     ).toBeUndefined();
 
     // Canceling outright is an explicit staff decision; the abandoned
-    // checkout filter still shows the order and its attendee.
+    // checkout filter still shows the order, while the canceled seat leaves
+    // the roster like any other cancellation.
     const [seat] = voided.seats;
     if (!seat) {
       throw new Error("Missing seat");
@@ -516,7 +517,7 @@ describe("Release access before payment", () => {
       api.registrationOperations.roster,
       { sessionId: f.session, paginationOpts: PAGE }
     );
-    expect(roster.page.map((s) => s._id)).toContain(seat._id);
+    expect(roster.page.map((s) => s._id)).not.toContain(seat._id);
   });
 
   it("flags follow-up when Stripe voids the invoice", async () => {

@@ -467,6 +467,98 @@ describe("Registration transactions", () => {
       })
     ).rejects.toThrow("Verified");
   });
+  it("shows the payment status on roster rows to administrators only", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("one@example.test")],
+    });
+    const rosterArgs = {
+      sessionId: f.session,
+      paginationOpts: { cursor: null, numItems: 20 },
+    };
+    const [adminRow] = (
+      await f.adminClient.query(api.registrationOperations.roster, rosterArgs)
+    ).page;
+    const [instructorRow] = (
+      await f.instructorClient.query(
+        api.registrationOperations.roster,
+        rosterArgs
+      )
+    ).page;
+    expect(adminRow?.payment).toBe("settled");
+    expect(instructorRow?.email).toBe("one@example.test");
+    expect(instructorRow).not.toHaveProperty("payment");
+  });
+  it("refuses roster emails to canceled or transferred attendees", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("one@example.test")],
+    });
+    const seatId = await f.t.run(async (ctx) => {
+      const row = await ctx.db.query("registrationSeats").first();
+      if (!row) {
+        throw new Error("Missing seat");
+      }
+      await ctx.db.patch(row._id, { state: "transferred" });
+      return row._id;
+    });
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.selectedEmail, {
+        sessionId: f.session,
+        seats: [seatId],
+        subject: "Parking",
+        body: "Use the north lot.",
+        requestKey: "parking",
+      })
+    ).rejects.toThrow("no longer on the roster");
+  });
+  it("queues one roster email per attendee when a send is retried", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("one@example.test"), seat("two@example.test")],
+    });
+    const [first, second] = await f.t.run((ctx) =>
+      ctx.db.query("registrationSeats").collect()
+    );
+    if (!(first && second)) {
+      throw new Error("Missing seats");
+    }
+    const message = {
+      sessionId: f.session,
+      subject: "Parking",
+      body: "Use the north lot.",
+      requestKey: "parking",
+    };
+    await f.adminClient.mutation(api.registrationOperations.selectedEmail, {
+      ...message,
+      seats: [first._id],
+    });
+    await f.adminClient.mutation(api.registrationOperations.selectedEmail, {
+      ...message,
+      seats: [first._id, second._id],
+    });
+    const staffJobs = await f.t.run(async (ctx) =>
+      (await ctx.db.query("registrationJobs").collect()).filter((job) =>
+        job.key.startsWith("staff:parking:")
+      )
+    );
+    expect(staffJobs.map((job) => job.recipient).sort()).toEqual([
+      "one@example.test",
+      "two@example.test",
+    ]);
+  });
   it("records bulk attendance for the chosen meeting and rejects invalid batches", async () => {
     const f = await fixture();
     await f.t.run(async (ctx) => {
@@ -564,9 +656,7 @@ describe("Registration transactions", () => {
     expect(rows.find((row) => row._id === second._id)?.attendance).toEqual([
       { meetingId: "second", status: "present" },
     ]);
-    expect(rows.find((row) => row._id === canceled._id)?.attendance).toEqual(
-      []
-    );
+    expect(rows.some((row) => row._id === canceled._id)).toBe(false);
   });
   it("free settlement creates missing entitlements and restock assigns one code once", async () => {
     const f = await fixture();

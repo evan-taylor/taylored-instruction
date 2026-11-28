@@ -182,11 +182,6 @@ async function fixture() {
   };
 }
 
-const emailsOf = (seats: { email: string }[]) =>
-  seats.map((seat) => seat.email).sort();
-const attendeeEmails = (orders: { name: string }[]) =>
-  orders.map((order) => `${order.name}@example.test`).sort();
-
 describe("Abandoned checkouts", () => {
   it("are released before payment, while late payments keep a payment record", async () => {
     const f = await fixture();
@@ -209,27 +204,26 @@ describe("Abandoned checkouts", () => {
       api.registrationOperations.roster,
       { sessionId: f.session, paginationOpts: PAGE }
     );
-    expect(emailsOf(roster.page)).toEqual(attendeeEmails(f.kept));
     expect(
       Object.fromEntries(roster.page.map((seat) => [seat.email, seat.state]))
     ).toEqual({
       "paid@example.test": "active",
-      "paid-then-canceled@example.test": "canceled",
-      "paid-then-refunded@example.test": "canceled",
-      "paid-after-release@example.test": "canceled",
       "in-progress@example.test": "held",
     });
+    expect(
+      await f.adminClient.query(api.registrationOperations.rosterCount, {
+        sessionId: f.session,
+      })
+    ).toBe(roster.page.length);
 
     const exported = await f.adminClient.query(
       api.registrationOperations.exportRoster,
       { sessionId: f.session, paginationOpts: PAGE }
     );
-    for (const order of f.abandoned) {
-      expect(exported.csv).not.toContain(`${order.name}@example.test`);
-    }
-    for (const order of f.kept) {
-      expect(exported.csv).toContain(`${order.name}@example.test`);
-    }
+    expect(exported.csv.split("\r\n").slice(1).sort()).toEqual([
+      '"in-progress","in-progress@example.test","held"',
+      '"paid","paid@example.test","active"',
+    ]);
 
     const overview = await f.adminClient.query(api.mcp.sessionOverview, {
       sessionId: f.session,

@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
+  type PaginationOptions,
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
@@ -15,6 +16,7 @@ import {
   safeUrl,
   taxCode,
 } from "../shared/registration/domain";
+import { orderStatus } from "../shared/registration/validators";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -38,7 +40,6 @@ import {
   scheduleEmails,
   settle,
   staff,
-  withoutAbandonedSeats,
 } from "./registrationHelpers";
 import schema from "./schema";
 
@@ -506,6 +507,23 @@ const attendanceStatus = v.union(
   v.literal("not-recorded")
 );
 
+/**
+ * Seats that still hold a place in the session. Canceled and transferred
+ * seats, abandoned checkouts included, stay findable from the Orders tab.
+ */
+function rosterSeats(
+  ctx: QueryCtx,
+  sessionId: Id<"registrationSessions">,
+  paginationOpts: PaginationOptions
+) {
+  return ctx.db
+    .query("registrationSeats")
+    .withIndex("by_sessionId_and_state", (q) => q.eq("sessionId", sessionId))
+    .filter((q) =>
+      q.or(q.eq(q.field("state"), "held"), q.eq(q.field("state"), "active"))
+    )
+    .paginate(paginationOpts);
+}
 export const roster = query({
   args: {
     sessionId: v.id("registrationSessions"),
@@ -519,6 +537,8 @@ export const roster = query({
         certificate: v.optional(staffCertificateStatusValidator),
         /** The organization a billing code charges for this seat. */
         billedTo: v.optional(v.string()),
+        /** The order's payment status; administrators only. */
+        payment: v.optional(orderStatus),
         attendance: v.array(
           v.object({ meetingId: v.string(), status: attendanceStatus })
         ),
@@ -536,22 +556,17 @@ export const roster = query({
     ),
   }),
   handler: async (ctx, args) => {
-    await staff(ctx, args.sessionId);
-    const result = await ctx.db
-      .query("registrationSeats")
-      .withIndex("by_sessionId_and_state", (q) =>
-        q.eq("sessionId", args.sessionId)
-      )
-      .paginate(args.paginationOpts);
-    const seats = await withoutAbandonedSeats(ctx, result.page);
+    const actor = await staff(ctx, args.sessionId);
+    const result = await rosterSeats(ctx, args.sessionId, args.paginationOpts);
     const page = await Promise.all(
-      seats.map(async (seat) => {
+      result.page.map(async (seat) => {
         const { attendance: rows, completion: seatCompletion } =
           await seatOutcomes(ctx, seat);
         const order = await ctx.db.get(seat.orderId);
         return {
           ...seat,
           ...(order?.billedTo ? { billedTo: order.billedTo } : {}),
+          ...(actor.admin && order ? { payment: order.status } : {}),
           completion: seatCompletion,
           certificate: await staffCertificateStatus(ctx, seat),
           attendance: rows.map(({ meetingId, status }) => ({
@@ -813,17 +828,11 @@ export const exportRoster = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
-    const result = await ctx.db
-      .query("registrationSeats")
-      .withIndex("by_sessionId_and_state", (q) =>
-        q.eq("sessionId", args.sessionId)
-      )
-      .paginate(args.paginationOpts);
-    const seats = await withoutAbandonedSeats(ctx, result.page);
+    const result = await rosterSeats(ctx, args.sessionId, args.paginationOpts);
     return {
       csv: csv([
         ["Name", "Email", "State"],
-        ...seats.map((s) => [s.name, s.email, s.state]),
+        ...result.page.map((s) => [s.name, s.email, s.state]),
       ]),
       continueCursor: result.continueCursor,
       isDone: result.isDone,
@@ -849,6 +858,11 @@ export const selectedEmail = mutation({
         const seat = await ctx.db.get(id);
         if (seat?.sessionId !== args.sessionId) {
           throw new ConvexError("Recipient outside session");
+        }
+        if (seat.state === "canceled" || seat.state === "transferred") {
+          throw new ConvexError(
+            `${seat.name} is no longer on the roster. Refresh and choose again.`
+          );
         }
         await enqueue(ctx, {
           key: `staff:${args.requestKey}:${id}`,
@@ -1654,6 +1668,25 @@ export const sessionForStaff = query({
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
     return await ctx.db.get(args.sessionId);
+  },
+});
+/** Attendees on the session's roster: held and active seats, as rosterSeats lists them. */
+export const rosterCount = query({
+  args: { sessionId: v.id("registrationSessions") },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    await staff(ctx, args.sessionId);
+    const [held, active] = await Promise.all(
+      (["held", "active"] as const).map((state) =>
+        ctx.db
+          .query("registrationSeats")
+          .withIndex("by_sessionId_and_state", (q) =>
+            q.eq("sessionId", args.sessionId).eq("state", state)
+          )
+          .collect()
+      )
+    );
+    return (held?.length ?? 0) + (active?.length ?? 0);
   },
 });
 export const staffDirectory = query({

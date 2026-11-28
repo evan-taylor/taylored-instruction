@@ -6,6 +6,7 @@ import {
   useQuery,
 } from "convex/react";
 import {
+  ArrowUpRight,
   ChevronDown,
   ChevronUp,
   Download,
@@ -23,6 +24,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Modal } from "@/components/ui/dialog";
 import { Field, Select, TextArea, TextInput } from "@/components/ui/field";
 import {
+  DescriptionList,
   EmptyState,
   PageHeader,
   ResultNotice,
@@ -37,8 +39,10 @@ import { parsePlace } from "@/shared/registration/catalog";
 import { BATCH, csvRows } from "@/shared/registration/domain";
 import { AgencyRosterExport } from "./agency-roster-export";
 import { useAssignedSessions } from "./catalog";
+import { RegistrationEngagement } from "./engagement";
 import { errorText } from "./errors";
 import {
+  formatDateTime,
   formatMeeting,
   formatRelative,
   formatWeekday,
@@ -58,6 +62,7 @@ type Seat = Doc<"registrationSeats"> & {
   completion: string;
   certificate?: StaffCertificate;
   billedTo?: string;
+  payment?: Doc<"registrationOrders">["status"];
 };
 const EMAIL_BATCH = 50;
 const ATTENDANCE_CHOICES = [
@@ -359,6 +364,83 @@ function AttendanceCell({
   );
 }
 
+/** Who registered and how; payment and the order link are administrator-only. */
+function RegistrationSummary({ seat }: { seat: Seat }) {
+  const { phone } = seat.snapshot.attendee;
+  const payment =
+    seat.payment || seat.billedTo ? (
+      <span className="flex flex-wrap items-center gap-1.5">
+        {seat.payment ? <StatusBadge status={seat.payment} /> : null}
+        {seat.billedTo ? (
+          <Badge tone="info">Billed to {seat.billedTo}</Badge>
+        ) : null}
+      </span>
+    ) : null;
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-semibold text-slate-900 text-sm">Registration</h3>
+        {seat.payment ? (
+          <Button
+            href={`/admin/registrations?order=${seat.orderId}`}
+            size="xs"
+            variant="secondary"
+          >
+            View registration
+            <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5" />
+          </Button>
+        ) : null}
+      </div>
+      <DescriptionList
+        className="lg:grid-cols-4"
+        items={[
+          {
+            label: "Email",
+            value: (
+              <a
+                className="break-all text-primary underline-offset-2 hover:underline"
+                href={`mailto:${seat.email}`}
+              >
+                {seat.email}
+              </a>
+            ),
+          },
+          {
+            label: "Phone",
+            value: phone ? (
+              <a
+                className="text-primary tabular-nums underline-offset-2 hover:underline"
+                href={`tel:${phone}`}
+              >
+                {phone}
+              </a>
+            ) : (
+              <span className="text-slate-500">Not provided</span>
+            ),
+          },
+          {
+            label: "Registered",
+            value: (
+              <span className="tabular-nums">
+                {formatDateTime(seat._creationTime)}
+              </span>
+            ),
+          },
+          ...(payment ? [{ label: "Payment", value: payment }] : []),
+          ...(seat.certificate
+            ? [
+                {
+                  label: "Pre-class certificate",
+                  value: <CertificateBadge certificate={seat.certificate} />,
+                },
+              ]
+            : []),
+        ]}
+      />
+    </section>
+  );
+}
+
 function SeatDetails({
   seat,
   data,
@@ -367,49 +449,53 @@ function SeatDetails({
   data: { values: Doc<"registrationOutcomes">[] } | undefined;
 }) {
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-2">
-        <h3 className="font-semibold text-slate-900 text-sm">Answers</h3>
-        <AnswerList seat={seat} />
-      </section>
-      <section className="space-y-3">
-        <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
-        {seat.certificate ? (
-          <StaffCertificateUpload
-            attendeeName={seat.name}
-            certificate={seat.certificate}
-            seatId={seat._id}
-          />
-        ) : null}
-        {data?.values &&
-          seat.outcomeDefinitions
-            .filter((definition) => !definition.certificateRequired)
-            .map((definition) => (
-              <OutcomeField
-                current={
-                  data.values.find(
-                    (value) =>
-                      value.fieldId === definition.id &&
-                      value.version === definition.version
-                  )?.value
-                }
-                definition={definition}
-                key={`${definition.id}:${definition.version}`}
-                seatId={seat._id}
-              />
-            ))}
-        {!data && seat.outcomeDefinitions.length > 0 ? (
-          <p role="status">Loading outcomes…</p>
-        ) : null}
-        {seat.outcomeDefinitions.length === 0 ? (
-          <p className="text-slate-500 text-sm">
-            This course has no outcome fields.
+    <div className="space-y-6">
+      <RegistrationSummary seat={seat} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-2">
+          <h3 className="font-semibold text-slate-900 text-sm">Answers</h3>
+          <AnswerList seat={seat} />
+        </section>
+        <section className="space-y-3">
+          <h3 className="font-semibold text-slate-900 text-sm">Outcomes</h3>
+          {seat.certificate ? (
+            <StaffCertificateUpload
+              attendeeName={seat.name}
+              certificate={seat.certificate}
+              seatId={seat._id}
+            />
+          ) : null}
+          {data?.values &&
+            seat.outcomeDefinitions
+              .filter((definition) => !definition.certificateRequired)
+              .map((definition) => (
+                <OutcomeField
+                  current={
+                    data.values.find(
+                      (value) =>
+                        value.fieldId === definition.id &&
+                        value.version === definition.version
+                    )?.value
+                  }
+                  definition={definition}
+                  key={`${definition.id}:${definition.version}`}
+                  seatId={seat._id}
+                />
+              ))}
+          {!data && seat.outcomeDefinitions.length > 0 ? (
+            <p role="status">Loading outcomes…</p>
+          ) : null}
+          {seat.outcomeDefinitions.length === 0 ? (
+            <p className="text-slate-500 text-sm">
+              This course has no outcome fields.
+            </p>
+          ) : null}
+          <p className="text-slate-500 text-xs">
+            Completion overrides are handled by administrators.
           </p>
-        ) : null}
-        <p className="text-slate-500 text-xs">
-          Completion overrides are handled by administrators.
-        </p>
-      </section>
+        </section>
+      </div>
+      {seat.payment ? <RegistrationEngagement seatId={seat._id} /> : null}
     </div>
   );
 }
@@ -450,6 +536,11 @@ function RosterRow({
           {seat.billedTo ? (
             <div className="mt-1">
               <Badge tone="info">Billed to {seat.billedTo}</Badge>
+            </div>
+          ) : null}
+          {seat.payment && seat.payment !== "settled" ? (
+            <div className="mt-1">
+              <StatusBadge status={seat.payment} />
             </div>
           ) : null}
           {seat.certificate ? (
@@ -522,30 +613,37 @@ function EmailDialog({
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
-  // One attempt per message: the key and progress survive a failed batch so
-  // retrying resumes where it stopped instead of re-queueing earlier batches.
-  const attempt = useRef({ signature: "", key: "", sent: 0 });
+  // One attempt per message: the key and the recipients already queued survive
+  // a failed batch, so a retry skips them even if the selection changed. The
+  // backend also keys each queued email by this request key and the seat.
+  const attempt = useRef({
+    signature: "",
+    key: "",
+    queued: new Set<Id<"registrationSeats">>(),
+  });
   async function submit() {
     setBusy(true);
     try {
-      const signature = JSON.stringify({ seats, subject, body });
+      const signature = JSON.stringify({ subject, body });
       if (attempt.current.signature !== signature) {
-        attempt.current = { signature, key: crypto.randomUUID(), sent: 0 };
+        attempt.current = {
+          signature,
+          key: crypto.randomUUID(),
+          queued: new Set(),
+        };
       }
+      const { key, queued } = attempt.current;
+      const remaining = seats.filter((id) => !queued.has(id));
       // The backend accepts up to EMAIL_BATCH recipients per call.
-      while (attempt.current.sent < seats.length) {
-        const start = attempt.current.sent;
+      while (remaining.length) {
+        const batch = remaining.splice(0, EMAIL_BATCH);
         // biome-ignore lint/performance/noAwaitInLoops: batches must be sequential so progress is tracked
-        await send({
-          sessionId,
-          seats: seats.slice(start, start + EMAIL_BATCH),
-          subject,
-          body,
-          requestKey: `${attempt.current.key}:${start / EMAIL_BATCH}`,
-        });
-        attempt.current.sent = start + EMAIL_BATCH;
+        await send({ sessionId, seats: batch, subject, body, requestKey: key });
+        for (const id of batch) {
+          queued.add(id);
+        }
       }
-      attempt.current = { signature: "", key: "", sent: 0 };
+      attempt.current = { signature: "", key: "", queued: new Set() };
       onResult("Selected-attendee message queued");
       setSubject("");
       setBody("");
@@ -801,7 +899,7 @@ export function InstructorRoster({
   const [bulkSaving, setBulkSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [missingOnly, setMissingOnly] = useState(false);
-  const [selected, setSelected] = useState<Id<"registrationSeats">[]>([]);
+  const [chosen, setSelected] = useState<Id<"registrationSeats">[]>([]);
   const [emailOpen, setEmailOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
@@ -811,6 +909,8 @@ export function InstructorRoster({
       (!missingOnly || s.certificate?.uploaded === false) &&
       `${s.name} ${s.email}`.toLowerCase().includes(needle)
   );
+  const loadedIds = new Set(roster.results.map((seat) => seat._id));
+  const selected = chosen.filter((id) => loadedIds.has(id));
   const selectedIds = new Set(selected);
   const allVisibleSelected =
     visible.length > 0 && visible.every((s) => selectedIds.has(s._id));
