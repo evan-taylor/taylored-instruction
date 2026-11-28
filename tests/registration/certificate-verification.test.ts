@@ -9,7 +9,10 @@ import { api, internal } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import schema from "../../convex/schema";
 import { ADMIN_EMAILS } from "../../shared/adminEmails";
-import { VERIFICATION_CHECKS } from "../../shared/registration/certificate-verification";
+import {
+  certificateCourseName,
+  VERIFICATION_CHECKS,
+} from "../../shared/registration/certificate-verification";
 import { agreement } from "./fixtures/policy";
 
 vi.mock("convex/server", async (original) => ({
@@ -69,7 +72,10 @@ function png(width = 640, height = 480) {
 }
 
 /** Shaped like an openhtmltopdf export: landscape A4, text in non-embedded standard fonts. */
-async function pdf() {
+async function pdf(
+  course = "has successfully completed HeartCode BLS",
+  completed = "Date Completed: 11/20/2026"
+) {
   const document = await PDFDocument.create();
   const page = document.addPage([841.875, 595.275]);
   const regular = await document.embedFont(StandardFonts.Helvetica);
@@ -84,13 +90,8 @@ async function pdf() {
   const lines = [
     { text: "Certificate of Completion", y: 420, size: 28, font: regular },
     { text: "Jamie Example", y: 375, size: 26, font: bold },
-    {
-      text: "has successfully completed HeartCode BLS",
-      y: 345,
-      size: 14,
-      font: regular,
-    },
-    { text: "Date Completed: 11/20/2026", y: 260, size: 14, font: regular },
+    { text: course, y: 345, size: 14, font: regular },
+    { text: completed, y: 260, size: 14, font: regular },
   ];
   for (const line of lines) {
     page.drawText(line.text, {
@@ -391,8 +392,8 @@ it("holds an attendee's upload as verifying and passes it when Jev is confident 
   const body = JSON.parse(String(init?.body));
   expect(body.model).toBe("typesafe/jev-1.14");
   expect(body.state[0]).toMatchObject({
-    expected_course:
-      "HeartCode BLS, the pre-class requirement for BLS Provider",
+    expected_course: "HeartCode BLS",
+    course: "BLS Provider",
     attendee_name: "Jamie Example",
   });
   expect(body.state[0].today).toMatch(ISO_DATE);
@@ -461,6 +462,99 @@ it("checks a PDF whose text is drawn upside down on a rotated page", async () =>
 
   expect(fetchMock).toHaveBeenCalledTimes(1);
   expect((await f.file(fileId))?.verification?.state).toBe("auto_passed");
+});
+
+it.each([
+  [
+    "Lifeguarding - Online Learning (ARC) — upload completion certificate",
+    "Lifeguarding - Online Learning (ARC)",
+  ],
+  ["HeartCode BLS: Upload certificate", "HeartCode BLS"],
+  ["Online First Aid – please submit your certificate", "Online First Aid"],
+  ["Basic Life Support online certificate", "Basic Life Support online"],
+  ["Certificate", "Certificate"],
+  ["HeartCode BLS", "HeartCode BLS"],
+  ["Lifeguarding - Online Learning", "Lifeguarding - Online Learning"],
+])("names the course in %j as %j", (title, course) => {
+  expect(certificateCourseName(title)).toBe(course);
+});
+
+it("asks Jev about the course by name, accepting the agency's name for its online portion", async () => {
+  const f = await fixture();
+  await f.t.run(async (ctx) => {
+    const seat = await ctx.db.get(f.seatId);
+    await ctx.db.patch(f.course, { title: "Lifeguarding" });
+    await ctx.db.patch(f.seatId, {
+      outcomeDefinitions: (seat?.outcomeDefinitions ?? []).map((rule) =>
+        rule.certificateRequired
+          ? {
+              ...rule,
+              title:
+                "Lifeguarding - Online Learning (ARC) — upload completion certificate",
+            }
+          : rule
+      ),
+    });
+  });
+  fetchMock.mockImplementation(async () => jevAnswers());
+  await f.verify(
+    await f.upload(
+      await pdf(
+        "Lifeguarding online session r.24. Please proceed to the in-person skills session to receive certification",
+        "Date Completed: 11/26/2026"
+      ),
+      "arc.pdf"
+    )
+  );
+
+  const body = JSON.parse(String(fetchMock.mock.calls.at(0)?.[1]?.body));
+  expect(body.state[0]).toMatchObject({
+    expected_course: "Lifeguarding - Online Learning (ARC)",
+    course: "Lifeguarding",
+  });
+  expect(body.state[0].certificate_text).toContain(
+    "Lifeguarding online session r.24"
+  );
+  expect(body.questions.course.instructions).toContain("`expected_course`");
+  expect(body.questions.course.criteria.true).toContain(
+    "Lifeguarding Online Session"
+  );
+  expect(body.questions.course.criteria.true).toContain(
+    "Blended Learning Online Content"
+  );
+  expect(body.questions.course.criteria.false).toBeTruthy();
+});
+
+it("names the course from the linked material when the requirement has one", async () => {
+  const f = await fixture();
+  await f.t.run(async (ctx) => {
+    const material = await ctx.db.insert("registrationMaterials", {
+      title:
+        "Lifeguarding Online Learning (ARC) — upload completion certificate",
+      kind: "link",
+      version: 1,
+      archived: false,
+    });
+    const seat = await ctx.db.get(f.seatId);
+    await ctx.db.patch(f.seatId, {
+      outcomeDefinitions: (seat?.outcomeDefinitions ?? []).map((rule) =>
+        rule.certificateRequired
+          ? {
+              ...rule,
+              title: "Pre-class work",
+              certificateMaterialId: material,
+            }
+          : rule
+      ),
+    });
+  });
+  fetchMock.mockImplementation(async () => jevAnswers());
+  await f.verify(await f.upload());
+
+  const body = JSON.parse(String(fetchMock.mock.calls.at(0)?.[1]?.body));
+  expect(body.state[0].expected_course).toBe(
+    "Lifeguarding Online Learning (ARC)"
+  );
 });
 
 it("sends a PDF whose text didn't render to review without asking Jev", async () => {

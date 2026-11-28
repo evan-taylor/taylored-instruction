@@ -4,6 +4,7 @@ import { ConvexError, type Infer, v } from "convex/values";
 import { MAX_CERTIFICATE_BYTES } from "../shared/registration/certificate";
 import {
   CERTIFICATE_MAX_AGE_DAYS,
+  certificateCourseName,
   checkVerdict,
   decide,
   VERIFICATION_CHECKS,
@@ -384,6 +385,7 @@ export const verificationInput = internalQuery({
       storageId: v.id("_storage"),
       type: v.string(),
       expectedCourse: v.string(),
+      course: v.optional(v.string()),
       attendeeName: v.string(),
       today: v.string(),
       earliestCompletionDate: v.string(),
@@ -410,13 +412,11 @@ export const verificationInput = internalQuery({
         : null,
       ctx.db.get(session.courseId),
     ]);
-    const label = material ? `${rule.title} (${material.title})` : rule.title;
     return {
       storageId: file.storageId,
       type: file.type,
-      expectedCourse: course
-        ? `${label}, the pre-class requirement for ${course.title}`
-        : label,
+      expectedCourse: certificateCourseName(material?.title ?? rule.title),
+      ...(course ? { course: course.title } : {}),
       attendeeName: seat.name,
       today: isoDate(Date.now(), session.timeZone),
       earliestCompletionDate: earliestCompletionDate(session),
