@@ -1,4 +1,5 @@
 import { ConvexError, v } from "convex/values";
+import { BUSINESS } from "../lib/business";
 import {
   AGREEMENT_LABEL,
   type CancellationPolicy,
@@ -263,16 +264,17 @@ export async function citedAcknowledgement(
   return newest("click-through") ?? newest("disclosed") ?? null;
 }
 
-/** The post-purchase notice line for confirmation and invoice emails. */
-export function policyEmailLine(
-  ack: Pick<Acknowledgement, "kind" | "policyVersion" | "recordedAt">,
-  origin: string
+/**
+ * The footer notice for confirmation and invoice emails, linking the cited
+ * version's permanent page on the canonical host.
+ */
+export function policyEmailNotice(
+  ack: Pick<Acknowledgement, "kind" | "policyVersion" | "recordedAt">
 ) {
-  const url = cancellationPolicyUrl(origin, ack.policyVersion);
-  const link = `[${url}](${url})`;
+  const url = cancellationPolicyUrl(BUSINESS.url, ack.policyVersion);
   return ack.kind === "click-through"
-    ? `You agreed to our Cancellation Policy (version ${ack.policyVersion}) on ${policyDate(ack.recordedAt)}. Read that version at ${link}`
-    : `This registration is subject to our Cancellation Policy (version ${ack.policyVersion}). Read it at ${link}`;
+    ? { url, agreedOn: policyDate(ack.recordedAt) }
+    : { url };
 }
 
 const EMAIL_LABELS: Record<string, string> = {

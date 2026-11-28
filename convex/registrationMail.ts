@@ -17,7 +17,7 @@ import {
   activeSeatMaterials,
   materialJobEntitlementId,
 } from "./registrationHelpers";
-import { citedAcknowledgement, policyEmailLine } from "./registrationPolicy";
+import { citedAcknowledgement, policyEmailNotice } from "./registrationPolicy";
 import { certificateAgency } from "./studentCertificateSchema";
 import { reminderBlocked } from "./studentCertificates";
 
@@ -165,11 +165,8 @@ async function messageContext(
   details.push(...billingDetails(billing ? order : null, invoice));
   const message =
     receiptMessage(kind, order) ?? messageBody(job, kind, invoice);
-  const notice = order ? await policyNotice(ctx, job, order) : null;
-  if (notice) {
-    message.body += `\n${notice}`;
-  }
-  return { title, details, ...message };
+  const policy = order ? await policyNotice(ctx, job, order) : null;
+  return { title, details, ...message, ...(policy ? { policy } : {}) };
 }
 
 /** Only the purchaser agreed; anyone else is told the policy applies. */
@@ -179,17 +176,15 @@ async function policyNotice(
   order: Doc<"registrationOrders">
 ) {
   const acknowledgement = await citedAcknowledgement(ctx, order._id);
-  const site = process.env.SITE_URL;
-  if (!(acknowledgement && site)) {
+  if (!acknowledgement) {
     return null;
   }
   const agreedByRecipient =
     job.recipient.toLowerCase() === order.purchaser.toLowerCase();
-  return policyEmailLine(
+  return policyEmailNotice(
     agreedByRecipient
       ? acknowledgement
-      : { ...acknowledgement, kind: "disclosed" },
-    new URL(site).origin
+      : { ...acknowledgement, kind: "disclosed" }
   );
 }
 
@@ -581,6 +576,9 @@ export const claim = internalMutation({
       certificate: v.optional(certificateMailValidator),
       campaign: v.string(),
       analytics: v.optional(analyticsContext),
+      policy: v.optional(
+        v.object({ url: v.string(), agreedOn: v.optional(v.string()) })
+      ),
     }),
     v.null()
   ),

@@ -5,6 +5,9 @@ import {
   registrationEmail,
 } from "../../shared/registration/email";
 
+const POLICY_LINK =
+  /subject to our <a[^>]*href="https:\/\/tayloredinstruction\.com\/cancellation-policy\/v\/2026-11-25"[^>]*>cancellation policy<\/a>\./u;
+
 it("escapes all customer content and rejects executable action URLs", () => {
   const content = {
     title: '<script>alert("x")</script>',
@@ -76,6 +79,43 @@ it("renders billing details and preserves the invoice destination", () => {
   expect(result.html).toContain('href="https://invoice.stripe.com/test"');
   expect(result.text).toContain("Invoice total: $10.89");
   expect(result.text).not.toContain("calendar invitation is attached");
+});
+
+it("puts the cancellation policy in a muted footer line linking the cited version", () => {
+  const url =
+    "https://tayloredinstruction.com/cancellation-policy/v/2026-11-25";
+  const job = {
+    category: "Registration confirmed",
+    subject: "You’re registered",
+    body: "Hi {{attendeeName}}",
+    name: "Sam",
+    title: "BLS",
+    schedule: "",
+    materials: [],
+    details: [],
+  };
+  const disclosed = registrationEmail(
+    { ...job, policy: { url } },
+    "https://example.com"
+  );
+  const footer = disclosed.html.indexOf("Questions? Reply");
+  const notice = disclosed.html.indexOf("This registration is subject to our");
+  expect(notice).toBeGreaterThan(disclosed.html.indexOf("one-time code"));
+  expect(notice).toBeLessThan(footer);
+  expect(disclosed.html).toMatch(POLICY_LINK);
+  expect(disclosed.text).toContain(
+    `This registration is subject to our cancellation policy.\nCancellation policy: ${url}\n\nQuestions? Reply`
+  );
+  const agreed = registrationEmail(
+    { ...job, policy: { url, agreedOn: "November 28, 2026" } },
+    "https://example.com"
+  );
+  expect(agreed.text).toContain(
+    `You agreed to our cancellation policy on November 28, 2026.\nCancellation policy: ${url}`
+  );
+  expect(registrationEmail(job, "https://example.com").text).not.toContain(
+    "cancellation policy"
+  );
 });
 
 it("preserves invitation actions and includes readable schedules and material titles", () => {

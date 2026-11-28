@@ -16,6 +16,7 @@ import {
   policySnapshot,
   sha256,
 } from "../../shared/cancellation-policy";
+import { registrationEmail } from "../../shared/registration/email";
 import {
   disputeEvidenceText,
   evidencePdf,
@@ -91,6 +92,7 @@ const PATCH = /db\.patch\(/gu;
 const INSERT = /db\.insert\(/gu;
 const NOT_CLICK_THROUGH = /^Not a click-through\./u;
 const CURRENT = CANCELLATION_POLICIES[0] as CancellationPolicy;
+const POLICY_URL = `https://tayloredinstruction.com/cancellation-policy/v/${CURRENT.version}`;
 const agreement = { version: CURRENT.version, label: AGREEMENT_LABEL };
 const modules = import.meta.glob("../../convex/**/*.ts");
 
@@ -487,11 +489,11 @@ describe("Cancellation policy acknowledgement record", () => {
     expect(old?.policySnapshot).not.toContain("A changed term.");
     expect(fresh?.policyVersion).toBe("2099-01-01");
     expect(fresh?.policySnapshot).toContain("A changed term.");
-    expect((await f.receipt(before.orderId)).mail?.body).toContain(
-      `version ${CURRENT.version}`
+    expect((await f.receipt(before.orderId)).mail?.policy?.url).toBe(
+      POLICY_URL
     );
-    expect((await f.receipt(after.orderId)).mail?.body).toContain(
-      "version 2099-01-01"
+    expect((await f.receipt(after.orderId)).mail?.policy?.url).toBe(
+      "https://tayloredinstruction.com/cancellation-policy/v/2099-01-01"
     );
   });
 
@@ -520,14 +522,12 @@ describe("Cancellation policy in confirmation emails", () => {
     const order = await f.register("dana");
     await f.pay(order);
     const { mail } = await f.receipt(order.orderId);
-    const url = `${ORIGIN}/cancellation-policy/v/${CURRENT.version}`;
     const today = new Date().toLocaleDateString("en-US", {
       dateStyle: "long",
       timeZone: "America/Los_Angeles",
     });
-    expect(mail?.body).toContain(
-      `You agreed to our Cancellation Policy (version ${CURRENT.version}) on ${today}. Read that version at [${url}](${url})`
-    );
+    expect(mail?.policy).toEqual({ url: POLICY_URL, agreedOn: today });
+    expect(mail?.body).not.toContain("Cancellation Policy");
   });
 
   it("states the policy in the attendee's confirmation without saying they agreed", async () => {
@@ -547,10 +547,7 @@ describe("Cancellation policy in confirmation emails", () => {
     const mail = await f.t.mutation(internal.registrationMail.claim, {
       id: job._id,
     });
-    expect(mail?.body).toContain(
-      `This registration is subject to our Cancellation Policy (version ${CURRENT.version})`
-    );
-    expect(mail?.body).not.toContain("You agreed");
+    expect(mail?.policy).toEqual({ url: POLICY_URL });
     expect(mail?.body).not.toContain("Total paid");
   });
 
@@ -561,10 +558,7 @@ describe("Cancellation policy in confirmation emails", () => {
       admin: { overbook: false, reason: "Paid cash", payment: "offline" },
     });
     const { mail } = await f.receipt(offline.orderId);
-    expect(mail?.body).toContain(
-      `This registration is subject to our Cancellation Policy (version ${CURRENT.version})`
-    );
-    expect(mail?.body).not.toContain("You agreed");
+    expect(mail?.policy).toEqual({ url: POLICY_URL });
     const unpaid = await f.adminClient.mutation(api.registration.reserve, {
       ...f.input("company"),
       admin: { overbook: false, reason: "Group", payment: "unpaid" },
@@ -609,9 +603,7 @@ describe("Cancellation policy in confirmation emails", () => {
     const invoiceMail = job
       ? await f.t.mutation(internal.registrationMail.claim, { id: job._id })
       : null;
-    expect(invoiceMail?.body).toContain(
-      `This registration is subject to our Cancellation Policy (version ${CURRENT.version})`
-    );
+    expect(invoiceMail?.policy).toEqual({ url: POLICY_URL });
   });
 });
 
@@ -626,7 +618,10 @@ describe("Dispute evidence export", () => {
       success: true,
       providerId: "re_receipt",
       deliveredTo: "erin-buyer@example.test",
-      copy: { subject: mail?.subject ?? "", text: mail?.body ?? "" },
+      copy: {
+        subject: mail?.subject ?? "",
+        text: mail ? registrationEmail(mail, ORIGIN).text : "",
+      },
     });
     await f.t.run((ctx) =>
       ctx.db.insert("registrationEmailTracking", {
@@ -667,7 +662,8 @@ describe("Dispute evidence export", () => {
       "Purchaser confirmation (receipt)",
       "re_receipt",
       "delivered at",
-      "You agreed to our Cancellation Policy",
+      "You agreed to our cancellation policy on",
+      `Cancellation policy: ${POLICY_URL}`,
       "Rescheduling requests made 7 or more days",
     ]) {
       expect(text).toContain(expected);

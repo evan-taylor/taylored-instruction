@@ -10,7 +10,7 @@ import {
   TextLink,
   Title,
 } from "./components/blocks";
-import { EmailLayout } from "./components/layout";
+import { EmailLayout, type PolicyNotice } from "./components/layout";
 
 export type TransactionalEmailProps = {
   title: string;
@@ -23,6 +23,7 @@ export type TransactionalEmailProps = {
   review?: { label: string; url: string };
   details?: DetailRow[];
   note?: string;
+  policy?: PolicyNotice;
 };
 
 export const REVIEW_PROMPT =
@@ -43,9 +44,10 @@ export default function TransactionalEmail({
   review,
   details,
   note,
+  policy,
 }: TransactionalEmailProps) {
   return (
-    <EmailLayout preview={preview}>
+    <EmailLayout policy={policy} preview={preview}>
       <Title>{title}</Title>
       {body}
       {paragraphs.map((paragraph) => (
