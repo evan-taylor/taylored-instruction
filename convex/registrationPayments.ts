@@ -472,6 +472,25 @@ export const pendingRefunds = internalQuery({
     return rows.filter((r) => r.state === "pending").map((r) => r._id);
   },
 });
+/** Cron entry: starts Stripe reconciliation only while a refund is pending. */
+export const kickRefundReconciliation = internalMutation({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    const pending = await ctx.db
+      .query("registrationRefunds")
+      .withIndex("by_state", (q) => q.eq("state", "pending"))
+      .first();
+    if (pending) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationExternal.reconcileRefunds,
+        {}
+      );
+    }
+    return null;
+  },
+});
 export const refundFailure = internalMutation({
   args: {
     id: v.id("registrationRefunds"),

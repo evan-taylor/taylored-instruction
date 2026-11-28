@@ -1,4 +1,5 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
+import type { FilterBuilder, NamedTableInfo } from "convex/server";
 import { ConvexError } from "convex/values";
 import { ADMIN_EMAILS, isAdminEmail } from "../shared/adminEmails";
 import {
@@ -9,7 +10,7 @@ import {
 } from "../shared/registration/domain";
 import { defaultConfirmation } from "../shared/registration/email-defaults";
 import { internal } from "./_generated/api";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { DataModel, Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { returnBalanceLines } from "./registrationBillingLedger";
 
@@ -208,6 +209,16 @@ export function isAbandonedOrder(
     order.status === "expired" &&
     order.settledAt === undefined &&
     order.releasedBeforePayment === undefined
+  );
+}
+/** isAbandonedOrder as a query filter, so paginated and limited reads stay full. */
+export function notAbandonedOrder(
+  q: FilterBuilder<NamedTableInfo<DataModel, "registrationOrders">>
+) {
+  return q.or(
+    q.neq(q.field("status"), "expired"),
+    q.neq(q.field("settledAt"), undefined),
+    q.neq(q.field("releasedBeforePayment"), undefined)
   );
 }
 /** A seat canceled with its abandoned order; it was never a real enrollment. */

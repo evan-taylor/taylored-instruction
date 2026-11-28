@@ -7,8 +7,9 @@ import {
   businessDate,
   certificateCourseTitle,
 } from "../shared/registration/student-certificates";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { preferenceToken } from "./emailPreferences";
 import { certificateStatus } from "./registrationCertificates";
@@ -192,23 +193,42 @@ async function policyNotice(
   );
 }
 
+async function dueJobs(ctx: QueryCtx, limit: number) {
+  const pending = await ctx.db
+    .query("registrationJobs")
+    .withIndex("by_state_and_due", (q) =>
+      q.eq("state", "pending").lte("due", Date.now())
+    )
+    .take(limit);
+  const abandoned = await ctx.db
+    .query("registrationJobs")
+    .withIndex("by_state_and_due", (q) =>
+      q.eq("state", "sending").lte("due", Date.now() - 300_000)
+    )
+    .take(limit);
+  return [...pending, ...abandoned].map((j) => j._id);
+}
 export const due = internalQuery({
   args: {},
   returns: v.array(v.id("registrationJobs")),
+  handler: async (ctx) => await dueJobs(ctx, BATCH),
+});
+/**
+ * Cron entry for the outbox. Starts the Node sender only when mail is due, so
+ * an idle minute costs one indexed read instead of a Node action.
+ */
+export const kickDelivery = internalMutation({
+  args: {},
+  returns: v.null(),
   handler: async (ctx) => {
-    const pending = await ctx.db
-      .query("registrationJobs")
-      .withIndex("by_state_and_due", (q) =>
-        q.eq("state", "pending").lte("due", Date.now())
-      )
-      .take(BATCH);
-    const abandoned = await ctx.db
-      .query("registrationJobs")
-      .withIndex("by_state_and_due", (q) =>
-        q.eq("state", "sending").lte("due", Date.now() - 300_000)
-      )
-      .take(BATCH);
-    return [...pending, ...abandoned].map((j) => j._id);
+    if ((await dueJobs(ctx, 1)).length > 0) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.registrationExternal.deliver,
+        {}
+      );
+    }
+    return null;
   },
 });
 /**

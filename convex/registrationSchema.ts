@@ -180,7 +180,8 @@ export const registrationTables = {
     .index("by_sessionId", ["sessionId"])
     .index("by_stripeSession", ["stripeSession"])
     .index("by_paymentIntent", ["paymentIntent"])
-    .index("by_organizationId", ["organizationId"]),
+    .index("by_organizationId", ["organizationId"])
+    .index("by_settledAt", ["settledAt"]),
   registrationMaterialEdits: defineTable({
     requestKey: v.string(),
     input: v.string(),
