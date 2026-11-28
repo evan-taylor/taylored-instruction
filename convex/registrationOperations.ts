@@ -1,5 +1,6 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import {
+  type PaginationOptions,
   paginationOptsValidator,
   paginationResultValidator,
 } from "convex/server";
@@ -38,7 +39,6 @@ import {
   scheduleEmails,
   settle,
   staff,
-  withoutAbandonedSeats,
 } from "./registrationHelpers";
 import schema from "./schema";
 
@@ -506,6 +506,23 @@ const attendanceStatus = v.union(
   v.literal("not-recorded")
 );
 
+/**
+ * Seats that still hold a place in the session. Canceled and transferred
+ * seats, abandoned checkouts included, stay findable from the Orders tab.
+ */
+function rosterSeats(
+  ctx: QueryCtx,
+  sessionId: Id<"registrationSessions">,
+  paginationOpts: PaginationOptions
+) {
+  return ctx.db
+    .query("registrationSeats")
+    .withIndex("by_sessionId_and_state", (q) => q.eq("sessionId", sessionId))
+    .filter((q) =>
+      q.or(q.eq(q.field("state"), "held"), q.eq(q.field("state"), "active"))
+    )
+    .paginate(paginationOpts);
+}
 export const roster = query({
   args: {
     sessionId: v.id("registrationSessions"),
@@ -537,13 +554,8 @@ export const roster = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
-    const result = await ctx.db
-      .query("registrationSeats")
-      .withIndex("by_sessionId_and_state", (q) =>
-        q.eq("sessionId", args.sessionId)
-      )
-      .paginate(args.paginationOpts);
-    const seats = await withoutAbandonedSeats(ctx, result.page);
+    const result = await rosterSeats(ctx, args.sessionId, args.paginationOpts);
+    const seats = result.page;
     const page = await Promise.all(
       seats.map(async (seat) => {
         const { attendance: rows, completion: seatCompletion } =
@@ -813,13 +825,8 @@ export const exportRoster = query({
   }),
   handler: async (ctx, args) => {
     await staff(ctx, args.sessionId);
-    const result = await ctx.db
-      .query("registrationSeats")
-      .withIndex("by_sessionId_and_state", (q) =>
-        q.eq("sessionId", args.sessionId)
-      )
-      .paginate(args.paginationOpts);
-    const seats = await withoutAbandonedSeats(ctx, result.page);
+    const result = await rosterSeats(ctx, args.sessionId, args.paginationOpts);
+    const seats = result.page;
     return {
       csv: csv([
         ["Name", "Email", "State"],

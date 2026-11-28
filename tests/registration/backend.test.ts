@@ -564,9 +564,7 @@ describe("Registration transactions", () => {
     expect(rows.find((row) => row._id === second._id)?.attendance).toEqual([
       { meetingId: "second", status: "present" },
     ]);
-    expect(rows.find((row) => row._id === canceled._id)?.attendance).toEqual(
-      []
-    );
+    expect(rows.some((row) => row._id === canceled._id)).toBe(false);
   });
   it("free settlement creates missing entitlements and restock assigns one code once", async () => {
     const f = await fixture();
