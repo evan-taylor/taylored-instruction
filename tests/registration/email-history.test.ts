@@ -55,5 +55,18 @@ describe("email history", () => {
         clickedAt: undefined,
       })
     ).toEqual({ label: "Bounced", tone: "danger" });
+    for (const [status, label] of [
+      ["email.failed", "Failed"],
+      ["email.suppressed", "Suppressed"],
+    ]) {
+      expect(
+        emailStatus(sent, {
+          status,
+          deliveredAt: undefined,
+          openedAt: 2,
+          clickedAt: 3,
+        }).label
+      ).toBe(label);
+    }
   });
 });

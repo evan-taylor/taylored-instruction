@@ -54,6 +54,12 @@ export function emailStatus(
   if (tracking?.status === "email.bounced") {
     return { label: "Bounced", tone: "danger" };
   }
+  if (tracking?.status === "email.failed") {
+    return { label: "Failed", tone: "danger" };
+  }
+  if (tracking?.status === "email.suppressed") {
+    return { label: "Suppressed", tone: "danger" };
+  }
   if (tracking?.status === "email.complained") {
     return { label: "Marked as spam", tone: "danger" };
   }

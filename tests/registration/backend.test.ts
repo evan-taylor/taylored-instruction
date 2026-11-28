@@ -493,6 +493,33 @@ describe("Registration transactions", () => {
     expect(instructorRow?.email).toBe("one@example.test");
     expect(instructorRow).not.toHaveProperty("payment");
   });
+  it("refuses roster emails to canceled or transferred attendees", async () => {
+    const f = await fixture();
+    await f.t.run(async (ctx) => {
+      await ctx.db.patch(f.course, { settings: { ...config, tuition: 0 } });
+    });
+    await f.t.mutation(api.registration.reserve, {
+      ...attempt(f.course, f.session),
+      attendees: [seat("one@example.test")],
+    });
+    const seatId = await f.t.run(async (ctx) => {
+      const row = await ctx.db.query("registrationSeats").first();
+      if (!row) {
+        throw new Error("Missing seat");
+      }
+      await ctx.db.patch(row._id, { state: "transferred" });
+      return row._id;
+    });
+    await expect(
+      f.adminClient.mutation(api.registrationOperations.selectedEmail, {
+        sessionId: f.session,
+        seats: [seatId],
+        subject: "Parking",
+        body: "Use the north lot.",
+        requestKey: "parking",
+      })
+    ).rejects.toThrow("no longer on the roster");
+  });
   it("records bulk attendance for the chosen meeting and rejects invalid batches", async () => {
     const f = await fixture();
     await f.t.run(async (ctx) => {

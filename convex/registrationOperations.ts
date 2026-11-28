@@ -859,6 +859,11 @@ export const selectedEmail = mutation({
         if (seat?.sessionId !== args.sessionId) {
           throw new ConvexError("Recipient outside session");
         }
+        if (seat.state === "canceled" || seat.state === "transferred") {
+          throw new ConvexError(
+            `${seat.name} is no longer on the roster. Refresh and choose again.`
+          );
+        }
         await enqueue(ctx, {
           key: `staff:${args.requestKey}:${id}`,
           kind: "email",

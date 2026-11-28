@@ -892,7 +892,7 @@ export function InstructorRoster({
   const [bulkSaving, setBulkSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [missingOnly, setMissingOnly] = useState(false);
-  const [selected, setSelected] = useState<Id<"registrationSeats">[]>([]);
+  const [chosen, setSelected] = useState<Id<"registrationSeats">[]>([]);
   const [emailOpen, setEmailOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [message, setMessage] = useState("");
@@ -902,6 +902,8 @@ export function InstructorRoster({
       (!missingOnly || s.certificate?.uploaded === false) &&
       `${s.name} ${s.email}`.toLowerCase().includes(needle)
   );
+  const loadedIds = new Set(roster.results.map((seat) => seat._id));
+  const selected = chosen.filter((id) => loadedIds.has(id));
   const selectedIds = new Set(selected);
   const allVisibleSelected =
     visible.length > 0 && visible.every((s) => selectedIds.has(s._id));
