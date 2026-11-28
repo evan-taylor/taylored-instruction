@@ -588,7 +588,7 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
     {
       title: "Session roster",
       description:
-        "Attendees of a session with seat state, snapshot (answers, materials, pricing), outcome definitions, and completion status.",
+        "Current attendees of a session (held and active seats; canceled and transferred seats are left out) with seat state, snapshot (answers, materials, pricing), outcome definitions, completion status, and the order's payment status.",
       inputSchema: { sessionId: id, ...pagination },
       annotations: READ,
     },
@@ -607,7 +607,8 @@ export function registerCatalogTools(server: McpServer, ctx: McpContext) {
     "export_roster_csv",
     {
       title: "Export roster CSV",
-      description: "The full roster of a session as CSV text.",
+      description:
+        "The roster of a session as CSV text: held and active seats, without canceled or transferred ones.",
       inputSchema: { sessionId: id },
       annotations: READ,
     },
